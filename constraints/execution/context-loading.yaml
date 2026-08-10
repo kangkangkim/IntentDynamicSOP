@@ -1,0 +1,14 @@
+stage: execution
+constraints:
+  - id: progressive_context_loading
+    rule: 只加载当前 execution unit 需要的知识和仓库上下文。
+  - id: provider_result_limited
+    rule: Repo Context Provider 默认 max_results <= 10，max_snippet_chars <= 800。
+  - id: evidence_ref_required
+    rule: Provider result 必须带 evidence_ref。
+  - id: no_full_doc_dump
+    rule: OKL / 文档必须摘要化，不能全文塞入上下文。
+forbidden_actions:
+  - 一次性加载全部 D3A knowledge。
+  - 全仓无边界搜索。
+  - 把 OKL 当作 test/build evidence。

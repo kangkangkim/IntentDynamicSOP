@@ -1,0 +1,14 @@
+stage: execution
+constraints:
+  - id: d3a_layer_coder_one_layer
+    rule: d3a-layer-coder 一次只负责一个 Layer。
+  - id: red_before_green
+    rule: 没有 RED evidence 不能进入 GREEN。
+  - id: all_required_dt_green
+    rule: required DT 未全 GREEN 不能进入 ALL_LAYERS_GREEN。
+  - id: tran_build_required
+    rule: tran_build 未 PASS 不能 DONE。
+forbidden_actions:
+  - 未授权修改其他 Layer。
+  - 跳过 RED evidence。
+  - DT 未全 GREEN 就进入 tran_build completion。

@@ -1,0 +1,23 @@
+execution_unit:
+  id: string
+  stage: planning | coding | test_preparation | verification_fix | build_fix
+  selected_domain: string
+  selected_lane: fast | lite | complex
+  scope:
+    in_scope: []
+    out_of_scope: []
+  assigned_layer: string
+  estimated_change_loc: integer
+  max_change_loc: 500
+  split_required: boolean
+  split_reason: []
+  required_evidence: []
+
+rules:
+  - 每个 execution unit 的代码变更必须控制在 500 行以内。
+  - estimated_change_loc 超过 500 时，必须拆成多个 execution unit。
+  - 单个 stage 如果需要超过 500 行代码变更，必须先拆 stage，再执行。
+  - D3A 多 Layer 任务必须先按 Layer 拆 Layer Context Packet。
+  - D3A 单个 Layer 如果仍超过 500 行，继续按 execution unit 拆。
+  - 每个 execution unit 都必须有自己的 evidence。
+  - 不允许把无关变更合并进同一个 execution unit。

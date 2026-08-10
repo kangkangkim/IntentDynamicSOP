@@ -1,0 +1,22 @@
+domain_resolution:
+  selected_domain: d3a
+  module_file: domains/d3a/module.yaml
+  reason: TR3 显式包含 D3A layer 和 DT domain。
+
+lane_decision:
+  selected_lane: complex
+  hard_triggers:
+    - api_semantic_change
+    - cross_module_or_layer_impact
+    - multiple_test_domains
+    - needs_dependency_dag
+  fast_disqualified_by:
+    - no_behavior_contract_change
+    - no_cross_module_impact
+    - no_new_test_required
+  decision_rule: hard_trigger
+  confidence: high
+  reasons:
+    - TR3 描述新增 API 行为。
+    - 影响多个 D3A Layer。
+    - 涉及多个 DT Domain。

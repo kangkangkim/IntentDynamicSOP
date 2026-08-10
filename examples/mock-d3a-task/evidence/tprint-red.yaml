@@ -1,0 +1,8 @@
+status: RED
+stage: dt_run
+domain: TPRINT
+command: <ENTERPRISE_DT_RUN_COMMAND>
+errors:
+  - Dummy test 在 implementation 前失败。
+evidence:
+  - 仅用于 mock workflow 的 placeholder RED evidence。

@@ -1,0 +1,14 @@
+stage: decision
+constraints:
+  - id: domain_module_is_pluggable
+    rule: D3A 是 Domain Module，不是 IDC Core 特例。
+  - id: router_does_not_read_internal_layers
+    rule: Scenario Router 只选择 module，不读取 module 内部 layer。
+  - id: lane_is_execution_strength
+    rule: Lane 只表示执行强度，不表示领域。
+  - id: api_contract_not_global
+    rule: API Contract 不是全局强制项，由 Domain + Lane + Task Type 决定。
+forbidden_actions:
+  - 在 Core 中写死 D3A 内部 layer。
+  - 把 Known Domain 当成 Lane。
+  - 在 Fast 条件不满足时选择 fast。

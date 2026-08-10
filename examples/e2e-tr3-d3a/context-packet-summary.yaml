@@ -1,0 +1,24 @@
+context_packet:
+  execution_unit_id: do-unit-1
+  selected_domain: d3a
+  selected_lane: complex
+  static_knowledge:
+    - knowledge/d3a/layers/DO.md
+    - knowledge/d3a/dt/TPRINT.md
+  repo_native_rules:
+    - AGENTS.md
+  repo_context:
+    grep_findings:
+      - summary: Mock dummy state symbol reference.
+        evidence_ref: <ENTERPRISE_REPO_PATH>
+    codegraph_findings:
+      - summary: Placeholder DO to TFE call relationship.
+        evidence_ref: <ENTERPRISE_PLACEHOLDER>
+    okl_findings:
+      - summary: Placeholder OKL design note.
+        evidence_ref: <ENTERPRISE_PLACEHOLDER>
+  token_policy:
+    max_results: 10
+    max_snippet_chars: 800
+  exclusions:
+    - 未加载非 DO Layer knowledge。

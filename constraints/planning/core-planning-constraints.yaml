@@ -1,0 +1,14 @@
+stage: planning
+constraints:
+  - id: approved_scope_only
+    rule: Planner 必须遵守 Human Alignment 批准的 scope / boundary。
+  - id: no_scope_expansion_without_escalation
+    rule: 需要扩大 scope 时必须 escalation。
+  - id: execution_unit_limit
+    rule: Planner 必须把代码变更拆成 <= 500 LOC 的 execution unit。
+  - id: plan_requires_verification_mapping
+    rule: 计划必须说明每个 execution unit 的验证方式。
+forbidden_actions:
+  - 未经批准扩大 scope。
+  - 生成超过 500 LOC 的单个 execution unit。
+  - 把无关变更合并到一个 execution unit。

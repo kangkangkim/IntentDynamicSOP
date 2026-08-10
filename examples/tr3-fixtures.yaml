@@ -1,0 +1,54 @@
+fixtures:
+  - id: tr3_d3a_new_capability
+    input_type: tr3_design_doc
+    extracted_terms:
+      - D3A
+      - DO
+      - TFE
+      - TPRINT
+      - 新增接口
+      - DT 设计
+    expected_domain_candidates: [d3a]
+    expected_change_type: new_capability
+    expected_change_shape: cross_layer_change
+    expected_lane_signals:
+      api_semantic_change: true
+      cross_module_or_layer_impact: true
+      multiple_test_domains: false
+      needs_dependency_dag: true
+
+  - id: tr3_d3a_shotgun_change
+    input_type: tr3_design_doc
+    extracted_terms:
+      - D3A
+      - DO
+      - TFE
+      - DRV
+      - TPRINT
+      - FW
+      - 多处调用方
+      - 同步调整
+    expected_domain_candidates: [d3a]
+    expected_change_type: behavior_change
+    expected_change_shape: shotgun_change
+    expected_lane_signals:
+      api_semantic_change: false
+      cross_module_or_layer_impact: true
+      multiple_test_domains: true
+      needs_dependency_dag: true
+
+  - id: tr3_general_refactor
+    input_type: tr3_design_doc
+    extracted_terms:
+      - 重构
+      - 单模块
+      - 不改变外部行为
+      - 现有测试
+    expected_domain_candidates: []
+    expected_change_type: refactor
+    expected_change_shape: single_unit_change
+    expected_lane_signals:
+      api_semantic_change: false
+      cross_module_or_layer_impact: false
+      multiple_test_domains: false
+      needs_dependency_dag: false

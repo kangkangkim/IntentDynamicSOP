@@ -1,0 +1,16 @@
+d3a_plan:
+  coding_layers: [DO, TFE, DRV]
+  dt_domains: [TPRINT, FW]
+  dependency_dag:
+    - from: DO
+      to: TFE
+    - from: TFE
+      to: DRV
+  verification_mapping:
+    DO:
+      required_dt_domains: [TPRINT]
+    TFE:
+      required_dt_domains: [TPRINT, FW]
+    DRV:
+      required_dt_domains: [FW]
+  execution_strategy: Serial

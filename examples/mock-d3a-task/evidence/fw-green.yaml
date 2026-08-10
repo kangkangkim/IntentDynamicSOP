@@ -1,0 +1,7 @@
+status: GREEN
+stage: dt_run
+domain: FW
+command: <ENTERPRISE_DT_RUN_COMMAND>
+errors: []
+evidence:
+  - 仅用于 mock workflow 的 placeholder GREEN evidence。

@@ -1,0 +1,7 @@
+lanes:
+  - id: fast
+    file: lanes/fast.yaml
+  - id: lite
+    file: lanes/lite.yaml
+  - id: complex
+    file: lanes/complex.yaml

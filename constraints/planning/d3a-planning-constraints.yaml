@@ -1,0 +1,16 @@
+stage: planning
+constraints:
+  - id: fixed_d3a_layers
+    rule: D3A Planner 只能选择 TRAN_CFG、DO、VISP_ADP、TFC_TFI、TFE、ADP、DRV。
+  - id: fixed_v0_dt_domains
+    rule: V0 DT Domain 只能选择 TPRINT、FW、DPF。
+  - id: no_layer_creation
+    rule: D3A Planner 不能创建或删除 D3A Layer。
+  - id: no_mapping_guess
+    rule: Coding Layer 到 DT Domain 是多对多关系，不能猜真实 mapping。
+  - id: one_layer_per_packet
+    rule: D3A 多 Layer 必须拆成一个 Layer 一个 Context Packet。
+forbidden_actions:
+  - 规划 registry 外的 D3A Layer。
+  - 规划 registry 外的 DT Domain。
+  - 把多个 D3A Layer 合并到同一个 Context Packet。

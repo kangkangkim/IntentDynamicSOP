@@ -1,0 +1,29 @@
+d3a_plan:
+  coding_layers: [DO, TFE, DRV]
+  dt_domains: [TPRINT, FW]
+  dependency_dag:
+    - from: DO
+      to: TFE
+    - from: TFE
+      to: DRV
+  verification_mapping:
+    DO:
+      required_dt_domains: [TPRINT]
+    TFE:
+      required_dt_domains: [TPRINT, FW]
+    DRV:
+      required_dt_domains: [FW]
+  execution_strategy: Serial
+  execution_units:
+    - id: do-unit-1
+      layer: DO
+      max_change_loc: 500
+      required_evidence: [TPRINT_RED, TPRINT_GREEN]
+    - id: tfe-unit-1
+      layer: TFE
+      max_change_loc: 500
+      required_evidence: [TPRINT_GREEN, FW_GREEN]
+    - id: drv-unit-1
+      layer: DRV
+      max_change_loc: 500
+      required_evidence: [FW_GREEN]

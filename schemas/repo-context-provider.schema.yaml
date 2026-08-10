@@ -1,0 +1,45 @@
+repo_context_request:
+  task_id: string
+  execution_unit_id: string
+  selected_domain: string
+  selected_lane: fast | lite | complex
+  query_intents:
+    - find_symbols
+    - find_callers
+    - find_callees
+    - find_similar_impl
+    - find_tests
+    - find_docs
+    - find_build_errors
+  constraints:
+    allowed_paths: []
+    forbidden_paths: []
+    impacted_layers: []
+    max_results: 10
+    max_snippet_chars: 800
+    summary_required: true
+    evidence_ref_required: true
+
+repo_context_result:
+  provider: grep | codegraph | okl | repo_search
+  status: success | empty | error | placeholder
+  query: string
+  findings:
+    - type: symbol | caller | callee | test | doc | error | example | rule
+      path: string
+      summary: string
+      evidence_ref: string
+      confidence: high | medium | low
+  notes: []
+
+rules:
+  - Repo Context Provider 只提供当前仓库事实和知识线索，不决定 DONE。
+  - grep 负责文本事实。
+  - CodeGraph 负责结构事实。
+  - OKL 负责内部知识文档事实。
+  - provider result 必须带 evidence_ref。
+  - provider result 必须摘要化，不能把长文全文塞进上下文。
+  - 默认 max_results 不超过 10。
+  - 默认 max_snippet_chars 不超过 800。
+  - 查询必须受 allowed_paths / impacted_layers 约束。
+  - OKL 文档不能替代 test/build evidence。

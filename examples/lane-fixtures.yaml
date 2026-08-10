@@ -1,0 +1,63 @@
+fixtures:
+  - id: readme_typo
+    input:
+      goal_clear: true
+      tiny_scope: true
+      low_risk: true
+      no_behavior_contract_change: true
+      no_core_logic_change: true
+      no_cross_module_impact: true
+      no_new_test_required: true
+      simple_verification: true
+    expected_lane: fast
+    expected_rule: fast_all_conditions_met
+
+  - id: single_module_bugfix
+    input:
+      goal_clear: true
+      tiny_scope: false
+      low_risk: true
+      no_behavior_contract_change: true
+      no_core_logic_change: false
+      no_cross_module_impact: true
+      no_new_test_required: false
+      simple_verification: false
+    expected_lane: lite
+    expected_rule: default_lite
+
+  - id: d3a_single_layer_small_change
+    input:
+      goal_clear: true
+      tiny_scope: false
+      low_risk: true
+      no_behavior_contract_change: true
+      no_core_logic_change: false
+      no_cross_module_impact: true
+      no_new_test_required: false
+      simple_verification: false
+    expected_lane: lite
+    expected_rule: default_lite
+
+  - id: new_cross_layer_api
+    input:
+      goal_clear: true
+      api_semantic_change: true
+      cross_module_or_layer_impact: true
+      needs_dependency_dag: true
+    expected_lane: complex
+    expected_rule: hard_trigger
+
+  - id: d3a_multiple_dt_domains
+    input:
+      goal_clear: true
+      multiple_test_domains: true
+      needs_dependency_dag: true
+    expected_lane: complex
+    expected_rule: hard_trigger
+
+  - id: unclear_requirement
+    input:
+      goal_clear: false
+      critical_ambiguity: true
+    expected_lane: complex
+    expected_rule: hard_trigger

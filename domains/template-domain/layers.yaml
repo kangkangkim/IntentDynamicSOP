@@ -1,0 +1,5 @@
+layers:
+  - id: <TEAM_LAYER_1>
+    knowledge_file: domains/template-domain/knowledge/layers/TEAM_LAYER_1.md
+  - id: <TEAM_LAYER_2>
+    knowledge_file: domains/template-domain/knowledge/layers/TEAM_LAYER_2.md

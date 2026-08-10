@@ -1,0 +1,29 @@
+evidence_summary:
+  execution_units:
+    - id: do-unit-1
+      status: complete
+      change_loc: 120
+      evidence:
+        - type: red
+          summary: Mock TPRINT RED evidence exists.
+          evidence_ref: examples/mock-d3a-task/evidence/tprint-red.yaml
+        - type: green
+          summary: Mock TPRINT GREEN evidence exists.
+          evidence_ref: examples/mock-d3a-task/evidence/tprint-green.yaml
+    - id: tfe-unit-1
+      status: complete
+      change_loc: 180
+      evidence:
+        - type: green
+          summary: Mock TPRINT and FW GREEN evidence exists.
+          evidence_ref: examples/mock-d3a-task/evidence/fw-green.yaml
+    - id: drv-unit-1
+      status: complete
+      change_loc: 90
+      evidence:
+        - type: green
+          summary: Mock FW GREEN evidence exists.
+          evidence_ref: examples/mock-d3a-task/evidence/fw-green.yaml
+  final_build:
+    status: PASS
+    evidence_ref: examples/mock-d3a-task/evidence/tran-build-pass.yaml

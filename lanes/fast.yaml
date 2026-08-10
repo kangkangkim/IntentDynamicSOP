@@ -1,0 +1,24 @@
+lane:
+  id: fast
+  purpose: 简单明确、低风险、小范围任务。
+  hard_triggers: []
+  fast_required_conditions:
+    - goal_clear
+    - tiny_scope
+    - low_risk
+    - no_behavior_contract_change
+    - no_core_logic_change
+    - no_cross_module_impact
+    - no_new_test_required
+    - simple_verification
+  required_outputs:
+    - task_summary
+    - acceptance_criteria
+    - basic_verification
+  verification_level: basic
+  completion_requirements:
+    - task_summary_exists
+    - acceptance_criteria_checked
+    - changed_files_reviewed
+    - basic_verification_evidence_exists
+    - completion_summary_exists

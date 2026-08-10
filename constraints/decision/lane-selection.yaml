@@ -1,0 +1,12 @@
+stage: decision
+constraints:
+  - id: complex_hard_trigger_first
+    rule: 命中 Complex hard trigger 时必须选择 complex。
+  - id: fast_requires_all_conditions
+    rule: 只有 Fast required conditions 全部满足时才能选择 fast。
+  - id: default_lite
+    rule: 既不满足 fast，也没有 complex hard trigger 时，默认 lite。
+forbidden_actions:
+  - 用模型感觉替代 hard trigger。
+  - 输出 lane 但不输出 reasons。
+  - 把 D3A 直接等同于 complex。

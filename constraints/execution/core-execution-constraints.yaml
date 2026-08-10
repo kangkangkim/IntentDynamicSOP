@@ -1,0 +1,14 @@
+stage: execution
+constraints:
+  - id: one_execution_unit_at_a_time
+    rule: 每次执行一个明确 execution unit。
+  - id: max_change_loc
+    rule: 单个 execution unit 代码变更 <= 500 LOC。
+  - id: evidence_per_unit
+    rule: 每个 execution unit 都必须有自己的 evidence。
+  - id: no_unrelated_changes
+    rule: 不允许混入无关变更。
+forbidden_actions:
+  - 单次 execution unit 超过 500 LOC。
+  - 无 evidence 标记完成。
+  - 修改 scope 外文件。

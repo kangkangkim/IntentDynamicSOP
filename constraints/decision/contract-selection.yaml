@@ -1,0 +1,12 @@
+stage: decision
+constraints:
+  - id: contract_set_by_domain_lane_task
+    rule: Contract Set 由 Domain Module + Lane + Task Type 决定。
+  - id: d3a_requires_api_contract
+    rule: D3A Module 要求 d3a_specification、api_contract、task_contract、verification_contract。
+  - id: all_tasks_need_completion_evidence
+    rule: 所有任务都必须有 completion evidence。
+forbidden_actions:
+  - 对所有任务强制 API Contract。
+  - 对 D3A 任务跳过 API Contract。
+  - 没有 completion gate 就进入 Planner。

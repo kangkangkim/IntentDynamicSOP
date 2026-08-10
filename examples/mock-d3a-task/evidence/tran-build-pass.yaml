@@ -1,0 +1,6 @@
+status: PASS
+stage: tran_build
+command: <ENTERPRISE_TRAN_BUILD_COMMAND>
+errors: []
+evidence:
+  - 仅用于 mock workflow 的 placeholder tran_build PASS evidence。

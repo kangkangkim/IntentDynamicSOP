@@ -1,0 +1,33 @@
+normalized_request:
+  input_type: natural_language_intent | tr3_design_doc
+  source_ref: string
+  extracted_requirement: string
+  extracted_api_semantics: string
+  extracted_dt_design: string
+  extracted_acceptance: []
+  explicit_domain_hints: []
+  open_questions: []
+
+classification:
+  domain_candidates: []
+  change_type: new_capability | behavior_change | bugfix | refactor | documentation | unknown
+  change_shape: single_unit_change | cross_layer_change | shotgun_change | unknown
+  lane_signals:
+    critical_ambiguity: false
+    high_risk: false
+    cross_module_or_layer_impact: false
+    api_semantic_change: false
+    state_machine_or_concurrency_or_security_or_performance: false
+    data_migration: false
+    needs_dependency_dag: false
+    needs_multiple_subagents: false
+    multiple_test_domains: false
+    high_failure_impact: false
+  missing_information: []
+
+rules:
+  - TR3 是高级输入源，不是 completion evidence。
+  - TR3 可以减少澄清和 contract 生成成本，但不能替代 RED/GREEN/build evidence。
+  - Input Adapter 只抽取事实和分类信号，不执行 planner。
+  - Domain Resolver 根据 domain_candidates 和 module trigger_rules 选择 module。
+  - Lane Resolver 根据 lane_signals 选择 fast/lite/complex。

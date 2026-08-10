@@ -1,0 +1,7 @@
+domain_modules:
+  - id: d3a
+    module_file: domains/d3a/module.yaml
+    status: active
+  - id: template-domain
+    module_file: domains/template-domain/module.yaml
+    status: template

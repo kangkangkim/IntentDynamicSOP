@@ -1,0 +1,5 @@
+domains:
+  - id: <TEAM_TEST_DOMAIN_1>
+    knowledge_file: domains/template-domain/knowledge/tests/TEAM_TEST_DOMAIN_1.md
+  - id: <TEAM_TEST_DOMAIN_2>
+    knowledge_file: domains/template-domain/knowledge/tests/TEAM_TEST_DOMAIN_2.md

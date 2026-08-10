@@ -1,0 +1,31 @@
+api:
+  name: DummyGetWidgetState
+  purpose: 返回一个 dummy widget 状态，用于验证 mock workflow。
+  input:
+    fields:
+      - name: dummy_widget_id
+        type: string
+    constraints:
+      - dummy_widget_id 不能为空。
+  output:
+    fields:
+      - name: state
+        type: enum
+        values: [READY, BLOCKED, UNKNOWN]
+    invariants:
+      - 已有 dummy caller 保持相同 response shape。
+  errors:
+    - code: DUMMY_NOT_FOUND
+      condition: dummy widget id 不存在。
+      behavior: 返回一个 typed placeholder error。
+  behavior:
+    normal_flow:
+      - 解析 dummy_widget_id。
+      - 返回当前 dummy state。
+    edge_cases:
+      - 未知 dummy_widget_id 返回 DUMMY_NOT_FOUND。
+  constraints:
+    compatibility:
+      - 不改变已有 dummy response fields。
+    forbidden_changes:
+      - 不引入企业内部 API 名称。

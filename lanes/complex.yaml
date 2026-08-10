@@ -1,0 +1,32 @@
+lane:
+  id: complex
+  purpose: 复杂、高风险、跨模块或关键不确定任务。
+  hard_triggers:
+    - critical_ambiguity
+    - high_risk
+    - cross_module_or_layer_impact
+    - api_semantic_change
+    - state_machine_or_concurrency_or_security_or_performance
+    - data_migration
+    - needs_dependency_dag
+    - needs_multiple_subagents
+    - multiple_test_domains
+    - high_failure_impact
+  fast_required_conditions: []
+  required_outputs:
+    - full_task_contract
+    - detailed_plan
+    - dependency_dag
+    - knowledge_gate_result
+    - subagent_split
+    - evidence_plan
+    - audit_or_review
+  verification_level: full
+  completion_requirements:
+    - full_task_contract_exists
+    - detailed_plan_or_dag_executed
+    - knowledge_gate_result_exists
+    - evidence_plan_satisfied
+    - required_tests_or_builds_passed
+    - audit_or_review_completed
+    - completion_summary_exists

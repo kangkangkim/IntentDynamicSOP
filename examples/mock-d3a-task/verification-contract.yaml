@@ -1,0 +1,22 @@
+verification:
+  required_dt_domains: [TPRINT, FW]
+  red_evidence:
+    - domain: TPRINT
+      status: RED
+      evidence: examples/mock-d3a-task/evidence/tprint-red.yaml
+  green_evidence:
+    - domain: TPRINT
+      status: GREEN
+      evidence: examples/mock-d3a-task/evidence/tprint-green.yaml
+    - domain: FW
+      status: GREEN
+      evidence: examples/mock-d3a-task/evidence/fw-green.yaml
+  build_required: true
+  build_result:
+    status: PASS
+    stage: tran_build
+    command: <ENTERPRISE_TRAN_BUILD_COMMAND>
+    errors: []
+    evidence:
+      - examples/mock-d3a-task/evidence/tran-build-pass.yaml
+  completion_status: DONE

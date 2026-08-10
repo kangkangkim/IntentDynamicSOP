@@ -1,0 +1,37 @@
+task:
+  id: string
+  goal: string
+  scope:
+    in: []
+    out: []
+  impacted_layers: []
+  dependencies: []
+  api_contract: object
+  acceptance_criteria: []
+  verification:
+    required_dt_domains: []
+    build_required: boolean
+
+example:
+  task:
+    id: MOCK-D3A-001
+    goal: 在选中的 placeholder layer 中增加一条 dummy 状态读取路径。
+    scope:
+      in:
+        - 只包含 mock DO、TFE、DRV artifacts。
+      out:
+        - 不包含真实企业实现。
+    impacted_layers: [DO, TFE, DRV]
+    dependencies:
+      - from: DO
+        to: TFE
+      - from: TFE
+        to: DRV
+    api_contract:
+      ref: examples/mock-d3a-task/api-contract.yaml
+    acceptance_criteria:
+      - API Contract 中表达 dummy not-found 行为。
+      - Required DT domain 具备 RED 和 GREEN evidence。
+    verification:
+      required_dt_domains: [TPRINT, FW]
+      build_required: true

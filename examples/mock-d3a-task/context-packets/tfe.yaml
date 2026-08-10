@@ -1,0 +1,18 @@
+layer_context:
+  layer: TFE
+  goal: 增加 dummy 状态读取路径的 TFE 部分。
+  api_contract:
+    ref: examples/mock-d3a-task/api-contract.yaml
+  responsibility: <ENTERPRISE_PLACEHOLDER>
+  architecture_constraints:
+    - D3A architecture 是固定的。
+  coding_patterns:
+    - <ENTERPRISE_PLACEHOLDER>
+  repo_context:
+    files:
+      - <ENTERPRISE_REPO_PATH>
+    notes:
+      - Dynamic repository context 必须在保密区内收集。
+  required_dt: [TPRINT, FW]
+  acceptance_criteria:
+    - TFE context packet 只包含 TFE layer knowledge。

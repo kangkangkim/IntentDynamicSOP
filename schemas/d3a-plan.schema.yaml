@@ -1,0 +1,36 @@
+d3a_plan:
+  coding_layers: []
+  dt_domains: []
+  dependency_dag:
+    - from: string
+      to: string
+  verification_mapping:
+    coding_layer:
+      required_dt_domains: []
+  execution_strategy: Serial | Parallel | Mixed DAG
+
+rules:
+  - coding_layers 只能从 registries/d3a-layers.yaml 选择。
+  - dt_domains 只能从 registries/dt-domains.yaml 选择。
+  - dependency_dag edge 必须引用已选择的 coding_layers。
+  - verification_mapping key 必须引用已选择的 coding_layers。
+  - required_dt_domains 必须引用已选择的 dt_domains。
+  - Coding Layer 到 DT Domain 是多对多关系，不能猜。
+
+example:
+  d3a_plan:
+    coding_layers: [DO, TFE, DRV]
+    dt_domains: [TPRINT, FW]
+    dependency_dag:
+      - from: DO
+        to: TFE
+      - from: TFE
+        to: DRV
+    verification_mapping:
+      DO:
+        required_dt_domains: [TPRINT]
+      TFE:
+        required_dt_domains: [TPRINT, FW]
+      DRV:
+        required_dt_domains: [FW]
+    execution_strategy: Serial

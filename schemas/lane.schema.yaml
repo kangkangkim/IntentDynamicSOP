@@ -1,0 +1,28 @@
+lane:
+  id: fast | lite | complex
+  purpose: string
+  hard_triggers: []
+  fast_required_conditions: []
+  required_outputs: []
+  verification_level: basic | focused | full
+  completion_requirements: []
+
+lane_decision:
+  selected_lane: fast | lite | complex
+  hard_triggers: []
+  fast_disqualified_by: []
+  decision_rule: hard_trigger | fast_all_conditions_met | default_lite
+  confidence: high | medium | low
+  reasons: []
+
+rules:
+  - Lane 只表示执行强度，不表示领域。
+  - Domain Resolver 决定是否使用 D3A 或其他 Domain Module。
+  - Lane Resolver 不读取 module 内部知识。
+  - 命中 Complex hard trigger 时必须选择 complex。
+  - 只有 Fast required conditions 全部满足时才能选择 fast。
+  - 既不满足 fast，也没有 complex hard trigger 时，默认选择 lite。
+  - 输出必须包含 reasons，不能只输出 selected_lane。
+  - 每个 Lane 都必须自闭环。
+  - Lane 只改变 completion evidence 的强度，不改变必须闭环这件事。
+  - 每个 Lane 都必须声明 completion_requirements。

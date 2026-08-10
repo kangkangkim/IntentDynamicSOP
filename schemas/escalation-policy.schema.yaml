@@ -1,0 +1,19 @@
+escalation_policy:
+  triggers:
+    - scope_expansion_required
+    - api_contract_change_required
+    - planner_cannot_satisfy_scope
+    - tool_evidence_unavailable
+    - repeated_fix_failure
+    - domain_or_lane_reclassification_required
+    - tr3_conflicts_with_repo_facts
+    - completion_gate_cannot_be_satisfied
+    - execution_unit_too_large
+  max_automatic_fix_attempts: integer
+  return_to: human_alignment
+
+rules:
+  - Escalation 是异常回流，不是默认人工 check。
+  - 自动闭环中只要需要改变已批准的方向、边界、contract 或 completion gate，就必须 escalate。
+  - 自动修复连续失败达到阈值后必须 escalate。
+  - 缺少工具证据时不能 DONE，必须 fix 或 escalate。

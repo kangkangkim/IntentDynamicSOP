@@ -1,0 +1,61 @@
+alignment_pack:
+  input_understanding:
+    input_type: tr3_design_doc
+    goal: 为 D3A dummy widget 增加状态读取能力。
+    extracted_requirement: 为 D3A dummy widget 增加状态读取能力。
+    extracted_dt_design: TPRINT + FW。
+    open_questions: []
+  classification:
+    selected_domain: d3a
+    selected_lane: complex
+    change_type: new_capability
+    change_shape: shotgun_change
+    reasons:
+      - D3A candidate 命中。
+      - 新增 API 行为。
+      - 多 Layer + 多 DT。
+  contract_set:
+    required_contracts:
+      - d3a_specification
+      - api_contract
+      - task_contract
+      - verification_contract
+    optional_contracts: []
+    reasons:
+      - D3A module 要求 API Contract。
+      - Complex lane 要求详细 verification。
+  scope_boundary:
+    in_scope:
+      - Mock DO / TFE / DRV。
+      - Mock TPRINT / FW evidence。
+    out_of_scope:
+      - 真实企业实现。
+    forbidden_changes:
+      - 不引入真实企业 API 名称。
+      - 不修改未授权 Layer。
+  completion_gate:
+    lane_completion_requirements:
+      - full_task_contract_exists
+      - detailed_plan_or_dag_executed
+      - evidence_plan_satisfied
+      - required_tests_or_builds_passed
+      - completion_summary_exists
+    domain_completion_requirements:
+      - RED evidence required
+      - all required DT GREEN
+      - tran_build PASS
+    evidence_required:
+      - red_evidence
+      - green_evidence
+      - tran_build_pass
+  escalation_policy:
+    triggers:
+      - scope_expansion_required
+      - api_contract_change_required
+      - execution_unit_too_large
+
+human_alignment:
+  required: true
+  status: approved
+  reviewer_decision: approve
+  notes: []
