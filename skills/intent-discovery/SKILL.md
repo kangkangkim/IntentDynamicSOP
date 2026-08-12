@@ -38,7 +38,7 @@ schemas/normalized-request.schema.yaml
 ```text
 raw_idea
   -> Explore lightweight project context
-  -> Ask one key question at a time
+  -> Ask focused discovery questions
   -> Offer 2-3 approaches if there are real design branches
   -> Produce draft spec
   -> Render Brainstorming View

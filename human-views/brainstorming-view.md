@@ -19,11 +19,11 @@ schemas/discovery-provider.schema.yaml
 
 <idea summary>
 
-### 2. 我需要先问一个关键问题
+### 2. 我需要先问清楚
 
-<one key question>
+<focused discovery questions>
 
-为什么问：
+为什么这些问题重要：
 
 <why this affects design direction>
 
@@ -56,7 +56,7 @@ schemas/discovery-provider.schema.yaml
 
 - 只在 raw idea 场景默认展示。
 - TR3 文档默认不展示 Brainstorming View。
-- 一次只问一个真正关键的问题。
+- 根据问题复杂度成组追问，不用 token 限制牺牲需求探索质量。
 - 如果存在多个合理设计方向，展示 2-3 个方案和推荐。
 - 用户确认设计方向前，不能写实现代码。
 - Brainstorming 生成的是 draft spec，不是 approved contract。

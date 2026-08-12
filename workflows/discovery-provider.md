@@ -42,7 +42,7 @@ builtin-discovery-questions
 吸收点：
 
 - 先理解项目上下文，再追问。
-- 一次只问一个真正关键的问题。
+- 根据问题复杂度成组追问，不用 token 限制牺牲需求探索质量。
 - 必要时给 2-3 个方案，并说明 trade-off 和推荐。
 - 先形成 design / draft spec，再交给用户确认。
 - 在 design 被确认前，不进入实现。
@@ -84,7 +84,7 @@ tr3_design_doc:
 
 ```text
 Explore lightweight project context
-  -> Ask one key question
+  -> Ask focused discovery questions
   -> Update idea model
   -> Offer 2-3 approaches if design branch exists
   -> Draft spec
