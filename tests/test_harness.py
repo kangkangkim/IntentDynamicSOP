@@ -435,7 +435,8 @@ def test_id_workflow_skill_exists_and_has_triggers():
     assert_true("human-views/alignment-view.md" in text, "ID workflow skill 必须加载 Alignment View。")
     assert_true("human-views/clarification-view.md" in text, "ID workflow skill 必须加载 Clarification View。")
     assert_true("grill-me-method" in text, "ID workflow skill 必须声明 Grill Me method。")
-    assert_true("brainstorming-method" in text, "ID workflow skill 必须声明 Brainstorming method。")
+    assert_true("upstream-superpowers-brainstorming" in text, "ID workflow skill 必须声明 upstream Superpowers brainstorming。")
+    assert_true("idc-brainstorming-overlay" in text, "ID workflow skill 必须声明 IDC brainstorming overlay。")
     assert_true("human-views/brainstorming-view.md" in text, "ID workflow skill 必须加载 Brainstorming View。")
     for skill_name in ["intent-discovery", "intent-grilling", "intent-alignment"]:
         assert_true(f"skills/{skill_name}/SKILL.md" in text, f"ID workflow 必须编排 {skill_name}。")
@@ -539,18 +540,22 @@ def test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea():
     attribution = read_text("docs/source-attribution.md")
 
     assert_true("obra/superpowers" in workflow, "Discovery Provider 必须标注 Superpowers 方法论来源。")
-    assert_true("brainstorming-method" in workflow, "Discovery Provider 必须声明 brainstorming-method。")
+    assert_true("upstream-superpowers-brainstorming" in workflow, "Discovery Provider 必须声明 upstream Superpowers baseline。")
+    assert_true("idc-brainstorming-overlay" in workflow, "Discovery Provider 必须声明 IDC overlay。")
     assert_true("builtin-discovery-questions" in workflow, "Discovery Provider 必须声明 builtin fallback。")
     assert_true("focused discovery questions" in workflow, "Discovery Provider 必须支持聚焦探索问题。")
     assert_true("不用 token 限制牺牲需求探索质量" in workflow, "Discovery Provider 不能因 token 限制牺牲探索质量。")
     assert_true("2-3 个方案" in workflow, "Discovery Provider 必须支持多方案取舍。")
     assert_true("Draft spec is not an approved contract." in schema, "Discovery draft spec 不能等于 approved contract。")
+    assert_true("Upstream Superpowers brainstorming is the baseline." in schema, "Discovery schema 必须声明 upstream baseline。")
+    assert_true("IDC overlay only adapts handoff" in schema, "Discovery schema 必须声明 overlay 只做适配。")
     assert_true("TR3 design docs skip Discovery." in schema, "TR3 必须默认跳过 Discovery。")
     assert_true("input_maturity: raw_idea" in input_adapter, "Input Adapter 必须能标记 raw_idea。")
     assert_true("next_pre_alignment_step: Discovery Provider" in input_adapter, "raw_idea 必须进入 Discovery Provider。")
     assert_true("tr3_design_doc 默认跳过 Discovery Provider" in normalized_schema, "Normalized schema 必须声明 TR3 跳过 Discovery。")
     assert_true("https://github.com/obra/superpowers" in attribution, "Source attribution 必须记录 Superpowers 来源 URL。")
     assert_true("Copyright (c) 2025 Jesse Vincent" in attribution, "Source attribution 必须记录 Superpowers copyright。")
+    assert_true("upstream baseline" in attribution, "Source attribution 必须声明 upstream baseline。")
 
 
 def test_planner_cannot_produce_registry_external_layers():

@@ -42,7 +42,7 @@ schemas/clarification-provider.schema.yaml
 
 ## Superpowers Brainstorming Inspiration
 
-本仓库的 Discovery Provider 吸收了 `obra/superpowers` 项目中 `brainstorming` skill 的公开设计思想。
+本仓库的 Discovery Provider 以 `obra/superpowers` 项目中 `brainstorming` skill 的公开设计为 upstream baseline，并在其上添加 IDC overlay。
 
 Source:
 
@@ -58,9 +58,9 @@ MIT License
 Copyright (c) 2025 Jesse Vincent
 ```
 
-本仓库吸收的是方法论，不是逐字复制原始 skill prompt。
+本仓库保留 upstream baseline 的核心流程，并用 IDC overlay 适配 handoff、Human View 和 machine contract。
 
-吸收点：
+Baseline 保留点：
 
 - project context first：先理解项目上下文，再展开想法。
 - focused discovery questions：根据问题复杂度成组追问，不用 token 限制牺牲需求探索质量。

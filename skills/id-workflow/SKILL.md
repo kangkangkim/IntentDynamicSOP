@@ -149,7 +149,7 @@ docs/token-budget-policy.md
 
 - Do not write implementation code before Human Alignment approval.
 - Keep `id-workflow` as orchestration; reusable pre-alignment behavior lives in atomic skills.
-- Use `brainstorming-method` for `raw_idea`: explore context, ask focused discovery questions, propose 2-3 approaches when useful, then draft spec.
+- Use `upstream-superpowers-brainstorming` as the `raw_idea` baseline, then apply `idc-brainstorming-overlay` before handoff to `intent-grilling`.
 - Skip Discovery Provider for TR3 unless the TR3 is too incomplete to identify behavior.
 - Clarification Provider only asks for critical missing information needed for contracts, scope, or completion gates.
 - Prefer `grill-me-method` for clarification: decision tree, frontier rounds, commitment check, no implementation.

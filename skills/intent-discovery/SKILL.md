@@ -9,6 +9,8 @@ Use this atomic skill to turn `raw_idea` input into a draft spec.
 
 It is reusable outside D3A and outside the full ID workflow.
 
+Use upstream Superpowers brainstorming as the baseline, then apply the IDC overlay for handoff and contract shape.
+
 ## When To Use
 
 Use for:
@@ -37,6 +39,8 @@ schemas/normalized-request.schema.yaml
 
 ```text
 raw_idea
+  -> upstream-superpowers-brainstorming baseline
+  -> idc-brainstorming-overlay
   -> Explore lightweight project context
   -> Ask focused discovery questions
   -> Offer 2-3 approaches if there are real design branches
@@ -61,6 +65,7 @@ The draft spec must include:
 
 - Do not write implementation code.
 - Do not mark draft spec as approved contract.
+- Do not treat upstream design approval as implementation approval; hand off to `intent-grilling` and `intent-alignment`.
 - Use Chinese if the user used Chinese.
 - TR3 skips this skill unless the TR3 is too incomplete to identify behavior.
 - Keep enterprise details as placeholders outside the confidential environment.

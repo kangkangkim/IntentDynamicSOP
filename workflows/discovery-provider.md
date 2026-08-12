@@ -14,9 +14,9 @@ Input Adapter
   -> Alignment View
 ```
 
-## Inspiration
+## Upstream Baseline
 
-本 workflow 吸收 `obra/superpowers` 项目中 `brainstorming` skill 的公开方法论。
+本 workflow 以 `obra/superpowers` 项目中的 `brainstorming` skill 为 upstream baseline。
 
 详见：
 
@@ -24,28 +24,40 @@ Input Adapter
 docs/source-attribution.md
 ```
 
-吸收的是方法论，不是逐字复制原始 skill prompt。
+IDC 在 upstream baseline 上做轻量 overlay，而不是另起一套无关流程。
 
 ## Provider
 
-V0 支持两个 provider mode：
+V0 支持三个 provider mode：
 
 ```text
-brainstorming-method
+upstream-superpowers-brainstorming
+idc-brainstorming-overlay
 builtin-discovery-questions
 ```
 
-### brainstorming-method
+### upstream-superpowers-brainstorming
 
-默认推荐 provider，用于一句话需求或模糊想法。
+默认 baseline provider，用于一句话需求或模糊想法。
 
-吸收点：
+保留 upstream 的核心流程：
 
 - 先理解项目上下文，再追问。
 - 根据问题复杂度成组追问，不用 token 限制牺牲需求探索质量。
 - 必要时给 2-3 个方案，并说明 trade-off 和推荐。
 - 先形成 design / draft spec，再交给用户确认。
 - 在 design 被确认前，不进入实现。
+
+### idc-brainstorming-overlay
+
+IDC overlay 只做接线和边界微调：
+
+- 只在 `raw_idea` 场景默认启用。
+- TR3 默认跳过 Discovery。
+- upstream design 输出不直接进入实现，而是进入 `intent-grilling`。
+- draft spec 不等于 approved contract。
+- 最终人工 gate 仍然是 `intent-alignment` 的 Alignment View。
+- 外部环境只能生成非敏感 draft spec。
 
 ### builtin-discovery-questions
 
@@ -96,8 +108,10 @@ Explore lightweight project context
 
 ```yaml
 discovery_provider:
-  selected_provider: brainstorming-method | builtin-discovery-questions
+  selected_provider: upstream-superpowers-brainstorming | idc-brainstorming-overlay | builtin-discovery-questions
   fallback_used: false
+  upstream_baseline: obra/superpowers/skills/brainstorming
+  overlay: idc-brainstorming-overlay
   input_maturity: raw_idea
   context_refs:
     - "<repo/docs evidence ref>"
@@ -125,6 +139,7 @@ discovery_provider:
 
 - 只在 `raw_idea` 场景默认启用。
 - TR3 输入默认跳过 Discovery。
+- upstream brainstorming 是 baseline，IDC overlay 只做接线和边界微调。
 - 不在 Discovery 阶段写实现代码。
 - 不把 draft spec 当作 approved contract。
 - 用户用中文输入时，Discovery 问题和方案必须用中文。

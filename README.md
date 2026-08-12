@@ -116,7 +116,7 @@ domains/d3a/module.yaml
 - `skills/intent-grilling/SKILL.md`：Grill Me 收敛追问的原子 skill。
 - `skills/intent-alignment/SKILL.md`：人类前置确认的原子 skill。
 - `workflows/input-adapter.md`：支持一句话输入和 TR3 设计文档输入。
-- `workflows/discovery-provider.md`：吸收 Superpowers Brainstorming 方法论，把 raw idea 展开成 draft spec。
+- `workflows/discovery-provider.md`：以 Superpowers Brainstorming 为 upstream baseline，把 raw idea 展开成 draft spec。
 - `workflows/domain-module-router.md`：根据 `domains/registry.yaml` 选择可插拔 module。
 - `workflows/progressive-constraint-loading.md`：三段式约束加载。
 - `workflows/provider-selection-matrix.md`：根据 anchor / domain / lane 选择 grep、CodeGraph、OKL。
@@ -187,7 +187,7 @@ python3 tests/test_harness.py
 - E2E TR3 D3A demo 必须包含完整链路文件。
 - Human View 模板必须存在，避免把完整 YAML 直接作为用户主界面。
 - Atomic Skills 必须存在，并且 `id-workflow` 只做编排。
-- Discovery Provider 必须支持 Superpowers Brainstorming method，并且 TR3 默认跳过 Discovery。
+- Discovery Provider 必须以 Superpowers Brainstorming 为 baseline，并且 TR3 默认跳过 Discovery。
 - Clarification Provider 必须支持 Grill Me method、frontier round 和 builtin fallback。
 - Requirement Assessor 能识别关键字段缺失。
 - Layer Context Packet 只能包含当前 Layer。
