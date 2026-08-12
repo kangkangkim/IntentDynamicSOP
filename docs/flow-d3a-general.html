@@ -1,25 +1,28 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>IDC Workflow: D3A 和 General Coding</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Intent Dynamic Code Workflow</title>
   <style>
     :root {
-      --bg: #f7f8fb;
-      --ink: #172033;
-      --muted: #667085;
-      --line: #c9d2e3;
-      --blue: #2f6fed;
-      --green: #218358;
-      --amber: #a86705;
-      --red: #b42318;
+      --bg: #f6f7f9;
+      --ink: #17202a;
+      --muted: #5d6876;
+      --line: #d9dee7;
       --panel: #ffffff;
-      --soft-blue: #eaf1ff;
-      --soft-green: #e8f6ef;
-      --soft-amber: #fff2d6;
-      --soft-red: #ffe9e7;
-      --soft-gray: #eef1f6;
+      --soft: #eef2f7;
+      --d3a: #0f766e;
+      --d3a-soft: #e6f5f2;
+      --general: #8a5a12;
+      --general-soft: #fff4de;
+      --human: #6d28d9;
+      --human-soft: #f1ebff;
+      --auto: #2563eb;
+      --auto-soft: #eaf1ff;
+      --danger: #b42318;
+      --danger-soft: #fff0ed;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     * {
@@ -30,211 +33,333 @@
       margin: 0;
       background: var(--bg);
       color: var(--ink);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
       line-height: 1.45;
     }
 
     main {
-      max-width: 1440px;
+      width: min(1320px, calc(100vw - 40px));
       margin: 0 auto;
-      padding: 28px;
+      padding: 28px 0 48px;
     }
 
-    header {
-      margin-bottom: 20px;
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
     }
 
     h1 {
-      margin: 0 0 8px;
-      font-size: 28px;
-      line-height: 1.2;
+      font-size: 30px;
       letter-spacing: 0;
     }
 
-    .subtitle {
-      margin: 0;
-      color: var(--muted);
-      max-width: 920px;
+    h2 {
+      font-size: 18px;
+      letter-spacing: 0;
     }
 
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 18px 0 24px;
+    h3 {
+      font-size: 15px;
+      letter-spacing: 0;
     }
 
-    .legend span {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 7px 10px;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
+    p,
+    li {
       font-size: 13px;
       color: var(--muted);
     }
 
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      display: inline-block;
+    ul {
+      margin: 8px 0 0;
+      padding-left: 18px;
     }
 
-    .dot.core { background: var(--blue); }
-    .dot.d3a { background: var(--amber); }
-    .dot.general { background: var(--green); }
-    .dot.human { background: var(--red); }
-    .dot.knowledge { background: #6941c6; }
+    .page-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(2, max-content);
+      gap: 8px 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      margin-right: 6px;
+      vertical-align: 0;
+    }
+
+    .dot-human { background: var(--human); }
+    .dot-d3a { background: var(--d3a); }
+    .dot-general { background: var(--general); }
+    .dot-auto { background: var(--auto); }
 
     .map {
       display: grid;
-      grid-template-columns: 1.08fr 1fr 1fr;
-      gap: 18px;
-      align-items: start;
+      gap: 14px;
     }
 
-    .section {
-      background: var(--panel);
+    .band {
       border: 1px solid var(--line);
-      border-radius: 10px;
+      background: var(--panel);
+      border-radius: 8px;
       padding: 16px;
-      min-height: 120px;
     }
 
-    .section h2 {
-      margin: 0 0 12px;
-      font-size: 17px;
-      letter-spacing: 0;
+    .band-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
     }
 
-    .flow {
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .flow-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .flow-row.three {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .box {
+      position: relative;
+      min-height: 112px;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .box::after {
+      content: "→";
+      position: absolute;
+      right: -18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9aa4b2;
+      font-weight: 700;
+    }
+
+    .box:last-child::after {
+      content: "";
+    }
+
+    .num {
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+      background: var(--soft);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .human {
+      border-color: #d9c8ff;
+      background: var(--human-soft);
+    }
+
+    .d3a {
+      border-color: #b9e2da;
+      background: var(--d3a-soft);
+    }
+
+    .general {
+      border-color: #f1d8a7;
+      background: var(--general-soft);
+    }
+
+    .auto {
+      border-color: #c6d9ff;
+      background: var(--auto-soft);
+    }
+
+    .danger {
+      border-color: #ffd0c8;
+      background: var(--danger-soft);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .lane {
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .lane-head {
+      padding: 14px 16px;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .lane-head small {
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 12px;
+    }
+
+    .lane-head.d3a-head {
+      background: var(--d3a);
+    }
+
+    .lane-head.general-head {
+      background: var(--general);
+    }
+
+    .lane-body {
+      padding: 14px;
       display: grid;
       gap: 10px;
     }
 
-    .node {
+    .step {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 10px;
+      padding: 12px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
-      padding: 11px 12px;
-      position: relative;
     }
 
-    .node::after {
-      content: "";
-      position: absolute;
-      left: 22px;
-      bottom: -11px;
-      width: 2px;
-      height: 10px;
-      background: var(--line);
+    .step .num {
+      margin: 0;
     }
 
-    .node:last-child::after,
-    .branch .node::after,
-    .side-by-side .node::after,
-    .knowledge-grid .node::after {
-      display: none;
-    }
-
-    .node strong {
+    .step strong {
       display: block;
       font-size: 14px;
       margin-bottom: 3px;
     }
 
-    .node small {
-      color: var(--muted);
-      display: block;
-      font-size: 12px;
-    }
-
-    .core { background: var(--soft-blue); border-color: #aac2ff; }
-    .d3a { background: var(--soft-amber); border-color: #e8bd65; }
-    .general { background: var(--soft-green); border-color: #9bd7ba; }
-    .human { background: var(--soft-red); border-color: #ffb3ad; }
-    .knowledge { background: #f0eafd; border-color: #cab8f6; }
-    .neutral { background: var(--soft-gray); }
-
-    .branch {
+    .merge {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .lane-row,
-    .side-by-side,
-    .knowledge-grid {
-      display: grid;
+      grid-template-columns: 1.1fr 1.1fr 1.2fr 1fr;
       gap: 10px;
     }
 
-    .lane-row {
-      grid-template-columns: repeat(3, 1fr);
+    .provider-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 14px;
     }
 
-    .side-by-side {
-      grid-template-columns: 1fr 1fr;
+    .provider-rules {
+      display: grid;
+      gap: 8px;
     }
 
-    .knowledge-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .arrow-label {
-      text-align: center;
-      color: var(--muted);
-      font-size: 12px;
-      padding: 2px 0;
-    }
-
-    .wide {
-      grid-column: 1 / -1;
-    }
-
-    .note {
-      margin-top: 14px;
-      padding: 12px;
+    .rule {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
-      border: 1px dashed var(--line);
-      color: var(--muted);
       font-size: 13px;
     }
 
-    .compact-list {
-      margin: 8px 0 0;
-      padding-left: 18px;
-      color: var(--muted);
+    .rule strong {
+      color: var(--ink);
+    }
+
+    .note {
+      padding: 12px 14px;
+      border-left: 4px solid var(--danger);
+      background: var(--danger-soft);
+      border-radius: 6px;
+      color: #7a271a;
       font-size: 13px;
     }
 
     code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.95em;
-      background: rgba(23, 32, 51, 0.06);
-      padding: 1px 4px;
-      border-radius: 4px;
+      padding: 1px 5px;
+      border-radius: 5px;
+      background: rgba(23, 32, 42, 0.08);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
     }
 
-    @media (max-width: 1100px) {
-      .map {
+    @media (max-width: 980px) {
+      main {
+        width: min(100vw - 24px, 1320px);
+      }
+
+      .page-head,
+      .split,
+      .provider-grid {
         grid-template-columns: 1fr;
       }
-    }
 
-    @media (max-width: 720px) {
-      main {
-        padding: 18px;
+      .flow-row,
+      .flow-row.three,
+      .merge {
+        grid-template-columns: 1fr;
       }
 
-      .branch,
-      .lane-row,
-      .side-by-side,
-      .knowledge-grid {
+      .box::after {
+        content: "↓";
+        right: 16px;
+        top: auto;
+        bottom: -21px;
+      }
+
+      .box:last-child::after {
+        content: "";
+      }
+
+      .rule {
         grid-template-columns: 1fr;
       }
     }
@@ -242,245 +367,229 @@
 </head>
 <body>
   <main>
-    <header>
-      <h1>Intent Dynamic Code Workflow</h1>
-      <p class="subtitle">从用户输入开始，先做发散、收敛和人工对齐，再按 Domain 分成 D3A 或 General Coding，approve 后进入自动闭环。</p>
+    <header class="page-head">
+      <div>
+        <h1>Intent Dynamic Code Workflow</h1>
+        <p class="subtitle">
+          这张图只表达一件事：用户输入先完成意图对齐；确认后自动进入 D3A Path 或 General Path；后续由证据闭环，不靠模型自信宣布完成。
+        </p>
+      </div>
+      <div class="legend" aria-label="legend">
+        <span><i class="dot dot-human"></i>人工确认点</span>
+        <span><i class="dot dot-auto"></i>自动闭环</span>
+        <span><i class="dot dot-d3a"></i>D3A 专用路径</span>
+        <span><i class="dot dot-general"></i>General 通用路径</span>
+      </div>
     </header>
 
-    <div class="legend" aria-label="图例">
-      <span><i class="dot core"></i>Core 编排</span>
-      <span><i class="dot human"></i>人看的中文卡片</span>
-      <span><i class="dot d3a"></i>D3A Domain</span>
-      <span><i class="dot general"></i>General Domain</span>
-      <span><i class="dot knowledge"></i>知识检索</span>
-    </div>
-
-    <section class="section wide">
-      <h2>1. 输入到人工对齐</h2>
-      <div class="flow">
-        <div class="node core">
-          <strong>用户输入</strong>
-          <small>一句话 / 普通结构化需求 / TR3 文档</small>
+    <section class="map">
+      <section class="band">
+        <div class="band-title">
+          <h2>1. 从用户输入开始</h2>
+          <span class="tag">先判断输入成熟度，不先写代码</span>
         </div>
-        <div class="node core">
-          <strong>Input Adapter</strong>
-          <small>抽取需求、API 语义、验收、domain hints，并判断 input maturity</small>
-        </div>
-        <div class="branch">
-          <div class="node core">
-            <strong>raw_idea</strong>
-            <small>进入 <code>intent-discovery</code>，以 Superpowers Brainstorming 为 baseline</small>
-          </div>
-          <div class="node core">
-            <strong>structured_requirement / tr3_design_doc</strong>
-            <small>跳过 Brainstorming，直接准备进入 Grill Me 收敛</small>
-          </div>
-        </div>
-        <div class="branch">
-          <div class="node human">
-            <strong>Brainstorming View</strong>
-            <small>只给 raw idea：把模糊想法展开成 draft spec</small>
-          </div>
-          <div class="node core">
-            <strong>TR3 Adapter</strong>
-            <small>TR3 抽取需求 / API / DT / 验收 / 影响范围</small>
-          </div>
-        </div>
-        <div class="node core">
-          <strong>intent-grilling</strong>
-          <small>Grill Me 收敛：decision tree、frontier round、critical questions</small>
-        </div>
-        <div class="node human">
-          <strong>Clarification View</strong>
-          <small>信息不够时给用户看关键追问；答完回到 Requirement Assessor</small>
-        </div>
-        <div class="node core">
-          <strong>Requirement Assessor</strong>
-          <small>判断是否足够进入 Domain / Lane / Contract 对齐</small>
-        </div>
-        <div class="node core">
-          <strong>Domain Module Router</strong>
-          <small>选择 <code>d3a</code>、<code>general</code> 或未来 team-domain</small>
-        </div>
-      </div>
-    </section>
-
-    <div class="map">
-      <section class="section">
-        <h2>2A. D3A Path</h2>
-        <div class="flow">
-          <div class="node d3a">
-            <strong>D3A Domain Module</strong>
-            <small><code>domains/d3a/module.yaml</code></small>
-          </div>
-          <div class="node d3a">
-            <strong>固定 Architecture Space</strong>
-            <small>TRAN_CFG / DO / VISP_ADP / TFC_TFI / TFE / ADP / DRV</small>
-          </div>
-          <div class="node d3a">
-            <strong>V0 DT Domain</strong>
-            <small>TPRINT / FW / DPF；真实 mapping 进保密区后填写</small>
-          </div>
-          <div class="node core">
-            <strong>Required Contracts</strong>
-            <small>D3A spec、API contract、task contract、verification contract</small>
-          </div>
-          <div class="node d3a">
-            <strong>D3A Plan</strong>
-            <small>Layer 选择、DT Domain 选择、Dependency DAG、Verification Mapping</small>
-          </div>
-          <div class="node d3a">
-            <strong>Layer Context Packet</strong>
-            <small>一个 packet 只含一个 D3A Layer，避免多 Layer 上下文污染</small>
-          </div>
+        <div class="flow-row three">
+          <article class="box">
+            <span class="num">1</span>
+            <h3>一句话 / 模糊想法</h3>
+            <p>进入原版 Brainstorming 思路 + IDC overlay，产出可讨论的草案。</p>
+            <p><strong>人看到：</strong>Brainstorming View</p>
+          </article>
+          <article class="box">
+            <span class="num">2</span>
+            <h3>普通需求 / 半结构化描述</h3>
+            <p>进入 intent-grilling，用 Grill Me 方式追问缺口、风险、验收口径。</p>
+            <p><strong>人看到：</strong>Clarification View</p>
+          </article>
+          <article class="box">
+            <span class="num">3</span>
+            <h3>TR3 / 设计文档</h3>
+            <p>先抽取需求、DT 设计、约束和未知项，再少量追问关键冲突。</p>
+            <p><strong>人看到：</strong>Clarification View</p>
+          </article>
         </div>
       </section>
 
-      <section class="section">
-        <h2>2B. General Path</h2>
-        <div class="flow">
-          <div class="node general">
-            <strong>General Domain Module</strong>
-            <small><code>domains/general/module.yaml</code></small>
-          </div>
-          <div class="node general">
-            <strong>General Registry</strong>
-            <small>只保留 placeholder，不编造团队 taxonomy</small>
-          </div>
-          <div class="node general">
-            <strong>Components</strong>
-            <small>GENERAL_COMPONENT_PLACEHOLDER 等，进入真实团队后替换</small>
-          </div>
-          <div class="node general">
-            <strong>Test Domains</strong>
-            <small>GENERAL_TEST_PLACEHOLDER 等，进入真实团队后替换</small>
-          </div>
-          <div class="node core">
-            <strong>Required Contracts</strong>
-            <small>task contract、verification contract；API contract 只在 API/外部行为变化时需要</small>
-          </div>
-          <div class="node general">
-            <strong>General Plan</strong>
-            <small>placeholder component、placeholder test domain、execution units、evidence gate</small>
-          </div>
+      <section class="band">
+        <div class="band-title">
+          <h2>2. 对齐闸门</h2>
+          <span class="tag">这里是主要人工 check 点</span>
+        </div>
+        <div class="flow-row">
+          <article class="box human">
+            <span class="num">A</span>
+            <h3>整理用户意图</h3>
+            <p>把输入变成目标、范围、非目标、约束、验收标准、未知项。</p>
+          </article>
+          <article class="box human">
+            <span class="num">B</span>
+            <h3>判断场景类型</h3>
+            <p>识别是新增需求、霰弹式修改、D3A 需求，还是 General coding。</p>
+          </article>
+          <article class="box human">
+            <span class="num">C</span>
+            <h3>形成 machine contract</h3>
+            <p>生成机器可执行的合同，但不把完整 YAML 直接扔给用户。</p>
+          </article>
+          <article class="box human">
+            <span class="num">D</span>
+            <h3>Alignment View</h3>
+            <p>用户只确认人能读懂的摘要、边界、风险、证据要求。</p>
+          </article>
         </div>
       </section>
 
-      <section class="section">
-        <h2>3. Lane 和人工确认</h2>
-        <div class="flow">
-          <div class="node core">
-            <strong>Lane Resolver</strong>
-            <small>根据风险、复杂度、跨模块、测试域、API 变化等选择执行强度</small>
+      <section class="split">
+        <section class="lane">
+          <div class="lane-head d3a-head">
+            <h2>3A. D3A Path</h2>
+            <small>只处理 D3A 场景</small>
           </div>
-          <div class="lane-row">
-            <div class="node neutral"><strong>fast</strong><small>小闭环，不代表无验证</small></div>
-            <div class="node neutral"><strong>lite</strong><small>标准闭环</small></div>
-            <div class="node neutral"><strong>complex</strong><small>分阶段闭环</small></div>
+          <div class="lane-body">
+            <div class="step">
+              <span class="num">1</span>
+              <div>
+                <strong>加载 D3A module</strong>
+                <p>固定 Coding Layer：<code>TRAN_CFG</code>、<code>DO</code>、<code>VISP_ADP</code>、<code>TFC_TFI</code>、<code>TFE</code>、<code>ADP</code>、<code>DRV</code>。</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="num">2</span>
+              <div>
+                <strong>声明 DT domain</strong>
+                <p>V0 只保留 placeholder：<code>TPRINT</code>、<code>FW</code>、<code>DPF</code>；不猜内部真实实现。</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="num">3</span>
+              <div>
+                <strong>先做 API Contract</strong>
+                <p>API / task / verification contract 必须先于 implementation。</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="num">4</span>
+              <div>
+                <strong>分 layer packet 开发</strong>
+                <p>每阶段尽量控制在 500 行内，按 packet 产出 RED / GREEN evidence。</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="num">5</span>
+              <div>
+                <strong>D3A 完成条件</strong>
+                <p>required DT domain 全部 GREEN，并且 <code>tran_build</code> PASS。</p>
+              </div>
+            </div>
           </div>
-          <div class="node core">
-            <strong>Contract Gate</strong>
-            <small>根据 Domain + Lane 决定 task / API / verification contract</small>
+        </section>
+
+        <section class="lane">
+          <div class="lane-head general-head">
+            <h2>3B. General Path</h2>
+            <small>普通 coding / 非 D3A 场景</small>
           </div>
-          <div class="node human">
-            <strong>intent-alignment</strong>
-            <small>把 machine contract 渲染成 Alignment View</small>
+          <div class="lane-body">
+            <div class="step">
+              <span class="num">1</span>
+              <div>
+                <strong>加载 General module</strong>
+                <p>不编造组件分类；默认使用 <code>GENERAL_COMPONENT_PLACEHOLDER</code> 等占位符。</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="num">2</span>
+              <div>
+                <strong>判断是否需要 contract</strong>
+                <p>涉及 API、外部行为、数据语义、错误语义或兼容性时，才升级为 API Contract。</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="num">3</span>
+              <div>
+                <strong>选择流程强度</strong>
+                <p>Fast / Standard / Strict 由风险、影响范围、测试可得性和用户约束决定。</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="num">4</span>
+              <div>
+                <strong>自闭环开发</strong>
+                <p>所有 lane 都要有证据闭环；Fast 可用轻量测试或静态检查，Standard / Strict 更偏 TDD。</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="num">5</span>
+              <div>
+                <strong>General 完成条件</strong>
+                <p>task contract、verification contract、required checks 和 completion summary 都满足。</p>
+              </div>
+            </div>
           </div>
-          <div class="node human">
-            <strong>Alignment View</strong>
-            <small>用户确认任务理解、Domain、Lane、范围、完成标准</small>
-          </div>
-          <div class="node human">
-            <strong>approve?</strong>
-            <small>未 approve 不写代码；approve 后进入自动闭环</small>
-          </div>
+        </section>
+      </section>
+
+      <section class="band">
+        <div class="band-title">
+          <h2>4. 确认后自动闭环</h2>
+          <span class="tag">一开始对齐，后面自动跑</span>
+        </div>
+        <div class="merge">
+          <article class="box auto">
+            <span class="num">1</span>
+            <h3>Plan Packet</h3>
+            <p>按 500 行左右的阶段切分，先列证据目标，再动代码。</p>
+          </article>
+          <article class="box auto">
+            <span class="num">2</span>
+            <h3>Implement</h3>
+            <p>小步修改，保持 domain module 和 contract 对齐。</p>
+          </article>
+          <article class="box auto">
+            <span class="num">3</span>
+            <h3>Verify Evidence</h3>
+            <p>TDD 场景必须有 RED evidence 和 GREEN evidence；非 TDD 也必须有工具证据。</p>
+          </article>
+          <article class="box auto">
+            <span class="num">4</span>
+            <h3>Completion View</h3>
+            <p>展示改了什么、证据在哪里、剩余风险是什么。</p>
+          </article>
         </div>
       </section>
-    </div>
 
-    <section class="section wide" style="margin-top: 18px;">
-      <h2>4. approve 后自动闭环</h2>
-      <div class="side-by-side">
-        <div class="flow">
-          <div class="node core">
-            <strong>Automated Closure Loop</strong>
-            <small>Planner -> Constraints -> Knowledge Gate -> Execution -> Verification</small>
-          </div>
-          <div class="node core">
-            <strong>Execution Unit</strong>
-            <small>每个阶段代码变更 <= 500 LOC，每个 unit 有独立 evidence</small>
-          </div>
-          <div class="node core">
-            <strong>TDD State Machine</strong>
-            <small>需要测试时必须 RED -> GREEN；无 RED 不能直接 GREEN</small>
-          </div>
-          <div class="node core">
-            <strong>Verification Gate</strong>
-            <small>测试、build、static check、tran_build 等工具证据</small>
-          </div>
-          <div class="branch">
-            <div class="node human">
-              <strong>Completion View</strong>
-              <small>全部 gate 满足后展示 DONE 摘要</small>
-            </div>
-            <div class="node human">
-              <strong>Escalation View</strong>
-              <small>证据缺失、scope/contract 变化、execution unit 过大时回流给人</small>
-            </div>
-          </div>
+      <section class="band">
+        <div class="band-title">
+          <h2>5. 知识工具怎么配合</h2>
+          <span class="tag">OKL / grep / targeted CodeGraph</span>
         </div>
-
-        <div class="flow">
-          <div class="node knowledge">
-            <strong>Knowledge Gate</strong>
-            <small>只加载当前 execution unit 需要的知识</small>
-          </div>
-          <div class="node knowledge">
-            <strong>Provider Selection Matrix</strong>
-            <small>根据 anchor、domain、lane 和 token 预算选择 provider</small>
-          </div>
-          <div class="knowledge-grid">
-            <div class="node knowledge">
-              <strong>bounded grep</strong>
-              <small>有代码 anchor 时先用；定位 symbol / error / file</small>
+        <div class="provider-grid">
+          <div class="provider-rules">
+            <div class="rule">
+              <strong>有代码 anchor</strong>
+              <span>先 bounded grep 定位真实代码，再按需 targeted CodeGraph 看调用影响，最后用 OKL 查规则或历史。</span>
             </div>
-            <div class="node knowledge">
-              <strong>OKL</strong>
-              <small>LLM Wiki；命令是 <code>okl-query</code>；无 anchor 有 domain 时先用</small>
+            <div class="rule">
+              <strong>无 anchor，有 domain</strong>
+              <span>先 OKL 取摘要 / refs / keywords，再 bounded grep 找代码锚点，必要时 targeted CodeGraph。</span>
             </div>
-            <div class="node knowledge">
-              <strong>targeted CodeGraph</strong>
-              <small>影响面不清楚时用；caller / callee / dependency</small>
+            <div class="rule">
+              <strong>无 anchor，无 domain</strong>
+              <span>先 Discovery / Grilling 把意图问清楚，再选择 OKL 或 grep。</span>
             </div>
           </div>
-          <div class="node knowledge">
-            <strong>Context Packet</strong>
-            <small>只放 summary + evidence_ref，不放长文、长日志或全仓输出</small>
-          </div>
-          <div class="note">
-            <strong>Provider 顺序：</strong>
-            <ul class="compact-list">
-              <li>有代码 anchor：bounded grep -> CodeGraph? -> OKL?</li>
-              <li>无 anchor 但有 domain：OKL -> bounded grep -> CodeGraph?</li>
-              <li>无 anchor 且无 domain：Discovery / Grilling -> OKL? -> grep</li>
+          <div>
+            <p class="note">
+              OKL 是 LLM Wiki，适合拿背景、规则、历史和关键词；grep 是代码事实定位；targeted CodeGraph 是结构和影响面分析。OKL 不能覆盖代码事实，最终完成仍然看 test / build / static check 的工具证据。
+            </p>
+            <ul>
+              <li>人工 check 点主要在 Alignment View。</li>
+              <li>中途发现 contract 冲突或证据无法完成，才进入 Escalation View。</li>
+              <li>D3A 与 General 是 domain module 分流，不互相抢规则。</li>
             </ul>
           </div>
         </div>
-      </div>
-    </section>
-
-    <section class="section wide" style="margin-top: 18px;">
-      <h2>一句话总结</h2>
-      <div class="branch">
-        <div class="node d3a">
-          <strong>D3A</strong>
-          <small>固定 Layer / DT Domain，API Contract 必须先于实现，全部 required DT GREEN 且 tran_build PASS 才 DONE。</small>
-        </div>
-        <div class="node general">
-          <strong>General</strong>
-          <small>不编造真实 taxonomy，只用 placeholder module；task / verification contract 满足，required tests/builds PASS 才 DONE。</small>
-        </div>
-      </div>
+      </section>
     </section>
   </main>
 </body>
