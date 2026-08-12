@@ -7,6 +7,14 @@ description: Use when the user asks to run, try, trigger, or apply the Intent Dy
 
 Use this skill to run the Intent Dynamic Code workflow.
 
+This is the orchestration skill. It delegates reusable pre-alignment work to atomic skills:
+
+```text
+skills/intent-discovery/SKILL.md
+skills/intent-grilling/SKILL.md
+skills/intent-alignment/SKILL.md
+```
+
 ## Trigger examples
 
 - "用 IDC workflow 处理这个 TR3。"
@@ -22,14 +30,14 @@ Default mode:
 ```text
 Input Adapter
   -> Intent Maturity Router
-  -> Discovery Provider if raw_idea
+  -> intent-discovery if raw_idea
   -> Domain Resolver
   -> Lane Resolver
   -> Contract Gate
   -> Requirement Assessor
-  -> Clarification Provider if needed
+  -> intent-grilling if needed
   -> Alignment Pack
-  -> Human Alignment
+  -> intent-alignment
 ```
 
 After the user approves:
@@ -77,6 +85,9 @@ workflows/lane-resolver.md
 workflows/contract-gate.md
 workflows/human-alignment.md
 schemas/alignment-pack.schema.yaml
+skills/intent-discovery/SKILL.md
+skills/intent-grilling/SKILL.md
+skills/intent-alignment/SKILL.md
 workflows/discovery-provider.md
 schemas/discovery-provider.schema.yaml
 human-views/brainstorming-view.md
@@ -136,6 +147,7 @@ docs/token-budget-policy.md
 ## Hard rules
 
 - Do not write implementation code before Human Alignment approval.
+- Keep `id-workflow` as orchestration; reusable pre-alignment behavior lives in atomic skills.
 - Use `brainstorming-method` for `raw_idea`: explore context, ask one key question at a time, propose 2-3 approaches when useful, then draft spec.
 - Skip Discovery Provider for TR3 unless the TR3 is too incomplete to identify behavior.
 - Clarification Provider only asks for critical missing information needed for contracts, scope, or completion gates.

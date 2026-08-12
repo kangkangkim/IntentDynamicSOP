@@ -40,6 +40,7 @@ README.md
 - `README.md`：看当前完成了什么、目录怎么组织、怎么验证。
 - `docs/architecture.md`：看整体架构和 D3A / General Coding 的关系。
 - `docs/adoption-guide.md`：看其他团队如何复制 SOP。
+- `docs/atomic-skills.md`：看哪些能力已经拆成可复用原子 skill。
 - `docs/architecture-diagram.md`：看 Core + Domain Module 的架构图。
 - `docs/confidential-migration-checklist.md`：看进入保密区后要填什么、先做哪条 vertical slice。
 - `docs/terminology.md`：看哪些英文是故意保留的机器稳定标识。
@@ -111,6 +112,9 @@ domains/d3a/module.yaml
 
 - `workflows/scenario-router.md`：顶层场景路由。
 - `skills/id-workflow/SKILL.md`：ID workflow 的 Skill 触发入口。
+- `skills/intent-discovery/SKILL.md`：一句话需求发散成 draft spec 的原子 skill。
+- `skills/intent-grilling/SKILL.md`：Grill Me 收敛追问的原子 skill。
+- `skills/intent-alignment/SKILL.md`：人类前置确认的原子 skill。
 - `workflows/input-adapter.md`：支持一句话输入和 TR3 设计文档输入。
 - `workflows/discovery-provider.md`：吸收 Superpowers Brainstorming 方法论，把 raw idea 展开成 draft spec。
 - `workflows/domain-module-router.md`：根据 `domains/registry.yaml` 选择可插拔 module。
@@ -131,6 +135,7 @@ domains/d3a/module.yaml
 - `docs/adoption-guide.md`：其他团队复制 SOP 的指南。
 - `docs/token-budget-policy.md`：保密区 token / provider 限额策略。
 - `docs/source-attribution.md`：公开方法论来源和 license attribution。
+- `docs/atomic-skills.md`：可复用原子 skill 列表和边界。
 - `docs/architecture-diagram.md`：Core + Domain Module 架构图。
 - `docs/confidential-migration-checklist.md`：进入保密区前后的 checklist。
 - `docs/terminology.md`：中英文术语保留规则。
@@ -179,6 +184,7 @@ python3 tests/test_harness.py
 - Progressive Constraint Loading 三段约束文件必须存在。
 - E2E TR3 D3A demo 必须包含完整链路文件。
 - Human View 模板必须存在，避免把完整 YAML 直接作为用户主界面。
+- Atomic Skills 必须存在，并且 `id-workflow` 只做编排。
 - Discovery Provider 必须支持 Superpowers Brainstorming method，并且 TR3 默认跳过 Discovery。
 - Clarification Provider 必须支持 Grill Me method、frontier round 和 builtin fallback。
 - Requirement Assessor 能识别关键字段缺失。

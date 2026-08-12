@@ -401,6 +401,7 @@ def test_id_workflow_skill_exists_and_has_triggers():
     text = skill_path.read_text()
     assert_true("name: id-workflow" in text, "ID workflow skill 缺少 name。")
     assert_true("description:" in text, "ID workflow skill 缺少 description。")
+    assert_true("This is the orchestration skill" in text, "ID workflow 必须声明自己是编排 skill。")
     assert_true("Alignment Pack" in text, "ID workflow skill 必须支持 Alignment Pack。")
     assert_true("TR3" in text, "ID workflow skill 必须支持 TR3。")
     assert_true("500 LOC" in text, "ID workflow skill 必须声明 500 LOC 限制。")
@@ -411,6 +412,46 @@ def test_id_workflow_skill_exists_and_has_triggers():
     assert_true("grill-me-method" in text, "ID workflow skill 必须声明 Grill Me method。")
     assert_true("brainstorming-method" in text, "ID workflow skill 必须声明 Brainstorming method。")
     assert_true("human-views/brainstorming-view.md" in text, "ID workflow skill 必须加载 Brainstorming View。")
+    for skill_name in ["intent-discovery", "intent-grilling", "intent-alignment"]:
+        assert_true(f"skills/{skill_name}/SKILL.md" in text, f"ID workflow 必须编排 {skill_name}。")
+
+
+def test_atomic_pre_alignment_skills_exist_and_are_reusable():
+    expected = {
+        "intent-discovery": [
+            "name: intent-discovery",
+            "raw_idea",
+            "workflows/discovery-provider.md",
+            "human-views/brainstorming-view.md",
+            "Do not write implementation code.",
+        ],
+        "intent-grilling": [
+            "name: intent-grilling",
+            "frontier",
+            "workflows/clarification-provider.md",
+            "human-views/clarification-view.md",
+            "Do not decide Domain or Lane.",
+        ],
+        "intent-alignment": [
+            "name: intent-alignment",
+            "Alignment View",
+            "workflows/human-alignment.md",
+            "schemas/alignment-pack.schema.yaml",
+            "Do not show raw YAML as the primary user interface.",
+        ],
+    }
+    for skill_name, required_fragments in expected.items():
+        path = f"skills/{skill_name}/SKILL.md"
+        text = read_text(path)
+        assert_true("description:" in text, f"{skill_name} 缺少 description。")
+        assert_true("reusable outside D3A" in text, f"{skill_name} 必须声明可在 D3A 外复用。")
+        for fragment in required_fragments:
+            assert_true(fragment in text, f"{skill_name} 缺少关键片段：{fragment}")
+
+    atomic_doc = read_text("docs/atomic-skills.md")
+    for skill_name in expected:
+        assert_true(skill_name in atomic_doc, f"atomic-skills 文档缺少 {skill_name}。")
+    assert_true("D3A 是 Domain Module" in atomic_doc, "atomic-skills 文档必须说明 D3A 不是通用原子 skill。")
 
 
 def test_human_views_exist_and_hide_raw_yaml():
@@ -642,6 +683,7 @@ def run():
         test_e2e_tr3_d3a_demo_is_complete,
         test_adoption_and_deep_dive_docs_exist,
         test_id_workflow_skill_exists_and_has_triggers,
+        test_atomic_pre_alignment_skills_exist_and_are_reusable,
         test_human_views_exist_and_hide_raw_yaml,
         test_clarification_provider_uses_grill_me_method_with_fallback,
         test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea,
