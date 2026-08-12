@@ -1,0 +1,7 @@
+evidence:
+  id: general-unit-green
+  domain: UNIT
+  status: GREEN
+  command: <ENTERPRISE_UNIT_TEST_COMMAND>
+  summary: "Unit test passes for known and unknown dummy widget ids."
+  log_ref: <ENTERPRISE_PLACEHOLDER>

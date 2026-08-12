@@ -1,0 +1,11 @@
+# DOCS_CONFIG Knowledge Placeholder
+
+外部环境只保留 placeholder。
+
+进入保密区后填写：
+
+```text
+<ENTERPRISE_GENERAL_DOCS_RULES>
+<ENTERPRISE_GENERAL_CONFIG_RULES>
+<ENTERPRISE_GENERAL_BUILD_CONFIG_PATTERNS>
+```

@@ -1,0 +1,23 @@
+general_plan:
+  task_id: GENERAL-MOCK-001
+  selected_components: [APP_CODE, TEST_CODE]
+  required_test_domains: [UNIT]
+  dependency_notes:
+    - "APP_CODE behavior must be covered by UNIT test evidence."
+  execution_units:
+    - id: EU-GEN-001
+      component: APP_CODE
+      summary: "Implement dummy widget state query behavior."
+      max_change_loc: 500
+      required_evidence: [red, green]
+    - id: EU-GEN-002
+      component: TEST_CODE
+      summary: "Add unit test coverage for known and unknown dummy ids."
+      max_change_loc: 500
+      required_evidence: [red, green]
+  completion_gate:
+    required:
+      - task_contract_satisfied
+      - verification_contract_satisfied
+      - required_tests_or_builds_pass
+      - completion_summary_exists

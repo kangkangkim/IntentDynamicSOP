@@ -1,0 +1,27 @@
+alignment_pack:
+  task_id: GENERAL-MOCK-001
+  domain: general
+  lane: complex
+  task_understanding: "给 dummy widget 增加状态查询能力。"
+  required_contracts:
+    - task_contract
+    - verification_contract
+    - api_contract
+  scope_boundary:
+    in:
+      - "新增 dummy widget 状态查询 mock 行为。"
+      - "新增 unit test mock evidence。"
+    out:
+      - "不涉及 D3A Layer。"
+      - "不涉及真实企业 API。"
+  completion_gate:
+    required:
+      - task_contract_satisfied
+      - verification_contract_satisfied
+      - required_tests_or_builds_pass
+      - completion_summary_exists
+  human_alignment:
+    required: true
+    status: approved
+    reviewer_decision: approve
+    notes: []

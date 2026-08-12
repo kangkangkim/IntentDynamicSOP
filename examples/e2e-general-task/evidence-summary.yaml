@@ -1,0 +1,20 @@
+evidence_summary:
+  task_id: GENERAL-MOCK-001
+  domain: general
+  red_evidence:
+    - id: general-unit-red
+      status: RED
+      evidence_ref: examples/e2e-general-task/evidence/unit-red.yaml
+  green_evidence:
+    - id: general-unit-green
+      status: GREEN
+      evidence_ref: examples/e2e-general-task/evidence/unit-green.yaml
+  build_evidence:
+    - id: general-static-check-pass
+      status: PASS
+      evidence_ref: examples/e2e-general-task/evidence/static-check-pass.yaml
+  completion_gate:
+    task_contract_satisfied: true
+    verification_contract_satisfied: true
+    required_tests_or_builds_pass: true
+    completion_summary_exists: true

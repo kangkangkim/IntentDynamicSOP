@@ -1,0 +1,27 @@
+general_plan:
+  task_id: string
+  selected_components:
+    - APP_CODE | TEST_CODE | DOCS_CONFIG
+  required_test_domains:
+    - UNIT | INTEGRATION | STATIC_CHECK
+  dependency_notes: []
+  execution_units:
+    - id: string
+      component: APP_CODE | TEST_CODE | DOCS_CONFIG
+      summary: string
+      max_change_loc: 500
+      required_evidence:
+        - red | green | build | static_check | manual_inspection
+  completion_gate:
+    required:
+      - task_contract_satisfied
+      - verification_contract_satisfied
+      - required_tests_or_builds_pass
+      - completion_summary_exists
+
+rules:
+  - General plan must not reference D3A Layer registry.
+  - General plan must not reference DT Domain registry.
+  - API Contract is optional unless API or external behavior changes.
+  - Every execution unit max_change_loc must be 500.
+  - Completion requires tool evidence.

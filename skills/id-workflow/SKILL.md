@@ -126,6 +126,15 @@ workflows/d3a-workflow.md
 schemas/d3a-plan.schema.yaml
 ```
 
+If Domain = general, also read:
+
+```text
+domains/general/module.yaml
+workflows/general-coding.md
+schemas/general-plan.schema.yaml
+skills/general-coding/SKILL.md
+```
+
 If the user has approved the Alignment Pack, also read:
 
 ```text

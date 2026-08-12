@@ -1,0 +1,7 @@
+evidence:
+  id: general-static-check-pass
+  domain: STATIC_CHECK
+  status: PASS
+  command: <ENTERPRISE_STATIC_CHECK_COMMAND>
+  summary: "Static check passes for mock general coding task."
+  log_ref: <ENTERPRISE_PLACEHOLDER>

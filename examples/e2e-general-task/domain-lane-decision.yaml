@@ -1,0 +1,8 @@
+domain_lane_decision:
+  selected_domain: general
+  selected_lane: complex
+  reason:
+    - "不匹配 D3A trigger rules。"
+    - "包含 API / 外部行为语义变化。"
+  domain_module: domains/general/module.yaml
+  lane_file: lanes/complex.yaml

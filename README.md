@@ -130,6 +130,7 @@ domains/d3a/module.yaml
 - `workflows/execution-unit-policy.md`：每个阶段代码变更控制在 500 行以内。
 - `workflows/requirement-assessor.md`：需求清晰度判断规则。
 - `workflows/d3a-workflow.md`：D3A 固定骨架和动态规划点。
+- `workflows/general-coding.md`：General Coding active module 的最小闭环。
 - `workflows/tdd-state-machine.md`：RED / GREEN / completion gate。
 - `human-views/`：给用户看的中文 Brainstorming / Clarification / Alignment / Completion / Escalation 卡片模板。
 - `docs/domain-module-contract.md`：团队接入自己的 Domain Module 时遵循的契约。
@@ -141,6 +142,7 @@ domains/d3a/module.yaml
 - `docs/confidential-migration-checklist.md`：进入保密区前后的 checklist。
 - `docs/terminology.md`：中英文术语保留规则。
 - `domains/`：Domain Module 注册表、D3A module、团队模板 module。
+- `domains/general/module.yaml`：普通开发任务的 active Domain Module。
 - `constraints/`：decision / planning / execution 三段式约束。
 - `lanes/`：fast / lite / complex 三种执行强度定义。
 - `knowledge/`：D3A Layer 和 DT Domain 的保密区填充模板。
@@ -151,6 +153,7 @@ domains/d3a/module.yaml
 - `skills/id-workflow/`：本机 Claude Code / Codex 体验 ID workflow 的入口 skill。
 - `examples/mock-d3a-task/`：非敏感 mock walkthrough。
 - `examples/e2e-tr3-d3a/`：从 TR3 到 completion summary 的端到端 mock demo。
+- `examples/e2e-general-task/`：General Coding 端到端 mock demo。
 - `examples/tr3-fixtures.yaml`：TR3 输入分类样例。
 - `schemas/normalized-request.schema.yaml`：Input Adapter 的统一输出结构。
 - `schemas/alignment-pack.schema.yaml`：Human Alignment 使用的对齐包。
@@ -173,6 +176,7 @@ python3 tests/test_harness.py
 - Planner 不能产生 registry 外的 Layer / DT Domain。
 - Domain Module registry 指向的 module 文件必须存在。
 - Active module 必须声明 route、registries、workflow、knowledge、execution。
+- General module 必须 active，且不依赖 D3A Layer / DT Domain registry。
 - Lane registry 指向的 lane 文件必须存在。
 - 每个 Lane 都必须声明 completion requirements。
 - Lane Resolver fixture 必须稳定产出 fast / lite / complex。
@@ -185,6 +189,7 @@ python3 tests/test_harness.py
 - Token Budget Policy 必须存在。
 - Progressive Constraint Loading 三段约束文件必须存在。
 - E2E TR3 D3A demo 必须包含完整链路文件。
+- E2E General Coding demo 必须包含完整链路文件。
 - Human View 模板必须存在，避免把完整 YAML 直接作为用户主界面。
 - Atomic Skills 必须存在，并且 `id-workflow` 只做编排。
 - Discovery Provider 必须以 Superpowers Brainstorming 为 baseline，并且 TR3 默认跳过 Discovery。

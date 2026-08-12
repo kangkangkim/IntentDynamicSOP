@@ -6,6 +6,8 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 LAYER_REGISTRY = {"TRAN_CFG", "DO", "VISP_ADP", "TFC_TFI", "TFE", "ADP", "DRV"}
 DT_REGISTRY = {"TPRINT", "FW", "DPF"}
+GENERAL_COMPONENT_REGISTRY = {"APP_CODE", "TEST_CODE", "DOCS_CONFIG"}
+GENERAL_TEST_REGISTRY = {"UNIT", "INTEGRATION", "STATIC_CHECK"}
 PLACEHOLDER_PATTERNS = [
     "<ENTERPRISE_PLACEHOLDER>",
     "<ENTERPRISE_API_CONTRACT>",
@@ -170,13 +172,19 @@ def assert_true(condition, message):
 def test_registry_files_match_fixed_architecture():
     layers = extract_registry_ids("registries/d3a-layers.yaml")
     domains = extract_registry_ids("registries/dt-domains.yaml")
+    general_components = extract_registry_ids("registries/general-components.yaml")
+    general_tests = extract_registry_ids("registries/general-test-domains.yaml")
     assert_true(layers == LAYER_REGISTRY, "D3A layer registry 发生漂移。")
     assert_true(domains == DT_REGISTRY, "DT domain registry 发生漂移。")
+    assert_true(general_components == GENERAL_COMPONENT_REGISTRY, "General component registry 发生漂移。")
+    assert_true(general_tests == GENERAL_TEST_REGISTRY, "General test registry 发生漂移。")
 
 
 def test_registry_knowledge_templates_exist():
     files = extract_registry_knowledge_files("registries/d3a-layers.yaml")
     files += extract_registry_knowledge_files("registries/dt-domains.yaml")
+    files += extract_registry_knowledge_files("registries/general-components.yaml")
+    files += extract_registry_knowledge_files("registries/general-test-domains.yaml")
     for file_name in files:
         path = ROOT / file_name
         assert_true(path.exists(), f"Registry 指向的 knowledge 模板不存在：{file_name}")
@@ -186,6 +194,7 @@ def test_registry_knowledge_templates_exist():
 def test_domain_module_registry_files_exist():
     module_ids = extract_domain_module_ids()
     assert_true("d3a" in module_ids, "Domain Module registry 缺少 d3a module。")
+    assert_true("general" in module_ids, "Domain Module registry 缺少 general module。")
     for module_file in extract_domain_module_files():
         assert_true((ROOT / module_file).exists(), f"Domain Module 文件不存在：{module_file}")
 
@@ -205,6 +214,29 @@ def test_active_domain_module_declares_required_contract():
 def test_active_domain_module_asset_paths_exist():
     for asset_path in extract_module_asset_paths("domains/d3a/module.yaml"):
         assert_true((ROOT / asset_path).exists(), f"d3a module 引用的资产不存在：{asset_path}")
+    for asset_path in extract_module_asset_paths("domains/general/module.yaml"):
+        assert_true((ROOT / asset_path).exists(), f"general module 引用的资产不存在：{asset_path}")
+
+
+def test_general_domain_module_is_active_and_self_closing():
+    module = read_text("domains/general/module.yaml")
+    workflow = read_text("workflows/general-coding.md")
+    plan_schema = read_text("schemas/general-plan.schema.yaml")
+    skill = read_text("skills/general-coding/SKILL.md")
+
+    assert_true("id: general" in module, "general module id 不正确。")
+    assert_true("status: active" in module, "general module 必须 active。")
+    assert_true("route_id: GENERAL_CODING" in module, "general module route 不正确。")
+    assert_true("registries/general-components.yaml" in module, "general module 必须使用 general component registry。")
+    assert_true("registries/general-test-domains.yaml" in module, "general module 必须使用 general test registry。")
+    assert_true("required_tests_or_builds_pass" in module, "general completion gate 必须基于测试或 build evidence。")
+    assert_true("- task_contract" in module, "general module 必须要求 task_contract。")
+    assert_true("- verification_contract" in module, "general module 必须要求 verification_contract。")
+    assert_true("API Contract 不是所有 General Coding 都必须要" in workflow, "general workflow 必须说明 API Contract 非全局强制。")
+    assert_true("不使用 D3A Layer / DT Domain registry" in workflow, "general workflow 不能依赖 D3A registry。")
+    assert_true("max_change_loc: 500" in plan_schema, "general plan 必须声明 500 LOC。")
+    assert_true("General plan must not reference D3A Layer registry." in plan_schema, "general plan 必须禁止 D3A Layer registry。")
+    assert_true("Do not use D3A Layer or DT Domain registries." in skill, "general skill 必须禁止 D3A registry。")
 
 
 def test_lane_registry_files_exist():
@@ -409,6 +441,38 @@ def test_e2e_tr3_d3a_demo_is_complete():
     assert_true("DONE" in completion, "E2E demo 必须包含 completion summary。")
 
 
+def test_e2e_general_demo_is_complete():
+    required_files = [
+        "examples/e2e-general-task/input.md",
+        "examples/e2e-general-task/normalized-request.yaml",
+        "examples/e2e-general-task/domain-lane-decision.yaml",
+        "examples/e2e-general-task/alignment-pack.yaml",
+        "examples/e2e-general-task/general-plan.yaml",
+        "examples/e2e-general-task/evidence-summary.yaml",
+        "examples/e2e-general-task/evidence/unit-red.yaml",
+        "examples/e2e-general-task/evidence/unit-green.yaml",
+        "examples/e2e-general-task/evidence/static-check-pass.yaml",
+        "examples/e2e-general-task/completion-summary.md",
+    ]
+    for file_name in required_files:
+        assert_true((ROOT / file_name).exists(), f"General E2E demo 缺少文件：{file_name}")
+
+    normalized = read_text("examples/e2e-general-task/normalized-request.yaml")
+    decision = read_text("examples/e2e-general-task/domain-lane-decision.yaml")
+    plan = read_text("examples/e2e-general-task/general-plan.yaml")
+    evidence = read_text("examples/e2e-general-task/evidence-summary.yaml")
+    completion = read_text("examples/e2e-general-task/completion-summary.md")
+
+    assert_true("domain_candidates: [general]" in normalized, "General E2E demo 必须选择 general candidate。")
+    assert_true("selected_domain: general" in decision, "General E2E demo 必须选择 general domain。")
+    assert_true("selected_components: [APP_CODE, TEST_CODE]" in plan, "General E2E demo 必须选择 general components。")
+    assert_true("required_test_domains: [UNIT]" in plan, "General E2E demo 必须选择 UNIT test domain。")
+    assert_true("max_change_loc: 500" in plan, "General E2E execution unit 必须声明 500 LOC。")
+    assert_true("general-unit-red" in evidence, "General E2E demo 必须包含 RED evidence。")
+    assert_true("general-unit-green" in evidence, "General E2E demo 必须包含 GREEN evidence。")
+    assert_true("DONE" in completion, "General E2E demo 必须包含 completion summary。")
+
+
 def test_adoption_and_deep_dive_docs_exist():
     assert_true((ROOT / "docs/adoption-guide.md").exists(), "缺少 adoption guide。")
     for file_name in [
@@ -429,6 +493,8 @@ def test_id_workflow_skill_exists_and_has_triggers():
     assert_true("This is the orchestration skill" in text, "ID workflow 必须声明自己是编排 skill。")
     assert_true("Alignment Pack" in text, "ID workflow skill 必须支持 Alignment Pack。")
     assert_true("TR3" in text, "ID workflow skill 必须支持 TR3。")
+    assert_true("Domain = general" in text, "ID workflow skill 必须支持 general domain。")
+    assert_true("domains/general/module.yaml" in text, "ID workflow skill 必须加载 general module。")
     assert_true("500 LOC" in text, "ID workflow skill 必须声明 500 LOC 限制。")
     assert_true("Human Alignment approval" in text, "ID workflow skill 必须要求 Human Alignment approval。")
     assert_true("Human View" in text, "ID workflow skill 必须声明用户可读视图。")
@@ -703,6 +769,7 @@ def run():
         test_domain_module_registry_files_exist,
         test_active_domain_module_declares_required_contract,
         test_active_domain_module_asset_paths_exist,
+        test_general_domain_module_is_active_and_self_closing,
         test_lane_registry_files_exist,
         test_every_lane_is_self_closing,
         test_lane_resolver_fixtures_are_stable,
@@ -713,6 +780,7 @@ def run():
         test_provider_selection_matrix_is_anchor_aware_and_okl_query_bounded,
         test_progressive_constraint_loading_files_exist,
         test_e2e_tr3_d3a_demo_is_complete,
+        test_e2e_general_demo_is_complete,
         test_adoption_and_deep_dive_docs_exist,
         test_id_workflow_skill_exists_and_has_triggers,
         test_atomic_pre_alignment_skills_exist_and_are_reusable,

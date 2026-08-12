@@ -1,21 +1,87 @@
 # General Coding Workflow
 
-General Coding 用于已知 domain workflow 之外的普通 coding 任务。
+General Coding 用于已注册专用 domain module 之外的普通 coding 任务。
 
-V0 只定义未来 assessment 维度：
+它是 active Domain Module：
 
-- Complexity。
-- Uncertainty。
-- Risk。
-- Testability。
+```text
+domains/general/module.yaml
+```
 
-未来 Dynamic Workflow Composer 可以选择：
+## 流程
 
-- 澄清深度。
-- Specification 深度。
-- TDD 深度。
-- Context strategy。
-- Subagent strategy。
-- Review 和 verification 深度。
+```text
+Input Adapter
+  -> Intent Maturity Router
+  -> intent-discovery if raw_idea
+  -> intent-grilling if needed
+  -> Domain Module Router selects general
+  -> Lane Resolver
+  -> Contract Gate
+  -> intent-alignment
+  -> General Plan
+  -> Knowledge Gate
+  -> Execution Unit <= 500 LOC
+  -> TDD / Verification
+  -> Completion Gate
+```
 
-V0 暂不实现 General Coding 的完整 workflow。
+## Component Registry
+
+General Coding 不使用 D3A Layer registry。
+
+它使用：
+
+```text
+registries/general-components.yaml
+```
+
+V0 components：
+
+```text
+APP_CODE
+TEST_CODE
+DOCS_CONFIG
+```
+
+## Test Domain Registry
+
+General Coding 不使用 D3A DT Domain registry。
+
+它使用：
+
+```text
+registries/general-test-domains.yaml
+```
+
+V0 test domains：
+
+```text
+UNIT
+INTEGRATION
+STATIC_CHECK
+```
+
+## Completion Gate
+
+General completion 要求：
+
+- task contract satisfied。
+- verification contract satisfied。
+- required tests or builds PASS。
+- completion summary exists。
+- evidence_ref exists。
+
+## API Contract
+
+API Contract 不是所有 General Coding 都必须要。
+
+只有当任务涉及 API、外部行为、数据结构、错误语义或兼容性时才要求。
+
+## 规则
+
+- 不使用 D3A Layer / DT Domain registry。
+- 每个 execution unit 代码变更 `<= 500 LOC`。
+- 如果 verification contract 要求测试，必须先 RED 再 GREEN。
+- Completion 必须基于工具 evidence。
+- 外部环境只能使用 placeholder 命令和路径。

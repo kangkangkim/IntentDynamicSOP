@@ -1,0 +1,31 @@
+normalized_request:
+  input_type: natural_language_intent
+  input_maturity: structured_requirement
+  source_ref: examples/e2e-general-task/input.md
+  extracted_requirement: "给 dummy widget 增加状态查询能力。"
+  extracted_api_semantics: "已知 dummy id 返回状态；未知 dummy id 返回 DUMMY_NOT_FOUND。"
+  extracted_dt_design: ""
+  extracted_acceptance:
+    - "已知 dummy id 返回 READY / BLOCKED / UNKNOWN。"
+    - "未知 dummy id 返回 DUMMY_NOT_FOUND。"
+  explicit_domain_hints:
+    - general
+  open_questions: []
+
+classification:
+  domain_candidates: [general]
+  change_type: new_capability
+  change_shape: single_unit_change
+  lane_signals:
+    critical_ambiguity: false
+    high_risk: false
+    cross_module_or_layer_impact: false
+    api_semantic_change: true
+    state_machine_or_concurrency_or_security_or_performance: false
+    data_migration: false
+    needs_dependency_dag: false
+    needs_multiple_subagents: false
+    multiple_test_domains: false
+    high_failure_impact: false
+  missing_information: []
+  next_pre_alignment_step: Clarification Provider
