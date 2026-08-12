@@ -119,7 +119,8 @@ domains/d3a/module.yaml
 - `workflows/discovery-provider.md`：吸收 Superpowers Brainstorming 方法论，把 raw idea 展开成 draft spec。
 - `workflows/domain-module-router.md`：根据 `domains/registry.yaml` 选择可插拔 module。
 - `workflows/progressive-constraint-loading.md`：三段式约束加载。
-- `workflows/repo-context-providers.md`：grep / CodeGraph / OKL 统一 provider contract。
+- `workflows/provider-selection-matrix.md`：根据 anchor / domain / lane 选择 grep、CodeGraph、okl-query。
+- `workflows/repo-context-providers.md`：grep / CodeGraph / okl-query 统一 provider contract。
 - `workflows/lane-resolver.md`：用 hard trigger / Fast 准入 / 默认 Lite 判断执行强度。
 - `workflows/lane-completion.md`：定义每个 Lane 的最小自闭环要求。
 - `workflows/contract-gate.md`：根据 Domain + Lane 决定 contract set。
@@ -155,7 +156,7 @@ domains/d3a/module.yaml
 - `schemas/alignment-pack.schema.yaml`：Human Alignment 使用的对齐包。
 - `schemas/escalation-policy.schema.yaml`：异常回流规则。
 - `schemas/execution-unit.schema.yaml`：Execution Unit 和 500 行拆分规则。
-- `schemas/repo-context-provider.schema.yaml`：grep / CodeGraph / OKL provider 统一接口。
+- `schemas/repo-context-provider.schema.yaml`：grep / CodeGraph / okl-query provider 统一接口。
 - `tests/test_harness.py`：harness 自检。
 
 ## 验证方式
@@ -180,6 +181,7 @@ python3 tests/test_harness.py
 - Escalation Policy schema 必须存在。
 - 每个 execution unit 的 max_change_loc 必须是 500。
 - Repo Context Provider 必须限制 max_results / max_snippet_chars，并要求 evidence_ref。
+- Provider Selection Matrix 必须明确有锚点 grep first、无锚点但有领域语义 okl-query first。
 - Token Budget Policy 必须存在。
 - Progressive Constraint Loading 三段约束文件必须存在。
 - E2E TR3 D3A demo 必须包含完整链路文件。

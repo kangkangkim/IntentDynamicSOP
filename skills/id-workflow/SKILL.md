@@ -139,6 +139,7 @@ schemas/escalation-policy.schema.yaml
 For repo context work, read:
 
 ```text
+workflows/provider-selection-matrix.md
 workflows/repo-context-providers.md
 schemas/repo-context-provider.schema.yaml
 docs/token-budget-policy.md

@@ -7,7 +7,7 @@ Repo Context Providers 的目标是用较少 token 找到足够的仓库事实�
 ```text
 grep      -> 文本事实
 CodeGraph -> 结构事实
-OKL       -> 知识文档事实
+okl-query -> OKL / LLM Wiki 知识文档事实
 ```
 
 这些事实会进入 Context Packet，帮助 Agent 执行，但不能直接作为 DONE evidence。
@@ -29,6 +29,22 @@ Runtime Tool Evidence:
 执行约束：User-approved Alignment + Repo-native Rules + Domain Rules
 定位事实：Dynamic Repo Facts
 知识参考：OKL / Static Knowledge
+```
+
+## Provider 顺序
+
+详见：
+
+```text
+workflows/provider-selection-matrix.md
+```
+
+核心规则：
+
+```text
+有代码锚点：先 bounded grep
+无代码锚点但有领域语义：先 okl-query
+既无锚点也无领域语义：先 Discovery / Grilling
 ```
 
 ## Token 控制

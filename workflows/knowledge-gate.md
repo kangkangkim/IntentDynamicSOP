@@ -12,12 +12,18 @@ Knowledge Gate 的职责是：只加载当前 execution unit 需要的知识。
 
 动态 repository context：
 
-- Grep。
+- grep。
 - CodeGraph。
-- Wiki。
+- okl-query。
 - Repository search。
 
 V0 不实现真实 CodeGraph 或 Wiki，只定义接口和 placeholder。
+
+Provider 选择顺序必须遵守：
+
+```text
+workflows/provider-selection-matrix.md
+```
 
 ## 核心规则
 
@@ -35,9 +41,26 @@ V0 不实现真实 CodeGraph 或 Wiki，只定义接口和 placeholder。
 
 ```yaml
 context_provider_result:
-  provider: grep | codegraph | wiki | repo_search
+  provider: grep | codegraph | okl | repo_search
   query: string
   status: SUCCESS | EMPTY | ERROR | PLACEHOLDER
   evidence: []
   notes: []
 ```
+
+## OKL 约束
+
+OKL 本质是 LLM Wiki。
+
+保密区入口基本是：
+
+```text
+okl-query
+```
+
+Knowledge Gate 不设计 OKL 本体，只约束：
+
+- 什么时候调用 `okl-query`。
+- query 问多窄。
+- 返回内容如何摘要。
+- refs 如何进入 Context Packet。

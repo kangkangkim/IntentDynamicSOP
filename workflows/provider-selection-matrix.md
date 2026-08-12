@@ -1,0 +1,114 @@
+# Provider Selection Matrix
+
+Provider Selection Matrix 决定 Knowledge Gate 什么时候用 `grep`、`CodeGraph`、`okl-query`。
+
+目标是减少保密区 token 消耗。
+
+## 输入信号
+
+```yaml
+provider_selection_input:
+  selected_lane: fast | lite | complex
+  anchor_known: true | false
+  domain_known: true | false
+  query_intent: find_symbols | find_callers | find_callees | find_similar_impl | find_tests | find_docs | find_build_errors
+  impact_unclear: true | false
+  rule_or_history_unclear: true | false
+```
+
+## Provider 顺序
+
+### anchor_known = true
+
+已经有明确代码锚点，例如 symbol、error string、file path、config key。
+
+```text
+bounded grep
+  -> targeted CodeGraph if impact_unclear
+  -> okl-query only if rule_or_history_unclear
+```
+
+### anchor_known = false and domain_known = true
+
+没有明确代码锚点，但已有领域语义、Layer、DT domain、TR3 主题或内部概念。
+
+```text
+okl-query
+  -> bounded grep using keywords / refs from OKL
+  -> targeted CodeGraph if impact_unclear
+```
+
+### anchor_known = false and domain_known = false
+
+既没有代码锚点，也没有稳定领域语义。
+
+```text
+intent-discovery / intent-grilling
+  -> okl-query only if domain hints are needed
+  -> bounded grep
+```
+
+## Lane Budgets
+
+| Lane | okl-query | grep | CodeGraph |
+|---|---:|---:|---:|
+| fast | 0 by default, max 1 if no anchor and domain_known | max 2 queries, max 5 results/query, snippet 0 by default | off by default |
+| lite | max 1 query if no anchor or rule/history unclear | max 5 queries, max 8 results/query, snippet <= 3 lines | only if impact_unclear |
+| complex | per execution unit / layer packet | per execution unit / layer packet | per execution unit / layer packet |
+
+## okl-query Adapter Rules
+
+OKL 是已有 LLM Wiki 能力，保密区入口基本是：
+
+```text
+okl-query
+```
+
+IDC 不设计 OKL 本体，只约束如何使用 `okl-query`。
+
+`okl-query` 请求必须：
+
+- 只问当前 execution unit 或当前 Layer。
+- 明确要求返回 summary / refs / keywords。
+- 不要求长文全文。
+- 不要求生成实现方案。
+- 不要求判断 DONE。
+
+建议 query 形状：
+
+```text
+For <task/layer>, return only:
+1. relevant internal concept refs
+2. likely code keywords or file families
+3. constraints or historical rules
+4. no full document text
+```
+
+## 输出要求
+
+Provider 结果统一进入 Context Packet：
+
+```yaml
+provider_selection_result:
+  selected_order:
+    - okl-query
+    - grep
+  budget:
+    max_okl_queries: 1
+    max_grep_queries: 5
+    max_results_per_query: 8
+    max_snippet_lines: 3
+  findings_summary:
+    - provider: okl
+      summary: "<summary>"
+      evidence_ref: "<okl_ref>"
+```
+
+## 禁止
+
+- 全仓无边界 grep。
+- 把 grep 原始长输出塞进上下文。
+- 把 OKL 全文塞进上下文。
+- 把 OKL 当作 test/build evidence。
+- 用 OKL 覆盖代码事实。
+- 在 fast lane 默认调用 CodeGraph。

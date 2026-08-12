@@ -3,6 +3,8 @@ repo_context_request:
   execution_unit_id: string
   selected_domain: string
   selected_lane: fast | lite | complex
+  anchor_known: boolean
+  domain_known: boolean
   query_intents:
     - find_symbols
     - find_callers
@@ -17,6 +19,9 @@ repo_context_request:
     impacted_layers: []
     max_results: 10
     max_snippet_chars: 800
+    max_okl_queries: 1
+    max_grep_queries: 5
+    max_snippet_lines: 3
     summary_required: true
     evidence_ref_required: true
 
@@ -36,10 +41,15 @@ rules:
   - Repo Context Provider 只提供当前仓库事实和知识线索，不决定 DONE。
   - grep 负责文本事实。
   - CodeGraph 负责结构事实。
-  - OKL 负责内部知识文档事实。
+  - OKL 本质是 LLM Wiki，入口按 okl-query 适配。
+  - 有明确代码锚点时先 bounded grep。
+  - 没有代码锚点但有领域语义时先 okl-query，再 bounded grep。
+  - okl-query 只能请求 summary / refs / keywords，不能请求全文。
   - provider result 必须带 evidence_ref。
   - provider result 必须摘要化，不能把长文全文塞进上下文。
   - 默认 max_results 不超过 10。
   - 默认 max_snippet_chars 不超过 800。
+  - fast 默认 max_grep_queries 不超过 2。
+  - fast 默认 max_okl_queries 为 0；no anchor + domain known 时最多 1。
   - 查询必须受 allowed_paths / impacted_layers 约束。
   - OKL 文档不能替代 test/build evidence。

@@ -330,9 +330,32 @@ def test_repo_context_provider_contract_is_token_bounded():
     assert_true("max_snippet_chars: 800" in schema, "Repo Context Provider 必须默认 max_snippet_chars: 800。")
     assert_true("evidence_ref_required: true" in schema, "Repo Context Provider 必须要求 evidence_ref。")
     assert_true("OKL 文档不能替代 test/build evidence" in schema, "OKL 不能替代工具 evidence。")
-    assert_true("grep / CodeGraph / OKL" in workflow, "Provider workflow 必须说明 grep / CodeGraph / OKL。")
+    assert_true("grep / CodeGraph / okl-query" in workflow, "Provider workflow 必须说明 grep / CodeGraph / okl-query。")
+    assert_true("max_okl_queries: 1" in schema, "Repo Context Provider 必须限制 okl-query 次数。")
+    assert_true("max_grep_queries: 5" in schema, "Repo Context Provider 必须限制 grep query 次数。")
+    assert_true("summary / refs / keywords" in schema, "okl-query 必须只请求摘要、引用和关键词。")
     assert_true("fast: 2k - 6k" in token_policy, "Token Budget Policy 必须声明 fast 预算。")
     assert_true("complex: 分阶段" in token_policy, "Token Budget Policy 必须声明 complex 分阶段预算。")
+
+
+def test_provider_selection_matrix_is_anchor_aware_and_okl_query_bounded():
+    matrix = read_text("workflows/provider-selection-matrix.md")
+    knowledge_gate = read_text("workflows/knowledge-gate.md")
+    token_policy = read_text("docs/token-budget-policy.md")
+    id_workflow = read_text("skills/id-workflow/SKILL.md")
+
+    assert_true("anchor_known = true" in matrix, "Provider matrix 必须覆盖 anchor known。")
+    assert_true("bounded grep" in matrix, "Provider matrix 必须要求 bounded grep。")
+    assert_true("anchor_known = false and domain_known = true" in matrix, "Provider matrix 必须覆盖无锚点但有领域语义。")
+    assert_true("okl-query" in matrix, "Provider matrix 必须使用 okl-query。")
+    assert_true("summary / refs / keywords" in matrix, "okl-query 必须只返回摘要、引用和关键词。")
+    assert_true("max 2 queries" in matrix, "fast lane 必须限制 grep query。")
+    assert_true("max 1" in matrix, "matrix 必须限制 okl-query 次数。")
+    assert_true("用 OKL 覆盖代码事实" in matrix, "matrix 必须禁止 OKL 覆盖代码事实。")
+    assert_true("workflows/provider-selection-matrix.md" in knowledge_gate, "Knowledge Gate 必须引用 provider matrix。")
+    assert_true("OKL 本质是 LLM Wiki" in knowledge_gate, "Knowledge Gate 必须说明 OKL 本质。")
+    assert_true("okl-query" in token_policy, "Token policy 必须包含 okl-query。")
+    assert_true("workflows/provider-selection-matrix.md" in id_workflow, "id-workflow 必须加载 provider matrix。")
 
 
 def test_progressive_constraint_loading_files_exist():
@@ -679,6 +702,7 @@ def run():
         test_alignment_and_escalation_contracts_exist,
         test_execution_unit_loc_limit_is_enforced,
         test_repo_context_provider_contract_is_token_bounded,
+        test_provider_selection_matrix_is_anchor_aware_and_okl_query_bounded,
         test_progressive_constraint_loading_files_exist,
         test_e2e_tr3_d3a_demo_is_complete,
         test_adoption_and_deep_dive_docs_exist,
