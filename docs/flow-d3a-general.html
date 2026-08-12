@@ -126,6 +126,13 @@
     .dot-auto { background: var(--auto); }
     .dot-knowledge { background: var(--knowledge); }
 
+    .architecture {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 12px;
+      align-items: start;
+    }
+
     .stack {
       display: grid;
       gap: 12px;
@@ -215,6 +222,34 @@
     .knowledge-card {
       border-color: #d7dce4;
       background: var(--knowledge-soft);
+    }
+
+    .knowledge-spine {
+      position: sticky;
+      top: 16px;
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--knowledge-soft);
+    }
+
+    .knowledge-spine h2 {
+      color: var(--ink);
+    }
+
+    .spine-item {
+      padding: 10px;
+      border: 1px solid #d7dce4;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .spine-item strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 13px;
     }
 
     .danger-card {
@@ -328,6 +363,7 @@
       }
 
       .page-head,
+      .architecture,
       .layer,
       .cards,
       .cards.two,
@@ -365,67 +401,76 @@
       </div>
     </header>
 
-    <section class="stack">
-      <section class="layer">
-        <aside class="rail">
-          <strong>1. 用户输入层</strong>
-          <span>决定从哪里进入 workflow</span>
-        </aside>
-        <div class="content">
-          <div class="cards three">
-            <article class="card">
-              <h3>一句话 / raw idea</h3>
-              <p>先进入 Brainstorming View，把模糊想法扩成 draft spec。</p>
-            </article>
-            <article class="card">
-              <h3>普通需求</h3>
-              <p>直接进入 Grill Me 收敛，补齐目标、范围、验收和风险。</p>
-            </article>
-            <article class="card">
-              <h3>TR3 / 设计文档</h3>
-              <p>抽取需求、DT 设计、约束、接口和未知项，再追问冲突。</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <div class="connector">↓</div>
-
-      <section class="layer">
-        <aside class="rail">
-          <strong>2. 意图对齐层</strong>
-          <span>先问清楚，再允许写代码</span>
-        </aside>
-        <div class="content">
-          <div class="cards four">
-            <article class="card human-card">
-              <h3>intent-discovery</h3>
-              <p>raw idea 使用原版 Brainstorming 思路，并加 IDC overlay 做交接。</p>
-            </article>
-            <article class="card human-card">
-              <h3>intent-grilling</h3>
-              <p>Grill Me 风格追问关键缺口，尤其是验收、边界和风险。</p>
-            </article>
-            <article class="card human-card">
-              <h3>Requirement Assessor</h3>
-              <p>判断信息是否足够进入 Domain / Lane / Contract。</p>
-            </article>
-            <article class="card human-card">
-              <h3>Alignment View</h3>
-              <p>用户确认目标、范围、非目标、完成标准和升级条件。</p>
+    <section class="architecture">
+      <section class="stack">
+        <section class="layer">
+          <aside class="rail">
+            <strong>1. 用户输入层</strong>
+            <span>决定从哪里进入 workflow</span>
+          </aside>
+          <div class="content">
+            <div class="cards three">
+              <article class="card">
+                <h3>一句话 / raw idea</h3>
+                <p>先进入 Brainstorming View，把模糊想法扩成 draft spec。</p>
+              </article>
+              <article class="card">
+                <h3>普通需求</h3>
+                <p>直接进入 Grill Me 收敛，补齐目标、范围、验收和风险。</p>
+              </article>
+              <article class="card">
+                <h3>TR3 / 设计文档</h3>
+                <p>抽取需求、DT 设计、约束、接口和未知项，再追问冲突。</p>
+              </article>
+            </div>
+            <article class="card knowledge-card">
+              <h3>本层可能加载的知识</h3>
+              <p>OKL 用于理解术语、业务背景和历史规则；如果输入自带文件名、接口名、错误日志，则用 bounded grep 建立代码 anchor。</p>
             </article>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <div class="connector">↓</div>
+        <div class="connector">↓</div>
 
-      <section class="layer">
+        <section class="layer">
+          <aside class="rail">
+            <strong>2. 意图对齐层</strong>
+            <span>先问清楚，再允许写代码</span>
+          </aside>
+          <div class="content">
+            <div class="cards four">
+              <article class="card human-card">
+                <h3>intent-discovery</h3>
+                <p>raw idea 使用原版 Brainstorming 思路，并加 IDC overlay 做交接。</p>
+              </article>
+              <article class="card human-card">
+                <h3>intent-grilling</h3>
+                <p>Grill Me 风格追问关键缺口，尤其是验收、边界和风险。</p>
+              </article>
+              <article class="card human-card">
+                <h3>Requirement Assessor</h3>
+                <p>判断信息是否足够进入 Domain / Lane / Contract。</p>
+              </article>
+              <article class="card human-card">
+                <h3>Alignment View</h3>
+                <p>用户确认目标、范围、非目标、完成标准和升级条件。</p>
+              </article>
+            </div>
+            <article class="card knowledge-card">
+              <h3>本层可能加载的知识</h3>
+              <p>Brainstorming / 澄清会查 OKL、repo rules、已有设计摘要和少量代码 anchor，目的只是帮助问对问题，不作为完成证据。</p>
+            </article>
+          </div>
+        </section>
+
+        <div class="connector">↓</div>
+
+        <section class="layer">
         <aside class="rail">
           <strong>3. Domain 分流层</strong>
           <span>D3A 与 General 在这里分开</span>
         </aside>
-        <div class="content">
+          <div class="content">
           <div class="lane-split">
             <section class="lane">
               <div class="lane-head d3a-head">
@@ -501,12 +546,16 @@
               </div>
             </section>
           </div>
+          <article class="card knowledge-card">
+            <h3>本层可能加载的知识</h3>
+            <p>Domain 分流会读取 domain module、registries、AGENTS.md / repo rules；有真实代码 anchor 时才用 grep 或 targeted CodeGraph 校验影响面。</p>
+          </article>
         </div>
       </section>
 
-      <div class="connector">↓</div>
+        <div class="connector">↓</div>
 
-      <section class="layer">
+        <section class="layer">
         <aside class="rail">
           <strong>4. 执行编排层</strong>
           <span>approve 后进入自动计划与实现</span>
@@ -530,6 +579,10 @@
               <p>范围变化、证据不可得、contract 冲突时回到人工确认。</p>
             </article>
           </div>
+          <article class="card knowledge-card">
+            <h3>本层可能加载的知识</h3>
+            <p>执行时按 packet 渐进加载约束、邻近代码、调用关系、测试入口；避免一次性加载全仓或长日志。</p>
+          </article>
         </div>
       </section>
 
@@ -537,32 +590,7 @@
 
       <section class="layer">
         <aside class="rail">
-          <strong>5. 知识检索层</strong>
-          <span>给执行层供给最小必要上下文</span>
-        </aside>
-        <div class="content">
-          <div class="io-row">
-            <article class="card knowledge-card">
-              <h3>有代码 anchor</h3>
-              <p>bounded grep -> targeted CodeGraph? -> OKL?</p>
-            </article>
-            <div class="arrow">→</div>
-            <article class="card knowledge-card">
-              <h3>无 anchor，有 domain</h3>
-              <p>OKL -> bounded grep -> targeted CodeGraph?</p>
-            </article>
-          </div>
-          <p class="note">
-            OKL 是 LLM Wiki，适合拿背景、规则、历史和关键词；grep 负责代码事实定位；targeted CodeGraph 负责调用关系和影响面。OKL 不能覆盖代码事实，最终完成必须看工具证据。
-          </p>
-        </div>
-      </section>
-
-      <div class="connector">↓</div>
-
-      <section class="layer">
-        <aside class="rail">
-          <strong>6. 证据闭环层</strong>
+          <strong>5. 证据闭环层</strong>
           <span>完成只能由 evidence 决定</span>
         </aside>
         <div class="content">
@@ -584,8 +612,41 @@
               <p>缺工具证据、缺 contract 或 scope 改变时必须升级，不靠自信收尾。</p>
             </article>
           </div>
+          <article class="card knowledge-card">
+            <h3>本层可能加载的知识</h3>
+            <p>验证阶段可以加载测试规则、build 约束和失败摘要；OKL 只能解释背景，不能替代 test / build / static check evidence。</p>
+          </article>
         </div>
       </section>
+      </section>
+
+      <aside class="knowledge-spine" aria-label="贯穿式知识检索层">
+        <h2>贯穿式知识检索层</h2>
+        <p>知识不是只在执行阶段加载，而是按阶段、按目的、按最小必要范围加载。</p>
+        <div class="spine-item">
+          <strong>Brainstorming</strong>
+          <p>OKL / 设计摘要帮助扩展可能方案和识别术语。</p>
+        </div>
+        <div class="spine-item">
+          <strong>澄清 / Grill Me</strong>
+          <p>OKL、repo rules、已知 anchor 帮助提出关键问题。</p>
+        </div>
+        <div class="spine-item">
+          <strong>Alignment View</strong>
+          <p>加载 contract、约束、风险和证据要求，给用户确认。</p>
+        </div>
+        <div class="spine-item">
+          <strong>Domain / Lane</strong>
+          <p>加载 D3A / General module、registry、lane policy。</p>
+        </div>
+        <div class="spine-item">
+          <strong>执行 / 验证</strong>
+          <p>bounded grep 定位事实，targeted CodeGraph 看影响，OKL 查背景；最终以工具证据收尾。</p>
+        </div>
+        <p class="note">
+          Provider 顺序：有 anchor 先 bounded grep；无 anchor 但有 domain 先 OKL；影响面不清楚再 targeted CodeGraph。
+        </p>
+      </aside>
     </section>
   </main>
 </body>
