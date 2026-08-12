@@ -42,6 +42,28 @@ Automated Closure Loop
   -> DONE / Targeted Fix / Re-plan
 ```
 
+## Human View vs Machine Contract
+
+Do not show users raw YAML as the primary interface.
+
+Use Human View for interaction:
+
+```text
+human-views/alignment-view.md
+human-views/completion-view.md
+human-views/escalation-view.md
+```
+
+Keep Machine Contract internally:
+
+```text
+schemas/alignment-pack.schema.yaml
+schemas/escalation-policy.schema.yaml
+schemas/verification-contract.schema.yaml
+```
+
+Default user-facing output before approval is Alignment View, not raw `alignment-pack.yaml`.
+
 ## Load only what is needed
 
 Read these files first:
@@ -53,6 +75,7 @@ workflows/lane-resolver.md
 workflows/contract-gate.md
 workflows/human-alignment.md
 schemas/alignment-pack.schema.yaml
+human-views/alignment-view.md
 ```
 
 If the input is TR3, also read:
@@ -114,3 +137,7 @@ evidence
 completion status
 escalation triggers if any
 ```
+
+Render completion with `human-views/completion-view.md`.
+
+If escalation is triggered, render `human-views/escalation-view.md`.

@@ -405,6 +405,27 @@ def test_id_workflow_skill_exists_and_has_triggers():
     assert_true("TR3" in text, "ID workflow skill 必须支持 TR3。")
     assert_true("500 LOC" in text, "ID workflow skill 必须声明 500 LOC 限制。")
     assert_true("Human Alignment approval" in text, "ID workflow skill 必须要求 Human Alignment approval。")
+    assert_true("Human View" in text, "ID workflow skill 必须声明用户可读视图。")
+    assert_true("human-views/alignment-view.md" in text, "ID workflow skill 必须加载 Alignment View。")
+
+
+def test_human_views_exist_and_hide_raw_yaml():
+    required_files = [
+        "human-views/alignment-view.md",
+        "human-views/completion-view.md",
+        "human-views/escalation-view.md",
+    ]
+    for file_name in required_files:
+        text = read_text(file_name)
+        assert_true("## 模板" in text, f"{file_name} 缺少用户模板。")
+        assert_true("## 规则" in text, f"{file_name} 缺少展示规则。")
+
+    alignment = read_text("human-views/alignment-view.md")
+    completion = read_text("human-views/completion-view.md")
+    escalation = read_text("human-views/escalation-view.md")
+    assert_true("不直接向用户展示完整 YAML" in alignment, "Alignment View 必须隐藏完整 YAML。")
+    assert_true("Evidence 只展示摘要和 ref" in completion, "Completion View 必须限制 evidence 展示粒度。")
+    assert_true("不把技术日志全文塞给用户" in escalation, "Escalation View 必须避免展示完整日志。")
 
 
 def test_planner_cannot_produce_registry_external_layers():
@@ -547,6 +568,7 @@ def run():
         test_e2e_tr3_d3a_demo_is_complete,
         test_adoption_and_deep_dive_docs_exist,
         test_id_workflow_skill_exists_and_has_triggers,
+        test_human_views_exist_and_hide_raw_yaml,
         test_planner_cannot_produce_registry_external_layers,
         test_requirement_assessor_detects_missing_critical_fields,
         test_layer_context_packet_only_contains_selected_layer,
