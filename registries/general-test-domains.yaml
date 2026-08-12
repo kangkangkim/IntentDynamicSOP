@@ -1,10 +1,10 @@
 test_domains:
-  - id: UNIT
-    name: Unit Tests
-    knowledge_file: knowledge/general/tests/UNIT.md
-  - id: INTEGRATION
-    name: Integration Tests
-    knowledge_file: knowledge/general/tests/INTEGRATION.md
-  - id: STATIC_CHECK
-    name: Static Checks
-    knowledge_file: knowledge/general/tests/STATIC_CHECK.md
+  - id: GENERAL_TEST_PLACEHOLDER
+    name: <ENTERPRISE_GENERAL_TEST_NAME>
+    knowledge_file: knowledge/general/tests/GENERAL_TEST_PLACEHOLDER.md
+  - id: GENERAL_TEST_SECONDARY_PLACEHOLDER
+    name: <ENTERPRISE_GENERAL_TEST_SECONDARY_NAME>
+    knowledge_file: knowledge/general/tests/GENERAL_TEST_SECONDARY_PLACEHOLDER.md
+  - id: GENERAL_CHECK_PLACEHOLDER
+    name: <ENTERPRISE_GENERAL_CHECK_NAME>
+    knowledge_file: knowledge/general/tests/GENERAL_CHECK_PLACEHOLDER.md

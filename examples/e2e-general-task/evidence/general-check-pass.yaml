@@ -1,0 +1,7 @@
+evidence:
+  id: general-check-pass
+  domain: GENERAL_CHECK_PLACEHOLDER
+  status: PASS
+  command: <ENTERPRISE_GENERAL_CHECK_PLACEHOLDER_COMMAND>
+  summary: "Placeholder check passes for mock general coding task."
+  log_ref: <ENTERPRISE_PLACEHOLDER>

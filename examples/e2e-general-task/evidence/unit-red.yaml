@@ -1,7 +1,0 @@
-evidence:
-  id: general-unit-red
-  domain: UNIT
-  status: RED
-  command: <ENTERPRISE_UNIT_TEST_COMMAND>
-  summary: "Unit test fails before dummy widget state query implementation."
-  log_ref: <ENTERPRISE_PLACEHOLDER>

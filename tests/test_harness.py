@@ -6,8 +6,16 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 LAYER_REGISTRY = {"TRAN_CFG", "DO", "VISP_ADP", "TFC_TFI", "TFE", "ADP", "DRV"}
 DT_REGISTRY = {"TPRINT", "FW", "DPF"}
-GENERAL_COMPONENT_REGISTRY = {"APP_CODE", "TEST_CODE", "DOCS_CONFIG"}
-GENERAL_TEST_REGISTRY = {"UNIT", "INTEGRATION", "STATIC_CHECK"}
+GENERAL_COMPONENT_REGISTRY = {
+    "GENERAL_COMPONENT_PLACEHOLDER",
+    "GENERAL_COMPONENT_SECONDARY_PLACEHOLDER",
+    "GENERAL_COMPONENT_SUPPORT_PLACEHOLDER",
+}
+GENERAL_TEST_REGISTRY = {
+    "GENERAL_TEST_PLACEHOLDER",
+    "GENERAL_TEST_SECONDARY_PLACEHOLDER",
+    "GENERAL_CHECK_PLACEHOLDER",
+}
 PLACEHOLDER_PATTERNS = [
     "<ENTERPRISE_PLACEHOLDER>",
     "<ENTERPRISE_API_CONTRACT>",
@@ -234,8 +242,10 @@ def test_general_domain_module_is_active_and_self_closing():
     assert_true("- verification_contract" in module, "general module 必须要求 verification_contract。")
     assert_true("API Contract 不是所有 General Coding 都必须要" in workflow, "general workflow 必须说明 API Contract 非全局强制。")
     assert_true("不使用 D3A Layer / DT Domain registry" in workflow, "general workflow 不能依赖 D3A registry。")
+    assert_true("不编造 General component / test domain taxonomy" in workflow, "general workflow 必须禁止编造 taxonomy。")
     assert_true("max_change_loc: 500" in plan_schema, "general plan 必须声明 500 LOC。")
     assert_true("General plan must not reference D3A Layer registry." in plan_schema, "general plan 必须禁止 D3A Layer registry。")
+    assert_true("General component and test domain ids are placeholders" in plan_schema, "general plan 必须声明 placeholder taxonomy。")
     assert_true("Do not use D3A Layer or DT Domain registries." in skill, "general skill 必须禁止 D3A registry。")
 
 
@@ -449,9 +459,9 @@ def test_e2e_general_demo_is_complete():
         "examples/e2e-general-task/alignment-pack.yaml",
         "examples/e2e-general-task/general-plan.yaml",
         "examples/e2e-general-task/evidence-summary.yaml",
-        "examples/e2e-general-task/evidence/unit-red.yaml",
-        "examples/e2e-general-task/evidence/unit-green.yaml",
-        "examples/e2e-general-task/evidence/static-check-pass.yaml",
+        "examples/e2e-general-task/evidence/general-test-red.yaml",
+        "examples/e2e-general-task/evidence/general-test-green.yaml",
+        "examples/e2e-general-task/evidence/general-check-pass.yaml",
         "examples/e2e-general-task/completion-summary.md",
     ]
     for file_name in required_files:
@@ -465,11 +475,11 @@ def test_e2e_general_demo_is_complete():
 
     assert_true("domain_candidates: [general]" in normalized, "General E2E demo 必须选择 general candidate。")
     assert_true("selected_domain: general" in decision, "General E2E demo 必须选择 general domain。")
-    assert_true("selected_components: [APP_CODE, TEST_CODE]" in plan, "General E2E demo 必须选择 general components。")
-    assert_true("required_test_domains: [UNIT]" in plan, "General E2E demo 必须选择 UNIT test domain。")
+    assert_true("selected_components: [GENERAL_COMPONENT_PLACEHOLDER]" in plan, "General E2E demo 必须使用 placeholder component。")
+    assert_true("required_test_domains: [GENERAL_TEST_PLACEHOLDER]" in plan, "General E2E demo 必须使用 placeholder test domain。")
     assert_true("max_change_loc: 500" in plan, "General E2E execution unit 必须声明 500 LOC。")
-    assert_true("general-unit-red" in evidence, "General E2E demo 必须包含 RED evidence。")
-    assert_true("general-unit-green" in evidence, "General E2E demo 必须包含 GREEN evidence。")
+    assert_true("general-test-red" in evidence, "General E2E demo 必须包含 RED evidence。")
+    assert_true("general-test-green" in evidence, "General E2E demo 必须包含 GREEN evidence。")
     assert_true("DONE" in completion, "General E2E demo 必须包含 completion summary。")
 
 

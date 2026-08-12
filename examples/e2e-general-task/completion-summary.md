@@ -4,14 +4,14 @@ Status: DONE
 
 ## Changes
 
-- Mock dummy widget state query behavior planned for `APP_CODE`.
-- Mock unit coverage planned for `TEST_CODE`.
+- Mock dummy widget state query behavior planned for `GENERAL_COMPONENT_PLACEHOLDER`.
+- Mock placeholder test coverage planned for `GENERAL_COMPONENT_PLACEHOLDER`.
 
 ## Evidence
 
-- RED: `examples/e2e-general-task/evidence/unit-red.yaml`
-- GREEN: `examples/e2e-general-task/evidence/unit-green.yaml`
-- STATIC_CHECK: `examples/e2e-general-task/evidence/static-check-pass.yaml`
+- RED: `examples/e2e-general-task/evidence/general-test-red.yaml`
+- GREEN: `examples/e2e-general-task/evidence/general-test-green.yaml`
+- GENERAL_CHECK_PLACEHOLDER: `examples/e2e-general-task/evidence/general-check-pass.yaml`
 
 ## Completion Gate
 

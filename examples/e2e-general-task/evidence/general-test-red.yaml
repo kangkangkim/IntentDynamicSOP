@@ -1,0 +1,7 @@
+evidence:
+  id: general-test-red
+  domain: GENERAL_TEST_PLACEHOLDER
+  status: RED
+  command: <ENTERPRISE_GENERAL_TEST_PLACEHOLDER_TEST_COMMAND>
+  summary: "Placeholder test fails before dummy widget state query implementation."
+  log_ref: <ENTERPRISE_PLACEHOLDER>

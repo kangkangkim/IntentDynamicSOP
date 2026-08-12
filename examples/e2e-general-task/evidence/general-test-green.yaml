@@ -1,0 +1,7 @@
+evidence:
+  id: general-test-green
+  domain: GENERAL_TEST_PLACEHOLDER
+  status: GREEN
+  command: <ENTERPRISE_GENERAL_TEST_PLACEHOLDER_TEST_COMMAND>
+  summary: "Placeholder test passes for known and unknown dummy widget ids."
+  log_ref: <ENTERPRISE_PLACEHOLDER>

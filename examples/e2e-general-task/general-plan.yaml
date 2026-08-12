@@ -1,18 +1,18 @@
 general_plan:
   task_id: GENERAL-MOCK-001
-  selected_components: [APP_CODE, TEST_CODE]
-  required_test_domains: [UNIT]
+  selected_components: [GENERAL_COMPONENT_PLACEHOLDER]
+  required_test_domains: [GENERAL_TEST_PLACEHOLDER]
   dependency_notes:
-    - "APP_CODE behavior must be covered by UNIT test evidence."
+    - "GENERAL_COMPONENT_PLACEHOLDER behavior must be covered by GENERAL_TEST_PLACEHOLDER evidence."
   execution_units:
     - id: EU-GEN-001
-      component: APP_CODE
+      component: GENERAL_COMPONENT_PLACEHOLDER
       summary: "Implement dummy widget state query behavior."
       max_change_loc: 500
       required_evidence: [red, green]
     - id: EU-GEN-002
-      component: TEST_CODE
-      summary: "Add unit test coverage for known and unknown dummy ids."
+      component: GENERAL_COMPONENT_PLACEHOLDER
+      summary: "Add placeholder test coverage for known and unknown dummy ids."
       max_change_loc: 500
       required_evidence: [red, green]
   completion_gate:

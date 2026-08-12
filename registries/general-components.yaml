@@ -1,10 +1,10 @@
 components:
-  - id: APP_CODE
-    name: Application Code
-    knowledge_file: knowledge/general/components/APP_CODE.md
-  - id: TEST_CODE
-    name: Test Code
-    knowledge_file: knowledge/general/components/TEST_CODE.md
-  - id: DOCS_CONFIG
-    name: Docs and Config
-    knowledge_file: knowledge/general/components/DOCS_CONFIG.md
+  - id: GENERAL_COMPONENT_PLACEHOLDER
+    name: <ENTERPRISE_GENERAL_COMPONENT_NAME>
+    knowledge_file: knowledge/general/components/GENERAL_COMPONENT_PLACEHOLDER.md
+  - id: GENERAL_COMPONENT_SECONDARY_PLACEHOLDER
+    name: <ENTERPRISE_GENERAL_COMPONENT_SECONDARY_NAME>
+    knowledge_file: knowledge/general/components/GENERAL_COMPONENT_SECONDARY_PLACEHOLDER.md
+  - id: GENERAL_COMPONENT_SUPPORT_PLACEHOLDER
+    name: <ENTERPRISE_GENERAL_COMPONENT_SUPPORT_NAME>
+    knowledge_file: knowledge/general/components/GENERAL_COMPONENT_SUPPORT_PLACEHOLDER.md

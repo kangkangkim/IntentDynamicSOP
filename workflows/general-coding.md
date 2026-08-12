@@ -36,12 +36,12 @@ General Coding 不使用 D3A Layer registry。
 registries/general-components.yaml
 ```
 
-V0 components：
+V0 components 是 placeholder，不代表真实团队分类：
 
 ```text
-APP_CODE
-TEST_CODE
-DOCS_CONFIG
+GENERAL_COMPONENT_PLACEHOLDER
+GENERAL_COMPONENT_SECONDARY_PLACEHOLDER
+GENERAL_COMPONENT_SUPPORT_PLACEHOLDER
 ```
 
 ## Test Domain Registry
@@ -54,12 +54,12 @@ General Coding 不使用 D3A DT Domain registry。
 registries/general-test-domains.yaml
 ```
 
-V0 test domains：
+V0 test domains 是 placeholder，不代表真实团队测试体系：
 
 ```text
-UNIT
-INTEGRATION
-STATIC_CHECK
+GENERAL_TEST_PLACEHOLDER
+GENERAL_TEST_SECONDARY_PLACEHOLDER
+GENERAL_CHECK_PLACEHOLDER
 ```
 
 ## Completion Gate
@@ -81,6 +81,7 @@ API Contract 不是所有 General Coding 都必须要。
 ## 规则
 
 - 不使用 D3A Layer / DT Domain registry。
+- 不编造 General component / test domain taxonomy；进入真实团队后再替换 placeholder。
 - 每个 execution unit 代码变更 `<= 500 LOC`。
 - 如果 verification contract 要求测试，必须先 RED 再 GREEN。
 - Completion 必须基于工具 evidence。
