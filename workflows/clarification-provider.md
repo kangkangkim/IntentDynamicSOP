@@ -20,30 +20,65 @@ Requirement Assessor
   -> Requirement Assessor
 ```
 
+## Inspiration
+
+本 workflow 吸收 `mattpocock/skills` 项目中 `grill-me` / `grill-with-docs` 的公开方法论。
+
+详见：
+
+```text
+docs/source-attribution.md
+```
+
+吸收的是方法论，不是逐字复制原始 prompt。
+
 ## Provider
 
-V0 支持两个 provider：
+V0 支持三个 provider mode：
 
 ```text
 builtin-critical-questions
-external-grill-me
+grill-me-method
+grill-with-docs-method
 ```
 
 ### builtin-critical-questions
 
-默认 provider。
+默认 fallback provider。
 
 它不依赖外部服务，保密区内也必须可用。
 
 它只能基于当前 request、repo context summary、contract gap 和 completion gate gap 提问。
 
-### external-grill-me
+### grill-me-method
 
-可选增强 provider。
+默认推荐 provider。
 
-它代表外部知名 Grill Me 能力的适配点。
+它吸收公开 Grill Me 的提问方式：
 
-外部 provider 只能输出澄清问题和原因，不能直接：
+- relentless interview：持续追问，直到需求能被明确承诺。
+- decision tree：先分叉关键决策，再沿选中分支追问。
+- frontier round：每一轮只问当前前置条件已经满足的问题。
+- commitment check：每轮结束判断是否已经能生成 Alignment View。
+- no implementation during grilling：澄清阶段不写代码。
+
+### grill-with-docs-method
+
+可选 docs mode。
+
+当澄清结果需要沉淀为团队知识时使用。
+
+它可以产出非敏感的决策记录草案，例如：
+
+```text
+docs/decision-records/<placeholder>.md
+```
+
+在外部环境只能写 placeholder 级文档；进入保密区后才能填真实内部细节。
+
+## Provider 边界
+
+Clarification Provider 只能输出澄清问题、阻塞原因和回答后的更新建议，不能直接：
 
 - 决定 Domain / Lane。
 - 修改 scope。
@@ -51,11 +86,23 @@ external-grill-me
 - 写代码。
 - 判断 DONE。
 
-如果环境没有安装或不允许使用外部 provider，必须自动降级到 `builtin-critical-questions`。
+如果 `grill-me-method` 或 `grill-with-docs-method` 所需上下文不足，必须自动降级到 `builtin-critical-questions`。
+
+## Grilling Loop
+
+```text
+Build decision tree
+  -> Select current frontier
+  -> Ask bounded questions
+  -> User answers
+  -> Update assumptions and blockers
+  -> Commitment check
+  -> READY_FOR_ALIGNMENT / NEXT_FRONTIER / ESCALATE
+```
 
 ## 问题预算
 
-一次 clarification 最多问 5 个问题。
+一次 frontier round 最多问 5 个问题。
 
 优先级：
 
@@ -69,9 +116,15 @@ external-grill-me
 
 ```yaml
 clarification_provider:
-  selected_provider: builtin-critical-questions | external-grill-me
+  selected_provider: builtin-critical-questions | grill-me-method | grill-with-docs-method
   fallback_used: false
   reason: "<why this provider was selected>"
+  decision_tree:
+    root_decision: "<main uncertainty>"
+    settled:
+      - "<settled decision>"
+    open_frontier:
+      - "<current unresolved decision>"
   questions:
     - id: Q1
       priority: critical
@@ -80,6 +133,9 @@ clarification_provider:
         - api_contract
         - completion_gate
       why_needed: "<why this must be answered before alignment>"
+  commitment_check:
+    status: READY_FOR_ALIGNMENT | NEXT_FRONTIER | ESCALATE
+    reason: "<why>"
 ```
 
 ## 规则
@@ -87,5 +143,7 @@ clarification_provider:
 - 不问“好不好”“你怎么看”这类无约束问题。
 - 不把完整 YAML 展示给用户。
 - 不要求用户 approve；clarification 完成后才进入 Alignment View。
-- 不把外部 provider 的回答当作 evidence。
-- 外部 provider 失败时不能阻塞 workflow，必须 fallback。
+- 不把 clarification 回答当作 DONE evidence。
+- 每轮必须说明这些问题为什么阻塞 contract、scope 或 completion gate。
+- 用户用中文输入时，澄清问题必须用中文。
+- docs mode 只能写非敏感 placeholder 文档。

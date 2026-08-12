@@ -408,7 +408,7 @@ def test_id_workflow_skill_exists_and_has_triggers():
     assert_true("Human View" in text, "ID workflow skill 必须声明用户可读视图。")
     assert_true("human-views/alignment-view.md" in text, "ID workflow skill 必须加载 Alignment View。")
     assert_true("human-views/clarification-view.md" in text, "ID workflow skill 必须加载 Clarification View。")
-    assert_true("external-grill-me" in text, "ID workflow skill 必须声明 external-grill-me 可选接入。")
+    assert_true("grill-me-method" in text, "ID workflow skill 必须声明 Grill Me method。")
 
 
 def test_human_views_exist_and_hide_raw_yaml():
@@ -427,24 +427,34 @@ def test_human_views_exist_and_hide_raw_yaml():
     clarification = read_text("human-views/clarification-view.md")
     completion = read_text("human-views/completion-view.md")
     escalation = read_text("human-views/escalation-view.md")
-    assert_true("最多展示 5 个关键问题" in clarification, "Clarification View 必须限制问题数量。")
-    assert_true("external-grill-me" in clarification, "Clarification View 必须支持 external-grill-me 展示。")
+    assert_true("每轮最多展示 5 个关键问题" in clarification, "Clarification View 必须限制问题数量。")
+    assert_true("grill-me-method" in clarification, "Clarification View 必须支持 Grill Me method 展示。")
+    assert_true("当前 Frontier" in clarification, "Clarification View 必须展示 frontier round。")
     assert_true("不直接向用户展示完整 YAML" in alignment, "Alignment View 必须隐藏完整 YAML。")
     assert_true("Evidence 只展示摘要和 ref" in completion, "Completion View 必须限制 evidence 展示粒度。")
     assert_true("不把技术日志全文塞给用户" in escalation, "Escalation View 必须避免展示完整日志。")
 
 
-def test_clarification_provider_supports_external_grill_me_fallback():
+def test_clarification_provider_uses_grill_me_method_with_fallback():
     workflow = read_text("workflows/clarification-provider.md")
     schema = read_text("schemas/clarification-provider.schema.yaml")
     human_alignment = read_text("workflows/human-alignment.md")
     requirement_assessor = read_text("workflows/requirement-assessor.md")
+    attribution = read_text("docs/source-attribution.md")
 
-    assert_true("external-grill-me" in workflow, "Clarification Provider 必须声明 external-grill-me。")
+    assert_true("mattpocock/skills" in workflow, "Clarification Provider 必须标注 Grill Me 方法论来源。")
+    assert_true("grill-me-method" in workflow, "Clarification Provider 必须声明 grill-me-method。")
+    assert_true("grill-with-docs-method" in workflow, "Clarification Provider 必须声明 grill-with-docs-method。")
     assert_true("builtin-critical-questions" in workflow, "Clarification Provider 必须声明 builtin fallback。")
-    assert_true("fallback" in workflow.lower(), "Clarification Provider 必须定义 fallback 行为。")
+    assert_true("decision tree" in workflow, "Clarification Provider 必须吸收 decision tree。")
+    assert_true("frontier round" in workflow, "Clarification Provider 必须吸收 frontier round。")
+    assert_true("Commitment check" in workflow or "commitment check" in workflow, "Clarification Provider 必须吸收 commitment check。")
     assert_true("max_questions: 5" in schema, "Clarification Provider schema 必须限制最多 5 个问题。")
+    assert_true("decision_tree:" in schema, "Clarification Provider schema 必须包含 decision tree。")
+    assert_true("commitment_check:" in schema, "Clarification Provider schema 必须包含 commitment check。")
     assert_true("Provider cannot override Domain, Lane, contract, or completion gate." in schema, "Clarification Provider 不能覆盖核心决策。")
+    assert_true("MIT License" in attribution, "Source attribution 必须记录 MIT License。")
+    assert_true("https://github.com/mattpocock/skills" in attribution, "Source attribution 必须记录来源 URL。")
     assert_true("workflows/clarification-provider.md" in human_alignment, "Human Alignment 必须引用 Clarification Provider。")
     assert_true("next: \"Clarification Provider\"" in requirement_assessor, "Requirement Assessor 必须把澄清交给 Provider。")
 
@@ -534,6 +544,22 @@ def can_transition(source, target, has_red_evidence=False):
     return target in ALLOWED_LAYER_TRANSITIONS.get(source, set())
 
 
+def test_dummy_widget_state_query_known_id():
+    import dummy_widget
+    state = dummy_widget.DummyGetWidgetState("dummy-1")
+    assert_true(
+        state == dummy_widget.DummyWidgetState.READY,
+        "已知 dummy widget id 应返回 READY。",
+    )
+
+
+def test_dummy_widget_state_query_unknown_id():
+    import dummy_widget
+    result = dummy_widget.DummyGetWidgetState("does-not-exist")
+    assert_true(isinstance(result, dummy_widget.DummyError), "未知 id 应返回 typed placeholder error。")
+    assert_true(result.code == dummy_widget.DUMMY_NOT_FOUND, "未知 id 应返回 DUMMY_NOT_FOUND。")
+
+
 def test_no_red_evidence_cannot_enter_green():
     assert_true(not can_transition("IMPLEMENTING", "GREEN_CONFIRMED", has_red_evidence=False), "没有 RED 却允许进入 GREEN。")
     assert_true(can_transition("IMPLEMENTING", "GREEN_CONFIRMED", has_red_evidence=True), "已有 RED 却阻塞 GREEN。")
@@ -590,7 +616,7 @@ def run():
         test_adoption_and_deep_dive_docs_exist,
         test_id_workflow_skill_exists_and_has_triggers,
         test_human_views_exist_and_hide_raw_yaml,
-        test_clarification_provider_supports_external_grill_me_fallback,
+        test_clarification_provider_uses_grill_me_method_with_fallback,
         test_planner_cannot_produce_registry_external_layers,
         test_requirement_assessor_detects_missing_critical_fields,
         test_layer_context_packet_only_contains_selected_layer,

@@ -124,7 +124,9 @@ docs/token-budget-policy.md
 
 - Do not write implementation code before Human Alignment approval.
 - Clarification Provider only asks for critical missing information needed for contracts, scope, or completion gates.
-- `external-grill-me` is optional and must fallback to `builtin-critical-questions` if unavailable.
+- Prefer `grill-me-method` for clarification: decision tree, frontier rounds, commitment check, no implementation.
+- Use `grill-with-docs-method` only when clarification should create non-sensitive decision records.
+- Fallback to `builtin-critical-questions` if Grill Me method is unavailable or too expensive.
 - All Lanes must self-close with evidence.
 - `fast` does not mean "no verification"; it means small closure.
 - Single execution unit code change must be `<= 500 LOC`.

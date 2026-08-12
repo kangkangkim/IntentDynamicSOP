@@ -5,13 +5,20 @@ description: >
   Machine-readable contract for selecting a clarification provider before Human Alignment.
 
 provider:
-  selected_provider: builtin-critical-questions | external-grill-me
+  selected_provider: builtin-critical-questions | grill-me-method | grill-with-docs-method
   fallback_used: boolean
   reason: string
 
 limits:
   max_questions: 5
   max_question_chars: 240
+
+decision_tree:
+  root_decision: string
+  settled:
+    - string
+  open_frontier:
+    - string
 
 questions:
   - id: string
@@ -21,8 +28,13 @@ questions:
       - normalized_request | api_contract | verification_contract | scope_boundary | completion_gate
     why_needed: string
 
+commitment_check:
+  status: READY_FOR_ALIGNMENT | NEXT_FRONTIER | ESCALATE
+  reason: string
+
 rules:
-  - External Grill Me is optional.
+  - Grill Me method is inspired by mattpocock/skills, not copied verbatim.
   - Fallback to builtin-critical-questions if external provider is unavailable.
   - Clarification output is not DONE evidence.
   - Provider cannot override Domain, Lane, contract, or completion gate.
+  - Each frontier round asks at most 5 questions.

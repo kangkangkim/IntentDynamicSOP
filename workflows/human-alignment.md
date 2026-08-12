@@ -47,15 +47,15 @@ Grill Me / Clarification 发生在 Human Alignment 之前，由 `workflows/clari
 ```text
 NEED_CLARIFICATION
   -> Clarification Provider
-  -> builtin-critical-questions / external-grill-me
+  -> grill-me-method / grill-with-docs-method / builtin-critical-questions
   -> Clarification View
   -> 更新 normalized_request / contracts
   -> 回到 Requirement Assessor
 ```
 
-`external-grill-me` 是可选增强 provider。
+`grill-me-method` 是默认推荐澄清方式。
 
-如果外部 provider 不可用，必须 fallback 到 `builtin-critical-questions`。
+如果 Grill Me 方法不可用或过重，必须 fallback 到 `builtin-critical-questions`。
 
 ## 输出
 
