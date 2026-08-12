@@ -1,5 +1,5 @@
 ---
-name: idc-workflow
+name: id-workflow
 description: Use when the user asks to run, try, trigger, or apply the Intent Dynamic Code / IDC workflow; process a one-line request or TR3 design document; generate an Alignment Pack; classify Domain Module and Lane; or continue an approved Alignment Pack through the automated closure loop with evidence gates.
 ---
 
