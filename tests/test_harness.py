@@ -395,6 +395,18 @@ def test_adoption_and_deep_dive_docs_exist():
         assert_true((ROOT / file_name).exists(), f"缺少 deep dive 文档：{file_name}")
 
 
+def test_idc_workflow_skill_exists_and_has_triggers():
+    skill_path = ROOT / "skills/idc-workflow/SKILL.md"
+    assert_true(skill_path.exists(), "缺少 IDC workflow skill。")
+    text = skill_path.read_text()
+    assert_true("name: idc-workflow" in text, "IDC workflow skill 缺少 name。")
+    assert_true("description:" in text, "IDC workflow skill 缺少 description。")
+    assert_true("Alignment Pack" in text, "IDC workflow skill 必须支持 Alignment Pack。")
+    assert_true("TR3" in text, "IDC workflow skill 必须支持 TR3。")
+    assert_true("500 LOC" in text, "IDC workflow skill 必须声明 500 LOC 限制。")
+    assert_true("Human Alignment approval" in text, "IDC workflow skill 必须要求 Human Alignment approval。")
+
+
 def test_planner_cannot_produce_registry_external_layers():
     plan_path = "examples/mock-d3a-task/d3a-plan.yaml"
     layers = set(extract_inline_list_after_key(plan_path, "coding_layers"))
@@ -534,6 +546,7 @@ def run():
         test_progressive_constraint_loading_files_exist,
         test_e2e_tr3_d3a_demo_is_complete,
         test_adoption_and_deep_dive_docs_exist,
+        test_idc_workflow_skill_exists_and_has_triggers,
         test_planner_cannot_produce_registry_external_layers,
         test_requirement_assessor_detects_missing_critical_fields,
         test_layer_context_packet_only_contains_selected_layer,

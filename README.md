@@ -107,6 +107,7 @@ domains/d3a/module.yaml
 ## V0 已完成资产
 
 - `workflows/scenario-router.md`：顶层场景路由。
+- `skills/idc-workflow/SKILL.md`：IDC workflow 的 Skill 触发入口。
 - `workflows/input-adapter.md`：支持一句话输入和 TR3 设计文档输入。
 - `workflows/domain-module-router.md`：根据 `domains/registry.yaml` 选择可插拔 module。
 - `workflows/progressive-constraint-loading.md`：三段式约束加载。
@@ -134,6 +135,7 @@ domains/d3a/module.yaml
 - `schemas/`：核心 contract 结构。
 - `agents/`：subagent 职责边界。
 - `skills/`：placeholder skill 接口。
+- `skills/idc-workflow/`：本机 Claude Code / Codex 体验 IDC 的入口 skill。
 - `examples/mock-d3a-task/`：非敏感 mock walkthrough。
 - `examples/e2e-tr3-d3a/`：从 TR3 到 completion summary 的端到端 mock demo。
 - `examples/tr3-fixtures.yaml`：TR3 输入分类样例。
