@@ -533,7 +533,7 @@
                   <span class="num">3</span>
                   <div>
                     <strong>选择流程强度</strong>
-                    <p>Fast / Standard / Strict 由风险、影响面、测试可得性和约束决定。</p>
+                    <p><code>fast</code> / <code>lite</code> / <code>complex</code> 由风险、影响面、测试可得性和约束决定。</p>
                   </div>
                 </div>
                 <div class="mini-step">
@@ -577,6 +577,24 @@
             <article class="card danger-card">
               <h3>Escalation View</h3>
               <p>范围变化、证据不可得、contract 冲突时回到人工确认。</p>
+            </article>
+          </div>
+          <div class="cards four">
+            <article class="card human-card">
+              <h3>Lane Resolver</h3>
+              <p>只判断执行强度，不判断领域。先看 complex hard trigger，再看 fast 准入条件，其他默认 lite。</p>
+            </article>
+            <article class="card auto-card">
+              <h3>fast 小闭环</h3>
+              <p>适合简单明确、低风险、小范围任务；至少要有验收检查、变更文件 review、basic verification evidence 和 completion summary。</p>
+            </article>
+            <article class="card auto-card">
+              <h3>lite 标准闭环</h3>
+              <p>默认中间态；需要 task contract、focused plan、relevant context、test or build evidence 和 completion summary。</p>
+            </article>
+            <article class="card auto-card">
+              <h3>complex 强闭环</h3>
+              <p>跨模块、高风险、API 语义变化、多个测试域或需要 DAG 时进入；需要详细计划、knowledge gate、完整 evidence plan 和 review。</p>
             </article>
           </div>
           <article class="card knowledge-card">
