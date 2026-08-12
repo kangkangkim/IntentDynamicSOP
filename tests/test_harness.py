@@ -407,10 +407,13 @@ def test_id_workflow_skill_exists_and_has_triggers():
     assert_true("Human Alignment approval" in text, "ID workflow skill 必须要求 Human Alignment approval。")
     assert_true("Human View" in text, "ID workflow skill 必须声明用户可读视图。")
     assert_true("human-views/alignment-view.md" in text, "ID workflow skill 必须加载 Alignment View。")
+    assert_true("human-views/clarification-view.md" in text, "ID workflow skill 必须加载 Clarification View。")
+    assert_true("external-grill-me" in text, "ID workflow skill 必须声明 external-grill-me 可选接入。")
 
 
 def test_human_views_exist_and_hide_raw_yaml():
     required_files = [
+        "human-views/clarification-view.md",
         "human-views/alignment-view.md",
         "human-views/completion-view.md",
         "human-views/escalation-view.md",
@@ -421,11 +424,29 @@ def test_human_views_exist_and_hide_raw_yaml():
         assert_true("## 规则" in text, f"{file_name} 缺少展示规则。")
 
     alignment = read_text("human-views/alignment-view.md")
+    clarification = read_text("human-views/clarification-view.md")
     completion = read_text("human-views/completion-view.md")
     escalation = read_text("human-views/escalation-view.md")
+    assert_true("最多展示 5 个关键问题" in clarification, "Clarification View 必须限制问题数量。")
+    assert_true("external-grill-me" in clarification, "Clarification View 必须支持 external-grill-me 展示。")
     assert_true("不直接向用户展示完整 YAML" in alignment, "Alignment View 必须隐藏完整 YAML。")
     assert_true("Evidence 只展示摘要和 ref" in completion, "Completion View 必须限制 evidence 展示粒度。")
     assert_true("不把技术日志全文塞给用户" in escalation, "Escalation View 必须避免展示完整日志。")
+
+
+def test_clarification_provider_supports_external_grill_me_fallback():
+    workflow = read_text("workflows/clarification-provider.md")
+    schema = read_text("schemas/clarification-provider.schema.yaml")
+    human_alignment = read_text("workflows/human-alignment.md")
+    requirement_assessor = read_text("workflows/requirement-assessor.md")
+
+    assert_true("external-grill-me" in workflow, "Clarification Provider 必须声明 external-grill-me。")
+    assert_true("builtin-critical-questions" in workflow, "Clarification Provider 必须声明 builtin fallback。")
+    assert_true("fallback" in workflow.lower(), "Clarification Provider 必须定义 fallback 行为。")
+    assert_true("max_questions: 5" in schema, "Clarification Provider schema 必须限制最多 5 个问题。")
+    assert_true("Provider cannot override Domain, Lane, contract, or completion gate." in schema, "Clarification Provider 不能覆盖核心决策。")
+    assert_true("workflows/clarification-provider.md" in human_alignment, "Human Alignment 必须引用 Clarification Provider。")
+    assert_true("next: \"Clarification Provider\"" in requirement_assessor, "Requirement Assessor 必须把澄清交给 Provider。")
 
 
 def test_planner_cannot_produce_registry_external_layers():
@@ -569,6 +590,7 @@ def run():
         test_adoption_and_deep_dive_docs_exist,
         test_id_workflow_skill_exists_and_has_triggers,
         test_human_views_exist_and_hide_raw_yaml,
+        test_clarification_provider_supports_external_grill_me_fallback,
         test_planner_cannot_produce_registry_external_layers,
         test_requirement_assessor_detects_missing_critical_fields,
         test_layer_context_packet_only_contains_selected_layer,

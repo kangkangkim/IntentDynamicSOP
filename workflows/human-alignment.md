@@ -18,6 +18,7 @@ Input Adapter
   -> Lane Resolver
   -> Contract Gate
   -> Requirement Assessor
+  -> Clarification Provider if needed
   -> Alignment Pack
   -> Human Alignment
   -> Automated Closure Loop
@@ -37,18 +38,24 @@ Input Adapter
 
 它不确认具体实现细节。
 
-## Grill Me 的位置
+## Clarification Provider 的位置
 
-Grill Me / Clarification 发生在 Human Alignment 之前。
+Grill Me / Clarification 发生在 Human Alignment 之前，由 `workflows/clarification-provider.md` 统一管理。
 
 如果 Requirement Assessor 发现关键信息不足：
 
 ```text
 NEED_CLARIFICATION
-  -> Grill Me
+  -> Clarification Provider
+  -> builtin-critical-questions / external-grill-me
+  -> Clarification View
   -> 更新 normalized_request / contracts
   -> 回到 Requirement Assessor
 ```
+
+`external-grill-me` 是可选增强 provider。
+
+如果外部 provider 不可用，必须 fallback 到 `builtin-critical-questions`。
 
 ## 输出
 

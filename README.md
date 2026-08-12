@@ -87,7 +87,7 @@ domains/d3a/module.yaml
   -> Lane Resolver
   -> Contract Gate
   -> D3A Requirement Assessor
-  -> 必要时澄清
+  -> Clarification Provider / 必要时澄清
   -> Alignment Pack
   -> Human Alignment
   -> Automated Closure Loop
@@ -117,12 +117,13 @@ domains/d3a/module.yaml
 - `workflows/lane-completion.md`：定义每个 Lane 的最小自闭环要求。
 - `workflows/contract-gate.md`：根据 Domain + Lane 决定 contract set。
 - `workflows/human-alignment.md`：前置人工对齐点。
+- `workflows/clarification-provider.md`：内置澄清和可选 external-grill-me 适配点。
 - `workflows/automated-closure-loop.md`：对齐通过后的自动闭环。
 - `workflows/execution-unit-policy.md`：每个阶段代码变更控制在 500 行以内。
 - `workflows/requirement-assessor.md`：需求清晰度判断规则。
 - `workflows/d3a-workflow.md`：D3A 固定骨架和动态规划点。
 - `workflows/tdd-state-machine.md`：RED / GREEN / completion gate。
-- `human-views/`：给用户看的中文 Alignment / Completion / Escalation 卡片模板。
+- `human-views/`：给用户看的中文 Clarification / Alignment / Completion / Escalation 卡片模板。
 - `docs/domain-module-contract.md`：团队接入自己的 Domain Module 时遵循的契约。
 - `docs/adoption-guide.md`：其他团队复制 SOP 的指南。
 - `docs/token-budget-policy.md`：保密区 token / provider 限额策略。
@@ -174,6 +175,7 @@ python3 tests/test_harness.py
 - Progressive Constraint Loading 三段约束文件必须存在。
 - E2E TR3 D3A demo 必须包含完整链路文件。
 - Human View 模板必须存在，避免把完整 YAML 直接作为用户主界面。
+- Clarification Provider 必须支持 external-grill-me 可选接入和 builtin fallback。
 - Requirement Assessor 能识别关键字段缺失。
 - Layer Context Packet 只能包含当前 Layer。
 - 没有 RED evidence 不能进入 GREEN。

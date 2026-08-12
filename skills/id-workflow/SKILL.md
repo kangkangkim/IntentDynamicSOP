@@ -25,7 +25,7 @@ Input Adapter
   -> Lane Resolver
   -> Contract Gate
   -> Requirement Assessor
-  -> Grill Me if needed
+  -> Clarification Provider if needed
   -> Alignment Pack
   -> Human Alignment
 ```
@@ -76,6 +76,15 @@ workflows/contract-gate.md
 workflows/human-alignment.md
 schemas/alignment-pack.schema.yaml
 human-views/alignment-view.md
+human-views/clarification-view.md
+```
+
+If Requirement Assessor returns `NEED_CLARIFICATION`, also read:
+
+```text
+workflows/clarification-provider.md
+schemas/clarification-provider.schema.yaml
+human-views/clarification-view.md
 ```
 
 If the input is TR3, also read:
@@ -114,7 +123,8 @@ docs/token-budget-policy.md
 ## Hard rules
 
 - Do not write implementation code before Human Alignment approval.
-- Grill Me only asks for critical missing information needed for contracts, scope, or completion gates.
+- Clarification Provider only asks for critical missing information needed for contracts, scope, or completion gates.
+- `external-grill-me` is optional and must fallback to `builtin-critical-questions` if unavailable.
 - All Lanes must self-close with evidence.
 - `fast` does not mean "no verification"; it means small closure.
 - Single execution unit code change must be `<= 500 LOC`.
@@ -126,6 +136,8 @@ docs/token-budget-policy.md
 ## Output modes
 
 If the user has not approved yet, output an Alignment Pack summary and ask for approval.
+
+If critical information is missing, output `human-views/clarification-view.md` first and do not ask for approval yet.
 
 If the user approved, run the automated closure loop and report:
 

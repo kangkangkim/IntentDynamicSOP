@@ -11,6 +11,8 @@ READY_FOR_SPEC
 
 它不负责澄清、设计、规划或写代码。
 
+当决策为 `NEED_CLARIFICATION` 时，下一步交给 `workflows/clarification-provider.md`。
+
 ## 必查项
 
 | 检查项 | 要回答的问题 |
@@ -46,5 +48,5 @@ requirement_assessment:
     critical_ambiguity_exists: true
   missing_information:
     - "需要定义 dummy input 和 output semantics。"
-  next: "Grill Me / 澄清 placeholder"
+  next: "Clarification Provider"
 ```

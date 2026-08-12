@@ -1,0 +1,28 @@
+schema: clarification_provider
+version: 0
+
+description: >
+  Machine-readable contract for selecting a clarification provider before Human Alignment.
+
+provider:
+  selected_provider: builtin-critical-questions | external-grill-me
+  fallback_used: boolean
+  reason: string
+
+limits:
+  max_questions: 5
+  max_question_chars: 240
+
+questions:
+  - id: string
+    priority: critical | high | medium
+    question: string
+    blocks:
+      - normalized_request | api_contract | verification_contract | scope_boundary | completion_gate
+    why_needed: string
+
+rules:
+  - External Grill Me is optional.
+  - Fallback to builtin-critical-questions if external provider is unavailable.
+  - Clarification output is not DONE evidence.
+  - Provider cannot override Domain, Lane, contract, or completion gate.
