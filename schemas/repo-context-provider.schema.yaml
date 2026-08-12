@@ -27,6 +27,7 @@ repo_context_request:
 
 repo_context_result:
   provider: grep | codegraph | okl | repo_search
+  command: okl-query | grep | codegraph | repo_search | placeholder
   status: success | empty | error | placeholder
   query: string
   findings:
@@ -41,10 +42,11 @@ rules:
   - Repo Context Provider 只提供当前仓库事实和知识线索，不决定 DONE。
   - grep 负责文本事实。
   - CodeGraph 负责结构事实。
-  - OKL 本质是 LLM Wiki，入口按 okl-query 适配。
+  - OKL 本质是 LLM Wiki。
+  - okl-query 是调用 OKL 的命令，不是 provider 名。
   - 有明确代码锚点时先 bounded grep。
-  - 没有代码锚点但有领域语义时先 okl-query，再 bounded grep。
-  - okl-query 只能请求 summary / refs / keywords，不能请求全文。
+  - 没有代码锚点但有领域语义时先 OKL，再 bounded grep。
+  - 调用 OKL 时，okl-query 只能请求 summary / refs / keywords，不能请求全文。
   - provider result 必须带 evidence_ref。
   - provider result 必须摘要化，不能把长文全文塞进上下文。
   - 默认 max_results 不超过 10。

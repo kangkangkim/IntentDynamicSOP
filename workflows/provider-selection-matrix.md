@@ -1,6 +1,6 @@
 # Provider Selection Matrix
 
-Provider Selection Matrix 决定 Knowledge Gate 什么时候用 `grep`、`CodeGraph`、`okl-query`。
+Provider Selection Matrix 决定 Knowledge Gate 什么时候用 `grep`、`CodeGraph`、`OKL`。
 
 目标是减少保密区 token 消耗。
 
@@ -25,7 +25,7 @@ provider_selection_input:
 ```text
 bounded grep
   -> targeted CodeGraph if impact_unclear
-  -> okl-query only if rule_or_history_unclear
+  -> OKL only if rule_or_history_unclear
 ```
 
 ### anchor_known = false and domain_known = true
@@ -33,7 +33,7 @@ bounded grep
 没有明确代码锚点，但已有领域语义、Layer、DT domain、TR3 主题或内部概念。
 
 ```text
-okl-query
+OKL
   -> bounded grep using keywords / refs from OKL
   -> targeted CodeGraph if impact_unclear
 ```
@@ -44,19 +44,19 @@ okl-query
 
 ```text
 intent-discovery / intent-grilling
-  -> okl-query only if domain hints are needed
+  -> OKL only if domain hints are needed
   -> bounded grep
 ```
 
 ## Lane Budgets
 
-| Lane | okl-query | grep | CodeGraph |
+| Lane | OKL | grep | CodeGraph |
 |---|---:|---:|---:|
-| fast | 0 by default, max 1 if no anchor and domain_known | max 2 queries, max 5 results/query, snippet 0 by default | off by default |
+| fast | 0 by default, max 1 query if no anchor and domain_known | max 2 queries, max 5 results/query, snippet 0 by default | off by default |
 | lite | max 1 query if no anchor or rule/history unclear | max 5 queries, max 8 results/query, snippet <= 3 lines | only if impact_unclear |
 | complex | per execution unit / layer packet | per execution unit / layer packet | per execution unit / layer packet |
 
-## okl-query Adapter Rules
+## OKL Adapter Rules
 
 OKL 是已有 LLM Wiki 能力，保密区入口基本是：
 
@@ -64,7 +64,7 @@ OKL 是已有 LLM Wiki 能力，保密区入口基本是：
 okl-query
 ```
 
-IDC 不设计 OKL 本体，只约束如何使用 `okl-query`。
+IDC 不设计 OKL 本体，只约束什么时候调用 OKL，以及如何使用 `okl-query` 这条命令。
 
 `okl-query` 请求必须：
 
@@ -91,8 +91,10 @@ Provider 结果统一进入 Context Packet：
 ```yaml
 provider_selection_result:
   selected_order:
-    - okl-query
+    - OKL
     - grep
+  commands:
+    OKL: okl-query
   budget:
     max_okl_queries: 1
     max_grep_queries: 5

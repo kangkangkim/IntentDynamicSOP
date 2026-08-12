@@ -14,7 +14,7 @@ Knowledge Gate 的职责是：只加载当前 execution unit 需要的知识。
 
 - grep。
 - CodeGraph。
-- okl-query。
+- OKL。
 - Repository search。
 
 V0 不实现真实 CodeGraph 或 Wiki，只定义接口和 placeholder。
@@ -60,7 +60,8 @@ okl-query
 
 Knowledge Gate 不设计 OKL 本体，只约束：
 
-- 什么时候调用 `okl-query`。
+- 什么时候调用 OKL。
+- 调用 OKL 时如何使用 `okl-query` 命令。
 - query 问多窄。
 - 返回内容如何摘要。
 - refs 如何进入 Context Packet。

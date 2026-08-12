@@ -7,7 +7,7 @@ Repo Context Providers 的目标是用较少 token 找到足够的仓库事实�
 ```text
 grep      -> 文本事实
 CodeGraph -> 结构事实
-okl-query -> OKL / LLM Wiki 知识文档事实
+OKL       -> LLM Wiki 知识文档事实，保密区用 okl-query 命令调用
 ```
 
 这些事实会进入 Context Packet，帮助 Agent 执行，但不能直接作为 DONE evidence。
@@ -43,7 +43,7 @@ workflows/provider-selection-matrix.md
 
 ```text
 有代码锚点：先 bounded grep
-无代码锚点但有领域语义：先 okl-query
+无代码锚点但有领域语义：先 OKL
 既无锚点也无领域语义：先 Discovery / Grilling
 ```
 
