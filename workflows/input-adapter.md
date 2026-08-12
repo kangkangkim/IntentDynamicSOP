@@ -9,6 +9,14 @@ natural_language_intent
 tr3_design_doc
 ```
 
+同时判断输入成熟度：
+
+```text
+raw_idea
+structured_requirement
+tr3_design_doc
+```
+
 ## Natural Language Intent
 
 用户输入可能是一句话或几句话。
@@ -20,6 +28,20 @@ Adapter 提取：
 - 风险线索。
 - 文件 / 模块 / 接口线索。
 - 明显缺失信息。
+
+如果输入只有目标或愿望，没有行为语义、边界和验收标准，标记为：
+
+```yaml
+input_maturity: raw_idea
+next_pre_alignment_step: Discovery Provider
+```
+
+如果输入已经有目标、核心行为和部分验收线索，标记为：
+
+```yaml
+input_maturity: structured_requirement
+next_pre_alignment_step: Clarification Provider
+```
 
 ## TR3 Design Doc
 
@@ -37,6 +59,7 @@ Adapter 需要抽取：
 ```yaml
 normalized_request:
   input_type: tr3_design_doc
+  input_maturity: tr3_design_doc
   extracted_requirement: ...
   extracted_api_semantics: ...
   extracted_dt_design: ...
@@ -44,6 +67,8 @@ normalized_request:
   explicit_domain_hints: []
   open_questions: []
 ```
+
+TR3 默认跳过 Discovery Provider，直接进入 Clarification Provider。
 
 同时输出分类信号：
 

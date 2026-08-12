@@ -1,0 +1,42 @@
+schema: discovery_provider
+version: 0
+
+description: >
+  Machine-readable contract for expanding raw ideas before clarification and alignment.
+
+provider:
+  selected_provider: brainstorming-method | builtin-discovery-questions
+  fallback_used: boolean
+  input_maturity: raw_idea
+
+context_refs:
+  - string
+
+questions_asked:
+  - id: string
+    question: string
+    answer_summary: string
+
+approaches:
+  - id: string
+    summary: string
+    tradeoff: string
+    recommendation: boolean
+
+draft_spec:
+  goal: string
+  users_or_callers: string
+  core_behavior: string
+  out_of_scope:
+    - string
+  acceptance_signals:
+    - string
+
+next: Clarification Provider
+
+rules:
+  - Discovery is for raw_idea input only by default.
+  - TR3 design docs skip Discovery.
+  - Brainstorming method is inspired by obra/superpowers, not copied verbatim.
+  - Draft spec is not an approved contract.
+  - Discovery must not write implementation code.

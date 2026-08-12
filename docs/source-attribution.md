@@ -39,3 +39,39 @@ workflows/clarification-provider.md
 human-views/clarification-view.md
 schemas/clarification-provider.schema.yaml
 ```
+
+## Superpowers Brainstorming Inspiration
+
+本仓库的 Discovery Provider 吸收了 `obra/superpowers` 项目中 `brainstorming` skill 的公开设计思想。
+
+Source:
+
+```text
+https://github.com/obra/superpowers
+https://github.com/obra/superpowers/tree/main/skills/brainstorming
+```
+
+License:
+
+```text
+MIT License
+Copyright (c) 2025 Jesse Vincent
+```
+
+本仓库吸收的是方法论，不是逐字复制原始 skill prompt。
+
+吸收点：
+
+- project context first：先理解项目上下文，再展开想法。
+- one question at a time：一次只问一个关键问题。
+- alternatives with trade-offs：给出 2-3 个方案、取舍和推荐。
+- design before implementation：设计确认前不进入实现。
+- written draft spec：把发散结果沉淀成 draft spec，再进入收敛。
+
+在 Intent Dynamic Code 中，这些思想被落到：
+
+```text
+workflows/discovery-provider.md
+human-views/brainstorming-view.md
+schemas/discovery-provider.schema.yaml
+```

@@ -21,6 +21,8 @@ Default mode:
 
 ```text
 Input Adapter
+  -> Intent Maturity Router
+  -> Discovery Provider if raw_idea
   -> Domain Resolver
   -> Lane Resolver
   -> Contract Gate
@@ -75,6 +77,9 @@ workflows/lane-resolver.md
 workflows/contract-gate.md
 workflows/human-alignment.md
 schemas/alignment-pack.schema.yaml
+workflows/discovery-provider.md
+schemas/discovery-provider.schema.yaml
+human-views/brainstorming-view.md
 human-views/alignment-view.md
 human-views/clarification-view.md
 ```
@@ -85,6 +90,14 @@ If Requirement Assessor returns `NEED_CLARIFICATION`, also read:
 workflows/clarification-provider.md
 schemas/clarification-provider.schema.yaml
 human-views/clarification-view.md
+```
+
+If `input_maturity = raw_idea`, run Discovery Provider before Clarification Provider:
+
+```text
+workflows/discovery-provider.md
+schemas/discovery-provider.schema.yaml
+human-views/brainstorming-view.md
 ```
 
 If the input is TR3, also read:
@@ -123,6 +136,8 @@ docs/token-budget-policy.md
 ## Hard rules
 
 - Do not write implementation code before Human Alignment approval.
+- Use `brainstorming-method` for `raw_idea`: explore context, ask one key question at a time, propose 2-3 approaches when useful, then draft spec.
+- Skip Discovery Provider for TR3 unless the TR3 is too incomplete to identify behavior.
 - Clarification Provider only asks for critical missing information needed for contracts, scope, or completion gates.
 - Prefer `grill-me-method` for clarification: decision tree, frontier rounds, commitment check, no implementation.
 - Use `grill-with-docs-method` only when clarification should create non-sensitive decision records.
@@ -140,6 +155,8 @@ docs/token-budget-policy.md
 If the user has not approved yet, output an Alignment Pack summary and ask for approval.
 
 If critical information is missing, output `human-views/clarification-view.md` first and do not ask for approval yet.
+
+If the input is a raw idea, output `human-views/brainstorming-view.md` before clarification.
 
 If the user approved, run the automated closure loop and report:
 

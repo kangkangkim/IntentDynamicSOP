@@ -82,12 +82,14 @@ domains/d3a/module.yaml
 ```text
 用户任务
   -> Scenario Router
+  -> Intent Maturity Router
+  -> Discovery Provider / 一句话想法先发散
   -> Domain Module Router
   -> 选择 d3a module
   -> Lane Resolver
   -> Contract Gate
   -> D3A Requirement Assessor
-  -> Clarification Provider / 必要时澄清
+  -> Clarification Provider / Grill Me 收敛
   -> Alignment Pack
   -> Human Alignment
   -> Automated Closure Loop
@@ -110,6 +112,7 @@ domains/d3a/module.yaml
 - `workflows/scenario-router.md`：顶层场景路由。
 - `skills/id-workflow/SKILL.md`：ID workflow 的 Skill 触发入口。
 - `workflows/input-adapter.md`：支持一句话输入和 TR3 设计文档输入。
+- `workflows/discovery-provider.md`：吸收 Superpowers Brainstorming 方法论，把 raw idea 展开成 draft spec。
 - `workflows/domain-module-router.md`：根据 `domains/registry.yaml` 选择可插拔 module。
 - `workflows/progressive-constraint-loading.md`：三段式约束加载。
 - `workflows/repo-context-providers.md`：grep / CodeGraph / OKL 统一 provider contract。
@@ -123,7 +126,7 @@ domains/d3a/module.yaml
 - `workflows/requirement-assessor.md`：需求清晰度判断规则。
 - `workflows/d3a-workflow.md`：D3A 固定骨架和动态规划点。
 - `workflows/tdd-state-machine.md`：RED / GREEN / completion gate。
-- `human-views/`：给用户看的中文 Clarification / Alignment / Completion / Escalation 卡片模板。
+- `human-views/`：给用户看的中文 Brainstorming / Clarification / Alignment / Completion / Escalation 卡片模板。
 - `docs/domain-module-contract.md`：团队接入自己的 Domain Module 时遵循的契约。
 - `docs/adoption-guide.md`：其他团队复制 SOP 的指南。
 - `docs/token-budget-policy.md`：保密区 token / provider 限额策略。
@@ -176,6 +179,7 @@ python3 tests/test_harness.py
 - Progressive Constraint Loading 三段约束文件必须存在。
 - E2E TR3 D3A demo 必须包含完整链路文件。
 - Human View 模板必须存在，避免把完整 YAML 直接作为用户主界面。
+- Discovery Provider 必须支持 Superpowers Brainstorming method，并且 TR3 默认跳过 Discovery。
 - Clarification Provider 必须支持 Grill Me method、frontier round 和 builtin fallback。
 - Requirement Assessor 能识别关键字段缺失。
 - Layer Context Packet 只能包含当前 Layer。

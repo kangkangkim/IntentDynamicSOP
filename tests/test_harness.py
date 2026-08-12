@@ -409,10 +409,13 @@ def test_id_workflow_skill_exists_and_has_triggers():
     assert_true("human-views/alignment-view.md" in text, "ID workflow skill 必须加载 Alignment View。")
     assert_true("human-views/clarification-view.md" in text, "ID workflow skill 必须加载 Clarification View。")
     assert_true("grill-me-method" in text, "ID workflow skill 必须声明 Grill Me method。")
+    assert_true("brainstorming-method" in text, "ID workflow skill 必须声明 Brainstorming method。")
+    assert_true("human-views/brainstorming-view.md" in text, "ID workflow skill 必须加载 Brainstorming View。")
 
 
 def test_human_views_exist_and_hide_raw_yaml():
     required_files = [
+        "human-views/brainstorming-view.md",
         "human-views/clarification-view.md",
         "human-views/alignment-view.md",
         "human-views/completion-view.md",
@@ -423,10 +426,13 @@ def test_human_views_exist_and_hide_raw_yaml():
         assert_true("## 模板" in text, f"{file_name} 缺少用户模板。")
         assert_true("## 规则" in text, f"{file_name} 缺少展示规则。")
 
+    brainstorming = read_text("human-views/brainstorming-view.md")
     alignment = read_text("human-views/alignment-view.md")
     clarification = read_text("human-views/clarification-view.md")
     completion = read_text("human-views/completion-view.md")
     escalation = read_text("human-views/escalation-view.md")
+    assert_true("只在 raw idea 场景默认展示" in brainstorming, "Brainstorming View 必须只用于 raw idea。")
+    assert_true("一次只问一个真正关键的问题" in brainstorming, "Brainstorming View 必须限制逐个追问。")
     assert_true("每轮最多展示 5 个关键问题" in clarification, "Clarification View 必须限制问题数量。")
     assert_true("grill-me-method" in clarification, "Clarification View 必须支持 Grill Me method 展示。")
     assert_true("当前 Frontier" in clarification, "Clarification View 必须展示 frontier round。")
@@ -457,6 +463,27 @@ def test_clarification_provider_uses_grill_me_method_with_fallback():
     assert_true("https://github.com/mattpocock/skills" in attribution, "Source attribution 必须记录来源 URL。")
     assert_true("workflows/clarification-provider.md" in human_alignment, "Human Alignment 必须引用 Clarification Provider。")
     assert_true("next: \"Clarification Provider\"" in requirement_assessor, "Requirement Assessor 必须把澄清交给 Provider。")
+
+
+def test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea():
+    workflow = read_text("workflows/discovery-provider.md")
+    schema = read_text("schemas/discovery-provider.schema.yaml")
+    input_adapter = read_text("workflows/input-adapter.md")
+    normalized_schema = read_text("schemas/normalized-request.schema.yaml")
+    attribution = read_text("docs/source-attribution.md")
+
+    assert_true("obra/superpowers" in workflow, "Discovery Provider 必须标注 Superpowers 方法论来源。")
+    assert_true("brainstorming-method" in workflow, "Discovery Provider 必须声明 brainstorming-method。")
+    assert_true("builtin-discovery-questions" in workflow, "Discovery Provider 必须声明 builtin fallback。")
+    assert_true("一次只问一个真正关键的问题" in workflow, "Discovery Provider 必须逐个追问。")
+    assert_true("2-3 个方案" in workflow, "Discovery Provider 必须支持多方案取舍。")
+    assert_true("Draft spec is not an approved contract." in schema, "Discovery draft spec 不能等于 approved contract。")
+    assert_true("TR3 design docs skip Discovery." in schema, "TR3 必须默认跳过 Discovery。")
+    assert_true("input_maturity: raw_idea" in input_adapter, "Input Adapter 必须能标记 raw_idea。")
+    assert_true("next_pre_alignment_step: Discovery Provider" in input_adapter, "raw_idea 必须进入 Discovery Provider。")
+    assert_true("tr3_design_doc 默认跳过 Discovery Provider" in normalized_schema, "Normalized schema 必须声明 TR3 跳过 Discovery。")
+    assert_true("https://github.com/obra/superpowers" in attribution, "Source attribution 必须记录 Superpowers 来源 URL。")
+    assert_true("Copyright (c) 2025 Jesse Vincent" in attribution, "Source attribution 必须记录 Superpowers copyright。")
 
 
 def test_planner_cannot_produce_registry_external_layers():
@@ -617,6 +644,7 @@ def run():
         test_id_workflow_skill_exists_and_has_triggers,
         test_human_views_exist_and_hide_raw_yaml,
         test_clarification_provider_uses_grill_me_method_with_fallback,
+        test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea,
         test_planner_cannot_produce_registry_external_layers,
         test_requirement_assessor_detects_missing_critical_fields,
         test_layer_context_packet_only_contains_selected_layer,

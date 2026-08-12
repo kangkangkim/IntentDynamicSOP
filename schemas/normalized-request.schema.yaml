@@ -1,5 +1,6 @@
 normalized_request:
   input_type: natural_language_intent | tr3_design_doc
+  input_maturity: raw_idea | structured_requirement | tr3_design_doc
   source_ref: string
   extracted_requirement: string
   extracted_api_semantics: string
@@ -24,9 +25,13 @@ classification:
     multiple_test_domains: false
     high_failure_impact: false
   missing_information: []
+  next_pre_alignment_step: Discovery Provider | Clarification Provider
 
 rules:
   - TR3 是高级输入源，不是 completion evidence。
+  - raw_idea 必须先进入 Discovery Provider。
+  - structured_requirement 默认进入 Clarification Provider。
+  - tr3_design_doc 默认跳过 Discovery Provider。
   - TR3 可以减少澄清和 contract 生成成本，但不能替代 RED/GREEN/build evidence。
   - Input Adapter 只抽取事实和分类信号，不执行 planner。
   - Domain Resolver 根据 domain_candidates 和 module trigger_rules 选择 module。
