@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDC Workflow: D3A 和 General Coding</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #c9d2e3;
+      --blue: #2f6fed;
+      --green: #218358;
+      --amber: #a86705;
+      --red: #b42318;
+      --panel: #ffffff;
+      --soft-blue: #eaf1ff;
+      --soft-green: #e8f6ef;
+      --soft-amber: #fff2d6;
+      --soft-red: #ffe9e7;
+      --soft-gray: #eef1f6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      line-height: 1.45;
+    }
+
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    header {
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      max-width: 920px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 18px 0 24px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .dot.core { background: var(--blue); }
+    .dot.d3a { background: var(--amber); }
+    .dot.general { background: var(--green); }
+    .dot.human { background: var(--red); }
+    .dot.knowledge { background: #6941c6; }
+
+    .map {
+      display: grid;
+      grid-template-columns: 1.08fr 1fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px;
+      min-height: 120px;
+    }
+
+    .section h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .flow {
+      display: grid;
+      gap: 10px;
+    }
+
+    .node {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 11px 12px;
+      position: relative;
+    }
+
+    .node::after {
+      content: "";
+      position: absolute;
+      left: 22px;
+      bottom: -11px;
+      width: 2px;
+      height: 10px;
+      background: var(--line);
+    }
+
+    .node:last-child::after,
+    .branch .node::after,
+    .side-by-side .node::after,
+    .knowledge-grid .node::after {
+      display: none;
+    }
+
+    .node strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    .node small {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+    }
+
+    .core { background: var(--soft-blue); border-color: #aac2ff; }
+    .d3a { background: var(--soft-amber); border-color: #e8bd65; }
+    .general { background: var(--soft-green); border-color: #9bd7ba; }
+    .human { background: var(--soft-red); border-color: #ffb3ad; }
+    .knowledge { background: #f0eafd; border-color: #cab8f6; }
+    .neutral { background: var(--soft-gray); }
+
+    .branch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .lane-row,
+    .side-by-side,
+    .knowledge-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .lane-row {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .side-by-side {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .knowledge-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .arrow-label {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 2px 0;
+    }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
+
+    .note {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px dashed var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .compact-list {
+      margin: 8px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.95em;
+      background: rgba(23, 32, 51, 0.06);
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 1100px) {
+      .map {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      main {
+        padding: 18px;
+      }
+
+      .branch,
+      .lane-row,
+      .side-by-side,
+      .knowledge-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Intent Dynamic Code Workflow</h1>
+      <p class="subtitle">从用户输入开始，先做发散、收敛和人工对齐，再按 Domain 分成 D3A 或 General Coding，approve 后进入自动闭环。</p>
+    </header>
+
+    <div class="legend" aria-label="图例">
+      <span><i class="dot core"></i>Core 编排</span>
+      <span><i class="dot human"></i>人看的中文卡片</span>
+      <span><i class="dot d3a"></i>D3A Domain</span>
+      <span><i class="dot general"></i>General Domain</span>
+      <span><i class="dot knowledge"></i>知识检索</span>
+    </div>
+
+    <section class="section wide">
+      <h2>1. 输入到人工对齐</h2>
+      <div class="flow">
+        <div class="node core">
+          <strong>用户输入</strong>
+          <small>一句话 / 普通结构化需求 / TR3 文档</small>
+        </div>
+        <div class="node core">
+          <strong>Input Adapter</strong>
+          <small>抽取需求、API 语义、验收、domain hints，并判断 input maturity</small>
+        </div>
+        <div class="branch">
+          <div class="node core">
+            <strong>raw_idea</strong>
+            <small>进入 <code>intent-discovery</code>，以 Superpowers Brainstorming 为 baseline</small>
+          </div>
+          <div class="node core">
+            <strong>structured_requirement / tr3_design_doc</strong>
+            <small>跳过 Brainstorming，直接准备进入 Grill Me 收敛</small>
+          </div>
+        </div>
+        <div class="branch">
+          <div class="node human">
+            <strong>Brainstorming View</strong>
+            <small>只给 raw idea：把模糊想法展开成 draft spec</small>
+          </div>
+          <div class="node core">
+            <strong>TR3 Adapter</strong>
+            <small>TR3 抽取需求 / API / DT / 验收 / 影响范围</small>
+          </div>
+        </div>
+        <div class="node core">
+          <strong>intent-grilling</strong>
+          <small>Grill Me 收敛：decision tree、frontier round、critical questions</small>
+        </div>
+        <div class="node human">
+          <strong>Clarification View</strong>
+          <small>信息不够时给用户看关键追问；答完回到 Requirement Assessor</small>
+        </div>
+        <div class="node core">
+          <strong>Requirement Assessor</strong>
+          <small>判断是否足够进入 Domain / Lane / Contract 对齐</small>
+        </div>
+        <div class="node core">
+          <strong>Domain Module Router</strong>
+          <small>选择 <code>d3a</code>、<code>general</code> 或未来 team-domain</small>
+        </div>
+      </div>
+    </section>
+
+    <div class="map">
+      <section class="section">
+        <h2>2A. D3A Path</h2>
+        <div class="flow">
+          <div class="node d3a">
+            <strong>D3A Domain Module</strong>
+            <small><code>domains/d3a/module.yaml</code></small>
+          </div>
+          <div class="node d3a">
+            <strong>固定 Architecture Space</strong>
+            <small>TRAN_CFG / DO / VISP_ADP / TFC_TFI / TFE / ADP / DRV</small>
+          </div>
+          <div class="node d3a">
+            <strong>V0 DT Domain</strong>
+            <small>TPRINT / FW / DPF；真实 mapping 进保密区后填写</small>
+          </div>
+          <div class="node core">
+            <strong>Required Contracts</strong>
+            <small>D3A spec、API contract、task contract、verification contract</small>
+          </div>
+          <div class="node d3a">
+            <strong>D3A Plan</strong>
+            <small>Layer 选择、DT Domain 选择、Dependency DAG、Verification Mapping</small>
+          </div>
+          <div class="node d3a">
+            <strong>Layer Context Packet</strong>
+            <small>一个 packet 只含一个 D3A Layer，避免多 Layer 上下文污染</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>2B. General Path</h2>
+        <div class="flow">
+          <div class="node general">
+            <strong>General Domain Module</strong>
+            <small><code>domains/general/module.yaml</code></small>
+          </div>
+          <div class="node general">
+            <strong>General Registry</strong>
+            <small>只保留 placeholder，不编造团队 taxonomy</small>
+          </div>
+          <div class="node general">
+            <strong>Components</strong>
+            <small>GENERAL_COMPONENT_PLACEHOLDER 等，进入真实团队后替换</small>
+          </div>
+          <div class="node general">
+            <strong>Test Domains</strong>
+            <small>GENERAL_TEST_PLACEHOLDER 等，进入真实团队后替换</small>
+          </div>
+          <div class="node core">
+            <strong>Required Contracts</strong>
+            <small>task contract、verification contract；API contract 只在 API/外部行为变化时需要</small>
+          </div>
+          <div class="node general">
+            <strong>General Plan</strong>
+            <small>placeholder component、placeholder test domain、execution units、evidence gate</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>3. Lane 和人工确认</h2>
+        <div class="flow">
+          <div class="node core">
+            <strong>Lane Resolver</strong>
+            <small>根据风险、复杂度、跨模块、测试域、API 变化等选择执行强度</small>
+          </div>
+          <div class="lane-row">
+            <div class="node neutral"><strong>fast</strong><small>小闭环，不代表无验证</small></div>
+            <div class="node neutral"><strong>lite</strong><small>标准闭环</small></div>
+            <div class="node neutral"><strong>complex</strong><small>分阶段闭环</small></div>
+          </div>
+          <div class="node core">
+            <strong>Contract Gate</strong>
+            <small>根据 Domain + Lane 决定 task / API / verification contract</small>
+          </div>
+          <div class="node human">
+            <strong>intent-alignment</strong>
+            <small>把 machine contract 渲染成 Alignment View</small>
+          </div>
+          <div class="node human">
+            <strong>Alignment View</strong>
+            <small>用户确认任务理解、Domain、Lane、范围、完成标准</small>
+          </div>
+          <div class="node human">
+            <strong>approve?</strong>
+            <small>未 approve 不写代码；approve 后进入自动闭环</small>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="section wide" style="margin-top: 18px;">
+      <h2>4. approve 后自动闭环</h2>
+      <div class="side-by-side">
+        <div class="flow">
+          <div class="node core">
+            <strong>Automated Closure Loop</strong>
+            <small>Planner -> Constraints -> Knowledge Gate -> Execution -> Verification</small>
+          </div>
+          <div class="node core">
+            <strong>Execution Unit</strong>
+            <small>每个阶段代码变更 <= 500 LOC，每个 unit 有独立 evidence</small>
+          </div>
+          <div class="node core">
+            <strong>TDD State Machine</strong>
+            <small>需要测试时必须 RED -> GREEN；无 RED 不能直接 GREEN</small>
+          </div>
+          <div class="node core">
+            <strong>Verification Gate</strong>
+            <small>测试、build、static check、tran_build 等工具证据</small>
+          </div>
+          <div class="branch">
+            <div class="node human">
+              <strong>Completion View</strong>
+              <small>全部 gate 满足后展示 DONE 摘要</small>
+            </div>
+            <div class="node human">
+              <strong>Escalation View</strong>
+              <small>证据缺失、scope/contract 变化、execution unit 过大时回流给人</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow">
+          <div class="node knowledge">
+            <strong>Knowledge Gate</strong>
+            <small>只加载当前 execution unit 需要的知识</small>
+          </div>
+          <div class="node knowledge">
+            <strong>Provider Selection Matrix</strong>
+            <small>根据 anchor、domain、lane 和 token 预算选择 provider</small>
+          </div>
+          <div class="knowledge-grid">
+            <div class="node knowledge">
+              <strong>bounded grep</strong>
+              <small>有代码 anchor 时先用；定位 symbol / error / file</small>
+            </div>
+            <div class="node knowledge">
+              <strong>OKL</strong>
+              <small>LLM Wiki；命令是 <code>okl-query</code>；无 anchor 有 domain 时先用</small>
+            </div>
+            <div class="node knowledge">
+              <strong>targeted CodeGraph</strong>
+              <small>影响面不清楚时用；caller / callee / dependency</small>
+            </div>
+          </div>
+          <div class="node knowledge">
+            <strong>Context Packet</strong>
+            <small>只放 summary + evidence_ref，不放长文、长日志或全仓输出</small>
+          </div>
+          <div class="note">
+            <strong>Provider 顺序：</strong>
+            <ul class="compact-list">
+              <li>有代码 anchor：bounded grep -> CodeGraph? -> OKL?</li>
+              <li>无 anchor 但有 domain：OKL -> bounded grep -> CodeGraph?</li>
+              <li>无 anchor 且无 domain：Discovery / Grilling -> OKL? -> grep</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section wide" style="margin-top: 18px;">
+      <h2>一句话总结</h2>
+      <div class="branch">
+        <div class="node d3a">
+          <strong>D3A</strong>
+          <small>固定 Layer / DT Domain，API Contract 必须先于实现，全部 required DT GREEN 且 tran_build PASS 才 DONE。</small>
+        </div>
+        <div class="node general">
+          <strong>General</strong>
+          <small>不编造真实 taxonomy，只用 placeholder module；task / verification contract 满足，required tests/builds PASS 才 DONE。</small>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

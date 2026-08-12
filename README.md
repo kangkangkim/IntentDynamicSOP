@@ -42,6 +42,7 @@ README.md
 - `docs/adoption-guide.md`：看其他团队如何复制 SOP。
 - `docs/atomic-skills.md`：看哪些能力已经拆成可复用原子 skill。
 - `docs/architecture-diagram.md`：看 Core + Domain Module 的架构图。
+- `docs/flow-d3a-general.html`：看从输入开始的 D3A / General 双路径 HTML 图。
 - `docs/confidential-migration-checklist.md`：看进入保密区后要填什么、先做哪条 vertical slice。
 - `docs/terminology.md`：看哪些英文是故意保留的机器稳定标识。
 
@@ -139,6 +140,7 @@ domains/d3a/module.yaml
 - `docs/source-attribution.md`：公开方法论来源和 license attribution。
 - `docs/atomic-skills.md`：可复用原子 skill 列表和边界。
 - `docs/architecture-diagram.md`：Core + Domain Module 架构图。
+- `docs/flow-d3a-general.html`：D3A / General 双路径可视化 HTML。
 - `docs/confidential-migration-checklist.md`：进入保密区前后的 checklist。
 - `docs/terminology.md`：中英文术语保留规则。
 - `domains/`：Domain Module 注册表、D3A module、团队模板 module。

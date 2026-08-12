@@ -485,6 +485,19 @@ def test_e2e_general_demo_is_complete():
 
 def test_adoption_and_deep_dive_docs_exist():
     assert_true((ROOT / "docs/adoption-guide.md").exists(), "缺少 adoption guide。")
+    html = read_text("docs/flow-d3a-general.html")
+    for fragment in [
+        "Intent Dynamic Code Workflow",
+        "D3A Path",
+        "General Path",
+        "Brainstorming View",
+        "Alignment View",
+        "GENERAL_COMPONENT_PLACEHOLDER",
+        "TRAN_CFG",
+        "OKL",
+        "targeted CodeGraph",
+    ]:
+        assert_true(fragment in html, f"D3A / General HTML 图缺少关键节点：{fragment}")
     for file_name in [
         "docs/deep-dive/repo-context-providers.md",
         "docs/deep-dive/progressive-constraint-loading.md",
