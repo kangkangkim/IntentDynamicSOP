@@ -18,7 +18,9 @@ Atomic Skill 是可以被其他团队单独复用的小能力。
 raw_idea -> approaches + draft_spec
 ```
 
-用于一句话需求、模糊想法和早期产品方向。
+仅用于模糊想法、raw idea 和早期产品方向。
+
+短需求不等于模糊需求；如果一句话已经包含目标、行为和验收线索，应跳过 `brainstorming`，进入 Grill Me / Alignment。
 
 这是可直接复用的发散原子能力，吸收 Superpowers Brainstorming 方法论，先探索 2-3 个方向，再产出 draft spec。
 
@@ -28,7 +30,7 @@ raw_idea -> approaches + draft_spec
 raw_idea -> draft_spec
 ```
 
-用于 IDC workflow 内的一句话需求或模糊想法。
+用于 IDC workflow 内的模糊想法。
 
 它是 `brainstorming` 的 IDC wrapper，负责把发散结果接入 normalized request、Grill Me 和 Alignment。
 

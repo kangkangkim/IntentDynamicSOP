@@ -38,7 +38,9 @@ builtin-discovery-questions
 
 ### upstream-superpowers-brainstorming
 
-默认 baseline provider，用于一句话需求或模糊想法。
+默认 baseline provider，只用于 `raw_idea` / 模糊想法。
+
+不要因为需求很短就默认 Brainstorming；如果短需求已经包含目标、行为和验收线索，它是 `structured_requirement`，应跳过 Discovery。
 
 保留 upstream 的核心流程：
 
@@ -77,7 +79,7 @@ IDC overlay 只做接线和边界微调：
 
 ```text
 raw_idea:
-  - 一句话需求。
+  - 一句话但仍然模糊的需求。
   - 目标词很多，但没有行为语义。
   - 没有明确验收标准。
   - 没有 API / 数据 / 测试线索。
@@ -86,6 +88,7 @@ structured_requirement:
   - 有目标和主要行为。
   - 可能缺少边界或验收。
   - 通常跳过 Discovery，直接进入 Clarification Provider。
+  - 即使只有一句话，只要目标、行为和验收线索已出现，也不进入 Brainstorming。
 
 tr3_design_doc:
   - 已有设计、DT、验收或影响范围。

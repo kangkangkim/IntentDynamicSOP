@@ -695,6 +695,8 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
             "name: brainstorming",
             "raw idea",
             "2-3 concrete approaches",
+            "Use only when",
+            "Do not use this skill merely because the request is short",
             "upstream Superpowers brainstorming",
             "../id-workflow/references/workflows/discovery-provider.md",
             "../id-workflow/references/human-views/brainstorming-view.md",
@@ -705,6 +707,7 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
             "raw_idea",
             "IDC wrapper around the reusable `brainstorming` skill",
             ".claude/skills/brainstorming/SKILL.md",
+            "Do not use brainstorming merely because the request is short",
             "rough / vague / sketchy general coding request",
             "`general + rough` still uses this skill",
             "../id-workflow/references/workflows/discovery-provider.md",
@@ -805,6 +808,7 @@ def test_human_views_exist_and_hide_raw_yaml():
     completion = read_text(".claude/skills/id-workflow/references/human-views/completion-view.md")
     escalation = read_text(".claude/skills/id-workflow/references/human-views/escalation-view.md")
     assert_true("只在 raw idea 场景默认展示" in brainstorming, "Brainstorming View 必须只用于 raw idea。")
+    assert_true("短但结构化的需求跳过 Brainstorming" in brainstorming, "Brainstorming View 必须声明短但结构化需求跳过。")
     assert_true("不因上下文裁剪牺牲需求探索质量" in brainstorming, "Brainstorming View 不能因上下文裁剪牺牲探索质量。")
     assert_true("每轮最多展示 5 个关键问题" in clarification, "Clarification View 必须限制问题数量。")
     assert_true("选择题问题卡" in clarification, "Clarification View 必须默认使用选择题问题卡。")
@@ -859,6 +863,8 @@ def test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea():
     assert_true("builtin-discovery-questions" in workflow, "Discovery Provider 必须声明 builtin fallback。")
     assert_true("focused discovery questions" in workflow, "Discovery Provider 必须支持聚焦探索问题。")
     assert_true("不因上下文裁剪牺牲需求探索质量" in workflow, "Discovery Provider 不能因上下文裁剪牺牲探索质量。")
+    assert_true("不要因为需求很短就默认 Brainstorming" in workflow, "Discovery Provider 不能因为需求短就默认 Brainstorming。")
+    assert_true("即使只有一句话，只要目标、行为和验收线索已出现，也不进入 Brainstorming。" in workflow, "Discovery Provider 必须让短但结构化需求跳过 Brainstorming。")
     assert_true("2-3 个方案" in workflow, "Discovery Provider 必须支持多方案取舍。")
     assert_true("Draft spec is not an approved contract." in schema, "Discovery draft spec 不能等于 approved contract。")
     assert_true("Upstream Superpowers brainstorming is the baseline." in schema, "Discovery schema 必须声明 upstream baseline。")

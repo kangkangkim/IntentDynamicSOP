@@ -114,8 +114,8 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 - `.claude/skills/id-workflow/references/human-views/`：给用户看的中文 Brainstorming / Clarification / Alignment / Completion / Escalation 模板。
 - `.claude/skills/id-workflow/references/constraints/`：decision / planning / execution 三段式约束。
 - `.claude/skills/id-workflow/references/knowledge/`：D3A Layer、DT Domain、General placeholder knowledge 模板。
-- `.claude/skills/brainstorming/SKILL.md`：一句话需求发散和多方案探索的原子 skill。
-- `.claude/skills/intent-discovery/SKILL.md`：一句话需求发散成 draft spec 的原子 skill。
+- `.claude/skills/brainstorming/SKILL.md`：仅用于模糊想法的发散和多方案探索原子 skill。
+- `.claude/skills/intent-discovery/SKILL.md`：IDC 内把模糊想法接入 draft spec 的原子 skill。
 - `.claude/skills/intent-grilling/SKILL.md`：Grill Me 收敛追问的原子 skill。
 - `.claude/skills/intent-alignment/SKILL.md`：人类前置确认的原子 skill。
 - `.claude/skills/general-coding/SKILL.md`：General Coding execution skill。

@@ -28,13 +28,12 @@ This is the orchestration skill. It delegates reusable pre-alignment work to ato
 
 This skill must route rough requests before Domain execution.
 
-Treat these as `raw_idea` even when the user mentions General Coding:
+Treat these as `raw_idea` only when the user intent is actually vague, even when the user mentions General Coding:
 
 ```text
 rough
 vague
 sketchy
-one-line
 early idea
 大概想做
 先试试
@@ -43,6 +42,8 @@ early idea
 ```
 
 If a General Coding request is rough, run `intent-discovery` first.
+
+If a short request already has goal, behavior, and acceptance signals, do not use Brainstorming; continue to Clarification / Alignment.
 
 Do not let `Domain = general` skip Brainstorming when the input is still rough.
 

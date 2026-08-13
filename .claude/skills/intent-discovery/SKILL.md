@@ -1,6 +1,6 @@
 ---
 name: intent-discovery
-description: Use when a coding request is a raw idea, one-line intent, vague feature request, or early product thought that needs brainstorming before clarification; expand it into a draft spec without writing implementation code.
+description: Use only when a coding request is a raw idea, vague feature request, or early product thought that needs brainstorming before clarification; expand it into a draft spec without writing implementation code.
 ---
 
 # Intent Discovery
@@ -17,7 +17,7 @@ Use `.claude/skills/brainstorming/SKILL.md` for divergent exploration, then appl
 
 Use for:
 
-- 一句话需求。
+- 一句话但仍然模糊的需求。
 - 模糊想法。
 - rough / vague / sketchy general coding request。
 - 用户说“大概想做”“先试试”“还没想清楚”“不完整想法”。
@@ -26,6 +26,7 @@ Use for:
 
 Do not use by default for:
 
+- 一句话但已经给出目标、行为和验收线索的需求。
 - TR3 design docs.
 - 已经有目标、核心行为和验收线索的 structured requirement。
 - 已经 approved 的 Alignment Pack。
@@ -71,6 +72,7 @@ The draft spec must include:
 - Do not write implementation code.
 - Do not mark draft spec as approved contract.
 - Do not treat upstream design approval as implementation approval; hand off to `intent-grilling` and `intent-alignment`.
+- Do not use brainstorming merely because the request is short; short structured requests go to Grill Me / Alignment.
 - Use Chinese if the user used Chinese.
 - TR3 skips this skill unless the TR3 is too incomplete to identify behavior.
 - Domain hint must not suppress discovery: `general + rough` still uses this skill.

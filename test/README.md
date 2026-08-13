@@ -35,10 +35,10 @@
 
 ## 成功体验标准
 
-- rough general 必须先 Brainstorming。
+- rough / 模糊 general 必须先 Brainstorming。
+- 短但结构化的 general 不应该进入 Brainstorming。
 - structured general 应该直接 Grill Me / Alignment，不默认 Brainstorming。
 - TR3 D3A 默认跳过 Brainstorming，但要做 contract gap check。
 - approved 后才进入 execution / subagent。
 - failure fix 应该先分析 evidence，再 targeted fix。
 - large fan-out 才应该考虑 official dynamic workflow。
-

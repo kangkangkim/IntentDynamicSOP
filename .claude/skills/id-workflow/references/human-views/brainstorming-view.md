@@ -1,6 +1,6 @@
 # Brainstorming View
 
-这是给一句话需求或模糊想法看的发散设计卡片。
+这是只给 `raw_idea` / 模糊想法看的发散设计卡片。
 
 背后的机器契约是：
 
@@ -55,6 +55,7 @@ schemas/discovery-provider.schema.yaml
 ## 规则
 
 - 只在 raw idea 场景默认展示。
+- 不因为需求很短就展示；短但结构化的需求跳过 Brainstorming。
 - TR3 文档默认不展示 Brainstorming View。
 - 根据问题复杂度成组追问，不因上下文裁剪牺牲需求探索质量。
 - 如果存在多个合理设计方向，展示 2-3 个方案和推荐。

@@ -1,11 +1,11 @@
 ---
 name: brainstorming
-description: Use when a coding request is still a raw idea, one-line thought, vague feature concept, or early product direction that needs divergent exploration before clarification or implementation; produce 2-3 concrete approaches and a draft spec, without writing code.
+description: Use only when a coding request is a raw idea, vague thought, unclear feature concept, or early product direction that needs divergent exploration before clarification or implementation; produce 2-3 concrete approaches and a draft spec, without writing code.
 ---
 
 # Brainstorming
 
-Use this atomic skill when the user has an early idea but does not yet have enough shape for Grill Me, Alignment, or coding.
+Use this atomic skill only when the user has a vague early idea that does not yet have enough shape for Grill Me, Alignment, or coding.
 
 It is reusable outside D3A and outside the full ID workflow.
 
@@ -15,7 +15,7 @@ This skill uses upstream Superpowers brainstorming as the baseline, then keeps I
 
 Use for:
 
-- 一句话需求。
+- 一句话但仍然模糊的需求。
 - 模糊想法。
 - rough / vague / sketchy general coding request。
 - 用户说“大概想做”“先试试”“还没想清楚”“不完整想法”。
@@ -24,6 +24,7 @@ Use for:
 
 Do not use by default for:
 
+- 一句话但已经给出目标、行为和验收线索的需求。
 - TR3 design docs.
 - 已经有目标、核心行为和验收线索的 structured requirement。
 - 已经 approved 的 Alignment Pack。
@@ -79,6 +80,7 @@ When this skill is used inside IDC, hand off to:
 - Do not write implementation code.
 - Do not mark draft spec as approved contract.
 - Do not treat upstream design approval as implementation approval.
+- Do not use this skill merely because the request is short; short structured requests go to Grill Me / Alignment, not Brainstorming.
 - Use Chinese if the user used Chinese.
 - TR3 skips this skill unless the TR3 is too incomplete to identify behavior.
 - Domain hint must not suppress brainstorming: `general + rough` still uses this skill.
