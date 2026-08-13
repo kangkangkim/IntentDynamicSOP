@@ -577,7 +577,7 @@ def test_claude_project_entries_expose_skills_and_agents():
         assert_true(canonical.exists(), f"canonical skill 缺少 SKILL.md：{skill_dir}")
         claude_skill = ROOT / ".claude" / "skills" / skill_dir.name / "SKILL.md"
         assert_true(claude_skill.exists(), f"Claude Code 项目级 skill 入口不存在：{claude_skill}")
-        assert_true(claude_skill.resolve() == canonical.resolve(), f"Claude Code skill 入口没有指向 canonical skill：{skill_dir.name}")
+        assert_true(claude_skill.read_text() == canonical.read_text(), f"Claude Code skill 副本和 canonical skill 漂移：{skill_dir.name}")
 
     for agent_file in sorted((ROOT / "agents").glob("*.md")):
         claude_agent = ROOT / ".claude" / "agents" / agent_file.name

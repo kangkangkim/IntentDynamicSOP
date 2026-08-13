@@ -114,7 +114,7 @@ domains/d3a/module.yaml
 
 - `workflows/scenario-router.md`：顶层场景路由。
 - `skills/id-workflow/SKILL.md`：ID workflow 的 Skill 触发入口。
-- `.claude/skills/id-workflow/SKILL.md`：Claude Code 项目级 Skill 入口，指向同一份 canonical skill。
+- `.claude/skills/id-workflow/SKILL.md`：Claude Code 项目级 Skill 入口，当前维护真实文件副本。
 - `.claude/agents/`：Claude Code 项目级 subagent 入口，指向 `agents/` 下的 canonical agent contract。
 - `skills/intent-discovery/SKILL.md`：一句话需求发散成 draft spec 的原子 skill。
 - `skills/intent-grilling/SKILL.md`：Grill Me 收敛追问的原子 skill。
@@ -155,7 +155,7 @@ domains/d3a/module.yaml
 - `schemas/`：核心 contract 结构。
 - `agents/`：subagent 职责边界。
 - `skills/`：canonical skill 源文件。
-- `.claude/skills/`：Claude Code 项目级 skill 发现入口。
+- `.claude/skills/`：Claude Code 项目级 skill 发现入口，暂时维护一份真实副本，测试会防止和 `skills/` 漂移。
 - `.claude/agents/`：Claude Code 项目级 agent 发现入口。
 - `skills/id-workflow/`：本机 Claude Code / Codex 体验 ID workflow 的 canonical 入口 skill。
 - `examples/mock-d3a-task/`：非敏感 mock walkthrough。
