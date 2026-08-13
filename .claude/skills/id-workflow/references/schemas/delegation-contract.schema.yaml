@@ -10,6 +10,13 @@ delegation_contract:
     workflow_reason: string
     agent_team_reason: string
     subagent_reason: string
+  subagent_communication:
+    required: boolean
+    reason: string
+    handoff_edges:
+      - from: string
+        to: string
+        artifact: string
   approved_alignment_ref: string
   context_packet_ref: string
   execution_unit_ref: string
@@ -49,7 +56,7 @@ rules:
   - Main agent role 必须是 planning_and_delegation_only。
   - Main agent 必须先选 dynamic_workflow，再选 agent_team，最后决定 subagent。
   - Dynamic Workflow 用于选择生命周期流程，不直接执行任务。
-  - Agent Team 用于选择阶段能力组合。
+  - Agent Team 只在多个 subagent 需要交流、交接或共享中间结果时使用。
   - Subagent 用于隔离执行一个 execution unit / Layer Context Packet / failure analysis。
   - Main agent 不能直接执行复杂实现。
   - Main agent 不能把完整 subagent session 合并回 main session。

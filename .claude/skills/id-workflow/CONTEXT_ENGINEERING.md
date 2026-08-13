@@ -223,6 +223,9 @@ delegation_contract:
     workflow_reason: string
     agent_team_reason: string
     subagent_reason: string
+  subagent_communication:
+    required: boolean
+    handoff_edges: []
   context_packet_ref: string
   expected_return:
     - summary

@@ -68,7 +68,7 @@ Dynamic Workflow:
   选择整条路怎么走。
 
 Agent Team:
-  选择某个阶段需要哪组能力。
+  多个 subagent 需要交流、交接或共享中间结果。
 
 Subagent:
   执行一个隔离的 execution unit / Layer Context Packet / failure analysis。
@@ -98,21 +98,30 @@ next_required_contract
 
 ### 用 Agent Team 的时候
 
-当问题是“这个阶段需要哪组能力协作”时，用 Agent Team。
+当问题是“多个 subagent 是否需要交流、交接或共享中间结果”时，用 Agent Team。
 
 典型触发：
 
-- raw idea 需要发散和收敛：Intent / Alignment Team。
-- 需要仓库事实和知识线索：Knowledge Team。
-- 需要拆 plan、execution unit、Context Packet：Planning Team。
-- 已经批准，可以编码：Coding Team。
-- 需要测试、构建、失败分析：Verification Team。
+- subagent A 的输出是 subagent B 的输入。
+- 多个 subagent 并行工作后，需要合并成一个阶段结果。
+- analyzer / fixer / verifier 之间需要形成闭环。
+- D3A 多 Layer 之间需要由 planner 汇总交接结果。
+- build-error-analyzer 的结论要交给 targeted fix subagent。
+
+不要用 Agent Team 的情况：
+
+- 只有一个 execution unit。
+- 只有一个 subagent 可以独立完成。
+- 只是 main agent 做流程选择。
+- 只是一次 OKL / grep / CodeGraph provider query。
+- 只是生成 Delegation Contract。
 
 输出是：
 
 ```text
 selected_agent_team
 team_result_summary
+subagent_handoff_graph
 delegation_candidates
 ```
 
@@ -147,13 +156,13 @@ delegation_candidates
 
 | 场景 | Dynamic Workflow | Agent Team | Subagent |
 |---|---|---|---|
-| 一句话需求 | raw_idea_alignment | Intent / Alignment Team | 不启动实现 subagent |
-| TR3 文档 | tr3_alignment | Planning Team + Intent / Alignment Team if gap exists | 不启动实现 subagent |
-| General 已批准 | general_execution | Planning + Coding + Verification | `general-coder` per execution unit |
-| D3A 已批准 | d3a_execution | Planning + Knowledge + Coding + Verification | `d3a-layer-coder` per Layer Context Packet |
-| DT 测试准备 | d3a_execution | Coding / Verification Team | `dt-test-writer` per DT domain |
-| build/test 失败 | verification_fix / build_fix | Verification + Knowledge if needed | `build-error-analyzer` then targeted fix subagent |
-| complex lane | staged workflow / DAG workflow | 多个 team 串行或并行 | 多 subagent，按 packet 拆 |
+| 一句话需求 | raw_idea_alignment | 只有 discovery / grilling 需要 handoff 时使用 | 不启动实现 subagent |
+| TR3 文档 | tr3_alignment | 只有 parser / gap-check / grilling 需要 handoff 时使用 | 不启动实现 subagent |
+| General 已批准 | general_execution | 多个 execution unit、coder/verifier 需要交接时使用 | `general-coder` per execution unit |
+| D3A 已批准 | d3a_execution | Layer coder / DT writer / tran build verifier 需要交接时使用 | `d3a-layer-coder` per Layer Context Packet |
+| DT 测试准备 | d3a_execution | test writer 和 layer coder 需要 RED/GREEN handoff 时使用 | `dt-test-writer` per DT domain |
+| build/test 失败 | verification_fix / build_fix | analyzer -> fixer -> verifier 需要闭环时使用 | `build-error-analyzer` then targeted fix subagent |
+| complex lane | staged workflow / DAG workflow | 多 subagent 存在 DAG、review、handoff、merge 时使用 | 多 subagent，按 packet 拆 |
 
 ## Dynamic Workflow
 

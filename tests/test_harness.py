@@ -468,6 +468,7 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         "When To Use Subagent",
         "Lane Influence",
         "Domain Influence",
+        "subagent 之间必须交流",
     ]:
         assert_true(fragment in router or fragment in doc, f"Delegation 设计缺少：{fragment}")
 
@@ -481,12 +482,15 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         "workflow_reason",
         "agent_team_reason",
         "subagent_reason",
+        "subagent_communication:",
+        "handoff_edges:",
         "completion_authority: main_agent_only",
     ]:
         assert_true(fragment in schema, f"Delegation schema 缺少上下文边界：{fragment}")
 
     assert_true("Main agent must not directly execute complex implementation" in skill, "id-workflow 必须禁止 main 直接执行复杂实现。")
     assert_true("dynamic workflow -> agent team -> subagent" in skill, "id-workflow 必须声明 delegation 选择顺序。")
+    assert_true("multiple subagents need communication" in skill, "id-workflow 必须声明 agent team 的核心触发条件。")
     assert_true("Delegation Contract" in html, "运行视角 HTML 必须展示 Delegation Contract。")
 
 
