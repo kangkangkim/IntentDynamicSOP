@@ -4,6 +4,7 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+RUNTIME = ".claude/skills/id-workflow/references"
 LAYER_REGISTRY = {"TRAN_CFG", "DO", "VISP_ADP", "TFC_TFI", "TFE", "ADP", "DRV"}
 DT_REGISTRY = {"TPRINT", "FW", "DPF"}
 GENERAL_COMPONENT_REGISTRY = {
@@ -52,6 +53,18 @@ def read_text(path):
     return (ROOT / path).read_text()
 
 
+def runtime_path(path):
+    if path.startswith(".claude/"):
+        return path
+    if path.startswith("agents/"):
+        return f".claude/{path}"
+    if path.startswith("skills/"):
+        return f".claude/{path}"
+    if path.startswith("examples/"):
+        return path
+    return f"{RUNTIME}/{path}"
+
+
 def parse_inline_list(value):
     value = value.strip()
     assert_true(value.startswith("[") and value.endswith("]"), f"期望 inline list，但得到：{value}")
@@ -70,19 +83,19 @@ def extract_registry_knowledge_files(path):
 
 
 def extract_domain_module_files():
-    return re.findall(r"^\s+module_file:\s+(.+)\s*$", read_text("domains/registry.yaml"), flags=re.MULTILINE)
+    return re.findall(r"^\s+module_file:\s+(.+)\s*$", read_text(".claude/skills/id-workflow/references/domains/registry.yaml"), flags=re.MULTILINE)
 
 
 def extract_domain_module_ids():
-    return set(re.findall(r"^\s+-\s+id:\s+([a-z0-9-]+)\s*$", read_text("domains/registry.yaml"), flags=re.MULTILINE))
+    return set(re.findall(r"^\s+-\s+id:\s+([a-z0-9-]+)\s*$", read_text(".claude/skills/id-workflow/references/domains/registry.yaml"), flags=re.MULTILINE))
 
 
 def extract_lane_files():
-    return re.findall(r"^\s+file:\s+(.+)\s*$", read_text("lanes/registry.yaml"), flags=re.MULTILINE)
+    return re.findall(r"^\s+file:\s+(.+)\s*$", read_text(".claude/skills/id-workflow/references/lanes/registry.yaml"), flags=re.MULTILINE)
 
 
 def extract_lane_ids():
-    return set(re.findall(r"^\s+-\s+id:\s+([a-z0-9-]+)\s*$", read_text("lanes/registry.yaml"), flags=re.MULTILINE))
+    return set(re.findall(r"^\s+-\s+id:\s+([a-z0-9-]+)\s*$", read_text(".claude/skills/id-workflow/references/lanes/registry.yaml"), flags=re.MULTILINE))
 
 
 def extract_module_string_value(path, key):
@@ -178,10 +191,10 @@ def assert_true(condition, message):
 
 
 def test_registry_files_match_fixed_architecture():
-    layers = extract_registry_ids("registries/d3a-layers.yaml")
-    domains = extract_registry_ids("registries/dt-domains.yaml")
-    general_components = extract_registry_ids("registries/general-components.yaml")
-    general_tests = extract_registry_ids("registries/general-test-domains.yaml")
+    layers = extract_registry_ids(".claude/skills/id-workflow/references/registries/d3a-layers.yaml")
+    domains = extract_registry_ids(".claude/skills/id-workflow/references/registries/dt-domains.yaml")
+    general_components = extract_registry_ids(".claude/skills/id-workflow/references/registries/general-components.yaml")
+    general_tests = extract_registry_ids(".claude/skills/id-workflow/references/registries/general-test-domains.yaml")
     assert_true(layers == LAYER_REGISTRY, "D3A layer registry 发生漂移。")
     assert_true(domains == DT_REGISTRY, "DT domain registry 发生漂移。")
     assert_true(general_components == GENERAL_COMPONENT_REGISTRY, "General component registry 发生漂移。")
@@ -189,10 +202,10 @@ def test_registry_files_match_fixed_architecture():
 
 
 def test_registry_knowledge_templates_exist():
-    files = extract_registry_knowledge_files("registries/d3a-layers.yaml")
-    files += extract_registry_knowledge_files("registries/dt-domains.yaml")
-    files += extract_registry_knowledge_files("registries/general-components.yaml")
-    files += extract_registry_knowledge_files("registries/general-test-domains.yaml")
+    files = extract_registry_knowledge_files(".claude/skills/id-workflow/references/registries/d3a-layers.yaml")
+    files += extract_registry_knowledge_files(".claude/skills/id-workflow/references/registries/dt-domains.yaml")
+    files += extract_registry_knowledge_files(".claude/skills/id-workflow/references/registries/general-components.yaml")
+    files += extract_registry_knowledge_files(".claude/skills/id-workflow/references/registries/general-test-domains.yaml")
     for file_name in files:
         path = ROOT / file_name
         assert_true(path.exists(), f"Registry 指向的 knowledge 模板不存在：{file_name}")
@@ -204,11 +217,11 @@ def test_domain_module_registry_files_exist():
     assert_true("d3a" in module_ids, "Domain Module registry 缺少 d3a module。")
     assert_true("general" in module_ids, "Domain Module registry 缺少 general module。")
     for module_file in extract_domain_module_files():
-        assert_true((ROOT / module_file).exists(), f"Domain Module 文件不存在：{module_file}")
+        assert_true((ROOT / runtime_path(module_file)).exists(), f"Domain Module 文件不存在：{module_file}")
 
 
 def test_active_domain_module_declares_required_contract():
-    module_file = "domains/d3a/module.yaml"
+    module_file = ".claude/skills/id-workflow/references/domains/d3a/module.yaml"
     text = read_text(module_file)
     for required in ["id:", "name:", "status:", "route:", "registries:", "workflow:", "knowledge:", "execution:"]:
         assert_true(required in text, f"d3a module 缺少 contract 区块：{required}")
@@ -220,17 +233,17 @@ def test_active_domain_module_declares_required_contract():
 
 
 def test_active_domain_module_asset_paths_exist():
-    for asset_path in extract_module_asset_paths("domains/d3a/module.yaml"):
-        assert_true((ROOT / asset_path).exists(), f"d3a module 引用的资产不存在：{asset_path}")
-    for asset_path in extract_module_asset_paths("domains/general/module.yaml"):
-        assert_true((ROOT / asset_path).exists(), f"general module 引用的资产不存在：{asset_path}")
+    for asset_path in extract_module_asset_paths(".claude/skills/id-workflow/references/domains/d3a/module.yaml"):
+        assert_true((ROOT / runtime_path(asset_path)).exists(), f"d3a module 引用的资产不存在：{asset_path}")
+    for asset_path in extract_module_asset_paths(".claude/skills/id-workflow/references/domains/general/module.yaml"):
+        assert_true((ROOT / runtime_path(asset_path)).exists(), f"general module 引用的资产不存在：{asset_path}")
 
 
 def test_general_domain_module_is_active_and_self_closing():
-    module = read_text("domains/general/module.yaml")
-    workflow = read_text("workflows/general-coding.md")
-    plan_schema = read_text("schemas/general-plan.schema.yaml")
-    skill = read_text("skills/general-coding/SKILL.md")
+    module = read_text(".claude/skills/id-workflow/references/domains/general/module.yaml")
+    workflow = read_text(".claude/skills/id-workflow/references/workflows/general-coding.md")
+    plan_schema = read_text(".claude/skills/id-workflow/references/schemas/general-plan.schema.yaml")
+    skill = read_text(".claude/skills/general-coding/SKILL.md")
 
     assert_true("id: general" in module, "general module id 不正确。")
     assert_true("status: active" in module, "general module 必须 active。")
@@ -252,12 +265,12 @@ def test_general_domain_module_is_active_and_self_closing():
 def test_lane_registry_files_exist():
     assert_true(extract_lane_ids() == {"fast", "lite", "complex"}, "Lane registry 必须只包含 fast/lite/complex。")
     for lane_file in extract_lane_files():
-        assert_true((ROOT / lane_file).exists(), f"Lane 文件不存在：{lane_file}")
+        assert_true((ROOT / runtime_path(lane_file)).exists(), f"Lane 文件不存在：{lane_file}")
 
 
 def test_every_lane_is_self_closing():
     for lane_file in extract_lane_files():
-        text = read_text(lane_file)
+        text = read_text(runtime_path(lane_file))
         assert_true("completion_requirements:" in text, f"{lane_file} 缺少 completion_requirements。")
         assert_true("completion_summary_exists" in text, f"{lane_file} 必须要求 completion summary。")
         has_evidence_requirement = "evidence" in text or "tests_or_builds_passed" in text
@@ -322,10 +335,10 @@ def test_tr3_fixtures_preserve_classification_signals():
 
 
 def test_alignment_and_escalation_contracts_exist():
-    alignment_schema = read_text("schemas/alignment-pack.schema.yaml")
-    escalation_schema = read_text("schemas/escalation-policy.schema.yaml")
-    human_alignment = read_text("workflows/human-alignment.md")
-    automated_loop = read_text("workflows/automated-closure-loop.md")
+    alignment_schema = read_text(".claude/skills/id-workflow/references/schemas/alignment-pack.schema.yaml")
+    escalation_schema = read_text(".claude/skills/id-workflow/references/schemas/escalation-policy.schema.yaml")
+    human_alignment = read_text(".claude/skills/id-workflow/references/workflows/human-alignment.md")
+    automated_loop = read_text(".claude/skills/id-workflow/references/workflows/automated-closure-loop.md")
 
     assert_true("alignment_pack:" in alignment_schema, "缺少 alignment_pack schema。")
     assert_true("human_alignment:" in alignment_schema, "缺少 human_alignment schema。")
@@ -340,30 +353,30 @@ def test_alignment_and_escalation_contracts_exist():
 
 
 def test_execution_unit_loc_limit_is_enforced():
-    execution_schema = read_text("schemas/execution-unit.schema.yaml")
-    execution_policy = read_text("workflows/execution-unit-policy.md")
-    automated_loop = read_text("workflows/automated-closure-loop.md")
-    d3a_workflow = read_text("workflows/d3a-workflow.md")
-    d3a_coder = read_text("agents/d3a-layer-coder.md")
+    execution_schema = read_text(".claude/skills/id-workflow/references/schemas/execution-unit.schema.yaml")
+    execution_policy = read_text(".claude/skills/id-workflow/references/workflows/execution-unit-policy.md")
+    automated_loop = read_text(".claude/skills/id-workflow/references/workflows/automated-closure-loop.md")
+    d3a_workflow = read_text(".claude/skills/id-workflow/references/workflows/d3a-workflow.md")
+    d3a_coder = read_text(".claude/agents/d3a-layer-coder.md")
 
     for path, text in [
-        ("schemas/execution-unit.schema.yaml", execution_schema),
-        ("workflows/execution-unit-policy.md", execution_policy),
-        ("workflows/automated-closure-loop.md", automated_loop),
-        ("workflows/d3a-workflow.md", d3a_workflow),
-        ("agents/d3a-layer-coder.md", d3a_coder),
+        (".claude/skills/id-workflow/references/schemas/execution-unit.schema.yaml", execution_schema),
+        (".claude/skills/id-workflow/references/workflows/execution-unit-policy.md", execution_policy),
+        (".claude/skills/id-workflow/references/workflows/automated-closure-loop.md", automated_loop),
+        (".claude/skills/id-workflow/references/workflows/d3a-workflow.md", d3a_workflow),
+        (".claude/agents/d3a-layer-coder.md", d3a_coder),
     ]:
         assert_true("500" in text, f"{path} 必须声明 500 行限制。")
 
     assert_true("max_change_loc: 500" in execution_schema, "Execution Unit schema 必须声明 max_change_loc: 500。")
     assert_true("每个 execution unit 都必须有自己的 evidence" in execution_policy, "Execution Unit 必须有独立 evidence。")
     assert_true("max_layers_per_packet = 1" in d3a_workflow, "D3A 必须限制一个 packet 一个 Layer。")
-    assert_true("execution_unit_too_large" in read_text("schemas/escalation-policy.schema.yaml"), "Escalation 必须覆盖 execution unit 过大。")
+    assert_true("execution_unit_too_large" in read_text(".claude/skills/id-workflow/references/schemas/escalation-policy.schema.yaml"), "Escalation 必须覆盖 execution unit 过大。")
 
 
 def test_repo_context_provider_contract_is_token_bounded():
-    schema = read_text("schemas/repo-context-provider.schema.yaml")
-    workflow = read_text("workflows/repo-context-providers.md")
+    schema = read_text(".claude/skills/id-workflow/references/schemas/repo-context-provider.schema.yaml")
+    workflow = read_text(".claude/skills/id-workflow/references/workflows/repo-context-providers.md")
     token_policy = read_text("docs/token-budget-policy.md")
 
     for provider in ["grep", "codegraph", "okl"]:
@@ -382,10 +395,10 @@ def test_repo_context_provider_contract_is_token_bounded():
 
 
 def test_provider_selection_matrix_is_anchor_aware_and_okl_query_bounded():
-    matrix = read_text("workflows/provider-selection-matrix.md")
-    knowledge_gate = read_text("workflows/knowledge-gate.md")
+    matrix = read_text(".claude/skills/id-workflow/references/workflows/provider-selection-matrix.md")
+    knowledge_gate = read_text(".claude/skills/id-workflow/references/workflows/knowledge-gate.md")
     token_policy = read_text("docs/token-budget-policy.md")
-    id_workflow = read_text("skills/id-workflow/SKILL.md")
+    id_workflow = read_text(".claude/skills/id-workflow/SKILL.md")
 
     assert_true("anchor_known = true" in matrix, "Provider matrix 必须覆盖 anchor known。")
     assert_true("bounded grep" in matrix, "Provider matrix 必须要求 bounded grep。")
@@ -399,14 +412,14 @@ def test_provider_selection_matrix_is_anchor_aware_and_okl_query_bounded():
     assert_true("workflows/provider-selection-matrix.md" in knowledge_gate, "Knowledge Gate 必须引用 provider matrix。")
     assert_true("OKL 本质是 LLM Wiki" in knowledge_gate, "Knowledge Gate 必须说明 OKL 本质。")
     assert_true("`okl-query` 是调用 OKL 的命令" in token_policy, "Token policy 必须区分 OKL 和 okl-query。")
-    assert_true("workflows/provider-selection-matrix.md" in id_workflow, "id-workflow 必须加载 provider matrix。")
+    assert_true("references/workflows/provider-selection-matrix.md" in id_workflow, "id-workflow 必须加载 provider matrix。")
 
 
 def test_progressive_constraint_loading_files_exist():
     stages = {
-        "decision": "constraints/decision",
-        "planning": "constraints/planning",
-        "execution": "constraints/execution",
+        "decision": ".claude/skills/id-workflow/references/constraints/decision",
+        "planning": ".claude/skills/id-workflow/references/constraints/planning",
+        "execution": ".claude/skills/id-workflow/references/constraints/execution",
     }
     for stage, directory in stages.items():
         files = sorted((ROOT / directory).glob("*.yaml"))
@@ -417,7 +430,7 @@ def test_progressive_constraint_loading_files_exist():
             assert_true("constraints:" in text, f"{file_path} 缺少 constraints。")
             assert_true("forbidden_actions:" in text, f"{file_path} 缺少 forbidden_actions。")
 
-    workflow = read_text("workflows/progressive-constraint-loading.md")
+    workflow = read_text(".claude/skills/id-workflow/references/workflows/progressive-constraint-loading.md")
     assert_true("Decision Constraints" in workflow, "约束加载文档缺少 Decision。")
     assert_true("Planning Constraints" in workflow, "约束加载文档缺少 Planning。")
     assert_true("Execution Constraints" in workflow, "约束加载文档缺少 Execution。")
@@ -508,7 +521,7 @@ def test_adoption_and_deep_dive_docs_exist():
 
 
 def test_id_workflow_skill_exists_and_has_triggers():
-    skill_path = ROOT / "skills/id-workflow/SKILL.md"
+    skill_path = ROOT / ".claude/skills/id-workflow/SKILL.md"
     assert_true(skill_path.exists(), "缺少 ID workflow skill。")
     text = skill_path.read_text()
     assert_true("name: id-workflow" in text, "ID workflow skill 缺少 name。")
@@ -517,18 +530,18 @@ def test_id_workflow_skill_exists_and_has_triggers():
     assert_true("Alignment Pack" in text, "ID workflow skill 必须支持 Alignment Pack。")
     assert_true("TR3" in text, "ID workflow skill 必须支持 TR3。")
     assert_true("Domain = general" in text, "ID workflow skill 必须支持 general domain。")
-    assert_true("domains/general/module.yaml" in text, "ID workflow skill 必须加载 general module。")
+    assert_true("references/domains/general/module.yaml" in text, "ID workflow skill 必须加载 general module。")
     assert_true("500 LOC" in text, "ID workflow skill 必须声明 500 LOC 限制。")
     assert_true("Human Alignment approval" in text, "ID workflow skill 必须要求 Human Alignment approval。")
     assert_true("Human View" in text, "ID workflow skill 必须声明用户可读视图。")
-    assert_true("human-views/alignment-view.md" in text, "ID workflow skill 必须加载 Alignment View。")
-    assert_true("human-views/clarification-view.md" in text, "ID workflow skill 必须加载 Clarification View。")
+    assert_true("references/human-views/alignment-view.md" in text, "ID workflow skill 必须加载 Alignment View。")
+    assert_true("references/human-views/clarification-view.md" in text, "ID workflow skill 必须加载 Clarification View。")
     assert_true("grill-me-method" in text, "ID workflow skill 必须声明 Grill Me method。")
     assert_true("upstream-superpowers-brainstorming" in text, "ID workflow skill 必须声明 upstream Superpowers brainstorming。")
     assert_true("idc-brainstorming-overlay" in text, "ID workflow skill 必须声明 IDC brainstorming overlay。")
-    assert_true("human-views/brainstorming-view.md" in text, "ID workflow skill 必须加载 Brainstorming View。")
+    assert_true("references/human-views/brainstorming-view.md" in text, "ID workflow skill 必须加载 Brainstorming View。")
     for skill_name in ["intent-discovery", "intent-grilling", "intent-alignment"]:
-        assert_true(f"skills/{skill_name}/SKILL.md" in text, f"ID workflow 必须编排 {skill_name}。")
+        assert_true(f".claude/skills/{skill_name}/SKILL.md" in text, f"ID workflow 必须编排 {skill_name}。")
 
 
 def test_atomic_pre_alignment_skills_exist_and_are_reusable():
@@ -536,27 +549,27 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
         "intent-discovery": [
             "name: intent-discovery",
             "raw_idea",
-            "workflows/discovery-provider.md",
-            "human-views/brainstorming-view.md",
+            "../id-workflow/references/workflows/discovery-provider.md",
+            "../id-workflow/references/human-views/brainstorming-view.md",
             "Do not write implementation code.",
         ],
         "intent-grilling": [
             "name: intent-grilling",
             "frontier",
-            "workflows/clarification-provider.md",
-            "human-views/clarification-view.md",
+            "../id-workflow/references/workflows/clarification-provider.md",
+            "../id-workflow/references/human-views/clarification-view.md",
             "Do not decide Domain or Lane.",
         ],
         "intent-alignment": [
             "name: intent-alignment",
             "Alignment View",
-            "workflows/human-alignment.md",
-            "schemas/alignment-pack.schema.yaml",
+            "../id-workflow/references/workflows/human-alignment.md",
+            "../id-workflow/references/schemas/alignment-pack.schema.yaml",
             "Do not show raw YAML as the primary user interface.",
         ],
     }
     for skill_name, required_fragments in expected.items():
-        path = f"skills/{skill_name}/SKILL.md"
+        path = f".claude/skills/{skill_name}/SKILL.md"
         text = read_text(path)
         assert_true("description:" in text, f"{skill_name} 缺少 description。")
         assert_true("reusable outside D3A" in text, f"{skill_name} 必须声明可在 D3A 外复用。")
@@ -570,41 +583,39 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
 
 
 def test_claude_project_entries_expose_skills_and_agents():
-    for skill_dir in sorted((ROOT / "skills").iterdir()):
+    for skill_dir in sorted((ROOT / ".claude" / "skills").iterdir()):
         if not skill_dir.is_dir():
             continue
-        canonical = skill_dir / "SKILL.md"
-        assert_true(canonical.exists(), f"canonical skill 缺少 SKILL.md：{skill_dir}")
         claude_skill = ROOT / ".claude" / "skills" / skill_dir.name / "SKILL.md"
         assert_true(claude_skill.exists(), f"Claude Code 项目级 skill 入口不存在：{claude_skill}")
-        assert_true(claude_skill.read_text() == canonical.read_text(), f"Claude Code skill 副本和 canonical skill 漂移：{skill_dir.name}")
+        assert_true(claude_skill.read_text().startswith("---\n") or skill_dir.name in {"d3a-coding", "dt-build", "tran-build"}, f"Claude Code skill 缺少 frontmatter 或 legacy placeholder 说明：{skill_dir.name}")
 
-    for agent_file in sorted((ROOT / "agents").glob("*.md")):
+    for agent_file in sorted((ROOT / ".claude" / "agents").glob("*.md")):
         claude_agent = ROOT / ".claude" / "agents" / agent_file.name
         assert_true(claude_agent.exists(), f"Claude Code 项目级 agent 入口不存在：{claude_agent}")
         text = claude_agent.read_text()
         assert_true(text.startswith("---\n"), f"Claude Code agent 缺少 frontmatter：{claude_agent}")
-        assert_true(f"agents/{agent_file.name}" in text, f"Claude Code agent 必须指向 canonical agent：{agent_file.name}")
+        assert_true("## 职责" in text or "## 输入" in text, f"Claude Code agent 必须包含可执行职责：{agent_file.name}")
 
 
 def test_human_views_exist_and_hide_raw_yaml():
     required_files = [
-        "human-views/brainstorming-view.md",
-        "human-views/clarification-view.md",
-        "human-views/alignment-view.md",
-        "human-views/completion-view.md",
-        "human-views/escalation-view.md",
+        ".claude/skills/id-workflow/references/human-views/brainstorming-view.md",
+        ".claude/skills/id-workflow/references/human-views/clarification-view.md",
+        ".claude/skills/id-workflow/references/human-views/alignment-view.md",
+        ".claude/skills/id-workflow/references/human-views/completion-view.md",
+        ".claude/skills/id-workflow/references/human-views/escalation-view.md",
     ]
     for file_name in required_files:
         text = read_text(file_name)
         assert_true("## 模板" in text, f"{file_name} 缺少用户模板。")
         assert_true("## 规则" in text, f"{file_name} 缺少展示规则。")
 
-    brainstorming = read_text("human-views/brainstorming-view.md")
-    alignment = read_text("human-views/alignment-view.md")
-    clarification = read_text("human-views/clarification-view.md")
-    completion = read_text("human-views/completion-view.md")
-    escalation = read_text("human-views/escalation-view.md")
+    brainstorming = read_text(".claude/skills/id-workflow/references/human-views/brainstorming-view.md")
+    alignment = read_text(".claude/skills/id-workflow/references/human-views/alignment-view.md")
+    clarification = read_text(".claude/skills/id-workflow/references/human-views/clarification-view.md")
+    completion = read_text(".claude/skills/id-workflow/references/human-views/completion-view.md")
+    escalation = read_text(".claude/skills/id-workflow/references/human-views/escalation-view.md")
     assert_true("只在 raw idea 场景默认展示" in brainstorming, "Brainstorming View 必须只用于 raw idea。")
     assert_true("不用 token 限制牺牲需求探索质量" in brainstorming, "Brainstorming View 不能因 token 限制牺牲探索质量。")
     assert_true("每轮最多展示 5 个关键问题" in clarification, "Clarification View 必须限制问题数量。")
@@ -616,10 +627,10 @@ def test_human_views_exist_and_hide_raw_yaml():
 
 
 def test_clarification_provider_uses_grill_me_method_with_fallback():
-    workflow = read_text("workflows/clarification-provider.md")
-    schema = read_text("schemas/clarification-provider.schema.yaml")
-    human_alignment = read_text("workflows/human-alignment.md")
-    requirement_assessor = read_text("workflows/requirement-assessor.md")
+    workflow = read_text(".claude/skills/id-workflow/references/workflows/clarification-provider.md")
+    schema = read_text(".claude/skills/id-workflow/references/schemas/clarification-provider.schema.yaml")
+    human_alignment = read_text(".claude/skills/id-workflow/references/workflows/human-alignment.md")
+    requirement_assessor = read_text(".claude/skills/id-workflow/references/workflows/requirement-assessor.md")
     attribution = read_text("docs/source-attribution.md")
 
     assert_true("mattpocock/skills" in workflow, "Clarification Provider 必须标注 Grill Me 方法论来源。")
@@ -640,10 +651,10 @@ def test_clarification_provider_uses_grill_me_method_with_fallback():
 
 
 def test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea():
-    workflow = read_text("workflows/discovery-provider.md")
-    schema = read_text("schemas/discovery-provider.schema.yaml")
-    input_adapter = read_text("workflows/input-adapter.md")
-    normalized_schema = read_text("schemas/normalized-request.schema.yaml")
+    workflow = read_text(".claude/skills/id-workflow/references/workflows/discovery-provider.md")
+    schema = read_text(".claude/skills/id-workflow/references/schemas/discovery-provider.schema.yaml")
+    input_adapter = read_text(".claude/skills/id-workflow/references/workflows/input-adapter.md")
+    normalized_schema = read_text(".claude/skills/id-workflow/references/schemas/normalized-request.schema.yaml")
     attribution = read_text("docs/source-attribution.md")
 
     assert_true("obra/superpowers" in workflow, "Discovery Provider 必须标注 Superpowers 方法论来源。")

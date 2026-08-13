@@ -10,9 +10,9 @@ Use this skill to run the Intent Dynamic Code workflow.
 This is the orchestration skill. It delegates reusable pre-alignment work to atomic skills:
 
 ```text
-skills/intent-discovery/SKILL.md
-skills/intent-grilling/SKILL.md
-skills/intent-alignment/SKILL.md
+.claude/skills/intent-discovery/SKILL.md
+.claude/skills/intent-grilling/SKILL.md
+.claude/skills/intent-alignment/SKILL.md
 ```
 
 ## Trigger examples
@@ -59,17 +59,17 @@ Do not show users raw YAML as the primary interface.
 Use Human View for interaction:
 
 ```text
-human-views/alignment-view.md
-human-views/completion-view.md
-human-views/escalation-view.md
+references/human-views/alignment-view.md
+references/human-views/completion-view.md
+references/human-views/escalation-view.md
 ```
 
 Keep Machine Contract internally:
 
 ```text
-schemas/alignment-pack.schema.yaml
-schemas/escalation-policy.schema.yaml
-schemas/verification-contract.schema.yaml
+references/schemas/alignment-pack.schema.yaml
+references/schemas/escalation-policy.schema.yaml
+references/schemas/verification-contract.schema.yaml
 ```
 
 Default user-facing output before approval is Alignment View, not raw `alignment-pack.yaml`.
@@ -80,78 +80,78 @@ Read these files first:
 
 ```text
 CLAUDE.md
-workflows/input-adapter.md
-workflows/lane-resolver.md
-workflows/contract-gate.md
-workflows/human-alignment.md
-schemas/alignment-pack.schema.yaml
-skills/intent-discovery/SKILL.md
-skills/intent-grilling/SKILL.md
-skills/intent-alignment/SKILL.md
-workflows/discovery-provider.md
-schemas/discovery-provider.schema.yaml
-human-views/brainstorming-view.md
-human-views/alignment-view.md
-human-views/clarification-view.md
+references/workflows/input-adapter.md
+references/workflows/lane-resolver.md
+references/workflows/contract-gate.md
+references/workflows/human-alignment.md
+references/schemas/alignment-pack.schema.yaml
+.claude/skills/intent-discovery/SKILL.md
+.claude/skills/intent-grilling/SKILL.md
+.claude/skills/intent-alignment/SKILL.md
+references/workflows/discovery-provider.md
+references/schemas/discovery-provider.schema.yaml
+references/human-views/brainstorming-view.md
+references/human-views/alignment-view.md
+references/human-views/clarification-view.md
 ```
 
 If Requirement Assessor returns `NEED_CLARIFICATION`, also read:
 
 ```text
-workflows/clarification-provider.md
-schemas/clarification-provider.schema.yaml
-human-views/clarification-view.md
+references/workflows/clarification-provider.md
+references/schemas/clarification-provider.schema.yaml
+references/human-views/clarification-view.md
 ```
 
 If `input_maturity = raw_idea`, run Discovery Provider before Clarification Provider:
 
 ```text
-workflows/discovery-provider.md
-schemas/discovery-provider.schema.yaml
-human-views/brainstorming-view.md
+references/workflows/discovery-provider.md
+references/schemas/discovery-provider.schema.yaml
+references/human-views/brainstorming-view.md
 ```
 
 If the input is TR3, also read:
 
 ```text
-schemas/normalized-request.schema.yaml
-docs/deep-dive/tr3-input.md
+references/schemas/normalized-request.schema.yaml
+references/docs/deep-dive/tr3-input.md
 ```
 
 If Domain = D3A, also read:
 
 ```text
-domains/d3a/module.yaml
-workflows/d3a-workflow.md
-schemas/d3a-plan.schema.yaml
+references/domains/d3a/module.yaml
+references/workflows/d3a-workflow.md
+references/schemas/d3a-plan.schema.yaml
 ```
 
 If Domain = general, also read:
 
 ```text
-domains/general/module.yaml
-workflows/general-coding.md
-schemas/general-plan.schema.yaml
-skills/general-coding/SKILL.md
+references/domains/general/module.yaml
+references/workflows/general-coding.md
+references/schemas/general-plan.schema.yaml
+.claude/skills/general-coding/SKILL.md
 ```
 
 If the user has approved the Alignment Pack, also read:
 
 ```text
-workflows/automated-closure-loop.md
-workflows/progressive-constraint-loading.md
-workflows/execution-unit-policy.md
-workflows/lane-completion.md
-schemas/escalation-policy.schema.yaml
+references/workflows/automated-closure-loop.md
+references/workflows/progressive-constraint-loading.md
+references/workflows/execution-unit-policy.md
+references/workflows/lane-completion.md
+references/schemas/escalation-policy.schema.yaml
 ```
 
 For repo context work, read:
 
 ```text
-workflows/provider-selection-matrix.md
-workflows/repo-context-providers.md
-schemas/repo-context-provider.schema.yaml
-docs/token-budget-policy.md
+references/workflows/provider-selection-matrix.md
+references/workflows/repo-context-providers.md
+references/schemas/repo-context-provider.schema.yaml
+references/docs/token-budget-policy.md
 ```
 
 ## Hard rules
@@ -176,9 +176,9 @@ docs/token-budget-policy.md
 
 If the user has not approved yet, output an Alignment Pack summary and ask for approval.
 
-If critical information is missing, output `human-views/clarification-view.md` first and do not ask for approval yet.
+If critical information is missing, output `references/human-views/clarification-view.md` first and do not ask for approval yet.
 
-If the input is a raw idea, output `human-views/brainstorming-view.md` before clarification.
+If the input is a raw idea, output `references/human-views/brainstorming-view.md` before clarification.
 
 If the user approved, run the automated closure loop and report:
 
@@ -191,6 +191,6 @@ completion status
 escalation triggers if any
 ```
 
-Render completion with `human-views/completion-view.md`.
+Render completion with `references/human-views/completion-view.md`.
 
-If escalation is triggered, render `human-views/escalation-view.md`.
+If escalation is triggered, render `references/human-views/escalation-view.md`.

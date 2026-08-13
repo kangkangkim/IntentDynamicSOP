@@ -22,11 +22,11 @@ Use after:
 ## Required Inputs
 
 ```text
-workflows/human-alignment.md
-schemas/alignment-pack.schema.yaml
-human-views/alignment-view.md
-human-views/completion-view.md
-human-views/escalation-view.md
+../id-workflow/references/workflows/human-alignment.md
+../id-workflow/references/schemas/alignment-pack.schema.yaml
+../id-workflow/references/human-views/alignment-view.md
+../id-workflow/references/human-views/completion-view.md
+../id-workflow/references/human-views/escalation-view.md
 ```
 
 ## Behavior

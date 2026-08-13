@@ -29,10 +29,10 @@ Do not use by default for:
 ## Required Inputs
 
 ```text
-workflows/discovery-provider.md
-schemas/discovery-provider.schema.yaml
-human-views/brainstorming-view.md
-schemas/normalized-request.schema.yaml
+../id-workflow/references/workflows/discovery-provider.md
+../id-workflow/references/schemas/discovery-provider.schema.yaml
+../id-workflow/references/human-views/brainstorming-view.md
+../id-workflow/references/schemas/normalized-request.schema.yaml
 ```
 
 ## Behavior

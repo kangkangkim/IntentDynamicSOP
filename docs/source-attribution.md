@@ -35,9 +35,9 @@ Copyright (c) 2026 Matt Pocock
 在 Intent Dynamic Code 中，这些思想被落到：
 
 ```text
-workflows/clarification-provider.md
-human-views/clarification-view.md
-schemas/clarification-provider.schema.yaml
+.claude/skills/id-workflow/references/workflows/clarification-provider.md
+.claude/skills/id-workflow/references/human-views/clarification-view.md
+.claude/skills/id-workflow/references/schemas/clarification-provider.schema.yaml
 ```
 
 ## Superpowers Brainstorming Inspiration
@@ -71,7 +71,7 @@ Baseline 保留点：
 在 Intent Dynamic Code 中，这些思想被落到：
 
 ```text
-workflows/discovery-provider.md
-human-views/brainstorming-view.md
-schemas/discovery-provider.schema.yaml
+.claude/skills/id-workflow/references/workflows/discovery-provider.md
+.claude/skills/id-workflow/references/human-views/brainstorming-view.md
+.claude/skills/id-workflow/references/schemas/discovery-provider.schema.yaml
 ```

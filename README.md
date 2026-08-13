@@ -59,19 +59,9 @@ docs/deep-dive/
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── .claude/
-├── agents/
-├── domains/
 ├── docs/
 ├── examples/
-├── constraints/
-├── human-views/
-├── knowledge/
-├── lanes/
-├── registries/
-├── schemas/
-├── skills/
-├── tests/
-└── workflows/
+└── tests/
 ```
 
 ## D3A 核心流程
@@ -79,7 +69,7 @@ docs/deep-dive/
 D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 
 ```text
-domains/d3a/module.yaml
+.claude/skills/id-workflow/references/.claude/skills/id-workflow/references/domains/d3a/module.yaml
 ```
 
 ```text
@@ -112,31 +102,24 @@ domains/d3a/module.yaml
 
 ## V0 已完成资产
 
-- `workflows/scenario-router.md`：顶层场景路由。
-- `skills/id-workflow/SKILL.md`：ID workflow 的 Skill 触发入口。
-- `.claude/skills/id-workflow/SKILL.md`：Claude Code 项目级 Skill 入口，当前维护真实文件副本。
-- `.claude/agents/`：Claude Code 项目级 subagent 入口，指向 `agents/` 下的 canonical agent contract。
-- `skills/intent-discovery/SKILL.md`：一句话需求发散成 draft spec 的原子 skill。
-- `skills/intent-grilling/SKILL.md`：Grill Me 收敛追问的原子 skill。
-- `skills/intent-alignment/SKILL.md`：人类前置确认的原子 skill。
-- `workflows/input-adapter.md`：支持一句话输入和 TR3 设计文档输入。
-- `workflows/discovery-provider.md`：以 Superpowers Brainstorming 为 upstream baseline，把 raw idea 展开成 draft spec。
-- `workflows/domain-module-router.md`：根据 `domains/registry.yaml` 选择可插拔 module。
-- `workflows/progressive-constraint-loading.md`：三段式约束加载。
-- `workflows/provider-selection-matrix.md`：根据 anchor / domain / lane 选择 grep、CodeGraph、OKL。
-- `workflows/repo-context-providers.md`：grep / CodeGraph / OKL 统一 provider contract。
-- `workflows/lane-resolver.md`：用 hard trigger / Fast 准入 / 默认 Lite 判断执行强度。
-- `workflows/lane-completion.md`：定义每个 Lane 的最小自闭环要求。
-- `workflows/contract-gate.md`：根据 Domain + Lane 决定 contract set。
-- `workflows/human-alignment.md`：前置人工对齐点。
-- `workflows/clarification-provider.md`：吸收 Grill Me 方法论的澄清 provider。
-- `workflows/automated-closure-loop.md`：对齐通过后的自动闭环。
-- `workflows/execution-unit-policy.md`：每个阶段代码变更控制在 500 行以内。
-- `workflows/requirement-assessor.md`：需求清晰度判断规则。
-- `workflows/d3a-workflow.md`：D3A 固定骨架和动态规划点。
-- `workflows/general-coding.md`：General Coding active module 的最小闭环。
-- `workflows/tdd-state-machine.md`：RED / GREEN / completion gate。
-- `human-views/`：给用户看的中文 Brainstorming / Clarification / Alignment / Completion / Escalation 卡片模板。
+- `.claude/skills/id-workflow/SKILL.md`：Claude Code 项目级总入口 skill。
+- `.claude/skills/id-workflow/TEAM_CUSTOMIZATION.md`：其他团队接入时优先看的修改指南。
+- `.claude/skills/id-workflow/references/workflows/`：Scenario Router、Input Adapter、Lane Resolver、Contract Gate、Human Alignment、Automated Closure Loop 等运行时规则。
+- `.claude/skills/id-workflow/references/schemas/`：Alignment Pack、Escalation、Execution Unit、D3A Plan、General Plan 等机器 contract。
+- `.claude/skills/id-workflow/references/domains/`：Domain Module registry、D3A module、General module、团队模板 module。
+- `.claude/skills/id-workflow/references/registries/`：固定 D3A Layer、DT Domain、General placeholder taxonomy。
+- `.claude/skills/id-workflow/references/lanes/`：fast / lite / complex 三种执行强度定义。
+- `.claude/skills/id-workflow/references/human-views/`：给用户看的中文 Brainstorming / Clarification / Alignment / Completion / Escalation 模板。
+- `.claude/skills/id-workflow/references/constraints/`：decision / planning / execution 三段式约束。
+- `.claude/skills/id-workflow/references/knowledge/`：D3A Layer、DT Domain、General placeholder knowledge 模板。
+- `.claude/skills/intent-discovery/SKILL.md`：一句话需求发散成 draft spec 的原子 skill。
+- `.claude/skills/intent-grilling/SKILL.md`：Grill Me 收敛追问的原子 skill。
+- `.claude/skills/intent-alignment/SKILL.md`：人类前置确认的原子 skill。
+- `.claude/skills/general-coding/SKILL.md`：General Coding execution skill。
+- `.claude/skills/d3a-coding/SKILL.md`：D3A Coding execution skill。
+- `.claude/skills/dt-build/SKILL.md`：DT build / run evidence 接口 skill。
+- `.claude/skills/tran-build/SKILL.md`：`tran_build` evidence 接口 skill。
+- `.claude/agents/`：Claude Code 项目级 subagent 定义。
 - `docs/domain-module-contract.md`：团队接入自己的 Domain Module 时遵循的契约。
 - `docs/adoption-guide.md`：其他团队复制 SOP 的指南。
 - `docs/token-budget-policy.md`：保密区 token / provider 限额策略。
@@ -146,27 +129,10 @@ domains/d3a/module.yaml
 - `docs/flow-d3a-general.html`：D3A / General 双路径可视化 HTML。
 - `docs/confidential-migration-checklist.md`：进入保密区前后的 checklist。
 - `docs/terminology.md`：中英文术语保留规则。
-- `domains/`：Domain Module 注册表、D3A module、团队模板 module。
-- `domains/general/module.yaml`：普通开发任务的 active Domain Module。
-- `constraints/`：decision / planning / execution 三段式约束。
-- `lanes/`：fast / lite / complex 三种执行强度定义。
-- `knowledge/`：D3A Layer 和 DT Domain 的保密区填充模板。
-- `registries/`：固定 D3A Layer 和 V0 DT Domain registry。
-- `schemas/`：核心 contract 结构。
-- `agents/`：subagent 职责边界。
-- `skills/`：canonical skill 源文件。
-- `.claude/skills/`：Claude Code 项目级 skill 发现入口，暂时维护一份真实副本，测试会防止和 `skills/` 漂移。
-- `.claude/agents/`：Claude Code 项目级 agent 发现入口。
-- `skills/id-workflow/`：本机 Claude Code / Codex 体验 ID workflow 的 canonical 入口 skill。
 - `examples/mock-d3a-task/`：非敏感 mock walkthrough。
 - `examples/e2e-tr3-d3a/`：从 TR3 到 completion summary 的端到端 mock demo。
 - `examples/e2e-general-task/`：General Coding 端到端 mock demo。
 - `examples/tr3-fixtures.yaml`：TR3 输入分类样例。
-- `schemas/normalized-request.schema.yaml`：Input Adapter 的统一输出结构。
-- `schemas/alignment-pack.schema.yaml`：Human Alignment 使用的对齐包。
-- `schemas/escalation-policy.schema.yaml`：异常回流规则。
-- `schemas/execution-unit.schema.yaml`：Execution Unit 和 500 行拆分规则。
-- `schemas/repo-context-provider.schema.yaml`：grep / CodeGraph / OKL provider 统一接口。
 - `tests/test_harness.py`：harness 自检。
 
 ## 验证方式

@@ -21,10 +21,10 @@ Use for:
 ## Required Inputs
 
 ```text
-workflows/clarification-provider.md
-schemas/clarification-provider.schema.yaml
-human-views/clarification-view.md
-workflows/requirement-assessor.md
+../id-workflow/references/workflows/clarification-provider.md
+../id-workflow/references/schemas/clarification-provider.schema.yaml
+../id-workflow/references/human-views/clarification-view.md
+../id-workflow/references/workflows/requirement-assessor.md
 ```
 
 ## Behavior

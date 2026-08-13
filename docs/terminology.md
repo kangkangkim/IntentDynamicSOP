@@ -24,8 +24,8 @@ README.md
 docs/
 schemas/
 workflows/
-agents/
-skills/
+.claude/agents/
+.claude/skills/
 tests/
 ```
 

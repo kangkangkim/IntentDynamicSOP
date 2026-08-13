@@ -57,8 +57,8 @@ D3A 不拆成通用 atomic skill。
 D3A 是 Domain Module：
 
 ```text
-domains/d3a/module.yaml
-skills/d3a-coding/SKILL.md
+.claude/skills/id-workflow/references/domains/d3a/module.yaml
+.claude/skills/d3a-coding/SKILL.md
 ```
 
 它可以复用 atomic skills，但自身保留领域边界。

@@ -60,7 +60,7 @@ IDC Core 不直接绑定 D3A。它只认识 Domain Module Contract。
 
 ```text
 IDC Core
-  -> domains/registry.yaml
+  -> .claude/skills/id-workflow/references/domains/registry.yaml
   -> domains/<domain>/module.yaml
   -> module.workflow.entrypoint
 ```
@@ -80,16 +80,16 @@ IDC Core
 D3A 是当前第一个 active module：
 
 ```text
-domains/d3a/module.yaml
+.claude/skills/id-workflow/references/domains/d3a/module.yaml
 ```
 
 其他团队接入时新增：
 
 ```text
-domains/<team-domain>/module.yaml
+.claude/skills/id-workflow/references/domains/<team-domain>/module.yaml
 ```
 
-并在 `domains/registry.yaml` 注册。
+并在 `.claude/skills/id-workflow/references/domains/registry.yaml` 注册。
 
 ## Input Adapter
 

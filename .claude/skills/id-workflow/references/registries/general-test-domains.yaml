@@ -1,0 +1,10 @@
+test_domains:
+  - id: GENERAL_TEST_PLACEHOLDER
+    name: <ENTERPRISE_GENERAL_TEST_NAME>
+    knowledge_file: .claude/skills/id-workflow/references/knowledge/general/tests/GENERAL_TEST_PLACEHOLDER.md
+  - id: GENERAL_TEST_SECONDARY_PLACEHOLDER
+    name: <ENTERPRISE_GENERAL_TEST_SECONDARY_NAME>
+    knowledge_file: .claude/skills/id-workflow/references/knowledge/general/tests/GENERAL_TEST_SECONDARY_PLACEHOLDER.md
+  - id: GENERAL_CHECK_PLACEHOLDER
+    name: <ENTERPRISE_GENERAL_CHECK_NAME>
+    knowledge_file: .claude/skills/id-workflow/references/knowledge/general/tests/GENERAL_CHECK_PLACEHOLDER.md

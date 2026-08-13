@@ -36,8 +36,8 @@ API Contract is optional and only required when the task changes API or external
 
 - Do not write code before Human Alignment approval.
 - Do not use D3A Layer or DT Domain registries.
-- Choose general components only from `registries/general-components.yaml`.
-- Choose test domains only from `registries/general-test-domains.yaml`.
+- Choose general components only from `../id-workflow/references/registries/general-components.yaml`.
+- Choose test domains only from `../id-workflow/references/registries/general-test-domains.yaml`.
 - Every execution unit code change must be `<= 500 LOC`.
 - Completion requires tool evidence, not model confidence.
 - Keep enterprise details as placeholders outside the confidential environment.

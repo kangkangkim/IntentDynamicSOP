@@ -1,0 +1,10 @@
+components:
+  - id: GENERAL_COMPONENT_PLACEHOLDER
+    name: <ENTERPRISE_GENERAL_COMPONENT_NAME>
+    knowledge_file: .claude/skills/id-workflow/references/knowledge/general/components/GENERAL_COMPONENT_PLACEHOLDER.md
+  - id: GENERAL_COMPONENT_SECONDARY_PLACEHOLDER
+    name: <ENTERPRISE_GENERAL_COMPONENT_SECONDARY_NAME>
+    knowledge_file: .claude/skills/id-workflow/references/knowledge/general/components/GENERAL_COMPONENT_SECONDARY_PLACEHOLDER.md
+  - id: GENERAL_COMPONENT_SUPPORT_PLACEHOLDER
+    name: <ENTERPRISE_GENERAL_COMPONENT_SUPPORT_NAME>
+    knowledge_file: .claude/skills/id-workflow/references/knowledge/general/components/GENERAL_COMPONENT_SUPPORT_PLACEHOLDER.md

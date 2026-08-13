@@ -7,10 +7,10 @@ flowchart TD
     A["用户任务 / Intent"] --> B["IDC Core"]
 
     B --> C["Scenario Router<br/>判断进入 Domain Module 还是 General Coding"]
-    C --> D["Domain Module Router<br/>读取 domains/registry.yaml"]
+    C --> D["Domain Module Router<br/>读取 .claude/skills/id-workflow/references/domains/registry.yaml"]
     C --> G["General Coding<br/>未来动态编排"]
 
-    D --> E["D3A Module<br/>domains/d3a/module.yaml"]
+    D --> E["D3A Module<br/>.claude/skills/id-workflow/references/domains/d3a/module.yaml"]
     D --> F["其他团队 Module<br/>domains/&lt;team-domain&gt;/module.yaml"]
 
     E --> H["Lane Resolver<br/>fast / lite / complex"]
@@ -38,29 +38,29 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A["domains/d3a/module.yaml"] --> B["Route<br/>D3A_CODING"]
+    A[".claude/skills/id-workflow/references/domains/d3a/module.yaml"] --> B["Route<br/>D3A_CODING"]
     A --> C["Registries"]
     A --> D["Workflow"]
     A --> E["Knowledge"]
     A --> F["Execution"]
     A --> G["Examples"]
 
-    C --> C1["registries/d3a-layers.yaml<br/>TRAN_CFG / DO / VISP_ADP / TFC_TFI / TFE / ADP / DRV"]
-    C --> C2["registries/dt-domains.yaml<br/>TPRINT / FW / DPF"]
+    C --> C1[".claude/skills/id-workflow/references/registries/d3a-layers.yaml<br/>TRAN_CFG / DO / VISP_ADP / TFC_TFI / TFE / ADP / DRV"]
+    C --> C2[".claude/skills/id-workflow/references/registries/dt-domains.yaml<br/>TPRINT / FW / DPF"]
 
-    D --> D1["workflows/d3a-workflow.md"]
+    D --> D1[".claude/skills/id-workflow/references/workflows/d3a-workflow.md"]
     D --> D2["schemas/d3a-plan.schema.yaml"]
     D --> D3["workflows/tdd-state-machine.md"]
 
-    E --> E1["knowledge/d3a/layers/"]
-    E --> E2["knowledge/d3a/dt/"]
+    E --> E1[".claude/skills/id-workflow/references/knowledge/d3a/layers/"]
+    E --> E2[".claude/skills/id-workflow/references/knowledge/d3a/dt/"]
 
-    F --> F1["agents/d3a-layer-coder.md"]
-    F --> F2["agents/dt-test-writer.md"]
-    F --> F3["agents/build-error-analyzer.md"]
-    F --> F4["skills/d3a-coding/"]
-    F --> F5["skills/dt-build/"]
-    F --> F6["skills/tran-build/"]
+    F --> F1[".claude/agents/d3a-layer-coder.md"]
+    F --> F2[".claude/agents/dt-test-writer.md"]
+    F --> F3[".claude/agents/build-error-analyzer.md"]
+    F --> F4[".claude/skills/d3a-coding/"]
+    F --> F5[".claude/skills/dt-build/"]
+    F --> F6[".claude/skills/tran-build/"]
 
     G --> G1["examples/mock-d3a-task/"]
 ```
@@ -69,7 +69,7 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    A["IDC Core<br/>不改"] --> B["domains/registry.yaml<br/>新增一条 module"]
+    A["IDC Core<br/>不改"] --> B[".claude/skills/id-workflow/references/domains/registry.yaml<br/>新增一条 module"]
     B --> C["domains/&lt;team-domain&gt;/module.yaml"]
     C --> D["layers.yaml"]
     C --> E["test-domains.yaml"]
