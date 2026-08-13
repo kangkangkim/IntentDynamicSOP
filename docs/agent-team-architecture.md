@@ -59,6 +59,102 @@ Verification Team
   -> evidence summarizer
 ```
 
+## 什么时候用谁
+
+先区分三个层级：
+
+```text
+Dynamic Workflow:
+  选择整条路怎么走。
+
+Agent Team:
+  选择某个阶段需要哪组能力。
+
+Subagent:
+  执行一个隔离的 execution unit / Layer Context Packet / failure analysis。
+```
+
+### 用 Dynamic Workflow 的时候
+
+当问题是“现在该走哪条流程”时，用 Dynamic Workflow。
+
+典型触发：
+
+- 输入是一句话需求。
+- 输入是 TR3 文档。
+- 用户已经 approve Alignment Pack。
+- Domain 是 General。
+- Domain 是 D3A。
+- 测试或 build 失败，需要修复闭环。
+- Lane 从 fast/lite 升级到 complex。
+
+输出是：
+
+```text
+workflow_id
+next_agent_team
+next_required_contract
+```
+
+### 用 Agent Team 的时候
+
+当问题是“这个阶段需要哪组能力协作”时，用 Agent Team。
+
+典型触发：
+
+- raw idea 需要发散和收敛：Intent / Alignment Team。
+- 需要仓库事实和知识线索：Knowledge Team。
+- 需要拆 plan、execution unit、Context Packet：Planning Team。
+- 已经批准，可以编码：Coding Team。
+- 需要测试、构建、失败分析：Verification Team。
+
+输出是：
+
+```text
+selected_agent_team
+team_result_summary
+delegation_candidates
+```
+
+### 用 Subagent 的时候
+
+当问题是“需要隔离执行一个具体任务”时，用 Subagent。
+
+必须同时满足：
+
+- 已有 approved Alignment Pack。
+- 已有 Delegation Contract。
+- 已有 execution unit 或 Layer Context Packet。
+- 有明确 allowed_paths / constraints / expected_return。
+
+典型触发：
+
+- 写一个 General execution unit。
+- 写一个 D3A Layer execution unit。
+- 准备一个 DT domain 的 RED evidence。
+- 分析一次 build/test failure。
+- 做一个 targeted fix。
+
+不要用 Subagent 的情况：
+
+- Brainstorming。
+- Grill Me。
+- Human Alignment。
+- Domain / Lane 选择。
+- 只是规划或生成 Delegation Contract。
+
+## 选择规则表
+
+| 场景 | Dynamic Workflow | Agent Team | Subagent |
+|---|---|---|---|
+| 一句话需求 | raw_idea_alignment | Intent / Alignment Team | 不启动实现 subagent |
+| TR3 文档 | tr3_alignment | Planning Team + Intent / Alignment Team if gap exists | 不启动实现 subagent |
+| General 已批准 | general_execution | Planning + Coding + Verification | `general-coder` per execution unit |
+| D3A 已批准 | d3a_execution | Planning + Knowledge + Coding + Verification | `d3a-layer-coder` per Layer Context Packet |
+| DT 测试准备 | d3a_execution | Coding / Verification Team | `dt-test-writer` per DT domain |
+| build/test 失败 | verification_fix / build_fix | Verification + Knowledge if needed | `build-error-analyzer` then targeted fix subagent |
+| complex lane | staged workflow / DAG workflow | 多个 team 串行或并行 | 多 subagent，按 packet 拆 |
+
 ## Dynamic Workflow
 
 ```text
@@ -154,4 +250,3 @@ DONE 只能由 main agent 根据以下证据判断：
 - D3A required DT GREEN。
 - D3A `tran_build PASS`。
 - General required tests / build / static checks。
-

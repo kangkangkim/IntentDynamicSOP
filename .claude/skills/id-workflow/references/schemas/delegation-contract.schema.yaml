@@ -1,10 +1,15 @@
 delegation_contract:
   task_id: string
   workflow_id: raw_idea_alignment | tr3_alignment | general_execution | d3a_execution | verification_fix | build_fix
+  selection_layer: dynamic_workflow | agent_team | subagent
   selected_agent_team: intent_alignment | knowledge | planning | coding | verification
   selected_agents: []
   main_agent_role: planning_and_delegation_only
   delegation_reason: string
+  selection_reason:
+    workflow_reason: string
+    agent_team_reason: string
+    subagent_reason: string
   approved_alignment_ref: string
   context_packet_ref: string
   execution_unit_ref: string
@@ -42,6 +47,10 @@ agent_result:
 
 rules:
   - Main agent role 必须是 planning_and_delegation_only。
+  - Main agent 必须先选 dynamic_workflow，再选 agent_team，最后决定 subagent。
+  - Dynamic Workflow 用于选择生命周期流程，不直接执行任务。
+  - Agent Team 用于选择阶段能力组合。
+  - Subagent 用于隔离执行一个 execution unit / Layer Context Packet / failure analysis。
   - Main agent 不能直接执行复杂实现。
   - Main agent 不能把完整 subagent session 合并回 main session。
   - Subagent 只能接收当前 Delegation Contract 授权的 Context Packet。
@@ -50,4 +59,3 @@ rules:
   - DONE 判断只能由 main agent 基于 workflow gates 和工具 evidence 完成。
   - Provider finding 不能替代 tool evidence。
   - 单个 execution unit 代码变更必须 <= 500 LOC。
-

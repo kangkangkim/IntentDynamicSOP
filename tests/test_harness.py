@@ -462,6 +462,12 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         "Verification Team",
         "Dynamic Workflow",
         "Delegation Contract",
+        "Selection Decision Matrix",
+        "When To Use Dynamic Workflow",
+        "When To Use Agent Team",
+        "When To Use Subagent",
+        "Lane Influence",
+        "Domain Influence",
     ]:
         assert_true(fragment in router or fragment in doc, f"Delegation 设计缺少：{fragment}")
 
@@ -471,11 +477,16 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         "full_search_results",
         "context_to_keep",
         "context_to_drop",
+        "selection_layer: dynamic_workflow | agent_team | subagent",
+        "workflow_reason",
+        "agent_team_reason",
+        "subagent_reason",
         "completion_authority: main_agent_only",
     ]:
         assert_true(fragment in schema, f"Delegation schema 缺少上下文边界：{fragment}")
 
     assert_true("Main agent must not directly execute complex implementation" in skill, "id-workflow 必须禁止 main 直接执行复杂实现。")
+    assert_true("dynamic workflow -> agent team -> subagent" in skill, "id-workflow 必须声明 delegation 选择顺序。")
     assert_true("Delegation Contract" in html, "运行视角 HTML 必须展示 Delegation Contract。")
 
 

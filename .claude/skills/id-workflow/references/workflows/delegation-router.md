@@ -46,6 +46,87 @@ main agent 禁止做：
 
 ## Dynamic Workflow Selection
 
+三者的层级关系：
+
+```text
+Dynamic Workflow = 选择整条流程
+Agent Team       = 选择一组能力协作
+Subagent         = 执行一个隔离任务单元
+```
+
+main agent 必须按这个顺序决策：
+
+```text
+1. 先选 dynamic workflow
+2. 再选 agent team
+3. 最后决定是否启动一个或多个 subagent
+```
+
+## Selection Decision Matrix
+
+| 要判断的问题 | 选择对象 | 何时使用 | 输出 |
+|---|---|---|---|
+| 这是什么类型的输入和生命周期？ | Dynamic Workflow | raw idea、TR3、approved alignment、test/build failed、D3A、General | workflow_id |
+| 这一步需要哪一组能力？ | Agent Team | 需要发现/澄清/规划/知识检索/编码/验证中的一组协作 | selected_agent_team |
+| 这一步是否需要隔离执行？ | Subagent | 需要读写代码、跑测试、分析失败、处理某个 execution unit 或 D3A Layer | selected_agents |
+
+## When To Use Dynamic Workflow
+
+使用 Dynamic Workflow 的信号：
+
+- 输入类型改变：`raw_idea`、`tr3_doc`、`approved_alignment`。
+- 任务生命周期改变：alignment、execution、verification_fix、build_fix。
+- Domain 改变：general vs d3a。
+- Lane 改变：fast / lite / complex。
+- 状态改变：首次执行、测试失败、构建失败、需要 re-plan。
+
+Dynamic Workflow 不直接执行任务；它只决定接下来应该调用哪些 agent team。
+
+## When To Use Agent Team
+
+使用 Agent Team 的信号：
+
+- 需要多个能力串起来完成一个阶段。
+- 需要同一阶段内的能力组合，例如 `Knowledge Team` 先 OKL 再 bounded grep。
+- 需要 main agent 保留阶段级状态，但不保留所有工作细节。
+- 任务处于 pre-alignment，不能启动实现 subagent，但可以使用 Intent / Alignment Team。
+
+Agent Team 可以是串行，也可以由 main agent 拆成多个 subagent 调用。
+
+## When To Use Subagent
+
+启动 Subagent 的信号：
+
+- 已经有 approved Alignment Pack。
+- 已经有 Delegation Contract。
+- 已经有明确 execution unit 或 Layer Context Packet。
+- 需要隔离读写代码、准备测试、跑验证或分析失败。
+- 任务可能污染 main session，例如长日志、局部搜索、局部实现细节。
+
+不要启动 Subagent 的情况：
+
+- 还在 raw idea Brainstorming。
+- 还在 Grill Me / Human Alignment。
+- 只是选择 Domain / Lane。
+- 只是生成 plan 或 Delegation Contract。
+- 没有明确 Context Packet。
+
+## Lane Influence
+
+| Lane | Dynamic Workflow | Agent Team | Subagent |
+|---|---|---|---|
+| fast | 通常单阶段 execution workflow | 通常只用 Planning + Verification，Knowledge 按需 | 默认 0 或 1 个；小改可由 main 生成 delegation 后单 subagent 执行 |
+| lite | focused execution workflow | Planning + Knowledge as needed + Coding + Verification | 通常 1 个 coding subagent，失败时再加 analyzer |
+| complex | staged workflow / DAG workflow | Planning + Knowledge + Coding + Verification 全部参与 | 多个 subagent；D3A 按 Layer Context Packet 拆 |
+
+## Domain Influence
+
+| Domain | Agent Team | Subagent 策略 |
+|---|---|---|
+| general | Planning Team -> Coding Team -> Verification Team | `general-coder` per execution unit |
+| d3a | Planning Team -> Knowledge Team -> Coding Team -> Verification Team | `d3a-layer-coder` per Layer Context Packet，`dt-test-writer` per required DT domain |
+| failure_fix | Verification Team -> Knowledge Team if needed -> Coding Team | `build-error-analyzer` first，再 targeted fix subagent |
+
 ```text
 raw_idea
   -> intent-discovery team
@@ -236,4 +317,3 @@ main agent
   -> does not continue coding directly
   -> creates new Delegation Contract or escalates
 ```
-
