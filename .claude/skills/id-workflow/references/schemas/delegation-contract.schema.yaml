@@ -1,6 +1,18 @@
 delegation_contract:
   task_id: string
   workflow_id: raw_idea_alignment | tr3_alignment | general_execution | d3a_execution | verification_fix | build_fix
+  official_dynamic_workflow:
+    required: boolean
+    reason: string
+    triggers:
+      - many_files
+      - many_execution_units
+      - fanout_collect_verify
+      - repeat_until_pass
+      - large_migration
+      - cross_checked_research
+      - background_run_needed
+      - save_and_rerun_needed
   workflow_trigger:
     latest_event: new_user_input | normalized_request_ready | human_alignment_approved | domain_or_lane_resolved | agent_result_returned | test_failed | build_failed | fix_failed | scope_changed | completion_gate_blocked
     input_maturity: raw_idea | structured_requirement | tr3_design_doc | approved_alignment
@@ -65,9 +77,10 @@ agent_result:
 
 rules:
   - Main agent role 必须是 planning_and_delegation_only。
-  - Main agent 必须先选 dynamic_workflow，再选 agent_team，最后决定 subagent。
-  - Dynamic Workflow 是事件触发的状态路由，不是静态分类。
-  - Dynamic Workflow 必须记录 trigger_event 和 entry_condition_matched。
+  - Main agent 必须先选 IDC workflow route，再判断是否升级 official dynamic workflow，再选 agent_team，最后决定 subagent。
+  - IDC Workflow Router 是事件触发的状态路由。
+  - Official Dynamic Workflow 只在大规模、脚本化、可复跑的 fan-out 编排时使用。
+  - Workflow Router 必须记录 trigger_event 和 entry_condition_matched。
   - Agent Team 只在多个 subagent 需要交流、交接或共享中间结果时使用。
   - Subagent 用于隔离执行一个 execution unit / Layer Context Packet / failure analysis。
   - Main agent 不能直接执行复杂实现。

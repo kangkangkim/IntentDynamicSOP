@@ -165,8 +165,8 @@ references/schemas/repo-context-provider.schema.yaml
 - Do not write implementation code before Human Alignment approval.
 - Follow `CONTEXT_ENGINEERING.md`: load stage-specific context, summarize long findings, and keep DONE evidence separate from knowledge findings.
 - Main agent role is `planning_and_delegation_only`: select dynamic workflow, create Delegation Contract, dispatch agent team / subagent, then summarize returned evidence.
-- Delegation selection order is mandatory: dynamic workflow -> agent team -> subagent.
-- Dynamic workflow is event-triggered state routing: record trigger_event, entry_condition_matched, workflow_id, and allowed_next_states before selecting agent team.
+- Delegation selection order is mandatory: IDC workflow route -> official dynamic workflow if needed -> agent team -> subagent.
+- IDC workflow route is event-triggered state routing; official dynamic workflow is only for scripted, repeatable, large-scale fan-out orchestration.
 - Use agent team only when multiple subagents need communication, handoff, shared intermediate artifacts, review, or merge.
 - Main agent must not directly execute complex implementation, consume full logs, consume full search results, or merge full subagent sessions back into main context.
 - Keep `id-workflow` as orchestration; reusable pre-alignment behavior lives in atomic skills.

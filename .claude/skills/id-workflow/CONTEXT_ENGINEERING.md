@@ -215,6 +215,9 @@ context_packet:
 ```yaml
 delegation_contract:
   workflow_id: raw_idea_alignment | tr3_alignment | general_execution | d3a_execution | verification_fix | build_fix
+  official_dynamic_workflow:
+    required: boolean
+    triggers: []
   workflow_trigger:
     latest_event: string
     input_maturity: string

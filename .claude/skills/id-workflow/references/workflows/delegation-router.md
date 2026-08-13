@@ -44,35 +44,38 @@ main agent 禁止做：
 - 把 subagent session 全量合并回 main session。
 - 用 provider finding 替代 tool evidence。
 
-## Dynamic Workflow Selection
+## Workflow Router Selection
 
 三者的层级关系：
 
 ```text
-Dynamic Workflow = 选择整条流程
-Agent Team       = 选择一组能力协作
-Subagent         = 执行一个隔离任务单元
+IDC Workflow Router      = 选择普通生命周期流程
+Official Dynamic Workflow = 脚本化、大规模、可复跑的 subagent 编排
+Agent Team               = 多个 subagent 需要交流或交接
+Subagent                 = 执行一个隔离任务单元
 ```
 
 main agent 必须按这个顺序决策：
 
 ```text
-1. 先选 dynamic workflow
+1. 先选 IDC workflow route
 2. 再选 agent team
 3. 最后决定是否启动一个或多个 subagent
+4. 只有大规模、可复跑、脚本化 fan-out 时，才升级到 official dynamic workflow
 ```
 
 ## Selection Decision Matrix
 
 | 要判断的问题 | 选择对象 | 何时使用 | 输出 |
 |---|---|---|---|
-| 这是什么类型的输入和生命周期？ | Dynamic Workflow | raw idea、TR3、approved alignment、test/build failed、D3A、General | workflow_id |
+| 这是什么类型的输入和生命周期？ | IDC Workflow Router | raw idea、TR3、approved alignment、test/build failed、D3A、General | workflow_id |
+| 是否需要脚本化、大规模、可复跑编排？ | Official Dynamic Workflow | many files / many execution units / fan-out collect verify / repeat-until-pass / background run | dynamic_workflow_required |
 | 多个 subagent 是否需要交流、交接或共享中间结果？ | Agent Team | subagent 之间存在依赖、握手、审查、并行汇总或 failure handoff | selected_agent_team |
 | 这一步是否需要隔离执行？ | Subagent | 需要读写代码、跑测试、分析失败、处理某个 execution unit 或 D3A Layer | selected_agents |
 
-## When To Use Dynamic Workflow
+## When To Use IDC Workflow Router
 
-使用 Dynamic Workflow 的信号：
+使用 IDC Workflow Router 的信号：
 
 - 输入类型改变：`raw_idea`、`tr3_doc`、`approved_alignment`。
 - 任务生命周期改变：alignment、execution、verification_fix、build_fix。
@@ -80,11 +83,11 @@ main agent 必须按这个顺序决策：
 - Lane 改变：fast / lite / complex。
 - 状态改变：首次执行、测试失败、构建失败、需要 re-plan。
 
-Dynamic Workflow 不直接执行任务；它只决定接下来应该调用哪些 agent team。
+IDC Workflow Router 不直接执行任务；它只决定接下来应该调用哪些 agent team / subagent。
 
-## Dynamic Workflow Trigger Model
+## IDC Workflow Trigger Model
 
-Dynamic Workflow 是事件触发的状态路由，不是静态分类。
+IDC Workflow Router 是事件触发的状态路由，不是 official dynamic workflow。
 
 main agent 每次收到以下事件，都必须重新判断 workflow：
 
@@ -142,7 +145,7 @@ workflow_trigger_input:
 
 ### Workflow Output
 
-Dynamic Workflow selection 必须输出：
+IDC Workflow Router 必须输出：
 
 ```yaml
 workflow_selection_result:
@@ -153,6 +156,31 @@ workflow_selection_result:
   next_agent_team_candidate: intent_alignment | planning | coding | verification | none
   allowed_next_states: []
 ```
+
+## When To Use Official Dynamic Workflow
+
+Official Dynamic Workflow 只在“编排复杂到值得脚本化”时使用。
+
+使用信号：
+
+- `many_files`: 需要处理很多文件或模块。
+- `many_execution_units`: execution unit 数量很多。
+- `fanout_collect_verify`: 需要 fan-out -> collect -> merge -> verify。
+- `repeat_until_pass`: 需要循环执行 fix -> verify，直到通过或触发停止条件。
+- `large_migration`: 大规模迁移、批量替换、跨模块更新。
+- `cross_checked_research`: 多 subagent 交叉调研、互相校验。
+- `background_run_needed`: 任务很长，需要后台运行和进度查看。
+- `save_and_rerun_needed`: 这个编排以后要保存复用。
+
+不要使用 Official Dynamic Workflow 的情况：
+
+- 只是 raw idea / TR3 / approved alignment 的路由判断。
+- 只是 Domain / Lane 判断。
+- 只有一个 execution unit。
+- 一个 subagent 能独立完成。
+- 多个 subagent 只是简单串行，且不需要脚本化循环 / fan-out / collect。
+- 只是 pre-alignment 或人工确认。
+- 普通失败修复，除非进入多轮 repeat-until-pass。
 
 ## When To Use Agent Team
 
