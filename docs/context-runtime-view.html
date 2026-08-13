@@ -348,8 +348,54 @@
     <section class="panel">
       <div class="panel-head">
         <div>
+          <h2>四层选择关系</h2>
+          <span>先做普通生命周期路由，再判断是否需要官方 Dynamic Workflow；然后才决定 agent team 和 subagent。</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="reading">
+          <div class="reading-card main">
+            <strong>IDC Workflow Router</strong>
+            <p>普通状态路由：raw idea、TR3、approved、D3A、General、test/build failed。</p>
+            <div class="tag-row">
+              <span class="tag">state routing</span>
+              <span class="tag">workflow_id</span>
+            </div>
+          </div>
+          <div class="reading-card knowledge">
+            <strong>Official Dynamic Workflow</strong>
+            <p>只在 many execution units、fan-out collect verify、repeat-until-pass、可复跑后台编排时使用。</p>
+            <div class="tag-row">
+              <span class="tag">many_execution_units</span>
+              <span class="tag">fanout_collect_verify</span>
+              <span class="tag">repeat_until_pass</span>
+            </div>
+          </div>
+          <div class="reading-card human">
+            <strong>Agent Team</strong>
+            <p>多个 subagent 需要交流、交接、共享中间结果、review 或 merge 时才使用。</p>
+            <div class="tag-row">
+              <span class="tag">handoff</span>
+              <span class="tag">merge</span>
+            </div>
+          </div>
+          <div class="reading-card sub">
+            <strong>Subagent</strong>
+            <p>单个隔离任务：一个 execution unit、一个 Layer Context Packet、一次 failure analysis。</p>
+            <div class="tag-row">
+              <span class="tag">isolated task</span>
+              <span class="tag">bounded context</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
           <h2>场景 A：TR3 需求输入</h2>
-          <span>TR3 信息较完整，所以 main session 不需要大范围发散；主要做解析、缺口追问、Delegation Contract 和分派。</span>
+          <span>TR3 信息较完整，先由 IDC Workflow Router 进入 TR3 alignment；只有大规模 fan-out 时才升级 official Dynamic Workflow。</span>
         </div>
       </div>
       <div class="panel-body">
@@ -385,7 +431,7 @@
           </div>
           <div class="cell main">
             <h3>分派与记账</h3>
-            <p>生成 execution unit 和 Delegation Contract，main 只保留 packet 摘要。</p>
+            <p>生成 execution unit 和 Delegation Contract；需要脚本化大规模编排时才启用 official Dynamic Workflow。</p>
             <div class="bar"><span style="width: 50%"></span></div>
           </div>
           <div class="cell main">
@@ -421,7 +467,7 @@
           <div class="cell empty">等待批准</div>
           <div class="cell sub">
             <h3>短会话启动</h3>
-            <p>D3A: one Layer Context Packet；General: one execution unit。</p>
+            <p>默认启动单个 subagent；多个 subagent 需要 handoff / merge 时升级 Agent Team。</p>
             <div class="bar sub"><span style="width: 58%"></span></div>
           </div>
           <div class="cell sub">
@@ -441,7 +487,7 @@
       <div class="panel-head">
         <div>
           <h2>场景 B：一句话需求输入</h2>
-          <span>一句话输入不成熟，所以 main session 会先多一段 Brainstorming；但实现 subagent 仍然要等用户批准后才创建。</span>
+          <span>一句话输入先走 IDC Workflow Router 的 raw idea alignment；Brainstorming / Grill Me 阶段不启动实现 subagent。</span>
         </div>
       </div>
       <div class="panel-body">
@@ -477,7 +523,7 @@
           </div>
           <div class="cell main">
             <h3>拆 execution unit</h3>
-            <p>只把当前 unit 需要的上下文和 Delegation Contract 发给 subagent。</p>
+            <p>只把当前 unit 需要的上下文和 Delegation Contract 发给 subagent；大规模 repeat-until-pass 才升级 official Dynamic Workflow。</p>
             <div class="bar"><span style="width: 50%"></span></div>
           </div>
           <div class="cell main">
@@ -565,7 +611,7 @@
         <div class="io-grid">
           <div class="io">
             <strong>Main -> Subagent</strong>
-            <p>approved contract + Delegation Contract + execution unit + allowed paths + relevant Context Packet。</p>
+            <p>IDC workflow route + approved contract + Delegation Contract + execution unit + allowed paths + relevant Context Packet。</p>
           </div>
           <div class="io">
             <strong>Subagent 内部</strong>

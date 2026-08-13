@@ -7,7 +7,8 @@ IDC 的目标是让 main agent 成为 planning / delegation core，而不是全�
 ```text
 Main Agent = planner + delegation router + evidence summarizer
 Subagent / Agent Team = bounded execution worker
-Dynamic Workflow = 根据输入和状态选择 agent team
+IDC Workflow Router = 根据输入和状态选择普通生命周期流程
+Official Dynamic Workflow = 大规模、脚本化、可复跑的 subagent 编排
 ```
 
 main agent 长期持有：
@@ -209,8 +210,6 @@ delegation_candidates
 
 ## 选择规则表
 
-| 场景 | Dynamic Workflow | Agent Team | Subagent |
-|---|---|---|---|
 | 场景 | IDC Workflow Router | Agent Team | Subagent | Official Dynamic Workflow |
 |---|---|---|---|---|
 | 一句话需求 | `new_user_input` + raw idea -> `raw_idea_alignment` | 只有 discovery / grilling 需要 handoff 时使用 | 不启动实现 subagent | 不用 |

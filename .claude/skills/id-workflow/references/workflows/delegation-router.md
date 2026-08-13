@@ -6,7 +6,8 @@ main agent 不直接承担重型执行任务。它只负责：
 
 ```text
 understand input
--> select dynamic workflow
+-> select IDC workflow route
+-> decide whether official dynamic workflow is needed
 -> build plan
 -> create Delegation Contract
 -> dispatch agent team / subagent
@@ -26,7 +27,8 @@ main agent 允许做：
 - 判断 input maturity。
 - 选择 Domain Module。
 - 选择 Lane。
-- 选择 dynamic workflow。
+- 选择 IDC workflow route。
+- 判断是否需要 official dynamic workflow。
 - 生成 execution unit。
 - 生成 Context Packet / Layer Context Packet。
 - 生成 Delegation Contract。
@@ -221,7 +223,7 @@ Agent Team 的核心不是“能力很多”，而是“subagent 之间必须交
 
 ## Lane Influence
 
-| Lane | Dynamic Workflow | Agent Team | Subagent |
+| Lane | IDC Workflow Router / Official Dynamic Workflow | Agent Team | Subagent |
 |---|---|---|---|
 | fast | 通常单阶段 execution workflow | 通常不用 agent team，除非验证和修复之间必须交接 | 默认 0 或 1 个；小改可由 main 生成 delegation 后单 subagent 执行 |
 | lite | focused execution workflow | 有 coding -> verification 或 analyzer -> fixer 交接时使用 | 通常 1 个 coding subagent，失败时再加 analyzer |
@@ -385,7 +387,8 @@ targeted_fix_task
 
 ```text
 main agent
-  -> selects dynamic workflow
+  -> selects IDC workflow route
+  -> decides whether official dynamic workflow is needed
   -> creates Delegation Contract
   -> sends bounded Context Packet
   -> subagent / agent team works in isolated session

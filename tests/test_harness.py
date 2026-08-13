@@ -619,6 +619,12 @@ def test_adoption_and_deep_dive_docs_exist():
         "targeted",
         "Layer Context Packet",
         "summary / refs / keywords",
+        "IDC Workflow Router",
+        "Official Dynamic Workflow",
+        "Agent Team",
+        "many_execution_units",
+        "fanout_collect_verify",
+        "repeat_until_pass",
     ]:
         assert_true(fragment in context_html, f"Context Runtime HTML 图缺少关键节点：{fragment}")
     for file_name in [
