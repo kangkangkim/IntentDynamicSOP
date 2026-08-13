@@ -590,6 +590,34 @@ def test_e2e_general_demo_is_complete():
     assert_true("DONE" in completion, "General E2E demo 必须包含 completion summary。")
 
 
+def test_manual_test_scenarios_exist_for_user_experience():
+    required_files = [
+        "test/README.md",
+        "test/01-rough-general.md",
+        "test/02-structured-general.md",
+        "test/03-tr3-d3a.md",
+        "test/04-approved-general-execution.md",
+        "test/05-build-failure-fix.md",
+        "test/06-large-fanout-dynamic-workflow.md",
+    ]
+    for file_name in required_files:
+        assert_true((ROOT / file_name).exists(), f"缺少手动体验场景：{file_name}")
+
+    expectations = {
+        "test/01-rough-general.md": ["intent-discovery", "Brainstorming View", "不应该直接进入 `general-coding`"],
+        "test/02-structured-general.md": ["structured_requirement", "Clarification View", "不应该默认 Brainstorming"],
+        "test/03-tr3-d3a.md": ["tr3_design_doc", "Domain = d3a", "不应该把 TR3 DT design 当 RED/GREEN evidence"],
+        "test/04-approved-general-execution.md": ["general_execution", "Delegation Contract", "general-coder"],
+        "test/05-build-failure-fix.md": ["build_failed", "build-error-analyzer", "targeted fix"],
+        "test/06-large-fanout-dynamic-workflow.md": ["official_dynamic_workflow.required = true", "fanout_collect_verify", "repeat_until_pass"],
+    }
+    for file_name, fragments in expectations.items():
+        text = read_text(file_name)
+        assert_true("Prompt to paste" in text, f"{file_name} 必须包含可复制 prompt。")
+        for fragment in fragments:
+            assert_true(fragment in text, f"{file_name} 缺少体验断言：{fragment}")
+
+
 def test_adoption_and_deep_dive_docs_exist():
     assert_true((ROOT / "docs/adoption-guide.md").exists(), "缺少 adoption guide。")
     html = read_text("docs/flow-d3a-general.html")
@@ -984,6 +1012,7 @@ def run():
         test_progressive_constraint_loading_files_exist,
         test_e2e_tr3_d3a_demo_is_complete,
         test_e2e_general_demo_is_complete,
+        test_manual_test_scenarios_exist_for_user_experience,
         test_adoption_and_deep_dive_docs_exist,
         test_id_workflow_skill_exists_and_has_triggers,
         test_atomic_pre_alignment_skills_exist_and_are_reusable,

@@ -62,6 +62,7 @@ docs/deep-dive/
 ├── .claude/
 ├── docs/
 ├── examples/
+├── test/
 └── tests/
 ```
 
@@ -135,6 +136,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 - `examples/mock-d3a-task/`：非敏感 mock walkthrough。
 - `examples/e2e-tr3-d3a/`：从 TR3 到 completion summary 的端到端 mock demo。
 - `examples/e2e-general-task/`：General Coding 端到端 mock demo。
+- `test/`：可以复制到 Claude Code 里手动体验的场景卡。
 - `examples/tr3-fixtures.yaml`：TR3 输入分类样例。
 - `tests/test_harness.py`：harness 自检。
 
