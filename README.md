@@ -58,6 +58,7 @@ docs/deep-dive/
 .
 ├── AGENTS.md
 ├── CLAUDE.md
+├── .claude/
 ├── agents/
 ├── domains/
 ├── docs/
@@ -113,6 +114,8 @@ domains/d3a/module.yaml
 
 - `workflows/scenario-router.md`：顶层场景路由。
 - `skills/id-workflow/SKILL.md`：ID workflow 的 Skill 触发入口。
+- `.claude/skills/id-workflow/SKILL.md`：Claude Code 项目级 Skill 入口，指向同一份 canonical skill。
+- `.claude/agents/`：Claude Code 项目级 subagent 入口，指向 `agents/` 下的 canonical agent contract。
 - `skills/intent-discovery/SKILL.md`：一句话需求发散成 draft spec 的原子 skill。
 - `skills/intent-grilling/SKILL.md`：Grill Me 收敛追问的原子 skill。
 - `skills/intent-alignment/SKILL.md`：人类前置确认的原子 skill。
@@ -151,8 +154,10 @@ domains/d3a/module.yaml
 - `registries/`：固定 D3A Layer 和 V0 DT Domain registry。
 - `schemas/`：核心 contract 结构。
 - `agents/`：subagent 职责边界。
-- `skills/`：placeholder skill 接口。
-- `skills/id-workflow/`：本机 Claude Code / Codex 体验 ID workflow 的入口 skill。
+- `skills/`：canonical skill 源文件。
+- `.claude/skills/`：Claude Code 项目级 skill 发现入口。
+- `.claude/agents/`：Claude Code 项目级 agent 发现入口。
+- `skills/id-workflow/`：本机 Claude Code / Codex 体验 ID workflow 的 canonical 入口 skill。
 - `examples/mock-d3a-task/`：非敏感 mock walkthrough。
 - `examples/e2e-tr3-d3a/`：从 TR3 到 completion summary 的端到端 mock demo。
 - `examples/e2e-general-task/`：General Coding 端到端 mock demo。

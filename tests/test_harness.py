@@ -569,6 +569,24 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
     assert_true("D3A 是 Domain Module" in atomic_doc, "atomic-skills 文档必须说明 D3A 不是通用原子 skill。")
 
 
+def test_claude_project_entries_expose_skills_and_agents():
+    for skill_dir in sorted((ROOT / "skills").iterdir()):
+        if not skill_dir.is_dir():
+            continue
+        canonical = skill_dir / "SKILL.md"
+        assert_true(canonical.exists(), f"canonical skill 缺少 SKILL.md：{skill_dir}")
+        claude_skill = ROOT / ".claude" / "skills" / skill_dir.name / "SKILL.md"
+        assert_true(claude_skill.exists(), f"Claude Code 项目级 skill 入口不存在：{claude_skill}")
+        assert_true(claude_skill.resolve() == canonical.resolve(), f"Claude Code skill 入口没有指向 canonical skill：{skill_dir.name}")
+
+    for agent_file in sorted((ROOT / "agents").glob("*.md")):
+        claude_agent = ROOT / ".claude" / "agents" / agent_file.name
+        assert_true(claude_agent.exists(), f"Claude Code 项目级 agent 入口不存在：{claude_agent}")
+        text = claude_agent.read_text()
+        assert_true(text.startswith("---\n"), f"Claude Code agent 缺少 frontmatter：{claude_agent}")
+        assert_true(f"agents/{agent_file.name}" in text, f"Claude Code agent 必须指向 canonical agent：{agent_file.name}")
+
+
 def test_human_views_exist_and_hide_raw_yaml():
     required_files = [
         "human-views/brainstorming-view.md",
@@ -807,6 +825,7 @@ def run():
         test_adoption_and_deep_dive_docs_exist,
         test_id_workflow_skill_exists_and_has_triggers,
         test_atomic_pre_alignment_skills_exist_and_are_reusable,
+        test_claude_project_entries_expose_skills_and_agents,
         test_human_views_exist_and_hide_raw_yaml,
         test_clarification_provider_uses_grill_me_method_with_fallback,
         test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea,
