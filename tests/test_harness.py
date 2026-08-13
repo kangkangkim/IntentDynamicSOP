@@ -435,6 +435,50 @@ def test_context_engineering_is_progressive_and_not_token_policy():
     assert_true("token budget" not in context.lower(), "Context Engineering 不应写成 token budget。")
 
 
+def test_delegation_contract_keeps_main_agent_as_planner():
+    router = read_text(".claude/skills/id-workflow/references/workflows/delegation-router.md")
+    schema = read_text(".claude/skills/id-workflow/references/schemas/delegation-contract.schema.yaml")
+    skill = read_text(".claude/skills/id-workflow/SKILL.md")
+    context = read_text(".claude/skills/id-workflow/CONTEXT_ENGINEERING.md")
+    loop = read_text(".claude/skills/id-workflow/references/workflows/automated-closure-loop.md")
+    doc = read_text("docs/agent-team-architecture.md")
+    html = read_text("docs/context-runtime-view.html")
+
+    for text, name in [
+        (router, "delegation router"),
+        (schema, "delegation schema"),
+        (skill, "id-workflow skill"),
+        (context, "context engineering"),
+        (loop, "automated closure loop"),
+        (doc, "agent team architecture"),
+    ]:
+        assert_true("planning_and_delegation_only" in text, f"{name} 必须约束 main agent role。")
+
+    for fragment in [
+        "Intent / Alignment Team",
+        "Knowledge Team",
+        "Planning Team",
+        "Coding Team",
+        "Verification Team",
+        "Dynamic Workflow",
+        "Delegation Contract",
+    ]:
+        assert_true(fragment in router or fragment in doc, f"Delegation 设计缺少：{fragment}")
+
+    for fragment in [
+        "full_subagent_session",
+        "full_logs",
+        "full_search_results",
+        "context_to_keep",
+        "context_to_drop",
+        "completion_authority: main_agent_only",
+    ]:
+        assert_true(fragment in schema, f"Delegation schema 缺少上下文边界：{fragment}")
+
+    assert_true("Main agent must not directly execute complex implementation" in skill, "id-workflow 必须禁止 main 直接执行复杂实现。")
+    assert_true("Delegation Contract" in html, "运行视角 HTML 必须展示 Delegation Contract。")
+
+
 def test_progressive_constraint_loading_files_exist():
     stages = {
         "decision": ".claude/skills/id-workflow/references/constraints/decision",
@@ -867,6 +911,7 @@ def run():
         test_repo_context_provider_contract_is_context_bounded,
         test_provider_selection_matrix_is_anchor_aware_and_okl_query_bounded,
         test_context_engineering_is_progressive_and_not_token_policy,
+        test_delegation_contract_keeps_main_agent_as_planner,
         test_progressive_constraint_loading_files_exist,
         test_e2e_tr3_d3a_demo_is_complete,
         test_e2e_general_demo_is_complete,

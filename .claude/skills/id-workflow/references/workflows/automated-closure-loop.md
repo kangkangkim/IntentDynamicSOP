@@ -6,8 +6,9 @@ Automated Closure Loop 是 Human Alignment 通过后的默认执行模式。
 
 ```text
 Planner
+  -> Delegation Router
   -> Knowledge Gate
-  -> Execution
+  -> Agent Team / Subagent Execution
   -> Verification
   -> Error Analyzer / Targeted Fix / Re-plan
   -> DONE
@@ -29,8 +30,11 @@ Human Alignment approve 后，后续步骤默认自动执行和验证。
 
 - Planner 必须遵守已批准的 scope / contract / completion gate。
 - Planner 必须把代码变更拆成不超过 500 行的 execution unit。
+- Delegation Router 必须生成 Delegation Contract。
+- Main agent 只做 planning_and_delegation_only，不直接执行复杂实现。
 - Knowledge Gate 只能加载当前执行单元需要的知识。
-- Execution 必须产出工具证据。
+- Agent Team / Subagent Execution 必须产出工具证据。
+- Subagent 只能回传 summary / changed_paths / evidence_refs / blockers / context_to_keep / context_to_drop。
 - 每个 execution unit 都必须有自己的 evidence。
 - Verification Gate 必须检查 Lane completion requirements。
 - Domain Module 可以追加自己的 completion gate。

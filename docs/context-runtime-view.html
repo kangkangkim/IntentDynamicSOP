@@ -349,7 +349,7 @@
       <div class="panel-head">
         <div>
           <h2>场景 A：TR3 需求输入</h2>
-          <span>TR3 信息较完整，所以 main session 不需要大范围发散；主要做解析、缺口追问、批准和分派。</span>
+          <span>TR3 信息较完整，所以 main session 不需要大范围发散；主要做解析、缺口追问、Delegation Contract 和分派。</span>
         </div>
       </div>
       <div class="panel-body">
@@ -385,7 +385,7 @@
           </div>
           <div class="cell main">
             <h3>分派与记账</h3>
-            <p>生成 execution unit，main 只保留 packet 摘要。</p>
+            <p>生成 execution unit 和 Delegation Contract，main 只保留 packet 摘要。</p>
             <div class="bar"><span style="width: 50%"></span></div>
           </div>
           <div class="cell main">
@@ -477,7 +477,7 @@
           </div>
           <div class="cell main">
             <h3>拆 execution unit</h3>
-            <p>只把当前 unit 需要的上下文发给 subagent。</p>
+            <p>只把当前 unit 需要的上下文和 Delegation Contract 发给 subagent。</p>
             <div class="bar"><span style="width: 50%"></span></div>
           </div>
           <div class="cell main">
@@ -565,7 +565,7 @@
         <div class="io-grid">
           <div class="io">
             <strong>Main -> Subagent</strong>
-            <p>approved contract + execution unit + allowed paths + relevant Context Packet。</p>
+            <p>approved contract + Delegation Contract + execution unit + allowed paths + relevant Context Packet。</p>
           </div>
           <div class="io">
             <strong>Subagent 内部</strong>

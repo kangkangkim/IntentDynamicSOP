@@ -15,6 +15,8 @@ Context Engineering 定义 Claude Code 运行 `id-workflow` 时如何渐进式�
 - 影响范围不清楚时，再使用 targeted CodeGraph。
 - 每个 execution unit 的代码变更控制在 `<= 500 LOC`。
 - D3A 多 Layer 必须拆成多个 Layer Context Packet，每个 packet 只服务一个 Layer。
+- Main agent 只做 planning / delegation / evidence summarization。
+- Subagent / agent team 的完整 session 不能回灌 main session。
 
 ## Stage 1: 输入理解
 
@@ -114,9 +116,11 @@ Lane 策略：
 
 ```text
 references/workflows/automated-closure-loop.md
+references/workflows/delegation-router.md
 references/workflows/progressive-constraint-loading.md
 references/workflows/execution-unit-policy.md
 references/workflows/lane-completion.md
+references/schemas/delegation-contract.schema.yaml
 references/schemas/escalation-policy.schema.yaml
 references/schemas/verification-contract.schema.yaml
 ```
@@ -124,6 +128,7 @@ references/schemas/verification-contract.schema.yaml
 执行上下文必须包含：
 
 - 已批准的 Alignment Pack 摘要。
+- Delegation Contract。
 - 当前 execution unit 的目标、边界和 verification contract。
 - 当前 domain module。
 - 当前 lane completion rule。
@@ -135,6 +140,18 @@ D3A 执行额外要求：
 - 一次只加载一个 Layer Context Packet。
 - packet 必须声明 selected layer、allowed paths、required DT domains、evidence refs。
 - RED / GREEN / `tran_build` evidence 必须来自工具结果。
+
+Subagent / agent team 返回给 main 的内容只能包含：
+
+- status。
+- summary。
+- changed_paths。
+- evidence_refs。
+- blockers。
+- context_to_keep。
+- context_to_drop。
+
+禁止返回完整 subagent session、完整日志、完整搜索输出。
 
 ## Stage 5: 验证 / 闭环
 
@@ -192,3 +209,25 @@ context_packet:
 ```
 
 `loaded_files` 只记录本阶段实际读过的文件；下一阶段必须重新判断是否继续保留。
+
+## Delegation Contract 形状
+
+```yaml
+delegation_contract:
+  workflow_id: raw_idea_alignment | tr3_alignment | general_execution | d3a_execution | verification_fix | build_fix
+  selected_agent_team: intent_alignment | knowledge | planning | coding | verification
+  selected_agents: []
+  main_agent_role: planning_and_delegation_only
+  context_packet_ref: string
+  expected_return:
+    - summary
+    - changed_paths
+    - evidence_refs
+    - blockers
+    - context_to_keep
+    - context_to_drop
+  forbidden_return:
+    - full_subagent_session
+    - full_logs
+    - full_search_results
+```

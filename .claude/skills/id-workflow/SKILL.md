@@ -45,9 +45,10 @@ After the user approves:
 ```text
 Automated Closure Loop
   -> Planner
+  -> Delegation Router
   -> Progressive Constraint Loading
   -> Knowledge Gate
-  -> Execution
+  -> Agent Team / Subagent Execution
   -> Verification
   -> DONE / Targeted Fix / Re-plan
 ```
@@ -85,7 +86,9 @@ references/workflows/input-adapter.md
 references/workflows/lane-resolver.md
 references/workflows/contract-gate.md
 references/workflows/human-alignment.md
+references/workflows/delegation-router.md
 references/schemas/alignment-pack.schema.yaml
+references/schemas/delegation-contract.schema.yaml
 .claude/skills/intent-discovery/SKILL.md
 .claude/skills/intent-grilling/SKILL.md
 .claude/skills/intent-alignment/SKILL.md
@@ -140,9 +143,11 @@ If the user has approved the Alignment Pack, also read:
 
 ```text
 references/workflows/automated-closure-loop.md
+references/workflows/delegation-router.md
 references/workflows/progressive-constraint-loading.md
 references/workflows/execution-unit-policy.md
 references/workflows/lane-completion.md
+references/schemas/delegation-contract.schema.yaml
 references/schemas/escalation-policy.schema.yaml
 ```
 
@@ -159,6 +164,8 @@ references/schemas/repo-context-provider.schema.yaml
 
 - Do not write implementation code before Human Alignment approval.
 - Follow `CONTEXT_ENGINEERING.md`: load stage-specific context, summarize long findings, and keep DONE evidence separate from knowledge findings.
+- Main agent role is `planning_and_delegation_only`: select dynamic workflow, create Delegation Contract, dispatch agent team / subagent, then summarize returned evidence.
+- Main agent must not directly execute complex implementation, consume full logs, consume full search results, or merge full subagent sessions back into main context.
 - Keep `id-workflow` as orchestration; reusable pre-alignment behavior lives in atomic skills.
 - Use `upstream-superpowers-brainstorming` as the `raw_idea` baseline, then apply `idc-brainstorming-overlay` before handoff to `intent-grilling`.
 - Skip Discovery Provider for TR3 unless the TR3 is too incomplete to identify behavior.

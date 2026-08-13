@@ -124,6 +124,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 - `docs/domain-module-contract.md`：团队接入自己的 Domain Module 时遵循的契约。
 - `docs/adoption-guide.md`：其他团队复制 SOP 的指南。
 - `.claude/skills/id-workflow/CONTEXT_ENGINEERING.md`：Claude Code 渐进式上下文加载策略。
+- `docs/agent-team-architecture.md`：Main agent 只做 planning / delegation 的 agent team 架构。
 - `docs/source-attribution.md`：公开方法论来源和 license attribution。
 - `docs/atomic-skills.md`：可复用原子 skill 列表和边界。
 - `docs/architecture-diagram.md`：Core + Domain Module 架构图。
