@@ -29,10 +29,16 @@ schemas/clarification-provider.schema.yaml
 ### 3. 关键问题
 
 1. <question>
+   - A. <option label>（推荐，若适用）
+   - B. <option label>
+   - C. <option label>
+   - 其他 / 补充说明：<optional>
    - 阻塞：<api_contract / scope_boundary / completion_gate / verification_contract>
    - 原因：<why_needed>
 
 2. <question>
+   - A. <option label>
+   - B. <option label>
    - 阻塞：<...>
    - 原因：<...>
 
@@ -50,6 +56,9 @@ schemas/clarification-provider.schema.yaml
 
 - 不展示完整 YAML。
 - 每轮最多展示 5 个关键问题。
+- 每个关键问题默认必须是选择题问题卡，提供 2-4 个互斥选项。
+- 只有选项覆盖不了时，才允许追加“其他 / 补充说明”。
+- 不输出长篇文章式追问。
 - 只问会阻塞 contract、scope 或 completion gate 的问题。
 - 使用 Grill Me 方法时，必须按 decision tree / frontier round 组织问题。
 - 如果 Grill Me 方法不可用，必须说明已 fallback 到 builtin-critical-questions。

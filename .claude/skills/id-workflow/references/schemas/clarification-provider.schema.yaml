@@ -12,6 +12,8 @@ provider:
 limits:
   max_questions: 5
   max_question_chars: 240
+  min_options_per_question: 2
+  max_options_per_question: 4
 
 decision_tree:
   root_decision: string
@@ -24,6 +26,13 @@ questions:
   - id: string
     priority: critical | high | medium
     question: string
+    answer_style: multiple_choice | free_form_with_reason
+    options:
+      - id: string
+        label: string
+        recommended: boolean
+        effect: string
+    free_form_reason: string
     blocks:
       - normalized_request | api_contract | verification_contract | scope_boundary | completion_gate
     why_needed: string
@@ -38,3 +47,5 @@ rules:
   - Clarification output is not DONE evidence.
   - Provider cannot override Domain, Lane, contract, or completion gate.
   - Each frontier round asks at most 5 questions.
+  - Default answer_style is multiple_choice.
+  - Free-form questions are allowed only when multiple-choice options cannot cover the decision.

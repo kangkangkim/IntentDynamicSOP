@@ -32,6 +32,7 @@ id-workflow
 ## Should see
 
 - 可能有 Clarification View，问题应该聚焦 contract / scope / completion gate。
+- Clarification View 应该使用选择题问题卡，而不是长篇开放追问。
 - Alignment View 在实现前出现。
 
 ## Should not happen
@@ -39,4 +40,3 @@ id-workflow
 - 不应该默认 Brainstorming。
 - 不应该未 approval 就写代码。
 - 不应该使用 D3A Layer / DT Domain registry。
-

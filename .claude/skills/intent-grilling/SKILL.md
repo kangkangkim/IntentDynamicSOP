@@ -46,7 +46,7 @@ Requirement Assessor
   -> NEED_CLARIFICATION
   -> Build decision tree
   -> Select current frontier
-  -> Ask <= 5 bounded questions
+  -> Ask <= 5 multiple-choice question cards
   -> User answers
   -> Commitment check
   -> READY_FOR_ALIGNMENT / NEXT_FRONTIER / ESCALATE
@@ -56,11 +56,17 @@ Requirement Assessor
 
 Return a user-readable Clarification View and an internal `clarification_provider` contract.
 
-Questions must say:
+Questions must be multiple-choice question cards.
+
+Each question card must say:
 
 - what they ask
+- 2-4 mutually exclusive options
+- which option is recommended when there is a safe default
 - which contract/scope/completion gate they block
 - why the answer is needed before alignment
+
+Use free-form questions only when the answer cannot be represented as choices. If free-form input is needed, keep it as an "Other / 补充说明" field after the choices.
 
 ## Hard Rules
 
@@ -68,6 +74,8 @@ Questions must say:
 - Do not decide Domain or Lane.
 - Do not override scope, contract, or completion gate.
 - Do not ask vague preference questions.
+- Do not write a long essay of questions. Use concise multiple-choice cards.
+- Do not ask open-ended questions when 2-4 concrete choices can cover the decision.
 - Clarification answers are not DONE evidence.
 - Use Chinese if the user used Chinese.
 - Fallback to `builtin-critical-questions` if Grill Me method is unavailable or too expensive.

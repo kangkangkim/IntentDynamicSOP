@@ -93,7 +93,7 @@ Clarification Provider 只能输出澄清问题、阻塞原因和回答后的更
 ```text
 Build decision tree
   -> Select current frontier
-  -> Ask bounded questions
+  -> Ask multiple-choice question cards
   -> User answers
   -> Update assumptions and blockers
   -> Commitment check
@@ -103,6 +103,14 @@ Build decision tree
 ## 问题预算
 
 一次 frontier round 最多问 5 个问题。
+
+Grill Me 阶段默认不输出长篇开放式追问。每个问题必须是一个可选择的问题卡：
+
+- 每题提供 2-4 个互斥选项。
+- 如果存在安全默认值，必须标出推荐选项。
+- 选项文案要短，用户可以直接复制编号或选项名回答。
+- 只有当选项无法覆盖真实决策时，才在选项后追加 `其他 / 补充说明`。
+- 不把多个独立决策塞进同一道题。
 
 优先级：
 
@@ -129,6 +137,16 @@ clarification_provider:
     - id: Q1
       priority: critical
       question: "<question>"
+      answer_style: multiple_choice
+      options:
+        - id: A
+          label: "<short option>"
+          recommended: true
+          effect: "<what this choice changes>"
+        - id: B
+          label: "<short option>"
+          recommended: false
+          effect: "<what this choice changes>"
       blocks:
         - api_contract
         - completion_gate
@@ -141,6 +159,8 @@ clarification_provider:
 ## 规则
 
 - 不问“好不好”“你怎么看”这类无约束问题。
+- 不用长篇文章式追问用户；默认使用选择题问题卡。
+- 能用 2-4 个具体选项覆盖的决策，不允许改成开放题。
 - 不把完整 YAML 展示给用户。
 - 不要求用户 approve；clarification 完成后才进入 Alignment View。
 - 不把 clarification 回答当作 DONE evidence。
