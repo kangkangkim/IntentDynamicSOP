@@ -469,6 +469,11 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         "Lane Influence",
         "Domain Influence",
         "subagent 之间必须交流",
+        "Dynamic Workflow Trigger Model",
+        "Workflow Trigger Inputs",
+        "Workflow Routing Priority",
+        "Workflow Switch Conditions",
+        "Workflow Output",
     ]:
         assert_true(fragment in router or fragment in doc, f"Delegation 设计缺少：{fragment}")
 
@@ -480,6 +485,10 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         "context_to_drop",
         "selection_layer: dynamic_workflow | agent_team | subagent",
         "workflow_reason",
+        "workflow_trigger:",
+        "latest_event:",
+        "entry_condition_matched",
+        "allowed_next_states",
         "agent_team_reason",
         "subagent_reason",
         "subagent_communication:",
@@ -490,6 +499,7 @@ def test_delegation_contract_keeps_main_agent_as_planner():
 
     assert_true("Main agent must not directly execute complex implementation" in skill, "id-workflow 必须禁止 main 直接执行复杂实现。")
     assert_true("dynamic workflow -> agent team -> subagent" in skill, "id-workflow 必须声明 delegation 选择顺序。")
+    assert_true("Dynamic workflow is event-triggered state routing" in skill, "id-workflow 必须声明 dynamic workflow 是事件触发状态路由。")
     assert_true("multiple subagents need communication" in skill, "id-workflow 必须声明 agent team 的核心触发条件。")
     assert_true("Delegation Contract" in html, "运行视角 HTML 必须展示 Delegation Contract。")
 

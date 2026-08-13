@@ -82,6 +82,78 @@ main agent 必须按这个顺序决策：
 
 Dynamic Workflow 不直接执行任务；它只决定接下来应该调用哪些 agent team。
 
+## Dynamic Workflow Trigger Model
+
+Dynamic Workflow 是事件触发的状态路由，不是静态分类。
+
+main agent 每次收到以下事件，都必须重新判断 workflow：
+
+```text
+new_user_input
+normalized_request_ready
+human_alignment_approved
+domain_or_lane_resolved
+agent_result_returned
+test_failed
+build_failed
+fix_failed
+scope_changed
+completion_gate_blocked
+```
+
+### Workflow Trigger Inputs
+
+```yaml
+workflow_trigger_input:
+  input_maturity: raw_idea | structured_requirement | tr3_design_doc | approved_alignment
+  human_alignment_status: missing | pending | approved
+  selected_domain: unknown | general | d3a
+  selected_lane: unknown | fast | lite | complex
+  current_state: intake | alignment | planning | execution | verification | fix | done | escalated
+  latest_event: new_user_input | agent_result_returned | test_failed | build_failed | scope_changed | completion_gate_blocked
+  failure_kind: none | test | build | tool_evidence_unavailable | repeated_fix_failure
+```
+
+### Workflow Routing Priority
+
+按优先级选择第一个命中的 workflow：
+
+| Priority | Trigger | workflow_id | Entry condition | Exit condition |
+|---:|---|---|---|---|
+| 1 | `human_alignment_status != approved` and `input_maturity = raw_idea` | `raw_idea_alignment` | 用户输入只有目标或愿望 | 产出 approved Alignment Pack 或 escalation |
+| 2 | `human_alignment_status != approved` and `input_maturity = tr3_design_doc` | `tr3_alignment` | TR3 已解析但未批准 | 产出 approved Alignment Pack 或 escalation |
+| 3 | `failure_kind = test` or `latest_event = test_failed` | `verification_fix` | 已有失败测试 evidence | targeted fix evidence 或 escalation |
+| 4 | `failure_kind = build` or `latest_event = build_failed` | `build_fix` | 已有失败 build evidence | targeted fix evidence 或 escalation |
+| 5 | `human_alignment_status = approved` and `selected_domain = d3a` | `d3a_execution` | approved Alignment Pack + D3A module | required DT GREEN + `tran_build PASS` |
+| 6 | `human_alignment_status = approved` and `selected_domain = general` | `general_execution` | approved Alignment Pack + general module | required test/build/static evidence pass |
+| 7 | no route matched | `escalation_required` | 缺少关键路由信息 | Human Alignment / clarification |
+
+### Workflow Switch Conditions
+
+运行中只允许在这些情况下切换 workflow：
+
+- Human Alignment 从 pending 变 approved：alignment workflow -> execution workflow。
+- Domain 从 unknown 变 general/d3a：planning route -> domain execution workflow。
+- Test evidence failed：execution workflow -> `verification_fix`。
+- Build evidence failed：execution workflow -> `build_fix`。
+- Scope 或 API contract 变化：当前 workflow -> alignment workflow 或 escalation。
+- Repeated fix failure：fix workflow -> escalation。
+- Completion gate satisfied：current workflow -> done。
+
+### Workflow Output
+
+Dynamic Workflow selection 必须输出：
+
+```yaml
+workflow_selection_result:
+  workflow_id: raw_idea_alignment | tr3_alignment | general_execution | d3a_execution | verification_fix | build_fix | escalation_required
+  trigger_event: string
+  trigger_reason: string
+  entry_condition_matched: string
+  next_agent_team_candidate: intent_alignment | planning | coding | verification | none
+  allowed_next_states: []
+```
+
 ## When To Use Agent Team
 
 使用 Agent Team 的信号：

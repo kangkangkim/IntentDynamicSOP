@@ -76,7 +76,7 @@ Subagent:
 
 ### 用 Dynamic Workflow 的时候
 
-当问题是“现在该走哪条流程”时，用 Dynamic Workflow。
+当问题是“哪个事件触发了哪条生命周期流程”时，用 Dynamic Workflow。
 
 典型触发：
 
@@ -92,9 +92,39 @@ Subagent:
 
 ```text
 workflow_id
-next_agent_team
-next_required_contract
+trigger_event
+trigger_reason
+entry_condition_matched
+next_agent_team_candidate
+allowed_next_states
 ```
+
+Dynamic Workflow 不是“场景标签”，而是状态路由。main agent 在这些事件后必须重新判断 workflow：
+
+```text
+new_user_input
+human_alignment_approved
+domain_or_lane_resolved
+agent_result_returned
+test_failed
+build_failed
+scope_changed
+completion_gate_blocked
+```
+
+路由优先级：
+
+| Priority | 条件 | workflow_id |
+|---:|---|---|
+| 1 | 未 approved 且 raw idea | raw_idea_alignment |
+| 2 | 未 approved 且 TR3 | tr3_alignment |
+| 3 | 测试失败 | verification_fix |
+| 4 | 构建失败 | build_fix |
+| 5 | 已 approved 且 D3A | d3a_execution |
+| 6 | 已 approved 且 General | general_execution |
+| 7 | 信息不足 | escalation_required |
+
+Workflow 切换只在 alignment approved、domain resolved、test/build failed、scope changed、repeated fix failure、completion gate satisfied 时发生。
 
 ### 用 Agent Team 的时候
 
@@ -156,13 +186,13 @@ delegation_candidates
 
 | 场景 | Dynamic Workflow | Agent Team | Subagent |
 |---|---|---|---|
-| 一句话需求 | raw_idea_alignment | 只有 discovery / grilling 需要 handoff 时使用 | 不启动实现 subagent |
-| TR3 文档 | tr3_alignment | 只有 parser / gap-check / grilling 需要 handoff 时使用 | 不启动实现 subagent |
-| General 已批准 | general_execution | 多个 execution unit、coder/verifier 需要交接时使用 | `general-coder` per execution unit |
-| D3A 已批准 | d3a_execution | Layer coder / DT writer / tran build verifier 需要交接时使用 | `d3a-layer-coder` per Layer Context Packet |
-| DT 测试准备 | d3a_execution | test writer 和 layer coder 需要 RED/GREEN handoff 时使用 | `dt-test-writer` per DT domain |
-| build/test 失败 | verification_fix / build_fix | analyzer -> fixer -> verifier 需要闭环时使用 | `build-error-analyzer` then targeted fix subagent |
-| complex lane | staged workflow / DAG workflow | 多 subagent 存在 DAG、review、handoff、merge 时使用 | 多 subagent，按 packet 拆 |
+| 一句话需求 | `new_user_input` + raw idea -> `raw_idea_alignment` | 只有 discovery / grilling 需要 handoff 时使用 | 不启动实现 subagent |
+| TR3 文档 | `new_user_input` + TR3 -> `tr3_alignment` | 只有 parser / gap-check / grilling 需要 handoff 时使用 | 不启动实现 subagent |
+| General 已批准 | `human_alignment_approved` + General -> `general_execution` | 多个 execution unit、coder/verifier 需要交接时使用 | `general-coder` per execution unit |
+| D3A 已批准 | `human_alignment_approved` + D3A -> `d3a_execution` | Layer coder / DT writer / tran build verifier 需要交接时使用 | `d3a-layer-coder` per Layer Context Packet |
+| DT 测试准备 | `d3a_execution` 内部 required DT domain -> `d3a_execution` | test writer 和 layer coder 需要 RED/GREEN handoff 时使用 | `dt-test-writer` per DT domain |
+| build/test 失败 | `test_failed` / `build_failed` -> `verification_fix` / `build_fix` | analyzer -> fixer -> verifier 需要闭环时使用 | `build-error-analyzer` then targeted fix subagent |
+| complex lane | `selected_lane = complex` -> staged workflow | 多 subagent 存在 DAG、review、handoff、merge 时使用 | 多 subagent，按 packet 拆 |
 
 ## Dynamic Workflow
 

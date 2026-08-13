@@ -215,12 +215,23 @@ context_packet:
 ```yaml
 delegation_contract:
   workflow_id: raw_idea_alignment | tr3_alignment | general_execution | d3a_execution | verification_fix | build_fix
+  workflow_trigger:
+    latest_event: string
+    input_maturity: string
+    human_alignment_status: string
+    selected_domain: string
+    selected_lane: string
+    current_state: string
+    failure_kind: string
   selection_layer: dynamic_workflow | agent_team | subagent
   selected_agent_team: intent_alignment | knowledge | planning | coding | verification
   selected_agents: []
   main_agent_role: planning_and_delegation_only
   selection_reason:
     workflow_reason: string
+    trigger_event: string
+    entry_condition_matched: string
+    allowed_next_states: []
     agent_team_reason: string
     subagent_reason: string
   subagent_communication:

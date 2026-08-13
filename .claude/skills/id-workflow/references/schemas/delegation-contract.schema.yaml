@@ -1,6 +1,14 @@
 delegation_contract:
   task_id: string
   workflow_id: raw_idea_alignment | tr3_alignment | general_execution | d3a_execution | verification_fix | build_fix
+  workflow_trigger:
+    latest_event: new_user_input | normalized_request_ready | human_alignment_approved | domain_or_lane_resolved | agent_result_returned | test_failed | build_failed | fix_failed | scope_changed | completion_gate_blocked
+    input_maturity: raw_idea | structured_requirement | tr3_design_doc | approved_alignment
+    human_alignment_status: missing | pending | approved
+    selected_domain: unknown | general | d3a
+    selected_lane: unknown | fast | lite | complex
+    current_state: intake | alignment | planning | execution | verification | fix | done | escalated
+    failure_kind: none | test | build | tool_evidence_unavailable | repeated_fix_failure
   selection_layer: dynamic_workflow | agent_team | subagent
   selected_agent_team: intent_alignment | knowledge | planning | coding | verification
   selected_agents: []
@@ -8,6 +16,9 @@ delegation_contract:
   delegation_reason: string
   selection_reason:
     workflow_reason: string
+    trigger_event: string
+    entry_condition_matched: string
+    allowed_next_states: []
     agent_team_reason: string
     subagent_reason: string
   subagent_communication:
@@ -55,7 +66,8 @@ agent_result:
 rules:
   - Main agent role 必须是 planning_and_delegation_only。
   - Main agent 必须先选 dynamic_workflow，再选 agent_team，最后决定 subagent。
-  - Dynamic Workflow 用于选择生命周期流程，不直接执行任务。
+  - Dynamic Workflow 是事件触发的状态路由，不是静态分类。
+  - Dynamic Workflow 必须记录 trigger_event 和 entry_condition_matched。
   - Agent Team 只在多个 subagent 需要交流、交接或共享中间结果时使用。
   - Subagent 用于隔离执行一个 execution unit / Layer Context Packet / failure analysis。
   - Main agent 不能直接执行复杂实现。
