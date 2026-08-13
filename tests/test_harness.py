@@ -605,7 +605,7 @@ def test_manual_test_scenarios_exist_for_user_experience():
 
     expectations = {
         "test/01-rough-general.md": ["intent-discovery", "Brainstorming View", "不应该直接进入 `general-coding`"],
-        "test/02-structured-general.md": ["structured_requirement", "Clarification View", "不应该默认 Brainstorming"],
+        "test/02-structured-general.md": ["structured_requirement", "Clarification View", "不应该默认 Brainstorming", "不应该把待定细节或开放问题塞进 Alignment View"],
         "test/03-tr3-d3a.md": ["tr3_design_doc", "Domain = d3a", "不应该把 TR3 DT design 当 RED/GREEN evidence"],
         "test/04-approved-general-execution.md": ["general_execution", "Delegation Contract", "general-coder"],
         "test/05-build-failure-fix.md": ["build_failed", "build-error-analyzer", "targeted fix"],
@@ -771,6 +771,8 @@ def test_domain_and_build_skills_define_entry_rules_at_skill_layer():
     assert_true("D3A DONE gate" in tran_skill, "tran-build 必须声明只作为 D3A DONE gate。")
     assert_true("rough / raw idea requests" in grilling_skill and ".claude/skills/intent-discovery/SKILL.md" in grilling_skill, "intent-grilling 必须把 rough 请求导回 discovery。")
     assert_true("critical contract / scope / completion gate questions remain" in alignment_skill and ".claude/skills/intent-grilling/SKILL.md" in alignment_skill, "intent-alignment 必须把未澄清问题导回 grilling。")
+    assert_true("Do not merge Clarification View into Alignment View." in alignment_skill, "intent-alignment 必须禁止把澄清折进 Alignment。")
+    assert_true("pending details" in alignment_skill, "intent-alignment 必须禁止在 Alignment View 放待定细节。")
 
 
 def test_claude_project_entries_expose_skills_and_agents():
@@ -817,6 +819,8 @@ def test_human_views_exist_and_hide_raw_yaml():
     assert_true("grill-me-method" in clarification, "Clarification View 必须支持 Grill Me method 展示。")
     assert_true("当前 Frontier" in clarification, "Clarification View 必须展示 frontier round。")
     assert_true("不直接向用户展示完整 YAML" in alignment, "Alignment View 必须隐藏完整 YAML。")
+    assert_true("Alignment View 不能承载待定细节" in alignment, "Alignment View 不能承载待定细节。")
+    assert_true("不允许把 Clarification View 合并进 Alignment View" in alignment, "Alignment View 不能合并 Clarification View。")
     assert_true("Evidence 只展示摘要和 ref" in completion, "Completion View 必须限制 evidence 展示粒度。")
     assert_true("不把技术日志全文塞给用户" in escalation, "Escalation View 必须避免展示完整日志。")
 
@@ -847,6 +851,8 @@ def test_clarification_provider_uses_grill_me_method_with_fallback():
     assert_true("MIT License" in attribution, "Source attribution 必须记录 MIT License。")
     assert_true("https://github.com/mattpocock/skills" in attribution, "Source attribution 必须记录来源 URL。")
     assert_true("workflows/clarification-provider.md" in human_alignment, "Human Alignment 必须引用 Clarification Provider。")
+    assert_true("禁止把 Clarification 折叠进 Alignment View" in human_alignment, "Human Alignment 必须禁止澄清短路进 Alignment。")
+    assert_true("返回 `NEED_CLARIFICATION` 时，不能继续生成 Alignment View" in requirement_assessor, "Requirement Assessor 必须阻止 NEED_CLARIFICATION 继续生成 Alignment。")
     assert_true("next: \"Clarification Provider\"" in requirement_assessor, "Requirement Assessor 必须把澄清交给 Provider。")
 
 

@@ -23,6 +23,7 @@ Do not use when:
 
 - rough / raw idea still needs `intent-discovery`.
 - critical contract / scope / completion gate questions remain.
+- unresolved questions would need to be shown as "pending details" in the Alignment View.
 - implementation has already started without approval.
 
 If critical questions remain, route to:
@@ -64,10 +65,16 @@ The view must include:
 - completion gate
 - approval request
 
+The view must not include unresolved clarification questions.
+
+If any contract, scope, completion gate, API semantics, test evidence, or file-placement gap remains, do not render Alignment View yet. Return to `intent-grilling` and show a Clarification View with multiple-choice question cards.
+
 ## Hard Rules
 
 - Do not show raw YAML as the primary user interface.
 - Do not write implementation code before approval.
 - Do not ask for approval if there are open critical questions.
+- Do not merge Clarification View into Alignment View.
+- Do not put "pending details", "open questions", or long-form clarification prompts inside Alignment View.
 - If the user requests clarification, return to `intent-grilling`.
 - If the user approves, hand off to the automated closure loop.

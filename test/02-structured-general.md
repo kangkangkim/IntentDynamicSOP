@@ -31,12 +31,15 @@ id-workflow
 
 ## Should see
 
-- 可能有 Clarification View，问题应该聚焦 contract / scope / completion gate。
+- 如果存在脚本语言、TODO 匹配规则、mock 输出位置等 contract / scope / completion gate gap，必须先出现 Clarification View。
 - Clarification View 应该使用选择题问题卡，而不是长篇开放追问。
+- 用户回答 Clarification View 后，才应该回到 Alignment View。
 - Alignment View 在实现前出现。
 
 ## Should not happen
 
 - 不应该默认 Brainstorming。
+- 不应该把待定细节或开放问题塞进 Alignment View。
+- 不应该把 Clarification View 合并进 Alignment View。
 - 不应该未 approval 就写代码。
 - 不应该使用 D3A Layer / DT Domain registry。

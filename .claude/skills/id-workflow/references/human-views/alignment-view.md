@@ -77,4 +77,7 @@ schemas/alignment-pack.schema.yaml
 - 不直接向用户展示完整 YAML。
 - 必须展示 Domain、Lane、Scope、Completion Gate。
 - 如果有 open questions，必须先 Grill Me，不要要求用户 approve。
+- Alignment View 不能承载待定细节、open questions 或长篇澄清问题。
+- 不允许把 Clarification View 合并进 Alignment View。
+- 如果还有 contract / scope / completion gate gap，必须先返回 Clarification View 选择题问题卡。
 - 用户 approve 后，底层 Alignment Pack 才视为 approved。

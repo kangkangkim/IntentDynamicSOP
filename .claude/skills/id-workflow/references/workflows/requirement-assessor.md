@@ -32,8 +32,11 @@ READY_FOR_SPEC
 - API semantics 需要猜。
 - Acceptance criteria 无法定义。
 - 存在 critical ambiguity。
+- 需要把“待定细节”或 open questions 放进 Alignment View 才能继续。
 
 只有所有必查项都通过，才返回 `READY_FOR_SPEC`。
+
+返回 `NEED_CLARIFICATION` 时，不能继续生成 Alignment View。下一步只能是 Clarification Provider。
 
 ## 输出形状
 

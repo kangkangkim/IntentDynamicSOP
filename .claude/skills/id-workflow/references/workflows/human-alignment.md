@@ -57,6 +57,29 @@ NEED_CLARIFICATION
 
 如果 Grill Me 方法不可用或过重，必须 fallback 到 `builtin-critical-questions`。
 
+## 不允许短路
+
+如果存在 contract / scope / completion gate / API semantics / test evidence / file placement gap：
+
+```text
+NEED_CLARIFICATION
+  -> Clarification View
+  -> 用户回答
+  -> Requirement Assessor
+  -> Alignment View only after READY_FOR_SPEC
+```
+
+禁止把 Clarification 折叠进 Alignment View。
+
+Alignment View 不能包含：
+
+- 待定细节。
+- open questions。
+- 长篇开放式追问。
+- 要用户一边 approve 一边补充关键 contract 的请求。
+
+这些内容必须先通过 `intent-grilling` 的 Clarification View 处理，并且问题必须使用选择题问题卡。
+
 ## 输出
 
 ```yaml
