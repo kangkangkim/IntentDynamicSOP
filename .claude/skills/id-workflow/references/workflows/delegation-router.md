@@ -31,6 +31,7 @@ main agent 允许做：
 - 判断是否需要 official dynamic workflow。
 - 生成 execution unit。
 - 生成 Context Packet / Layer Context Packet。
+- 更新 Runtime State checkpoint。
 - 生成 Delegation Contract。
 - 分派 agent team / subagent。
 - 汇总 agent result。
@@ -158,6 +159,28 @@ workflow_selection_result:
   next_agent_team_candidate: intent_alignment | planning | coding | verification | none
   allowed_next_states: []
 ```
+
+## Interruption Resume
+
+Delegation Router 每次派发前必须确保 Delegation Contract 有：
+
+```text
+run_state_ref
+context_packet_ref
+approved_alignment_ref
+execution_unit_ref
+```
+
+如果保密区中断，main agent 恢复时先读取 `run_state_ref` 指向的 runtime state，再重新运行 IDC Workflow Router。
+
+恢复后：
+
+- 未 approved：回到 Clarification / Alignment。
+- execution 中断：重新读取 Context Packet，必要时重新派发 subagent。
+- verification 中断：重新运行 verification。
+- fix 中断：读取 last_failure_ref 和 retry_count，再 targeted fix 或 escalation。
+
+禁止从 main agent 记忆中推断 subagent 是否完成。
 
 ## When To Use Official Dynamic Workflow
 

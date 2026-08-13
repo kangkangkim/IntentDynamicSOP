@@ -22,6 +22,8 @@ This is the orchestration skill. It delegates reusable pre-alignment work to ato
 - "按这套 SOP 跑一下。"
 - "生成 Alignment Pack。"
 - "我 approve 了，继续自动闭环。"
+- "中断了，继续上次任务。"
+- "从 checkpoint 恢复。"
 - "判断这个任务是 D3A 还是 General，应该走哪个 Lane。"
 
 ## Skill-level maturity routing
@@ -111,8 +113,10 @@ references/workflows/lane-resolver.md
 references/workflows/contract-gate.md
 references/workflows/human-alignment.md
 references/workflows/delegation-router.md
+references/workflows/resume-policy.md
 references/schemas/alignment-pack.schema.yaml
 references/schemas/delegation-contract.schema.yaml
+references/schemas/runtime-state.schema.yaml
 .claude/skills/intent-discovery/SKILL.md
 .claude/skills/intent-grilling/SKILL.md
 .claude/skills/intent-alignment/SKILL.md
@@ -176,6 +180,14 @@ references/schemas/delegation-contract.schema.yaml
 references/schemas/escalation-policy.schema.yaml
 ```
 
+If the user asks to resume after interruption, also read:
+
+```text
+references/workflows/resume-policy.md
+references/schemas/runtime-state.schema.yaml
+references/schemas/delegation-contract.schema.yaml
+```
+
 For repo context work, read:
 
 ```text
@@ -194,6 +206,8 @@ references/schemas/repo-context-provider.schema.yaml
 - IDC workflow route is event-triggered state routing; official dynamic workflow is only for scripted, repeatable, large-scale fan-out orchestration.
 - Use agent team only when multiple subagents need communication, handoff, shared intermediate artifacts, review, or merge.
 - Main agent must not directly execute complex implementation, consume full logs, consume full search results, or merge full subagent sessions back into main context.
+- Interruption resume must use `runtime_state` checkpoint refs, not main agent memory.
+- After resuming an interrupted execution, re-run verification unless tool evidence proves the interrupted step completed.
 - Keep `id-workflow` as orchestration; reusable pre-alignment behavior lives in atomic skills.
 - Use `upstream-superpowers-brainstorming` as the `raw_idea` baseline, then apply `idc-brainstorming-overlay` before handoff to `intent-grilling`.
 - Skip Discovery Provider for TR3 unless the TR3 is too incomplete to identify behavior.

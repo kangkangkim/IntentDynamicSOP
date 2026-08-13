@@ -210,6 +210,32 @@ context_packet:
 
 `loaded_files` 只记录本阶段实际读过的文件；下一阶段必须重新判断是否继续保留。
 
+## Runtime State 形状
+
+保密区可能中断，main agent 不能依赖会话记忆恢复任务。
+
+每个稳定阶段必须写入轻量 checkpoint：
+
+```yaml
+runtime_state:
+  run_id: string
+  task_id: string
+  current_state: intake | discovery | clarification | alignment | planning | execution | verification | fix | done | escalated
+  latest_event: interrupted | resumed | agent_result_returned | test_failed | build_failed
+  approved_alignment_ref: string
+  delegation_contract_ref: string
+  context_packet_ref: string
+  evidence_ledger:
+    red_refs: []
+    green_refs: []
+    build_refs: []
+  in_progress_step:
+    step_id: string
+    owner: main_agent | agent_team | subagent | official_dynamic_workflow
+```
+
+恢复时只读取 checkpoint refs 和 evidence refs；不得把旧会话上下文当事实来源。
+
 ## Delegation Contract 形状
 
 ```yaml
@@ -241,6 +267,7 @@ delegation_contract:
     required: boolean
     handoff_edges: []
   context_packet_ref: string
+  run_state_ref: string
   expected_return:
     - summary
     - changed_paths

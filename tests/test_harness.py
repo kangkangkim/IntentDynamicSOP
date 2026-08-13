@@ -432,6 +432,8 @@ def test_context_engineering_is_progressive_and_not_token_policy():
 
     assert_true("CONTEXT_ENGINEERING.md" in id_workflow, "id-workflow 必须显式加载 Context Engineering。")
     assert_true("CONTEXT_ENGINEERING.md" in team_customization, "团队定制说明必须包含 Context Engineering。")
+    assert_true("Runtime State 形状" in context, "Context Engineering 必须包含 Runtime State。")
+    assert_true("不得把旧会话上下文当事实来源" in context, "Context Engineering 必须禁止靠旧会话恢复。")
     assert_true("token budget" not in context.lower(), "Context Engineering 不应写成 token budget。")
 
 
@@ -499,6 +501,7 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         "subagent_communication:",
         "handoff_edges:",
         "completion_authority: main_agent_only",
+        "run_state_ref",
     ]:
         assert_true(fragment in schema, f"Delegation schema 缺少上下文边界：{fragment}")
 
@@ -507,6 +510,52 @@ def test_delegation_contract_keeps_main_agent_as_planner():
     assert_true("official dynamic workflow is only for scripted, repeatable, large-scale fan-out orchestration" in skill, "id-workflow 必须声明 official dynamic workflow 的使用条件。")
     assert_true("multiple subagents need communication" in skill, "id-workflow 必须声明 agent team 的核心触发条件。")
     assert_true("Delegation Contract" in html, "运行视角 HTML 必须展示 Delegation Contract。")
+
+
+def test_resume_policy_supports_interruption_recovery():
+    resume_policy_path = ROOT / ".claude/skills/id-workflow/references/workflows/resume-policy.md"
+    runtime_schema_path = ROOT / ".claude/skills/id-workflow/references/schemas/runtime-state.schema.yaml"
+    assert_true(resume_policy_path.exists(), "缺少 Resume Policy。")
+    assert_true(runtime_schema_path.exists(), "缺少 Runtime State schema。")
+
+    policy = resume_policy_path.read_text()
+    schema = runtime_schema_path.read_text()
+    id_workflow = read_text(".claude/skills/id-workflow/SKILL.md")
+    delegation = read_text(".claude/skills/id-workflow/references/workflows/delegation-router.md")
+    README = read_text("README.md")
+
+    for fragment in [
+        "不靠会话记忆恢复",
+        "checkpoint / contract / evidence ref",
+        "latest_event: interrupted",
+        "latest_event = resumed",
+        "重新运行 verification",
+        "resumeFromRunId",
+        "baseline",
+        "Resume View",
+        "不是 DONE evidence",
+    ]:
+        assert_true(fragment in policy, f"Resume Policy 缺少关键规则：{fragment}")
+
+    for fragment in [
+        "schema: runtime_state",
+        "run_id: string",
+        "resume_token: string",
+        "workflow_snapshot:",
+        "approved_alignment_ref: string",
+        "delegation_contract_ref: string",
+        "context_packet_ref: string",
+        "evidence_ledger:",
+        "Do not use main agent conversation memory as the source of truth.",
+    ]:
+        assert_true(fragment in schema, f"Runtime State schema 缺少字段：{fragment}")
+
+    assert_true("resume-policy.md" in id_workflow, "id-workflow 必须加载 resume policy。")
+    assert_true("runtime-state.schema.yaml" in id_workflow, "id-workflow 必须加载 runtime state schema。")
+    assert_true("Interruption resume must use `runtime_state` checkpoint refs" in id_workflow, "id-workflow 必须要求 checkpoint 恢复。")
+    assert_true("run_state_ref" in delegation, "Delegation Router 必须要求 run_state_ref。")
+    assert_true("禁止从 main agent 记忆中推断 subagent 是否完成" in delegation, "Delegation Router 必须禁止靠记忆判断 subagent 完成。")
+    assert_true("Runtime State / Resume Policy" in README, "README 必须记录中断恢复能力。")
 
 
 def test_progressive_constraint_loading_files_exist():
@@ -1040,6 +1089,7 @@ def run():
         test_provider_selection_matrix_is_anchor_aware_and_okl_query_bounded,
         test_context_engineering_is_progressive_and_not_token_policy,
         test_delegation_contract_keeps_main_agent_as_planner,
+        test_resume_policy_supports_interruption_recovery,
         test_progressive_constraint_loading_files_exist,
         test_e2e_tr3_d3a_demo_is_complete,
         test_e2e_general_demo_is_complete,

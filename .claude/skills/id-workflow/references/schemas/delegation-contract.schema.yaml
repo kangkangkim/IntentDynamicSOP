@@ -42,6 +42,7 @@ delegation_contract:
         artifact: string
   approved_alignment_ref: string
   context_packet_ref: string
+  run_state_ref: string
   execution_unit_ref: string
   allowed_paths: []
   forbidden_paths: []
@@ -85,6 +86,8 @@ rules:
   - Subagent 用于隔离执行一个 execution unit / Layer Context Packet / failure analysis。
   - Main agent 不能直接执行复杂实现。
   - Main agent 不能把完整 subagent session 合并回 main session。
+  - Delegation Contract 必须记录 run_state_ref，便于中断后恢复。
+  - Resume 必须通过 runtime_state checkpoint 恢复，不能依赖 main agent 记忆。
   - Subagent 只能接收当前 Delegation Contract 授权的 Context Packet。
   - Subagent 返回必须包含 context_to_keep / context_to_drop。
   - Subagent 返回禁止包含 full_logs / full_search_results / full_subagent_session。
