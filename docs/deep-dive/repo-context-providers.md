@@ -1,6 +1,6 @@
 # Deep Dive: Repo Context Providers
 
-Repo Context Providers 的目标是用较少 token 找到足够的仓库事实。
+Repo Context Providers 的目标是找到足够、可引用、可验证的仓库事实，同时避免把无关上下文带入执行阶段。
 
 ## 三类事实
 
@@ -47,7 +47,7 @@ workflows/provider-selection-matrix.md
 既无锚点也无领域语义：先 Discovery / Grilling
 ```
 
-## Token 控制
+## Context 控制
 
 Provider 必须遵守：
 

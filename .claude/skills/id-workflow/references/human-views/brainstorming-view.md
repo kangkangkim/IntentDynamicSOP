@@ -56,7 +56,7 @@ schemas/discovery-provider.schema.yaml
 
 - 只在 raw idea 场景默认展示。
 - TR3 文档默认不展示 Brainstorming View。
-- 根据问题复杂度成组追问，不用 token 限制牺牲需求探索质量。
+- 根据问题复杂度成组追问，不因上下文裁剪牺牲需求探索质量。
 - 如果存在多个合理设计方向，展示 2-3 个方案和推荐。
 - 用户确认设计方向前，不能写实现代码。
 - Brainstorming 生成的是 draft spec，不是 approved contract。

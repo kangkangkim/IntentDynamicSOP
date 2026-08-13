@@ -2,7 +2,7 @@
 
 Provider Selection Matrix 决定 Knowledge Gate 什么时候用 `grep`、`CodeGraph`、`OKL`。
 
-目标是减少保密区 token 消耗。
+目标是让 Agent 按阶段拿到足够、可引用、可验证的上下文，而不是把全文知识库或长搜索结果塞进执行上下文。
 
 ## 输入信号
 
@@ -48,7 +48,7 @@ intent-discovery / intent-grilling
   -> bounded grep
 ```
 
-## Lane Budgets
+## Lane Context Strategy
 
 | Lane | OKL | grep | CodeGraph |
 |---|---:|---:|---:|

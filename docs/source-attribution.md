@@ -63,7 +63,7 @@ Copyright (c) 2025 Jesse Vincent
 Baseline 保留点：
 
 - project context first：先理解项目上下文，再展开想法。
-- focused discovery questions：根据问题复杂度成组追问，不用 token 限制牺牲需求探索质量。
+- focused discovery questions：根据问题复杂度成组追问，不因上下文裁剪牺牲需求探索质量。
 - alternatives with trade-offs：给出 2-3 个方案、取舍和推荐。
 - design before implementation：设计确认前不进入实现。
 - written draft spec：把发散结果沉淀成 draft spec，再进入收敛。

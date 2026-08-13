@@ -17,9 +17,9 @@ references/domains/template-domain/
 references/domains/registry.yaml
 references/registries/general-components.yaml
 references/registries/general-test-domains.yaml
+CONTEXT_ENGINEERING.md
 references/workflows/provider-selection-matrix.md
 references/workflows/repo-context-providers.md
-references/docs/token-budget-policy.md
 ```
 
 ## What D3A Teams Fill In Confidentially
@@ -51,13 +51,14 @@ Do not start by changing:
 
 ```text
 SKILL.md
+CONTEXT_ENGINEERING.md
 references/workflows/lane-resolver.md
 references/workflows/lane-completion.md
 references/workflows/tdd-state-machine.md
 references/schemas/
 ```
 
-Change these only after the first vertical slice works.
+Change these only after the first vertical slice works. If a team needs different context loading behavior, prefer adding domain-specific provider rules before changing the orchestration contract.
 
 ## First Vertical Slice
 

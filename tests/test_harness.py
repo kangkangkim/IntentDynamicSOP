@@ -374,10 +374,9 @@ def test_execution_unit_loc_limit_is_enforced():
     assert_true("execution_unit_too_large" in read_text(".claude/skills/id-workflow/references/schemas/escalation-policy.schema.yaml"), "Escalation 必须覆盖 execution unit 过大。")
 
 
-def test_repo_context_provider_contract_is_token_bounded():
+def test_repo_context_provider_contract_is_context_bounded():
     schema = read_text(".claude/skills/id-workflow/references/schemas/repo-context-provider.schema.yaml")
     workflow = read_text(".claude/skills/id-workflow/references/workflows/repo-context-providers.md")
-    token_policy = read_text("docs/token-budget-policy.md")
 
     for provider in ["grep", "codegraph", "okl"]:
         assert_true(provider in schema.lower(), f"Repo Context Provider schema 缺少 {provider}。")
@@ -390,14 +389,11 @@ def test_repo_context_provider_contract_is_token_bounded():
     assert_true("max_grep_queries: 5" in schema, "Repo Context Provider 必须限制 grep query 次数。")
     assert_true("okl-query 是调用 OKL 的命令，不是 provider 名" in schema, "schema 必须区分 OKL provider 和 okl-query 命令。")
     assert_true("summary / refs / keywords" in schema, "调用 OKL 时必须只请求摘要、引用和关键词。")
-    assert_true("fast: 2k - 6k" in token_policy, "Token Budget Policy 必须声明 fast 预算。")
-    assert_true("complex: 分阶段" in token_policy, "Token Budget Policy 必须声明 complex 分阶段预算。")
 
 
 def test_provider_selection_matrix_is_anchor_aware_and_okl_query_bounded():
     matrix = read_text(".claude/skills/id-workflow/references/workflows/provider-selection-matrix.md")
     knowledge_gate = read_text(".claude/skills/id-workflow/references/workflows/knowledge-gate.md")
-    token_policy = read_text("docs/token-budget-policy.md")
     id_workflow = read_text(".claude/skills/id-workflow/SKILL.md")
 
     assert_true("anchor_known = true" in matrix, "Provider matrix 必须覆盖 anchor known。")
@@ -411,8 +407,32 @@ def test_provider_selection_matrix_is_anchor_aware_and_okl_query_bounded():
     assert_true("用 OKL 覆盖代码事实" in matrix, "matrix 必须禁止 OKL 覆盖代码事实。")
     assert_true("workflows/provider-selection-matrix.md" in knowledge_gate, "Knowledge Gate 必须引用 provider matrix。")
     assert_true("OKL 本质是 LLM Wiki" in knowledge_gate, "Knowledge Gate 必须说明 OKL 本质。")
-    assert_true("`okl-query` 是调用 OKL 的命令" in token_policy, "Token policy 必须区分 OKL 和 okl-query。")
     assert_true("references/workflows/provider-selection-matrix.md" in id_workflow, "id-workflow 必须加载 provider matrix。")
+
+
+def test_context_engineering_is_progressive_and_not_token_policy():
+    path = ROOT / ".claude/skills/id-workflow/CONTEXT_ENGINEERING.md"
+    assert_true(path.exists(), "缺少 Context Engineering 文档。")
+    context = path.read_text()
+    id_workflow = read_text(".claude/skills/id-workflow/SKILL.md")
+    team_customization = read_text(".claude/skills/id-workflow/TEAM_CUSTOMIZATION.md")
+
+    for fragment in [
+        "Stage 1: 输入理解",
+        "Stage 2: 澄清 / Discovery",
+        "Stage 3: Domain / Lane / Contract",
+        "Stage 4: 执行",
+        "Stage 5: 验证 / 闭环",
+        "summary / refs / keywords",
+        "targeted CodeGraph",
+        "Layer Context Packet",
+        "<= 500 LOC",
+    ]:
+        assert_true(fragment in context, f"Context Engineering 缺少关键设计：{fragment}")
+
+    assert_true("CONTEXT_ENGINEERING.md" in id_workflow, "id-workflow 必须显式加载 Context Engineering。")
+    assert_true("CONTEXT_ENGINEERING.md" in team_customization, "团队定制说明必须包含 Context Engineering。")
+    assert_true("token budget" not in context.lower(), "Context Engineering 不应写成 token budget。")
 
 
 def test_progressive_constraint_loading_files_exist():
@@ -617,7 +637,7 @@ def test_human_views_exist_and_hide_raw_yaml():
     completion = read_text(".claude/skills/id-workflow/references/human-views/completion-view.md")
     escalation = read_text(".claude/skills/id-workflow/references/human-views/escalation-view.md")
     assert_true("只在 raw idea 场景默认展示" in brainstorming, "Brainstorming View 必须只用于 raw idea。")
-    assert_true("不用 token 限制牺牲需求探索质量" in brainstorming, "Brainstorming View 不能因 token 限制牺牲探索质量。")
+    assert_true("不因上下文裁剪牺牲需求探索质量" in brainstorming, "Brainstorming View 不能因上下文裁剪牺牲探索质量。")
     assert_true("每轮最多展示 5 个关键问题" in clarification, "Clarification View 必须限制问题数量。")
     assert_true("grill-me-method" in clarification, "Clarification View 必须支持 Grill Me method 展示。")
     assert_true("当前 Frontier" in clarification, "Clarification View 必须展示 frontier round。")
@@ -662,7 +682,7 @@ def test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea():
     assert_true("idc-brainstorming-overlay" in workflow, "Discovery Provider 必须声明 IDC overlay。")
     assert_true("builtin-discovery-questions" in workflow, "Discovery Provider 必须声明 builtin fallback。")
     assert_true("focused discovery questions" in workflow, "Discovery Provider 必须支持聚焦探索问题。")
-    assert_true("不用 token 限制牺牲需求探索质量" in workflow, "Discovery Provider 不能因 token 限制牺牲探索质量。")
+    assert_true("不因上下文裁剪牺牲需求探索质量" in workflow, "Discovery Provider 不能因上下文裁剪牺牲探索质量。")
     assert_true("2-3 个方案" in workflow, "Discovery Provider 必须支持多方案取舍。")
     assert_true("Draft spec is not an approved contract." in schema, "Discovery draft spec 不能等于 approved contract。")
     assert_true("Upstream Superpowers brainstorming is the baseline." in schema, "Discovery schema 必须声明 upstream baseline。")
@@ -828,8 +848,9 @@ def run():
         test_tr3_fixtures_preserve_classification_signals,
         test_alignment_and_escalation_contracts_exist,
         test_execution_unit_loc_limit_is_enforced,
-        test_repo_context_provider_contract_is_token_bounded,
+        test_repo_context_provider_contract_is_context_bounded,
         test_provider_selection_matrix_is_anchor_aware_and_okl_query_bounded,
+        test_context_engineering_is_progressive_and_not_token_policy,
         test_progressive_constraint_loading_files_exist,
         test_e2e_tr3_d3a_demo_is_complete,
         test_e2e_general_demo_is_complete,

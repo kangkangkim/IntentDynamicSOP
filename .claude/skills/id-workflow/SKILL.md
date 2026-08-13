@@ -79,6 +79,7 @@ Default user-facing output before approval is Alignment View, not raw `alignment
 Read these files first:
 
 ```text
+CONTEXT_ENGINEERING.md
 CLAUDE.md
 references/workflows/input-adapter.md
 references/workflows/lane-resolver.md
@@ -148,15 +149,16 @@ references/schemas/escalation-policy.schema.yaml
 For repo context work, read:
 
 ```text
+CONTEXT_ENGINEERING.md
 references/workflows/provider-selection-matrix.md
 references/workflows/repo-context-providers.md
 references/schemas/repo-context-provider.schema.yaml
-references/docs/token-budget-policy.md
 ```
 
 ## Hard rules
 
 - Do not write implementation code before Human Alignment approval.
+- Follow `CONTEXT_ENGINEERING.md`: load stage-specific context, summarize long findings, and keep DONE evidence separate from knowledge findings.
 - Keep `id-workflow` as orchestration; reusable pre-alignment behavior lives in atomic skills.
 - Use `upstream-superpowers-brainstorming` as the `raw_idea` baseline, then apply `idc-brainstorming-overlay` before handoff to `intent-grilling`.
 - Skip Discovery Provider for TR3 unless the TR3 is too incomplete to identify behavior.

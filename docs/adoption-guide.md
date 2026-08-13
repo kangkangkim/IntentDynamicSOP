@@ -78,7 +78,7 @@ domain_modules:
 - knowledge root。
 - completion gate。
 - repo context provider 接入方式。
-- token budget。
+- context loading boundary。
 - 第一条 mock vertical slice。
 
 ## 不要改

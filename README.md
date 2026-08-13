@@ -122,7 +122,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 - `.claude/agents/`：Claude Code 项目级 subagent 定义。
 - `docs/domain-module-contract.md`：团队接入自己的 Domain Module 时遵循的契约。
 - `docs/adoption-guide.md`：其他团队复制 SOP 的指南。
-- `docs/token-budget-policy.md`：保密区 token / provider 限额策略。
+- `.claude/skills/id-workflow/CONTEXT_ENGINEERING.md`：Claude Code 渐进式上下文加载策略。
 - `docs/source-attribution.md`：公开方法论来源和 license attribution。
 - `docs/atomic-skills.md`：可复用原子 skill 列表和边界。
 - `docs/architecture-diagram.md`：Core + Domain Module 架构图。
@@ -159,7 +159,7 @@ python3 tests/test_harness.py
 - 每个 execution unit 的 max_change_loc 必须是 500。
 - Repo Context Provider 必须限制 max_results / max_snippet_chars，并要求 evidence_ref。
 - Provider Selection Matrix 必须明确有锚点 grep first、无锚点但有领域语义 OKL first。
-- Token Budget Policy 必须存在。
+- Context Engineering 必须存在，并且 `id-workflow` 必须显式加载。
 - Progressive Constraint Loading 三段约束文件必须存在。
 - E2E TR3 D3A demo 必须包含完整链路文件。
 - E2E General Coding demo 必须包含完整链路文件。

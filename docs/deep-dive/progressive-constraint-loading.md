@@ -20,7 +20,6 @@ constraints/execution/
 
 如果一开始加载全部约束，会导致：
 
-- token 浪费。
 - 上下文污染。
 - Agent 难以聚焦当前阶段。
 - D3A 约束和 Core 约束混在一起。

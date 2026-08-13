@@ -43,7 +43,7 @@ builtin-discovery-questions
 保留 upstream 的核心流程：
 
 - 先理解项目上下文，再追问。
-- 根据问题复杂度成组追问，不用 token 限制牺牲需求探索质量。
+- 根据问题复杂度成组追问，不因上下文裁剪牺牲需求探索质量。
 - 必要时给 2-3 个方案，并说明 trade-off 和推荐。
 - 先形成 design / draft spec，再交给用户确认。
 - 在 design 被确认前，不进入实现。
