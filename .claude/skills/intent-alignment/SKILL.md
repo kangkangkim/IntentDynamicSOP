@@ -19,6 +19,18 @@ Use after:
 - Contract Gate has produced the required contract set.
 - Scope boundary and completion gate are known.
 
+Do not use when:
+
+- rough / raw idea still needs `intent-discovery`.
+- critical contract / scope / completion gate questions remain.
+- implementation has already started without approval.
+
+If critical questions remain, route to:
+
+```text
+.claude/skills/intent-grilling/SKILL.md
+```
+
 ## Required Inputs
 
 ```text

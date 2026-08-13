@@ -704,6 +704,33 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
     assert_true("Route back to:" in general_skill and ".claude/skills/intent-discovery/SKILL.md" in general_skill, "general-coding 必须把 rough general 请求导回 intent-discovery。")
 
 
+def test_domain_and_build_skills_define_entry_rules_at_skill_layer():
+    d3a_skill = read_text(".claude/skills/d3a-coding/SKILL.md")
+    dt_skill = read_text(".claude/skills/dt-build/SKILL.md")
+    tran_skill = read_text(".claude/skills/tran-build/SKILL.md")
+    grilling_skill = read_text(".claude/skills/intent-grilling/SKILL.md")
+    alignment_skill = read_text(".claude/skills/intent-alignment/SKILL.md")
+
+    for path, text in [
+        (".claude/skills/d3a-coding/SKILL.md", d3a_skill),
+        (".claude/skills/dt-build/SKILL.md", dt_skill),
+        (".claude/skills/tran-build/SKILL.md", tran_skill),
+    ]:
+        assert_true(text.startswith("---\n"), f"{path} 必须有 skill frontmatter。")
+        assert_true("## When To Use" in text, f"{path} 必须在 skill 层定义 When To Use。")
+        assert_true("Do not use" in text, f"{path} 必须在 skill 层定义 Do not use。")
+
+    assert_true("Domain = d3a" in d3a_skill and "Human Alignment 已 approved" in d3a_skill, "d3a-coding 必须声明 D3A 和 approval 入口条件。")
+    assert_true(".claude/skills/intent-discovery/SKILL.md" in d3a_skill, "rough D3A 必须导回 intent-discovery。")
+    assert_true(".claude/skills/intent-grilling/SKILL.md" in d3a_skill, "D3A 缺 contract 必须导回 intent-grilling。")
+    assert_true("任务是 General Coding" in dt_skill, "dt-build 必须禁止 General Coding 使用。")
+    assert_true("selected DT domain" in dt_skill, "dt-build 必须要求 selected DT domain。")
+    assert_true("所有 required DT domain 已有 GREEN evidence" in tran_skill, "tran-build 必须要求 required DT GREEN。")
+    assert_true("D3A DONE gate" in tran_skill, "tran-build 必须声明只作为 D3A DONE gate。")
+    assert_true("rough / raw idea requests" in grilling_skill and ".claude/skills/intent-discovery/SKILL.md" in grilling_skill, "intent-grilling 必须把 rough 请求导回 discovery。")
+    assert_true("critical contract / scope / completion gate questions remain" in alignment_skill and ".claude/skills/intent-grilling/SKILL.md" in alignment_skill, "intent-alignment 必须把未澄清问题导回 grilling。")
+
+
 def test_claude_project_entries_expose_skills_and_agents():
     for skill_dir in sorted((ROOT / ".claude" / "skills").iterdir()):
         if not skill_dir.is_dir():
@@ -960,6 +987,7 @@ def run():
         test_adoption_and_deep_dive_docs_exist,
         test_id_workflow_skill_exists_and_has_triggers,
         test_atomic_pre_alignment_skills_exist_and_are_reusable,
+        test_domain_and_build_skills_define_entry_rules_at_skill_layer,
         test_claude_project_entries_expose_skills_and_agents,
         test_human_views_exist_and_hide_raw_yaml,
         test_clarification_provider_uses_grill_me_method_with_fallback,

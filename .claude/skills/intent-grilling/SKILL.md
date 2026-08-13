@@ -18,6 +18,18 @@ Use for:
 - Structured requirements before Alignment View.
 - Any request where implementation would require guessing.
 
+Do not use for:
+
+- rough / raw idea requests that still need Brainstorming first.
+- approved Alignment Pack.
+- execution, test, build, or failure-fix work.
+
+If the request is rough, route to:
+
+```text
+.claude/skills/intent-discovery/SKILL.md
+```
+
 ## Required Inputs
 
 ```text
