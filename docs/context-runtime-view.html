@@ -6,22 +6,22 @@
   <title>IDC Context Runtime View</title>
   <style>
     :root {
-      --bg: #f5f6f8;
-      --ink: #182230;
-      --muted: #5f6b7a;
-      --line: #d9e0ea;
+      --bg: #f7f8fa;
+      --ink: #17202a;
+      --muted: #627084;
+      --line: #d8dee8;
       --panel: #ffffff;
-      --main: #1959b7;
+      --main: #1d5fbf;
       --main-soft: #eaf2ff;
-      --sub: #0f7a64;
-      --sub-soft: #e7f6f1;
-      --human: #8a4a12;
-      --human-soft: #fff1dd;
-      --knowledge: #4f5b68;
+      --sub: #08745f;
+      --sub-soft: #e5f5f0;
+      --human: #91570f;
+      --human-soft: #fff0d8;
+      --knowledge: #475467;
       --knowledge-soft: #eef1f4;
       --danger: #b42318;
-      --danger-soft: #fff1ed;
-      --shadow: 0 10px 30px rgba(24, 34, 48, 0.08);
+      --danger-soft: #fff0ed;
+      --shadow: 0 10px 26px rgba(23, 32, 42, 0.08);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
@@ -31,46 +31,26 @@
       margin: 0;
       background: var(--bg);
       color: var(--ink);
-      line-height: 1.45;
+      line-height: 1.42;
     }
 
     main {
-      width: min(1440px, calc(100vw - 36px));
+      width: min(1460px, calc(100vw - 36px));
       margin: 0 auto;
       padding: 28px 0 44px;
     }
 
     h1, h2, h3, p { margin: 0; }
 
-    h1 {
-      font-size: 30px;
-      letter-spacing: 0;
-    }
-
-    h2 {
-      font-size: 18px;
-      letter-spacing: 0;
-    }
-
-    h3 {
-      font-size: 13px;
-      letter-spacing: 0;
-    }
-
-    p, li {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    ul {
-      margin: 8px 0 0;
-      padding-left: 18px;
-    }
+    h1 { font-size: 30px; letter-spacing: 0; }
+    h2 { font-size: 18px; letter-spacing: 0; }
+    h3 { font-size: 13px; letter-spacing: 0; }
+    p, li { color: var(--muted); font-size: 13px; }
 
     code {
       padding: 1px 5px;
       border-radius: 5px;
-      background: rgba(24, 34, 48, 0.08);
+      background: rgba(23, 32, 42, 0.08);
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 12px;
     }
@@ -80,13 +60,12 @@
       grid-template-columns: 1fr auto;
       gap: 18px;
       align-items: start;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .subtitle {
-      max-width: 860px;
+      max-width: 920px;
       margin-top: 8px;
-      color: var(--muted);
       font-size: 14px;
     }
 
@@ -107,8 +86,8 @@
       display: inline-block;
       width: 9px;
       height: 9px;
-      border-radius: 999px;
       margin-right: 6px;
+      border-radius: 50%;
       vertical-align: 0;
     }
 
@@ -117,23 +96,7 @@
     .dot-human { background: var(--human); }
     .dot-knowledge { background: var(--knowledge); }
 
-    .runtime {
-      display: grid;
-      gap: 14px;
-    }
-
-    .session-board {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 12px;
-      align-items: stretch;
-    }
-
-    .lane-board {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
+    .stack { display: grid; gap: 14px; }
 
     .panel {
       border: 1px solid var(--line);
@@ -157,61 +120,85 @@
       font-size: 12px;
     }
 
-    .panel-body {
-      padding: 14px;
-    }
+    .panel-body { padding: 14px; }
 
-    .timeline {
+    .reading {
       display: grid;
-      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
-      overflow-x: auto;
-      padding-bottom: 2px;
     }
 
-    .step {
-      min-height: 182px;
+    .reading-card {
+      min-height: 112px;
       padding: 12px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
-      position: relative;
     }
 
-    .step::after {
-      content: "";
-      position: absolute;
-      top: 25px;
-      right: -10px;
-      width: 10px;
-      border-top: 2px solid var(--line);
+    .reading-card strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 13px;
     }
 
-    .step:last-child::after { display: none; }
+    .flow {
+      display: grid;
+      grid-template-columns: 150px repeat(6, minmax(132px, 1fr));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow-x: auto;
+      background: #fff;
+    }
 
-    .step h3 {
-      margin-bottom: 8px;
+    .cell {
+      min-height: 104px;
+      padding: 10px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .cell:nth-child(7n) { border-right: 0; }
+
+    .head-cell {
+      min-height: 62px;
+      background: #f0f3f7;
+      font-weight: 700;
       color: var(--ink);
     }
 
-    .load-bar {
-      height: 8px;
-      margin: 8px 0 9px;
+    .row-head {
+      background: #f7f9fc;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .main { background: var(--main-soft); border-color: #bfd5ff; }
+    .sub { background: var(--sub-soft); border-color: #bde0d6; }
+    .human { background: var(--human-soft); border-color: #eed0a6; }
+    .knowledge { background: var(--knowledge-soft); }
+    .empty { background: #fafbfc; color: #8b96a5; }
+
+    .cell h3 { margin-bottom: 5px; }
+
+    .bar {
+      height: 9px;
+      margin-top: 8px;
       border-radius: 999px;
-      background: #e8edf4;
+      background: rgba(23, 32, 42, 0.12);
       overflow: hidden;
     }
 
-    .load-bar span {
+    .bar span {
       display: block;
       height: 100%;
       border-radius: 999px;
       background: var(--main);
     }
 
-    .load-bar.sub span { background: var(--sub); }
-    .load-bar.human span { background: var(--human); }
-    .load-bar.knowledge span { background: var(--knowledge); }
+    .bar.sub span { background: var(--sub); }
+    .bar.knowledge span { background: var(--knowledge); }
 
     .tag-row {
       display: flex;
@@ -221,137 +208,79 @@
     }
 
     .tag {
-      display: inline-flex;
-      align-items: center;
-      min-height: 22px;
       padding: 2px 7px;
       border-radius: 999px;
-      background: var(--knowledge-soft);
-      color: #46515e;
+      background: rgba(255, 255, 255, 0.8);
+      color: #344054;
       font-size: 11px;
       white-space: nowrap;
     }
 
-    .main-tag { background: var(--main-soft); color: var(--main); }
-    .sub-tag { background: var(--sub-soft); color: var(--sub); }
-    .human-tag { background: var(--human-soft); color: var(--human); }
-    .danger-tag { background: var(--danger-soft); color: var(--danger); }
+    .tag.danger {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
 
-    .agent-grid {
+    .session-map {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-
-    .agent-card {
-      padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-    }
-
-    .agent-card.main {
-      border-color: #b9d2ff;
-      background: var(--main-soft);
-    }
-
-    .agent-card.sub {
-      border-color: #bde3d8;
-      background: var(--sub-soft);
-    }
-
-    .agent-card h3 {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    .agent-card strong {
-      font-size: 12px;
-      color: var(--ink);
-    }
-
-    .swimlane {
-      display: grid;
-      grid-template-columns: 150px 1fr;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      overflow: hidden;
-      background: #fff;
-    }
-
-    .swimlane + .swimlane { margin-top: 10px; }
-
-    .swim-label {
-      padding: 14px;
-      border-right: 1px solid var(--line);
-      background: #f0f3f7;
-    }
-
-    .swim-label strong {
-      display: block;
-      margin-bottom: 5px;
-      font-size: 14px;
-    }
-
-    .swim-content {
-      padding: 12px;
-      display: grid;
-      grid-template-columns: repeat(5, minmax(110px, 1fr));
-      gap: 8px;
-      overflow-x: auto;
-    }
-
-    .mini {
-      min-height: 96px;
-      padding: 10px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-    }
-
-    .mini.main { border-color: #b9d2ff; background: var(--main-soft); }
-    .mini.sub { border-color: #bde3d8; background: var(--sub-soft); }
-    .mini.human { border-color: #efd0a2; background: var(--human-soft); }
-    .mini.knowledge { background: var(--knowledge-soft); }
-
-    .compare {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
 
-    .rule-list {
+    .session-box {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .session-box.main { border-color: #bfd5ff; }
+    .session-box.sub { border-color: #bde0d6; }
+
+    .session-box ul {
+      margin: 8px 0 0;
+      padding-left: 18px;
+    }
+
+    .io-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
+      margin-top: 12px;
     }
 
-    .rule {
+    .io {
       padding: 12px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
     }
 
-    .rule strong {
+    .io strong {
       display: block;
       margin-bottom: 5px;
       font-size: 13px;
     }
 
-    @media (max-width: 1080px) {
+    .note {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-left: 4px solid var(--danger);
+      background: var(--danger-soft);
+      color: #7a271a;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1100px) {
       .page-head,
-      .session-board,
-      .lane-board,
-      .compare,
-      .rule-list {
+      .reading,
+      .session-map,
+      .io-grid {
         grid-template-columns: 1fr;
       }
 
-      .timeline {
-        grid-template-columns: repeat(6, 190px);
+      .flow {
+        grid-template-columns: 130px repeat(6, 180px);
       }
     }
 
@@ -362,305 +291,292 @@
       }
 
       h1 { font-size: 24px; }
-
-      .legend {
-        grid-template-columns: 1fr;
-        width: 100%;
-      }
-
-      .swimlane {
-        grid-template-columns: 1fr;
-      }
-
-      .swim-label {
-        border-right: 0;
-        border-bottom: 1px solid var(--line);
-      }
+      .legend { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <main>
+  <main class="stack">
     <header class="page-head">
       <div>
         <h1>IDC Context Runtime View</h1>
         <p class="subtitle">
-          这个视角展示 Claude Code 运行 `id-workflow` 时，main agent session 和 subagent 独立 session 如何占用、裁剪、回填上下文。重点是上下文生命周期，不是业务架构层级。
+          这张图只回答一个问题：用户输入进来后，main agent session 和 subagent session 的上下文分别怎样增长、裁剪、回填和销毁。
         </p>
       </div>
-      <div class="legend" aria-label="legend">
-        <span><i class="dot dot-main"></i>Main agent session</span>
-        <span><i class="dot dot-sub"></i>Subagent session</span>
-        <span><i class="dot dot-human"></i>Human checkpoint</span>
-        <span><i class="dot dot-knowledge"></i>Knowledge provider</span>
+      <div class="legend">
+        <span><i class="dot dot-main"></i>Main agent 长会话</span>
+        <span><i class="dot dot-sub"></i>Subagent 短会话</span>
+        <span><i class="dot dot-human"></i>人工 checkpoint</span>
+        <span><i class="dot dot-knowledge"></i>OKL / grep / CodeGraph</span>
       </div>
     </header>
 
-    <section class="runtime">
-      <div class="session-board">
-        <article class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Main Agent Session 如何变化</h2>
-              <span>main 不复制全部工作上下文；它持有决策链、批准结果、packet 摘要和 evidence refs。</span>
-            </div>
-          </div>
-          <div class="panel-body">
-            <div class="timeline">
-              <div class="step">
-                <h3>1. 输入接收</h3>
-                <p>Main 读取用户输入和最小入口规则。</p>
-                <div class="load-bar"><span style="width: 18%"></span></div>
-                <div class="tag-row">
-                  <span class="tag main-tag">SKILL.md</span>
-                  <span class="tag main-tag">CONTEXT_ENGINEERING</span>
-                  <span class="tag">input adapter</span>
-                </div>
-              </div>
-              <div class="step">
-                <h3>2. 输入成熟度</h3>
-                <p>判断是 TR3、raw idea，还是已批准 Alignment Pack。</p>
-                <div class="load-bar"><span style="width: 25%"></span></div>
-                <div class="tag-row">
-                  <span class="tag">normalized request</span>
-                  <span class="tag">domain hints</span>
-                  <span class="tag">lane signals</span>
-                </div>
-              </div>
-              <div class="step">
-                <h3>3. 前置对齐</h3>
-                <p>TR3 通常进入 Grill Me；一句话先 Brainstorming，再 Grill Me。</p>
-                <div class="load-bar human"><span style="width: 38%"></span></div>
-                <div class="tag-row">
-                  <span class="tag human-tag">Brainstorming View</span>
-                  <span class="tag human-tag">Clarification View</span>
-                </div>
-              </div>
-              <div class="step">
-                <h3>4. Contract 冻结</h3>
-                <p>Main 持有 Alignment Pack 摘要，等待用户批准。</p>
-                <div class="load-bar"><span style="width: 44%"></span></div>
-                <div class="tag-row">
-                  <span class="tag main-tag">domain</span>
-                  <span class="tag main-tag">lane</span>
-                  <span class="tag main-tag">contract gate</span>
-                </div>
-              </div>
-              <div class="step">
-                <h3>5. 分派执行</h3>
-                <p>Main 生成 execution unit，把局部 packet 交给 subagent。</p>
-                <div class="load-bar"><span style="width: 52%"></span></div>
-                <div class="tag-row">
-                  <span class="tag main-tag">approved pack</span>
-                  <span class="tag main-tag">execution units</span>
-                  <span class="tag sub-tag">subagent spawn</span>
-                </div>
-              </div>
-              <div class="step">
-                <h3>6. 回填闭环</h3>
-                <p>Subagent 只回传 summary、diff summary 和 evidence refs。</p>
-                <div class="load-bar"><span style="width: 46%"></span></div>
-                <div class="tag-row">
-                  <span class="tag main-tag">evidence summary</span>
-                  <span class="tag main-tag">completion status</span>
-                  <span class="tag danger-tag">no long logs</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <aside class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Subagent Session 规则</h2>
-              <span>subagent 是隔离工作上下文，不把完整内部过程倒灌回 main。</span>
-            </div>
-          </div>
-          <div class="panel-body">
-            <div class="agent-grid">
-              <div class="agent-card main">
-                <h3><strong>Main Agent</strong><span>长期会话</span></h3>
-                <p>保留用户意图、批准的 contract、计划、当前状态、summary evidence。它负责决策和闭环，不承担所有实现细节。</p>
-              </div>
-              <div class="agent-card sub">
-                <h3><strong>general-coder</strong><span>短期会话</span></h3>
-                <p>只拿 General execution unit、相关文件、相关测试入口。完成后回传 patch summary 和验证 evidence。</p>
-              </div>
-              <div class="agent-card sub">
-                <h3><strong>d3a-layer-coder</strong><span>Layer packet</span></h3>
-                <p>一次只处理一个 D3A Layer Context Packet，不读取其他 Layer 的知识全文。</p>
-              </div>
-              <div class="agent-card sub">
-                <h3><strong>dt-test-writer</strong><span>验证上下文</span></h3>
-                <p>只拿当前 Layer 对应 required DT domain、RED/GREEN 状态和测试接口 placeholder。</p>
-              </div>
-              <div class="agent-card sub">
-                <h3><strong>build-error-analyzer</strong><span>失败上下文</span></h3>
-                <p>只拿失败摘要、命令、关键日志片段和相关文件 refs，不能把完整日志塞回 main。</p>
-              </div>
-            </div>
-          </div>
-        </aside>
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>先看图例</h2>
+          <span>横向是时间，纵向是 session 类型；颜色块越深，表示该 session 正在承担更多当前上下文。</span>
+        </div>
       </div>
-
-      <div class="lane-board">
-        <article class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>TR3 需求输入</h2>
-              <span>信息较完整，通常跳过大范围发散，直接做 contract gap 检查。</span>
-            </div>
+      <div class="panel-body">
+        <div class="reading">
+          <div class="reading-card main">
+            <strong>Main session</strong>
+            <p>一直存在。它保存用户意图、前置对齐结果、Domain/Lane/Contract、计划和 evidence 摘要。</p>
+            <div class="bar"><span style="width: 55%"></span></div>
           </div>
-          <div class="panel-body">
-            <div class="swimlane">
-              <div class="swim-label">
-                <strong>Main session</strong>
-                <p>读取 TR3 摘要和契约信号</p>
-              </div>
-              <div class="swim-content">
-                <div class="mini main"><h3>TR3 parse</h3><p>提取需求、DT 设计、domain hints、lane signals。</p></div>
-                <div class="mini main"><h3>Domain / Lane</h3><p>加载 registry 和命中的 module，不加载全部 domain。</p></div>
-                <div class="mini human"><h3>Grill Me</h3><p>只追问 contract、scope、completion gate 缺口。</p></div>
-                <div class="mini main"><h3>Alignment</h3><p>用户批准后，main 冻结 Alignment Pack。</p></div>
-                <div class="mini main"><h3>Dispatch</h3><p>按 lane 和 execution unit 分派。</p></div>
-              </div>
-            </div>
-            <div class="swimlane">
-              <div class="swim-label">
-                <strong>Knowledge</strong>
-                <p>按锚点选择 provider</p>
-              </div>
-              <div class="swim-content">
-                <div class="mini knowledge"><h3>TR3 refs</h3><p>如果 TR3 带内部概念，OKL 返回 summary / refs / keywords。</p></div>
-                <div class="mini knowledge"><h3>bounded grep</h3><p>用 symbol、error、config key 限定搜索。</p></div>
-                <div class="mini knowledge"><h3>CodeGraph</h3><p>只有影响范围不清楚时 targeted 使用。</p></div>
-                <div class="mini knowledge"><h3>Packet</h3><p>只把 findings summary 放进 Context Packet。</p></div>
-                <div class="mini knowledge"><h3>Evidence</h3><p>provider finding 不能作为 DONE evidence。</p></div>
-              </div>
-            </div>
-            <div class="swimlane">
-              <div class="swim-label">
-                <strong>Subagent</strong>
-                <p>批准后才展开</p>
-              </div>
-              <div class="swim-content">
-                <div class="mini sub"><h3>D3A</h3><p>每个 Layer 一个短 session，一个 Layer Context Packet。</p></div>
-                <div class="mini sub"><h3>General</h3><p>每个 execution unit 一个 focused task context。</p></div>
-                <div class="mini sub"><h3>DT / Build</h3><p>测试和构建 agent 只拿验证所需上下文。</p></div>
-                <div class="mini sub"><h3>Return</h3><p>回传 summary、changed paths、evidence_ref。</p></div>
-                <div class="mini main"><h3>Main merge</h3><p>Main 合并状态，不吸收完整 subagent session。</p></div>
-              </div>
-            </div>
+          <div class="reading-card sub">
+            <strong>Subagent session</strong>
+            <p>只在执行阶段创建。每个 subagent 只拿一个 execution unit 或一个 D3A Layer Context Packet。</p>
+            <div class="bar sub"><span style="width: 35%"></span></div>
           </div>
-        </article>
-
-        <article class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>一句话需求输入</h2>
-              <span>信息不完整，main session 会先增加探索上下文，再收敛为 contract。</span>
-            </div>
+          <div class="reading-card knowledge">
+            <strong>Knowledge provider</strong>
+            <p>OKL / bounded grep / targeted CodeGraph 只返回 summary / refs / keywords 和 evidence_ref。</p>
+            <div class="bar knowledge"><span style="width: 30%"></span></div>
           </div>
-          <div class="panel-body">
-            <div class="swimlane">
-              <div class="swim-label">
-                <strong>Main session</strong>
-                <p>先探索，再收敛</p>
-              </div>
-              <div class="swim-content">
-                <div class="mini main"><h3>Raw idea</h3><p>只读取入口规则，标记 `input_maturity = raw_idea`。</p></div>
-                <div class="mini human"><h3>Brainstorming</h3><p>加载 discovery skill，形成 draft spec 和可选方案。</p></div>
-                <div class="mini human"><h3>Grill Me</h3><p>把 draft spec 烤成 contract、scope 和 completion gate。</p></div>
-                <div class="mini main"><h3>Domain / Lane</h3><p>只加载被命中的 domain module 和 lane 规则。</p></div>
-                <div class="mini main"><h3>Approval</h3><p>用户确认后才允许进入 execution context。</p></div>
-              </div>
-            </div>
-            <div class="swimlane">
-              <div class="swim-label">
-                <strong>Knowledge</strong>
-                <p>探索阶段也可加载</p>
-              </div>
-              <div class="swim-content">
-                <div class="mini knowledge"><h3>Repo rules</h3><p>先读 `CLAUDE.md` / `AGENTS.md` 等项目规则。</p></div>
-                <div class="mini knowledge"><h3>No anchor</h3><p>无锚点时先不全仓搜，先让 discovery 建立关键词。</p></div>
-                <div class="mini knowledge"><h3>OKL</h3><p>有领域语义时取摘要、引用、关键词。</p></div>
-                <div class="mini knowledge"><h3>grep</h3><p>拿到关键词后做 bounded grep 找代码事实。</p></div>
-                <div class="mini knowledge"><h3>Context Packet</h3><p>只沉淀与当前问题相关的 summary。</p></div>
-              </div>
-            </div>
-            <div class="swimlane">
-              <div class="swim-label">
-                <strong>Subagent</strong>
-                <p>探索期不启动实现</p>
-              </div>
-              <div class="swim-content">
-                <div class="mini human"><h3>No coding</h3><p>Brainstorming / Grill Me 阶段不写实现代码。</p></div>
-                <div class="mini main"><h3>Planner</h3><p>批准后 main 才拆 execution unit。</p></div>
-                <div class="mini sub"><h3>Subagent spawn</h3><p>只给 subagent 当前 unit 所需上下文。</p></div>
-                <div class="mini sub"><h3>Focused work</h3><p>subagent 内部可查更多局部上下文。</p></div>
-                <div class="mini main"><h3>Summary back</h3><p>main 只接收摘要和 evidence refs。</p></div>
-              </div>
-            </div>
-          </div>
-        </article>
-      </div>
-
-      <article class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Session 占用对比</h2>
-            <span>main agent 是编排与记账上下文；subagent 是短生命周期工作上下文。</span>
+          <div class="reading-card human">
+            <strong>Human checkpoint</strong>
+            <p>只在前置对齐出现。批准 Alignment Pack 之前，不创建实现 subagent。</p>
+            <div class="note">关键：subagent 的完整上下文不会回灌 main。</div>
           </div>
         </div>
-        <div class="panel-body compare">
-          <div class="agent-card main">
-            <h3><strong>Main Agent Session</strong><span>保留</span></h3>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>场景 A：TR3 需求输入</h2>
+          <span>TR3 信息较完整，所以 main session 不需要大范围发散；主要做解析、缺口追问、批准和分派。</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="flow" aria-label="TR3 runtime flow">
+          <div class="cell head-cell">Session / Phase</div>
+          <div class="cell head-cell">1 输入</div>
+          <div class="cell head-cell">2 解析 TR3</div>
+          <div class="cell head-cell">3 Grill Me</div>
+          <div class="cell head-cell">4 Alignment</div>
+          <div class="cell head-cell">5 执行</div>
+          <div class="cell head-cell">6 验证回填</div>
+
+          <div class="cell row-head">Main Agent Session</div>
+          <div class="cell main">
+            <h3>小入口</h3>
+            <p>读用户输入、`SKILL.md`、`CONTEXT_ENGINEERING`。</p>
+            <div class="bar"><span style="width: 20%"></span></div>
+          </div>
+          <div class="cell main">
+            <h3>结构化</h3>
+            <p>抽取需求、DT 设计、domain hints、lane signals。</p>
+            <div class="bar"><span style="width: 34%"></span></div>
+          </div>
+          <div class="cell human">
+            <h3>只问缺口</h3>
+            <p>contract / scope / completion gate 缺什么问什么。</p>
+            <div class="bar"><span style="width: 40%"></span></div>
+          </div>
+          <div class="cell main">
+            <h3>冻结契约</h3>
+            <p>保存用户批准的 Alignment Pack 摘要。</p>
+            <div class="bar"><span style="width: 46%"></span></div>
+          </div>
+          <div class="cell main">
+            <h3>分派与记账</h3>
+            <p>生成 execution unit，main 只保留 packet 摘要。</p>
+            <div class="bar"><span style="width: 50%"></span></div>
+          </div>
+          <div class="cell main">
+            <h3>收口</h3>
+            <p>吸收 evidence summary，不吸收完整日志。</p>
+            <div class="bar"><span style="width: 42%"></span></div>
+          </div>
+
+          <div class="cell row-head">Knowledge Context</div>
+          <div class="cell empty">通常不查</div>
+          <div class="cell knowledge">
+            <h3>OKL 可选</h3>
+            <p>如果 TR3 有内部概念，只拿 summary / refs / keywords。</p>
+          </div>
+          <div class="cell knowledge">
+            <h3>bounded grep</h3>
+            <p>用 TR3 给出的 symbol / path / error 做有边界定位。</p>
+          </div>
+          <div class="cell empty">只保留 refs</div>
+          <div class="cell knowledge">
+            <h3>targeted CodeGraph</h3>
+            <p>只有影响范围不清楚时用。</p>
+          </div>
+          <div class="cell knowledge">
+            <h3>evidence_ref</h3>
+            <p>知识线索不是 DONE evidence。</p>
+          </div>
+
+          <div class="cell row-head">Subagent Session</div>
+          <div class="cell empty">不创建</div>
+          <div class="cell empty">不创建</div>
+          <div class="cell empty">不创建</div>
+          <div class="cell empty">等待批准</div>
+          <div class="cell sub">
+            <h3>短会话启动</h3>
+            <p>D3A: one Layer Context Packet；General: one execution unit。</p>
+            <div class="bar sub"><span style="width: 58%"></span></div>
+          </div>
+          <div class="cell sub">
+            <h3>销毁 / 回填</h3>
+            <p>只回传 summary、changed paths、test/build evidence refs。</p>
+            <div class="tag-row">
+              <span class="tag">summary</span>
+              <span class="tag">evidence_ref</span>
+              <span class="tag danger">no full session</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>场景 B：一句话需求输入</h2>
+          <span>一句话输入不成熟，所以 main session 会先多一段 Brainstorming；但实现 subagent 仍然要等用户批准后才创建。</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="flow" aria-label="one sentence runtime flow">
+          <div class="cell head-cell">Session / Phase</div>
+          <div class="cell head-cell">1 输入</div>
+          <div class="cell head-cell">2 Brainstorming</div>
+          <div class="cell head-cell">3 Grill Me</div>
+          <div class="cell head-cell">4 Alignment</div>
+          <div class="cell head-cell">5 执行</div>
+          <div class="cell head-cell">6 验证回填</div>
+
+          <div class="cell row-head">Main Agent Session</div>
+          <div class="cell main">
+            <h3>raw idea</h3>
+            <p>标记 `input_maturity = raw_idea`。</p>
+            <div class="bar"><span style="width: 16%"></span></div>
+          </div>
+          <div class="cell human">
+            <h3>发散成草案</h3>
+            <p>加载 intent-discovery，形成 draft spec 和 2-3 个方向。</p>
+            <div class="bar"><span style="width: 48%"></span></div>
+          </div>
+          <div class="cell human">
+            <h3>收敛问题</h3>
+            <p>Grill Me 把草案收敛成 contract、scope、completion gate。</p>
+            <div class="bar"><span style="width: 54%"></span></div>
+          </div>
+          <div class="cell main">
+            <h3>批准点</h3>
+            <p>用户确认后，draft 才变 approved Alignment Pack。</p>
+            <div class="bar"><span style="width: 44%"></span></div>
+          </div>
+          <div class="cell main">
+            <h3>拆 execution unit</h3>
+            <p>只把当前 unit 需要的上下文发给 subagent。</p>
+            <div class="bar"><span style="width: 50%"></span></div>
+          </div>
+          <div class="cell main">
+            <h3>闭环状态</h3>
+            <p>保存最终 evidence 和 completion summary。</p>
+            <div class="bar"><span style="width: 42%"></span></div>
+          </div>
+
+          <div class="cell row-head">Knowledge Context</div>
+          <div class="cell empty">不全仓搜</div>
+          <div class="cell knowledge">
+            <h3>先读规则</h3>
+            <p>`CLAUDE.md` / `AGENTS.md` / repo-native rules。</p>
+          </div>
+          <div class="cell knowledge">
+            <h3>OKL 可选</h3>
+            <p>有领域语义时拿 summary / refs / keywords。</p>
+          </div>
+          <div class="cell knowledge">
+            <h3>bounded grep</h3>
+            <p>有关键词后再定位代码事实。</p>
+          </div>
+          <div class="cell knowledge">
+            <h3>局部扩展</h3>
+            <p>只围绕 execution unit 扩展。</p>
+          </div>
+          <div class="cell knowledge">
+            <h3>失败才追加</h3>
+            <p>失败后只扩大责任 unit，不全仓铺开。</p>
+          </div>
+
+          <div class="cell row-head">Subagent Session</div>
+          <div class="cell empty">不创建</div>
+          <div class="cell empty">不创建</div>
+          <div class="cell empty">不创建</div>
+          <div class="cell empty">等待批准</div>
+          <div class="cell sub">
+            <h3>执行短会话</h3>
+            <p>general-coder / d3a-layer-coder / dt-test-writer 按需启动。</p>
+            <div class="bar sub"><span style="width: 62%"></span></div>
+          </div>
+          <div class="cell sub">
+            <h3>回传后结束</h3>
+            <p>main 只拿摘要，不继承 subagent 的全部上下文。</p>
+            <div class="tag-row">
+              <span class="tag">diff summary</span>
+              <span class="tag">evidence_ref</span>
+              <span class="tag danger">drop local context</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Main / Subagent 上下文进出规则</h2>
+          <span>这是整张图最重要的运行模型。</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="session-map">
+          <div class="session-box main">
+            <h3>Main Agent Session 保留什么</h3>
             <ul>
               <li>用户原始输入和最新指令。</li>
-              <li>输入成熟度、Domain、Lane、Contract Gate 决策。</li>
-              <li>Human Alignment 的批准状态。</li>
-              <li>Execution Unit 列表和当前闭环状态。</li>
-              <li>Subagent 返回的 summary、changed paths、evidence refs。</li>
+              <li>Brainstorming / Grill Me / Alignment 的结论摘要。</li>
+              <li>Domain、Lane、Contract Gate、approved Alignment Pack。</li>
+              <li>Execution unit 队列、当前状态、completion summary。</li>
+              <li>Subagent 回传的 summary、changed paths、evidence refs。</li>
             </ul>
           </div>
-          <div class="agent-card sub">
-            <h3><strong>Subagent Session</strong><span>隔离</span></h3>
+          <div class="session-box sub">
+            <h3>Subagent Session 只临时持有什么</h3>
             <ul>
-              <li>只接收当前 execution unit 或当前 D3A Layer Context Packet。</li>
-              <li>可以读取局部文件、相关测试和局部 provider finding。</li>
-              <li>内部推理、长日志、完整搜索结果不回灌 main。</li>
-              <li>完成后返回最小可审计结果：summary + evidence_ref。</li>
-              <li>失败时只扩大责任 unit 的上下文。</li>
+              <li>当前 execution unit 或一个 D3A Layer Context Packet。</li>
+              <li>当前相关文件、局部测试、局部 provider finding。</li>
+              <li>当前失败摘要和少量关键日志片段。</li>
+              <li>内部搜索过程、长日志、临时推理不回填 main。</li>
+              <li>任务结束后 session 销毁，只返回可审计摘要。</li>
             </ul>
           </div>
         </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>关键规则</h2>
-            <span>这三条决定上下文不会在运行中失控。</span>
+        <div class="io-grid">
+          <div class="io">
+            <strong>Main -> Subagent</strong>
+            <p>approved contract + execution unit + allowed paths + relevant Context Packet。</p>
+          </div>
+          <div class="io">
+            <strong>Subagent 内部</strong>
+            <p>可以做局部 grep / test / build / file read，但上下文边界锁在当前 unit。</p>
+          </div>
+          <div class="io">
+            <strong>Subagent -> Main</strong>
+            <p>只返回 summary / changed paths / evidence_ref / blockers，不返回完整 session。</p>
           </div>
         </div>
-        <div class="panel-body">
-          <div class="rule-list">
-            <div class="rule">
-              <strong>先对齐，后自动</strong>
-              <p>Brainstorming、Grill Me、Alignment 都在 main session 完成；用户批准后才展开 subagent 执行。</p>
-            </div>
-            <div class="rule">
-              <strong>分 packet，不全文</strong>
-              <p>OKL、grep、CodeGraph 进入 Context Packet 的是 summary / refs / keywords，不是全文或长日志。</p>
-            </div>
-            <div class="rule">
-              <strong>subagent 不污染 main</strong>
-              <p>subagent session 是临时工作区。main 只吸收可审计摘要和工具 evidence，不吸收完整工作上下文。</p>
-            </div>
-          </div>
-        </div>
-      </article>
+      </div>
     </section>
   </main>
 </body>
