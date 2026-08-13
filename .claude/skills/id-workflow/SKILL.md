@@ -23,6 +23,28 @@ This is the orchestration skill. It delegates reusable pre-alignment work to ato
 - "我 approve 了，继续自动闭环。"
 - "判断这个任务是 D3A 还是 General，应该走哪个 Lane。"
 
+## Skill-level maturity routing
+
+This skill must route rough requests before Domain execution.
+
+Treat these as `raw_idea` even when the user mentions General Coding:
+
+```text
+rough
+vague
+sketchy
+one-line
+early idea
+大概想做
+先试试
+不完整想法
+还没想清楚
+```
+
+If a General Coding request is rough, run `intent-discovery` first.
+
+Do not let `Domain = general` skip Brainstorming when the input is still rough.
+
 ## Required behavior
 
 Default mode:

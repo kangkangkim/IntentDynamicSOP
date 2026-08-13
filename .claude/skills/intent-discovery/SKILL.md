@@ -17,6 +17,8 @@ Use for:
 
 - 一句话需求。
 - 模糊想法。
+- rough / vague / sketchy general coding request。
+- 用户说“大概想做”“先试试”“还没想清楚”“不完整想法”。
 - 还没有核心行为、边界或验收标准的需求。
 - 需要先发散出 2-3 个可选方案的需求。
 
@@ -68,4 +70,5 @@ The draft spec must include:
 - Do not treat upstream design approval as implementation approval; hand off to `intent-grilling` and `intent-alignment`.
 - Use Chinese if the user used Chinese.
 - TR3 skips this skill unless the TR3 is too incomplete to identify behavior.
+- Domain hint must not suppress discovery: `general + rough` still uses this skill.
 - Keep enterprise details as placeholders outside the confidential environment.

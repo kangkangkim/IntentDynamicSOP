@@ -7,6 +7,16 @@ description: Use when a coding task does not match a specialized domain module a
 
 Use this skill when Domain Module Router selects `general`.
 
+If the General Coding request is rough, vague, sketchy, one-line, or says “大概想做 / 先试试 / 还没想清楚”, do not start General Coding yet.
+
+Route back to:
+
+```text
+.claude/skills/intent-discovery/SKILL.md
+```
+
+General Coding starts only after the rough idea becomes a draft spec and passes Human Alignment.
+
 ## Flow
 
 ```text
