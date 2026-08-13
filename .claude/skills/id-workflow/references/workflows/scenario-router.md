@@ -11,8 +11,8 @@ Scenario Router 只回答一个问题：
 | Route | 何时使用 | 状态 |
 |---|---|---|
 | `DOMAIN_MODULE` | 任务匹配某个已注册 Domain Module。 | 已实现插件化骨架 |
-| `GENERAL_CODING` | D3A 之外的普通 coding 任务。 | 预留 |
-| `NEED_TRIAGE` | 信息不足，无法判断属于哪类任务。 | 预留 |
+| `GENERAL_CODING` | D3A 之外的普通 coding 任务。 | 已实现 |
+| `NEED_TRIAGE` | 信息不足，无法判断属于哪类任务。 | 已实现 |
 
 ## 规则
 

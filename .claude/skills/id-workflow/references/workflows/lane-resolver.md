@@ -23,8 +23,6 @@ V0 只有三种 Lane：
 | `lite` | 普通开发任务，范围可控，需要聚焦验证 |
 | `complex` | 复杂、高风险、跨模块或关键不确定任务 |
 
-不再设置 `known-domain` lane。Known Domain 已经由 Domain Module 表达。
-
 ## 决策顺序
 
 ### 1. 先看 Complex hard trigger
