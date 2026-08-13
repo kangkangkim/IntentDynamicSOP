@@ -1,0 +1,7 @@
+evidence:
+  id: mock-script-red
+  domain: GENERAL_TEST_PLACEHOLDER
+  status: RED
+  command: <ENTERPRISE_GENERAL_TEST_PLACEHOLDER_TEST_COMMAND>
+  summary: "Mock widget state query behavior not yet wired/verified before mock 脚本说明文件 is committed."
+  log_ref: <ENTERPRISE_PLACEHOLDER>
