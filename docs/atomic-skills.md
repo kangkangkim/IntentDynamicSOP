@@ -12,15 +12,25 @@ Atomic Skill 是可以被其他团队单独复用的小能力。
 
 ## 第一批
 
+### brainstorming
+
+```text
+raw_idea -> approaches + draft_spec
+```
+
+用于一句话需求、模糊想法和早期产品方向。
+
+这是可直接复用的发散原子能力，吸收 Superpowers Brainstorming 方法论，先探索 2-3 个方向，再产出 draft spec。
+
 ### intent-discovery
 
 ```text
 raw_idea -> draft_spec
 ```
 
-用于一句话需求或模糊想法。
+用于 IDC workflow 内的一句话需求或模糊想法。
 
-吸收 Superpowers Brainstorming 方法论，先发散，再产出 draft spec。
+它是 `brainstorming` 的 IDC wrapper，负责把发散结果接入 normalized request、Grill Me 和 Alignment。
 
 ### intent-grilling
 
@@ -44,6 +54,7 @@ machine contract -> human approval
 
 ```text
 id-workflow
+  -> brainstorming
   -> intent-discovery
   -> intent-grilling
   -> intent-alignment

@@ -685,15 +685,26 @@ def test_id_workflow_skill_exists_and_has_triggers():
     assert_true("idc-brainstorming-overlay" in text, "ID workflow skill 必须声明 IDC brainstorming overlay。")
     assert_true("references/human-views/brainstorming-view.md" in text, "ID workflow skill 必须加载 Brainstorming View。")
     assert_true("rough" in text and "Domain = general" in text and "run `intent-discovery` first" in text, "ID workflow skill 必须在 skill 层声明 rough general 先进入 discovery。")
-    for skill_name in ["intent-discovery", "intent-grilling", "intent-alignment"]:
+    for skill_name in ["brainstorming", "intent-discovery", "intent-grilling", "intent-alignment"]:
         assert_true(f".claude/skills/{skill_name}/SKILL.md" in text, f"ID workflow 必须编排 {skill_name}。")
 
 
 def test_atomic_pre_alignment_skills_exist_and_are_reusable():
     expected = {
+        "brainstorming": [
+            "name: brainstorming",
+            "raw idea",
+            "2-3 concrete approaches",
+            "upstream Superpowers brainstorming",
+            "../id-workflow/references/workflows/discovery-provider.md",
+            "../id-workflow/references/human-views/brainstorming-view.md",
+            "Do not write implementation code.",
+        ],
         "intent-discovery": [
             "name: intent-discovery",
             "raw_idea",
+            "IDC wrapper around the reusable `brainstorming` skill",
+            ".claude/skills/brainstorming/SKILL.md",
             "rough / vague / sketchy general coding request",
             "`general + rough` still uses this skill",
             "../id-workflow/references/workflows/discovery-provider.md",

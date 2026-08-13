@@ -11,6 +11,7 @@ This is the orchestration skill. It delegates reusable pre-alignment work to ato
 
 ```text
 .claude/skills/intent-discovery/SKILL.md
+.claude/skills/brainstorming/SKILL.md
 .claude/skills/intent-grilling/SKILL.md
 .claude/skills/intent-alignment/SKILL.md
 ```
@@ -132,6 +133,7 @@ references/human-views/clarification-view.md
 If `input_maturity = raw_idea`, run Discovery Provider before Clarification Provider:
 
 ```text
+.claude/skills/brainstorming/SKILL.md
 references/workflows/discovery-provider.md
 references/schemas/discovery-provider.schema.yaml
 references/human-views/brainstorming-view.md

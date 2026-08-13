@@ -1,17 +1,15 @@
 ---
-name: intent-discovery
-description: Use when a coding request is a raw idea, one-line intent, vague feature request, or early product thought that needs brainstorming before clarification; expand it into a draft spec without writing implementation code.
+name: brainstorming
+description: Use when a coding request is still a raw idea, one-line thought, vague feature concept, or early product direction that needs divergent exploration before clarification or implementation; produce 2-3 concrete approaches and a draft spec, without writing code.
 ---
 
-# Intent Discovery
+# Brainstorming
 
-Use this atomic skill to turn `raw_idea` input into a draft spec.
+Use this atomic skill when the user has an early idea but does not yet have enough shape for Grill Me, Alignment, or coding.
 
 It is reusable outside D3A and outside the full ID workflow.
 
-This is the IDC wrapper around the reusable `brainstorming` skill.
-
-Use `.claude/skills/brainstorming/SKILL.md` for divergent exploration, then apply the IDC overlay for handoff and contract shape.
+This skill uses upstream Superpowers brainstorming as the baseline, then keeps IDC-specific handoff fields small and explicit.
 
 ## When To Use
 
@@ -29,6 +27,7 @@ Do not use by default for:
 - TR3 design docs.
 - 已经有目标、核心行为和验收线索的 structured requirement。
 - 已经 approved 的 Alignment Pack。
+- build failure、test failure、执行修复类任务。
 
 ## Required Inputs
 
@@ -37,20 +36,19 @@ Do not use by default for:
 ../id-workflow/references/schemas/discovery-provider.schema.yaml
 ../id-workflow/references/human-views/brainstorming-view.md
 ../id-workflow/references/schemas/normalized-request.schema.yaml
-.claude/skills/brainstorming/SKILL.md
 ```
 
 ## Behavior
 
 ```text
 raw_idea
-  -> brainstorming
-  -> idc-brainstorming-overlay
-  -> Explore lightweight project context
-  -> Ask focused discovery questions
+  -> upstream-superpowers-brainstorming baseline
+  -> Explore lightweight project context if it helps the discussion
+  -> Ask focused discovery questions when the idea is too ambiguous
   -> Offer 2-3 approaches if there are real design branches
   -> Produce draft spec
   -> Render Brainstorming View
+  -> Hand off to intent-grilling / intent-alignment when ready
 ```
 
 ## Output
@@ -64,14 +62,24 @@ The draft spec must include:
 - core_behavior
 - out_of_scope
 - acceptance_signals
-- next: Clarification Provider
+- recommended_next_step
+
+## Handoff
+
+When this skill is used inside IDC, hand off to:
+
+```text
+.claude/skills/intent-discovery/SKILL.md
+```
+
+`intent-discovery` owns IDC-specific routing, normalized request updates, and the transition to Grill Me / Alignment.
 
 ## Hard Rules
 
 - Do not write implementation code.
 - Do not mark draft spec as approved contract.
-- Do not treat upstream design approval as implementation approval; hand off to `intent-grilling` and `intent-alignment`.
+- Do not treat upstream design approval as implementation approval.
 - Use Chinese if the user used Chinese.
 - TR3 skips this skill unless the TR3 is too incomplete to identify behavior.
-- Domain hint must not suppress discovery: `general + rough` still uses this skill.
+- Domain hint must not suppress brainstorming: `general + rough` still uses this skill.
 - Keep enterprise details as placeholders outside the confidential environment.
