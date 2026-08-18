@@ -962,13 +962,14 @@ def test_adoption_and_deep_dive_docs_exist():
     ]:
         assert_true(fragment in intake_html, f"Intake Trigger HTML 图缺少关键节点或触发条件：{fragment}")
     for fragment in [
-        "IDC Discovery-First Routing Overview",
+        "IDC Discovery-First Input Routing Map",
         "Raw Idea",
         "Structured Request",
         "TR3 Design Doc",
         "Approved Pack / Resume",
-        "First visible capability node",
+        "Discovery Owns",
         "intake / normalize",
+        "maturity detection",
         "Discovery",
         "Brainstorming",
         "Grill Me",
@@ -981,12 +982,11 @@ def test_adoption_and_deep_dive_docs_exist():
         "D3A Coding",
         "Team Domain",
         "Adapter Router",
-        "approved alignment",
-        "executable plan",
+        "approved D3A plan",
+        "valid checkpoint",
+        "Team Binding for confidential commands",
         "Completion / Escalation",
-        "Input Triggers",
-        "Routing Triggers",
-        "Execution Triggers",
+        "Required DT GREEN + tran_build PASS",
     ]:
         assert_true(fragment in input_routing_html, f"User Input Routing HTML 图缺少关键节点或触发条件：{fragment}")
     for file_name in [
