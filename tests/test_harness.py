@@ -320,7 +320,11 @@ def test_general_domain_module_is_active_and_self_closing():
 
 
 def test_lane_registry_files_exist():
+    registry = read_text(".claude/skills/idc-workflow/references/lanes/registry.yaml")
     assert_true(extract_lane_ids() == {"fast", "lite", "complex"}, "Lane registry 必须只包含 fast/lite/complex。")
+    assert_true("allowed_lane_ids: [fast, lite, complex]" in registry, "Lane registry 必须显式声明只允许 fast/lite/complex。")
+    assert_true("no_implicit_lane_ids: true" in registry, "Lane registry 必须禁止隐式 lane。")
+    assert_true("default_lane: lite" in registry, "Lane registry 必须声明默认 lane 是 lite。")
     for lane_file in extract_lane_files():
         assert_true((ROOT / runtime_path(lane_file)).exists(), f"Lane 文件不存在：{lane_file}")
 
@@ -362,6 +366,18 @@ def lane_resolver_decision(signals):
 
 
 def test_lane_resolver_fixtures_are_stable():
+    resolver = read_text(".claude/skills/idc-workflow/references/workflows/lane-resolver.md")
+    schema = read_text(".claude/skills/idc-workflow/references/schemas/lane.schema.yaml")
+    skill = read_text(".claude/skills/idc-lane-resolver/SKILL.md")
+
+    for text, name in [
+        (resolver, "Lane Resolver workflow"),
+        (schema, "Lane schema"),
+        (skill, "idc-lane-resolver skill"),
+    ]:
+        assert_true("fast" in text and "lite" in text and "complex" in text, f"{name} 必须声明三档 lane。")
+        assert_true("known-domain" in text and "d3a" in text and "gc" in text and "dynamic" in text, f"{name} 必须禁止把 domain/scenario/adapter 当 lane。")
+
     for block in extract_lane_fixture_blocks():
         fixture_id, signals, expected_lane, expected_rule = parse_lane_fixture(block)
         decision = lane_resolver_decision(signals)

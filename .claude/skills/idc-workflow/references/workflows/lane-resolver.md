@@ -15,13 +15,17 @@ needs_dependency_dag
 
 ## Lane
 
-V0 只有三种 Lane：
+V0 只有三种 Lane，且只能输出这三种值：
 
 | Lane | 含义 |
 |---|---|
 | `fast` | 简单明确、低风险、小范围任务 |
 | `lite` | 普通开发任务，范围可控，需要聚焦验证 |
 | `complex` | 复杂、高风险、跨模块或关键不确定任务 |
+
+禁止创建或推断第四种 Lane，例如 `known-domain`、`d3a`、`gc`、
+`dynamic`、`unknown`。这些都属于 Domain Module、scenario、或
+adapter routing，不属于 Lane。
 
 ## 决策顺序
 
@@ -92,3 +96,4 @@ lane_decision:
 - 不确定时升级：Fast -> Lite，Lite -> Complex。
 - 输出必须可解释，便于人 review。
 - 所有 Lane 都必须自闭环，Lane 只改变 evidence 深度。
+- 不允许把领域熟悉度、业务域、D3A、GC、Superpowers 或 adapter 当成 Lane。

@@ -121,7 +121,7 @@ TR3 可以帮助判断新增需求、霰弹式修改和 D3A 需求，但 TR3 不
 
 Lane 只表示执行强度，不表示领域。
 
-V0 只有三种 Lane：
+V0 只有三种 Lane，且只允许这三种输出：
 
 ```text
 fast
@@ -129,7 +129,8 @@ lite
 complex
 ```
 
-不再设置 `known-domain` lane。Known Domain 由 Domain Module 表达。
+不设置 `known-domain`、`d3a`、`gc`、`dynamic` 或 `unknown` lane。
+这些概念分别由 Domain Module Router、Scenario Router 或 Skill Adapter Router 表达。
 
 判断规则：
 

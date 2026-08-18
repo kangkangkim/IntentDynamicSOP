@@ -16,8 +16,10 @@ lane_decision:
   reasons: []
 
 rules:
+  - Allowed lane ids are exactly fast, lite, and complex.
   - Lane 只表示执行强度，不表示领域。
   - Domain Resolver 决定是否使用 D3A 或其他 Domain Module。
+  - 不允许输出 known-domain、d3a、gc、dynamic、unknown 或任何 registry 外 lane。
   - Lane Resolver 不读取 module 内部知识。
   - 命中 Complex hard trigger 时必须选择 complex。
   - 只有 Fast required conditions 全部满足时才能选择 fast。

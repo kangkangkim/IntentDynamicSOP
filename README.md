@@ -17,6 +17,8 @@ fast / lite / complex
 ```
 
 Domain Module 决定领域差异和 required contracts；Lane 只决定流程跑多重。
+IDC V0 只允许这三种 Lane，不设置 `known-domain`、`d3a`、`gc` 或
+`dynamic` lane。
 
 整体执行哲学：
 

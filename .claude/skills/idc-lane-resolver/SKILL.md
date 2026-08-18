@@ -7,6 +7,8 @@ description: Use inside /id-workflow after scenario/domain routing to choose fas
 
 Select execution intensity.
 
+IDC V0 lane ids are exactly `fast`, `lite`, and `complex`.
+
 ## When To Use
 
 Use after top-level route is known and before Contract Gate.
@@ -31,6 +33,7 @@ lane_decision:
 ## Hard Rules
 
 - Lane is intensity, not domain.
+- Do not invent fourth lane ids such as `known-domain`, `d3a`, `gc`, `dynamic`, or `unknown`.
 - Hard triggers force `complex`.
 - `fast` requires all fast conditions.
 - `fast` still requires verification evidence.

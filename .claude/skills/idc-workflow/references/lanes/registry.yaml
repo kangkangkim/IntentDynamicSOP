@@ -5,3 +5,9 @@ lanes:
     file: lanes/lite.yaml
   - id: complex
     file: lanes/complex.yaml
+
+invariants:
+  allowed_lane_ids: [fast, lite, complex]
+  no_implicit_lane_ids: true
+  default_lane: lite
+  meaning: Lane only represents execution intensity; domain familiarity belongs to Domain Module routing.
