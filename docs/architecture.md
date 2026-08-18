@@ -43,8 +43,9 @@ Execution Runtime
 
 ```text
 用户 Intent
-  -> Input Adapter / Intake
-  -> Intake Trigger Flow
+  -> Discovery
+  -> Intake / normalize inside Discovery
+  -> Discovery Trigger Flow
   -> 场景识别
   -> 需求清晰度判断
   -> 选择 Dynamic Scenario / Domain Module / General Coding fallback
@@ -57,7 +58,7 @@ Execution Runtime
   -> TDD / build verification
 ```
 
-整体用户输入分流图和 Intake Trigger Flow 见：
+整体用户输入分流图和 Discovery Trigger Flow 见：
 
 ```text
 docs/user-input-routing-overview.html

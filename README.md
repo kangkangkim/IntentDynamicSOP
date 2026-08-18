@@ -88,8 +88,8 @@ README.md
 - `docs/skillization-boundary.md`：看哪些内容应该 skill 化，哪些应该保持 reference。
 - `.claude/skills/idc-workflow/assets/README.md`：看不能 skill 化的内容如何按官方 skill 目录语义沉淀为 `references/` 或 `assets/`。
 - `docs/architecture-diagram.md`：看 Core + Domain Module 的架构图。
-- `docs/user-input-routing-overview.html`：看不同用户输入如何进入统一 Intake 并分流到前置对齐、Domain、Lane、adapter 和执行闭环。
-- `docs/intake-discovery-trigger-flow.html`：看 Intake 从左到右触发 Discovery / Brainstorming / Grill Me / Alignment / Execution 的条件。
+- `docs/user-input-routing-overview.html`：看不同用户输入如何先进入 Discovery，再分流到前置对齐、Domain、Lane、adapter 和执行闭环。
+- `docs/intake-discovery-trigger-flow.html`：看 Discovery 从左到右触发 Brainstorming / Grill Me / Alignment 的条件。
 - `docs/flow-d3a-general.html`：看从输入开始的 D3A / General 双路径 HTML 图。
 - `docs/context-runtime-view.html`：看 main agent / subagent 的运行时上下文占用变化。
 - `docs/confidential-migration-checklist.md`：看进入保密区后要填什么、先做哪条 vertical slice。
@@ -188,8 +188,8 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 - `docs/source-attribution.md`：公开方法论来源和 license attribution。
 - `docs/atomic-skills.md`：可复用原子 skill 列表和边界。
 - `docs/architecture-diagram.md`：Core + Domain Module 架构图。
-- `docs/user-input-routing-overview.html`：从不同用户输入开始的整体分流图。
-- `docs/intake-discovery-trigger-flow.html`：Intake 到 Execution 的左到右触发条件图。
+- `docs/user-input-routing-overview.html`：从不同用户输入开始的 Discovery-first 整体分流图。
+- `docs/intake-discovery-trigger-flow.html`：Discovery 到 Alignment 的左到右触发条件图。
 - `docs/flow-d3a-general.html`：D3A / General 双路径可视化 HTML。
 - `docs/context-runtime-view.html`：TR3 / 一句话输入下的上下文运行视角 HTML。
 - `docs/confidential-migration-checklist.md`：进入保密区前后的 checklist。

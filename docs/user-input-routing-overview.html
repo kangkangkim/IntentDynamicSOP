@@ -3,27 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>IDC User Input Routing Overview</title>
+  <title>IDC Discovery-First Routing Overview</title>
   <style>
     :root {
-      --bg: #f7f8fa;
+      --bg: #f6f7f9;
       --ink: #17202a;
-      --muted: #5e6b7b;
+      --muted: #607086;
       --line: #cfd7e3;
       --panel: #ffffff;
       --input: #1d5fbf;
       --input-soft: #eaf2ff;
-      --pre: #08745f;
-      --pre-soft: #e5f5f0;
-      --route: #91570f;
-      --route-soft: #fff0d8;
-      --domain: #6d28d9;
-      --domain-soft: #f1ebff;
-      --exec: #b42318;
-      --exec-soft: #fff0ed;
+      --discover: #0f766e;
+      --discover-soft: #e5f5f1;
+      --clarify: #91570f;
+      --clarify-soft: #fff0d8;
+      --route: #6d28d9;
+      --route-soft: #f2ecff;
+      --execute: #b42318;
+      --execute-soft: #fff0ed;
       --done: #475467;
       --done-soft: #eef1f4;
-      --shadow: 0 12px 28px rgba(23, 32, 42, 0.08);
+      --shadow: 0 10px 26px rgba(23, 32, 42, 0.08);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
@@ -37,7 +37,7 @@
     }
 
     main {
-      width: min(1500px, calc(100vw - 36px));
+      width: min(1460px, calc(100vw - 36px));
       margin: 0 auto;
       padding: 28px 0 44px;
     }
@@ -65,7 +65,7 @@
     }
 
     .subtitle {
-      max-width: 960px;
+      max-width: 900px;
       margin-top: 8px;
       font-size: 14px;
     }
@@ -93,25 +93,24 @@
     }
 
     .dot-input { background: var(--input); }
-    .dot-pre { background: var(--pre); }
+    .dot-discover { background: var(--discover); }
     .dot-route { background: var(--route); }
-    .dot-exec { background: var(--exec); }
+    .dot-execute { background: var(--execute); }
+
+    .viewport {
+      overflow-x: auto;
+    }
 
     .map {
+      min-width: 1360px;
       display: grid;
-      grid-template-columns: 230px 120px 210px 120px 255px 120px 255px 120px 220px;
-      gap: 0;
+      grid-template-columns: 230px 120px 230px 120px 250px 120px 250px 120px 230px;
       align-items: center;
-      min-width: 1420px;
       padding: 18px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--panel);
       box-shadow: var(--shadow);
-    }
-
-    .viewport {
-      overflow-x: auto;
     }
 
     .stack {
@@ -120,7 +119,7 @@
     }
 
     .node {
-      min-height: 86px;
+      min-height: 84px;
       padding: 12px;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -150,17 +149,16 @@
     }
 
     .input { border-color: #b9cff7; background: var(--input-soft); }
-    .pre { border-color: #bde0d6; background: var(--pre-soft); }
-    .route { border-color: #ebc998; background: var(--route-soft); }
-    .domain { border-color: #d6c3ff; background: var(--domain-soft); }
-    .exec { border-color: #f3c2bb; background: var(--exec-soft); }
+    .discover { border-color: #b7dfd6; background: var(--discover-soft); }
+    .clarify { border-color: #ebc998; background: var(--clarify-soft); }
+    .route { border-color: #d8c7ff; background: var(--route-soft); }
+    .execute { border-color: #f3c2bb; background: var(--execute-soft); }
     .done { border-color: #d7dde6; background: var(--done-soft); }
 
     .hub {
-      min-height: 402px;
+      min-height: 392px;
       display: grid;
       align-content: center;
-      text-align: center;
     }
 
     .hub strong {
@@ -169,14 +167,10 @@
 
     .edge {
       position: relative;
-      min-height: 402px;
+      min-height: 392px;
       display: grid;
-      align-items: center;
+      place-items: center;
       padding: 0 8px;
-    }
-
-    .edge.short {
-      min-height: 120px;
     }
 
     .edge::before {
@@ -204,7 +198,6 @@
       position: relative;
       z-index: 1;
       max-width: 112px;
-      margin: 0 auto;
       padding: 7px 8px;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -230,7 +223,7 @@
     }
 
     .panel {
-      min-height: 160px;
+      min-height: 164px;
       padding: 14px;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -260,11 +253,7 @@
         grid-template-columns: 1fr;
       }
 
-      .legend {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .matrix {
+      .legend, .matrix {
         grid-template-columns: 1fr;
       }
     }
@@ -274,14 +263,14 @@
   <main>
     <header class="page-head">
       <div>
-        <h1>IDC User Input Routing Overview</h1>
-        <p class="subtitle">不同用户输入先汇入统一 Intake，再根据输入成熟度、是否已批准、是否命中 Domain Module 和是否需要企业 adapter，触发后续路径。</p>
+        <h1>IDC Discovery-First Routing Overview</h1>
+        <p class="subtitle">不同用户输入先进入 Discovery。Discovery 内部完成 intake、normalize、maturity detection，然后再按触发条件分流到澄清、对齐、领域路由和执行闭环。</p>
       </div>
       <div class="legend" aria-label="legend">
         <span><i class="dot dot-input"></i>输入类型</span>
-        <span><i class="dot dot-pre"></i>前置对齐</span>
+        <span><i class="dot dot-discover"></i>Discovery first</span>
         <span><i class="dot dot-route"></i>路由判断</span>
-        <span><i class="dot dot-exec"></i>执行闭环</span>
+        <span><i class="dot dot-execute"></i>执行闭环</span>
       </div>
     </header>
 
@@ -307,44 +296,45 @@
         </div>
 
         <div class="edge">
-          <div class="trigger">all inputs<small>统一进入</small></div>
+          <div class="trigger">all inputs<small>先进入 Discovery</small></div>
         </div>
 
-        <article class="node input hub">
-          <strong>Intake</strong>
-          <span><code>/id-workflow</code></span>
+        <article class="node discover hub">
+          <strong>Discovery</strong>
+          <span>First visible capability node.</span>
           <ul>
-            <li>normalize request</li>
+            <li>intake / normalize</li>
+            <li>detect input type</li>
             <li>detect maturity</li>
-            <li>preserve input type</li>
+            <li>draft intent</li>
           </ul>
         </article>
 
         <div class="edge">
-          <div class="trigger">input type + maturity<small>选择前置路径</small></div>
+          <div class="trigger">maturity result<small>选择前置能力</small></div>
         </div>
 
         <div class="stack">
-          <article class="node pre">
-            <strong>Discovery</strong>
-            <span>Trigger: raw / vague / incomplete.</span>
-          </article>
-          <article class="node pre">
+          <article class="node clarify">
             <strong>Brainstorming</strong>
-            <span>Trigger: needs alternatives.</span>
+            <span>Trigger: raw idea needs alternatives.</span>
           </article>
-          <article class="node pre">
+          <article class="node clarify">
             <strong>Grill Me</strong>
-            <span>Trigger: contract / scope / gate gap.</span>
+            <span>Trigger: contract / scope / completion gap.</span>
           </article>
-          <article class="node pre">
+          <article class="node clarify">
             <strong>Grill With Docs</strong>
-            <span>Trigger: clarification must update docs.</span>
+            <span>Trigger: decisions must be recorded.</span>
+          </article>
+          <article class="node clarify">
+            <strong>Alignment</strong>
+            <span>Trigger: critical gaps closed.</span>
           </article>
         </div>
 
         <div class="edge">
-          <div class="trigger">ready for approval<small>无 critical gaps</small></div>
+          <div class="trigger">approved alignment<small>进入路由规划</small></div>
         </div>
 
         <div class="stack">
@@ -362,53 +352,38 @@
           </article>
           <article class="node route">
             <strong>Contract Gate</strong>
-            <span>Alignment Pack + required contracts.</span>
+            <span>Required contracts for selected route.</span>
           </article>
         </div>
 
         <div class="edge">
-          <div class="trigger">Human Alignment approved<small>未批准不执行</small></div>
+          <div class="trigger">executable plan<small>bounded unit</small></div>
         </div>
 
         <div class="stack">
-          <article class="node domain">
+          <article class="node execute">
             <strong>General Coding</strong>
             <span>Trigger: simple ordinary coding fallback.</span>
           </article>
-          <article class="node domain">
+          <article class="node execute">
             <strong>D3A Coding</strong>
             <span>Trigger: selected_domain = d3a.</span>
           </article>
-          <article class="node domain">
-            <strong>Team Domain</strong>
+          <article class="node execute">
+            <strong>Team Domain Coding</strong>
             <span>Trigger: selected registered team module.</span>
           </article>
-          <article class="node domain">
-            <strong>Adapter Router</strong>
-            <span>Trigger: GC / DT / build / Superpowers capability needed.</span>
+          <article class="node execute">
+            <strong>Skill Adapter Router</strong>
+            <span>Trigger: GC / DT / build / Superpowers ability needed.</span>
           </article>
-        </div>
-
-        <div class="edge">
-          <div class="trigger">bounded execution unit<small>证据驱动闭环</small></div>
-        </div>
-
-        <div class="stack">
-          <article class="node exec">
-            <strong>Execute</strong>
-            <span>Code / DT / build / targeted fix.</span>
-          </article>
-          <article class="node exec">
-            <strong>Verify</strong>
-            <span>RED / GREEN / checks / tran_build.</span>
+          <article class="node execute">
+            <strong>Execute + Verify</strong>
+            <span>Code / DT / RED / GREEN / tran_build.</span>
           </article>
           <article class="node done">
-            <strong>Completion View</strong>
-            <span>Trigger: required evidence PASS.</span>
-          </article>
-          <article class="node done">
-            <strong>Escalation View</strong>
-            <span>Trigger: blocker, missing binding, or failed evidence.</span>
+            <strong>Completion / Escalation</strong>
+            <span>Trigger: evidence PASS or blocker.</span>
           </article>
         </div>
       </div>
@@ -416,12 +391,12 @@
 
     <section class="matrix" aria-label="input trigger matrix">
       <article class="panel">
-        <h2>Input-Specific Triggers</h2>
+        <h2>Input Triggers</h2>
         <ul>
-          <li>Raw Idea -> Discovery, then Brainstorming if alternatives are needed.</li>
-          <li>Structured Request -> Grill Me only if critical contract fields are missing.</li>
-          <li>TR3 -> skip Discovery unless behavior cannot be identified.</li>
-          <li>Approved Pack / Resume -> skip pre-alignment and enter automated closure.</li>
+          <li>Raw Idea -> Discovery -> Brainstorming if alternatives are needed.</li>
+          <li>Structured Request -> Discovery -> Grill Me if critical fields are missing.</li>
+          <li>TR3 -> Discovery -> route directly when behavior is identifiable.</li>
+          <li>Approved Pack / Resume -> Discovery -> automated closure resume.</li>
         </ul>
       </article>
 
@@ -438,8 +413,8 @@
       <article class="panel">
         <h2>Execution Triggers</h2>
         <ul>
+          <li>Execution never starts before Alignment approval.</li>
           <li>GC / original repo ability needed -> Skill Adapter Router.</li>
-          <li>Company Brainstorming -> Team Binding.</li>
           <li>DT build / tran_build -> team adapter binding required.</li>
           <li>DONE -> only after evidence gate passes.</li>
         </ul>

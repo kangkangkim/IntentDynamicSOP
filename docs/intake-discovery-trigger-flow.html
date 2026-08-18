@@ -3,25 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>IDC Intake Trigger Flow</title>
+  <title>IDC Discovery Trigger Flow</title>
   <style>
     :root {
-      --bg: #f7f8fa;
+      --bg: #f6f7f9;
       --ink: #17202a;
-      --muted: #5e6b7b;
+      --muted: #607086;
       --line: #cfd7e3;
       --panel: #ffffff;
-      --intake: #1d5fbf;
-      --intake-soft: #eaf2ff;
-      --discover: #08745f;
-      --discover-soft: #e5f5f0;
-      --clarify: #91570f;
-      --clarify-soft: #fff0d8;
+      --discovery: #0f766e;
+      --discovery-soft: #e5f5f1;
+      --brainstorm: #1d5fbf;
+      --brainstorm-soft: #eaf2ff;
+      --grill: #91570f;
+      --grill-soft: #fff0d8;
       --align: #6d28d9;
-      --align-soft: #f1ebff;
+      --align-soft: #f2ecff;
       --execute: #b42318;
       --execute-soft: #fff0ed;
-      --shadow: 0 12px 28px rgba(23, 32, 42, 0.08);
+      --shadow: 0 10px 26px rgba(23, 32, 42, 0.08);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
@@ -35,14 +35,14 @@
     }
 
     main {
-      width: min(1480px, calc(100vw - 36px));
+      width: min(1320px, calc(100vw - 36px));
       margin: 0 auto;
       padding: 28px 0 44px;
     }
 
-    h1, h2, h3, p { margin: 0; }
+    h1, h2, p { margin: 0; }
     h1 { font-size: 30px; letter-spacing: 0; }
-    h2 { font-size: 17px; letter-spacing: 0; }
+    h2 { font-size: 16px; letter-spacing: 0; }
     p, li { color: var(--muted); font-size: 13px; }
 
     code {
@@ -62,7 +62,7 @@
     }
 
     .subtitle {
-      max-width: 920px;
+      max-width: 860px;
       margin-top: 8px;
       font-size: 14px;
     }
@@ -89,9 +89,9 @@
       vertical-align: 0;
     }
 
-    .dot-intake { background: var(--intake); }
-    .dot-discover { background: var(--discover); }
-    .dot-clarify { background: var(--clarify); }
+    .dot-discovery { background: var(--discovery); }
+    .dot-brainstorm { background: var(--brainstorm); }
+    .dot-grill { background: var(--grill); }
     .dot-align { background: var(--align); }
 
     .board {
@@ -104,14 +104,14 @@
     }
 
     .flow {
-      min-width: 1180px;
+      min-width: 1120px;
       display: grid;
-      grid-template-columns: 155px 138px 165px 138px 190px 138px 190px 138px 190px 138px 165px 138px 185px;
+      grid-template-columns: 190px 135px 185px 135px 185px 135px 185px 135px 170px;
       align-items: center;
     }
 
     .node {
-      min-height: 128px;
+      min-height: 142px;
       padding: 14px;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -136,19 +136,19 @@
     }
 
     .node li {
-      margin: 2px 0;
+      margin: 3px 0;
       font-size: 12px;
     }
 
-    .intake { border-color: #b9cff7; background: var(--intake-soft); }
-    .discover { border-color: #bde0d6; background: var(--discover-soft); }
-    .clarify { border-color: #ebc998; background: var(--clarify-soft); }
-    .align { border-color: #d6c3ff; background: var(--align-soft); }
+    .discovery { border-color: #b7dfd6; background: var(--discovery-soft); }
+    .brainstorm { border-color: #b9cff7; background: var(--brainstorm-soft); }
+    .grill { border-color: #ebc998; background: var(--grill-soft); }
+    .align { border-color: #d8c7ff; background: var(--align-soft); }
     .execute { border-color: #f3c2bb; background: var(--execute-soft); }
 
     .edge {
       position: relative;
-      min-height: 128px;
+      min-height: 142px;
       display: grid;
       place-items: center;
       padding: 0 8px;
@@ -173,13 +173,12 @@
       border-top: 2px solid var(--line);
       border-right: 2px solid var(--line);
       transform: rotate(45deg);
-      background: transparent;
     }
 
     .trigger {
       position: relative;
       z-index: 1;
-      max-width: 128px;
+      max-width: 124px;
       padding: 7px 8px;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -197,7 +196,7 @@
       font-size: 10px;
     }
 
-    .lanes {
+    .rules {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
@@ -205,7 +204,7 @@
     }
 
     .panel {
-      min-height: 168px;
+      min-height: 154px;
       padding: 14px;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -228,9 +227,9 @@
     .rule {
       margin-top: 14px;
       padding: 14px;
-      border: 1px solid #b9cff7;
+      border: 1px solid #b7dfd6;
       border-radius: 8px;
-      background: #eef5ff;
+      background: #edf8f5;
     }
 
     .rule strong {
@@ -249,12 +248,7 @@
         grid-template-columns: 1fr;
       }
 
-      .legend {
-        grid-template-columns: 1fr 1fr;
-        width: 100%;
-      }
-
-      .lanes {
+      .legend, .rules {
         grid-template-columns: 1fr;
       }
     }
@@ -264,51 +258,37 @@
   <main>
     <header class="page-head">
       <div>
-        <h1>IDC Intake Trigger Flow</h1>
-        <p class="subtitle">从用户输入开始，所有前置能力按从左到右的成熟度推进；每条线都以明确触发条件进入下一步。</p>
+        <h1>IDC Discovery Trigger Flow</h1>
+        <p class="subtitle">Discovery 是第一个显性能力节点；Intake / normalize / maturity detection 是 Discovery 内部动作。后续能力从左到右按明确触发条件推进。</p>
       </div>
       <div class="legend" aria-label="legend">
-        <span><i class="dot dot-intake"></i>输入归一</span>
-        <span><i class="dot dot-discover"></i>发散探索</span>
-        <span><i class="dot dot-clarify"></i>澄清收敛</span>
+        <span><i class="dot dot-discovery"></i>Discovery first</span>
+        <span><i class="dot dot-brainstorm"></i>发散探索</span>
+        <span><i class="dot dot-grill"></i>澄清收敛</span>
         <span><i class="dot dot-align"></i>确认执行</span>
       </div>
     </header>
 
-    <section class="board" aria-label="left to right trigger flow">
+    <section class="board" aria-label="discovery first trigger flow">
       <div class="flow">
-        <article class="node intake">
-          <strong>Intake</strong>
-          <span><code>/id-workflow</code> receives any user input.</span>
-          <ul>
-            <li>raw idea</li>
-            <li>structured request</li>
-            <li>TR3</li>
-            <li>resume checkpoint</li>
-          </ul>
-        </article>
-
-        <div class="edge">
-          <div class="trigger">raw / vague / incomplete<small>目标、行为或验收不清</small></div>
-        </div>
-
-        <article class="node discover">
+        <article class="node discovery">
           <strong>Discovery</strong>
-          <span>Normalize rough intent into a draft direction.</span>
+          <span>First visible step for <code>/id-workflow</code>.</span>
           <ul>
-            <li>input_maturity</li>
-            <li>candidate route</li>
+            <li>normalize input</li>
+            <li>detect maturity</li>
+            <li>preserve input type</li>
             <li>draft spec seed</li>
           </ul>
         </article>
 
         <div class="edge">
-          <div class="trigger">needs alternatives<small>还不知道选哪条方案</small></div>
+          <div class="trigger">needs alternatives<small>raw / vague / incomplete</small></div>
         </div>
 
-        <article class="node discover">
+        <article class="node brainstorm">
           <strong>Brainstorming</strong>
-          <span>Use team binding if available; otherwise shared fallback.</span>
+          <span>Use company binding if available; otherwise shared fallback.</span>
           <ul>
             <li>2-3 approaches</li>
             <li>trade-offs</li>
@@ -320,7 +300,7 @@
           <div class="trigger">direction chosen<small>仍缺 contract / scope / gate</small></div>
         </div>
 
-        <article class="node clarify">
+        <article class="node grill">
           <strong>Grill Me</strong>
           <span>Ask bounded frontier-round question cards.</span>
           <ul>
@@ -334,7 +314,7 @@
           <div class="trigger">docs needed<small>需要沉淀决策记录</small></div>
         </div>
 
-        <article class="node clarify">
+        <article class="node grill">
           <strong>Grill With Docs</strong>
           <span>Clarify while updating non-sensitive docs.</span>
           <ul>
@@ -357,31 +337,16 @@
             <li>evidence plan</li>
           </ul>
         </article>
-
-        <div class="edge">
-          <div class="trigger">user approved<small>未 approve 不执行</small></div>
-        </div>
-
-        <article class="node execute">
-          <strong>Execution</strong>
-          <span>Run domain workflow with evidence gates.</span>
-          <ul>
-            <li>General / D3A</li>
-            <li>adapters</li>
-            <li>RED / GREEN / build</li>
-          </ul>
-        </article>
       </div>
     </section>
 
-    <section class="lanes" aria-label="trigger details">
+    <section class="rules" aria-label="trigger details">
       <article class="panel">
         <h2>Skip Rules</h2>
         <ul>
-          <li>Short but structured input skips Brainstorming.</li>
-          <li>TR3 skips Discovery unless too incomplete to identify behavior.</li>
-          <li>Approved Alignment Pack resumes at automated closure.</li>
-          <li>Execution adapters never run before user approval.</li>
+          <li>Structured input can skip Brainstorming.</li>
+          <li>TR3 skips Brainstorming unless behavior is unclear.</li>
+          <li>Approved Pack / Resume skips pre-alignment.</li>
         </ul>
       </article>
 
@@ -389,7 +354,6 @@
         <h2>Provider Choice</h2>
         <ul>
           <li>Company Brainstorming triggers through Team Binding.</li>
-          <li>Shared Brainstorming fallback keeps the same draft spec shape.</li>
           <li>Grill Me is built into this project.</li>
           <li>Grill With Docs runs only when docs should be updated.</li>
         </ul>
@@ -398,9 +362,9 @@
       <article class="panel">
         <h2>Execution Entry</h2>
         <ul>
-          <li>Alignment must be approved.</li>
-          <li>Domain and Lane must be selected.</li>
-          <li>Required contracts must exist.</li>
+          <li>Execution is not part of Discovery.</li>
+          <li>user approved is required before Execution.</li>
+          <li>Alignment must be approved first.</li>
           <li>Completion must use tool evidence, not confidence.</li>
         </ul>
       </article>
@@ -408,7 +372,7 @@
 
     <section class="rule">
       <strong>Core rule</strong>
-      <p>不成熟输入只触发 Discovery、Brainstorming、Grill Me 或 Grill With Docs；只有 Alignment 被用户 approve 后，才进入 General / D3A / GC / DT / build 执行。</p>
+      <p>Discovery 先把输入变成可判断的 draft intent；只有关键缺口关闭并完成 Alignment approval 后，才进入 General / D3A / GC / DT / build 执行。</p>
     </section>
   </main>
 </body>

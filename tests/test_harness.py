@@ -942,8 +942,9 @@ def test_adoption_and_deep_dive_docs_exist():
     ]:
         assert_true(fragment in context_html, f"Context Runtime HTML 图缺少关键节点：{fragment}")
     for fragment in [
-        "IDC Intake Trigger Flow",
-        "Intake",
+        "IDC Discovery Trigger Flow",
+        "Discovery 是第一个显性能力节点",
+        "Intake / normalize / maturity detection 是 Discovery 内部动作",
         "Discovery",
         "Brainstorming",
         "Grill Me",
@@ -957,16 +958,17 @@ def test_adoption_and_deep_dive_docs_exist():
         "critical gaps closed",
         "user approved",
         "Company Brainstorming triggers through Team Binding",
-        "Execution adapters never run before user approval",
+        "Execution is not part of Discovery",
     ]:
         assert_true(fragment in intake_html, f"Intake Trigger HTML 图缺少关键节点或触发条件：{fragment}")
     for fragment in [
-        "IDC User Input Routing Overview",
+        "IDC Discovery-First Routing Overview",
         "Raw Idea",
         "Structured Request",
         "TR3 Design Doc",
         "Approved Pack / Resume",
-        "Intake",
+        "First visible capability node",
+        "intake / normalize",
         "Discovery",
         "Brainstorming",
         "Grill Me",
@@ -979,11 +981,10 @@ def test_adoption_and_deep_dive_docs_exist():
         "D3A Coding",
         "Team Domain",
         "Adapter Router",
-        "Human Alignment approved",
-        "bounded execution unit",
-        "Completion View",
-        "Escalation View",
-        "Input-Specific Triggers",
+        "approved alignment",
+        "executable plan",
+        "Completion / Escalation",
+        "Input Triggers",
         "Routing Triggers",
         "Execution Triggers",
     ]:
