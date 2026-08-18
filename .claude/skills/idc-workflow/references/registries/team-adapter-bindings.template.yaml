@@ -1,0 +1,64 @@
+team_adapter_bindings:
+  description: >
+    Non-sensitive template for team-owned adapter bindings. Copy this file into
+    a confidential team location and replace placeholders there. Do not put real
+    enterprise paths, commands, logs, APIs, or skill names in the shared harness.
+
+  ownership:
+    shared_harness:
+      owns:
+        - adapter ids
+        - capability keys
+        - allowed stages
+        - required contracts
+        - override boundaries
+    adopting_team:
+      owns:
+        - concrete repository paths
+        - concrete commands
+        - concrete internal skill references
+        - evidence parser references
+        - pass/fail detection rules
+
+bindings:
+  - adapter_id: idc-dt-design
+    team_id: <TEAM_ID>
+    internal_skill_ref: <ENTERPRISE_ORIGINAL_REPO_SKILL_REF>
+    input_contract_ref: <ENTERPRISE_DT_DESIGN_INPUT_CONTRACT_REF>
+    output_contract_ref: <ENTERPRISE_DT_DESIGN_OUTPUT_CONTRACT_REF>
+    allowed_paths:
+      - <ENTERPRISE_REPO_PATH>
+    evidence_parser_ref: <ENTERPRISE_EVIDENCE_PARSER_REF>
+
+  - adapter_id: idc-dt-writer
+    team_id: <TEAM_ID>
+    internal_skill_ref: <ENTERPRISE_ORIGINAL_REPO_SKILL_REF>
+    input_contract_ref: <ENTERPRISE_DT_WRITER_INPUT_CONTRACT_REF>
+    output_contract_ref: <ENTERPRISE_DT_WRITER_OUTPUT_CONTRACT_REF>
+    allowed_paths:
+      - <ENTERPRISE_REPO_PATH>
+    evidence_parser_ref: <ENTERPRISE_EVIDENCE_PARSER_REF>
+
+  - adapter_id: idc-dt-build
+    team_id: <TEAM_ID>
+    working_directory: <ENTERPRISE_REPO_PATH>
+    build_command: <ENTERPRISE_DT_BUILD_COMMAND>
+    run_command: <ENTERPRISE_DT_RUN_COMMAND>
+    allowed_dt_domains:
+      - TPRINT
+      - FW
+      - DPF
+    evidence_parser_ref: <ENTERPRISE_EVIDENCE_PARSER_REF>
+
+  - adapter_id: idc-tran-build
+    team_id: <TEAM_ID>
+    working_directory: <ENTERPRISE_REPO_PATH>
+    command: <ENTERPRISE_TRAN_BUILD_COMMAND>
+    pass_condition_ref: <ENTERPRISE_TRAN_BUILD_PASS_CONDITION_REF>
+    evidence_parser_ref: <ENTERPRISE_EVIDENCE_PARSER_REF>
+
+rules:
+  - The shared adapter registry decides whether an adapter is eligible.
+  - The team adapter binding decides how the eligible adapter is executed.
+  - A team may maintain its binding in a separate confidential repository.
+  - Missing binding must return NEEDS_ADAPTER_MAPPING, not fall back to guessing.

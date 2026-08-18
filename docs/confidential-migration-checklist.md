@@ -31,7 +31,10 @@
 - 真实 build error 到 responsible layer 的分析规则。
 - 真实 GC 全家桶 SOP atomic ability mapping。
 - 真实原代码仓 skill contract：`idc-dt-design`、`idc-dt-writer`、`<ENTERPRISE_GC_THIRD_SKILL_NAME>`。
-- 真实 GC / DT adapter mapping：填入 `.claude/skills/idc-workflow/references/registries/skill-adapters.yaml` 中的 confidential mapping refs。
+- 真实 GC / DT adapter binding：基于 `.claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml` 在保密区填写团队自己的 binding。
+
+公共 `.claude/skills/idc-workflow/references/registries/skill-adapters.yaml`
+只作为 adapter eligibility registry，不放任何团队真实路径、命令或内部 skill 名。
 
 ## 入区前检查
 

@@ -13,6 +13,7 @@ skill_adapter:
   source:
     kind: external_public | enterprise_gc_sop | original_enterprise_repo_skill
     ref: string
+  binding_ref: string
   capability_keys: []
   allowed_stages: []
   entry_conditions: []
@@ -40,13 +41,17 @@ adapter_registry:
     - selected_lane
     - required_contract_refs
     - confidential_mapping_refs
+    - team_adapter_binding_ref
   no_match_result: NEEDS_ADAPTER_MAPPING
+  team_binding_template: .claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml
 
 rules:
   - Skill adapters live under `.claude/skills/`.
   - Skill Adapter Router must select adapters from the adapter_registry, not by name guessing.
   - Adapter matching uses capability_keys, allowed_stages, requires, and blocks_when.
   - If no registry row matches, return NEEDS_ADAPTER_MAPPING.
+  - Shared registry rows decide adapter eligibility; team adapter bindings decide concrete execution.
+  - Confidential-only adapters must provide a team_adapter_binding_ref before execution.
   - Skill adapters must not contain real enterprise paths, APIs, commands, logs, tests, or implementation facts in the external harness.
   - Skill adapters are called only after IDC routing has selected the workflow stage.
   - Skill adapters cannot choose Domain, Lane, Contract Gate, or Completion Gate.
@@ -59,6 +64,7 @@ example:
     source:
       kind: original_enterprise_repo_skill
       ref: <ENTERPRISE_ORIGINAL_REPO_SKILL_REF>
+    binding_ref: <TEAM_ADAPTER_BINDING_REF>
     capability_keys:
       - dt_design
       - test_design

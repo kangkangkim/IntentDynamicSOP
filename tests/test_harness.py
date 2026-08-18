@@ -288,22 +288,43 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "id: idc-gc-sop-adapter",
         "id: idc-dt-design",
         "id: idc-dt-writer",
+        "id: idc-dt-build",
+        "id: idc-tran-build",
         "id: idc-gc-third-skill-placeholder",
         "capability_keys:",
         "allowed_stages:",
         "confidential_gc_mapping_ref",
         "confidential_original_repo_skill_ref",
+        "team_adapter_binding_ref",
+        "binding_ref: <TEAM_ADAPTER_BINDING_REF>",
         "executable: false",
         "Adapter selection is registry-driven, not name-driven.",
         "NEEDS_ADAPTER_MAPPING",
     ]:
         assert_true(fragment in adapter_registry, f"Skill Adapter registry 缺少：{fragment}")
 
+    team_binding_template = read_text(".claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml")
+    for fragment in [
+        "team_adapter_bindings:",
+        "adapter_id: idc-dt-design",
+        "adapter_id: idc-dt-writer",
+        "adapter_id: idc-dt-build",
+        "adapter_id: idc-tran-build",
+        "team_id: <TEAM_ID>",
+        "working_directory: <ENTERPRISE_REPO_PATH>",
+        "build_command: <ENTERPRISE_DT_BUILD_COMMAND>",
+        "run_command: <ENTERPRISE_DT_RUN_COMMAND>",
+        "command: <ENTERPRISE_TRAN_BUILD_COMMAND>",
+        "Missing binding must return NEEDS_ADAPTER_MAPPING",
+    ]:
+        assert_true(fragment in team_binding_template, f"Team adapter binding template 缺少：{fragment}")
+
     assert_true("references/workflows/skill-adapter-router.md" in id_workflow, "idc-workflow 必须加载 Skill Adapter Router。")
     assert_true("references/schemas/skill-adapter.schema.yaml" in id_workflow, "idc-workflow 必须加载 Skill Adapter schema。")
     assert_true("references/registries/skill-adapters.yaml" in id_workflow, "idc-workflow 必须加载 Skill Adapter registry。")
     assert_true("Dynamic Scenario Coding" in README, "README 必须把 Dynamic Scenario 作为顶层路径。")
     assert_true("Skill Adapter registry" in README, "README 必须记录 Skill Adapter registry。")
+    assert_true("team-adapter-bindings.template.yaml" in README, "README 必须记录多团队 adapter binding 模板。")
     assert_true("D3A 是当前第一个自定义 active module" in README, "README 必须声明 D3A 是自定义 module。")
     assert_true("动态分流的 Intent-Driven Coding 框架" in architecture, "architecture 必须声明动态分流框架定位。")
     assert_true("Dynamic Scenario Mode" in architecture, "architecture 必须包含 Dynamic Scenario Mode。")

@@ -36,11 +36,24 @@ references/domains/template-domain/
 references/domains/registry.yaml
 references/registries/general-components.yaml
 references/registries/general-test-domains.yaml
+references/registries/team-adapter-bindings.template.yaml
 CONTEXT_ENGINEERING.md
 references/workflows/provider-selection-matrix.md
 references/workflows/repo-context-providers.md
 assets/README.md
 ```
+
+For multi-team reuse, do not put concrete team paths or commands into the shared
+adapter registry. Keep `references/registries/skill-adapters.yaml` as the common
+eligibility table, and let each adopting team provide a confidential
+`team_adapter_binding_ref` based on:
+
+```text
+references/registries/team-adapter-bindings.template.yaml
+```
+
+The shared registry answers "which adapter may run here"; the team binding
+answers "where and how this team runs it".
 
 ## What D3A Teams Fill In Confidentially
 
@@ -51,6 +64,7 @@ references/registries/d3a-layers.yaml
 references/registries/dt-domains.yaml
 references/domains/d3a/module.yaml
 references/workflows/d3a-workflow.md
+references/registries/team-adapter-bindings.template.yaml
 ```
 
 Keep the fixed D3A Coding Layer names:
