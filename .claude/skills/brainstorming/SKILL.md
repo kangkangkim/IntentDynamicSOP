@@ -33,10 +33,10 @@ Do not use by default for:
 ## Required Inputs
 
 ```text
-../id-workflow/references/workflows/discovery-provider.md
-../id-workflow/references/schemas/discovery-provider.schema.yaml
-../id-workflow/references/human-views/brainstorming-view.md
-../id-workflow/references/schemas/normalized-request.schema.yaml
+../idc-workflow/references/workflows/discovery-provider.md
+../idc-workflow/references/schemas/discovery-provider.schema.yaml
+../idc-workflow/references/human-views/brainstorming-view.md
+../idc-workflow/references/schemas/normalized-request.schema.yaml
 ```
 
 ## Behavior
@@ -49,7 +49,7 @@ raw_idea
   -> Offer 2-3 approaches if there are real design branches
   -> Produce draft spec
   -> Render Brainstorming View
-  -> Hand off to intent-grilling / intent-alignment when ready
+  -> Hand off to idc-intent-grilling / idc-intent-alignment when ready
 ```
 
 ## Output
@@ -70,10 +70,10 @@ The draft spec must include:
 When this skill is used inside IDC, hand off to:
 
 ```text
-.claude/skills/intent-discovery/SKILL.md
+.claude/skills/idc-intent-discovery/SKILL.md
 ```
 
-`intent-discovery` owns IDC-specific routing, normalized request updates, and the transition to Grill Me / Alignment.
+`idc-intent-discovery` owns IDC-specific routing, normalized request updates, and the transition to Grill Me / Alignment.
 
 ## Hard Rules
 

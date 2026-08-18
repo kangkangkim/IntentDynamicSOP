@@ -29,6 +29,8 @@
 - 真实 repository path。
 - 真实 CodeGraph / Wiki / grep / repository search provider。
 - 真实 build error 到 responsible layer 的分析规则。
+- 真实 GC 全家桶 SOP atomic ability mapping。
+- 真实原代码仓 skill contract：`dt-design`、`dt-writer`、`<ENTERPRISE_GC_THIRD_SKILL_NAME>`。
 
 ## 入区前检查
 
@@ -51,17 +53,33 @@ python3 tests/test_harness.py
 
 不要一上来填所有 Layer。
 
+先跑 Vertical Slice Readiness Gate：
+
+```text
+.claude/skills/idc-workflow/references/workflows/vertical-slice-readiness-gate.md
+.claude/skills/idc-workflow/references/schemas/vertical-slice-readiness.schema.yaml
+```
+
 第一轮建议只做一条最小闭环：
 
 1. 填一个 Layer knowledge 文件。
 2. 填一个 DT Domain knowledge 文件。
 3. 替换一个 mock context provider 为真实 repo search。
-4. 跑出一条真实 RED evidence。
-5. 跑出一条真实 GREEN evidence。
-6. 跑一次真实 `tran_build`。
-7. 如果失败，把错误交给 `build-error-analyzer` 生成 targeted fix task。
+4. 如果需要 DT 设计，先通过 `gc-sop-adapter -> dt-design` 产出 DT design ref。
+5. 如果需要 DT 编写，再通过 `gc-sop-adapter -> dt-writer` 产出 DT change 和 RED/GREEN evidence refs。
+6. 跑出一条真实 RED evidence。
+7. 跑出一条真实 GREEN evidence。
+8. 跑一次真实 `tran_build`。
+9. 如果失败，把错误交给 `build-error-analyzer` 生成 targeted fix task。
 
 目标是先证明 workflow 闭环成立，再逐步扩展到更多 Layer / DT Domain。
+
+Readiness Gate 只能证明真实绑定已经足够启动执行，不能替代：
+
+- RED evidence。
+- GREEN evidence。
+- `tran_build` PASS evidence。
+- Completion Summary。
 
 ## 入区后不要做的事
 

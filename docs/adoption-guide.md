@@ -31,13 +31,13 @@
 复制模板：
 
 ```text
-.claude/skills/id-workflow/references/domains/template-domain/
+.claude/skills/idc-workflow/references/domains/template-domain/
 ```
 
 新建：
 
 ```text
-.claude/skills/id-workflow/references/domains/<team-domain>/
+.claude/skills/idc-workflow/references/domains/<team-domain>/
 ```
 
 至少提供：
@@ -54,7 +54,7 @@ examples/
 注册到：
 
 ```text
-.claude/skills/id-workflow/references/domains/registry.yaml
+.claude/skills/idc-workflow/references/domains/registry.yaml
 ```
 
 示例：
@@ -62,7 +62,7 @@ examples/
 ```yaml
 domain_modules:
   - id: payment
-    module_file: .claude/skills/id-workflow/references/domains/payment/module.yaml
+    module_file: .claude/skills/idc-workflow/references/domains/payment/module.yaml
     status: active
 ```
 
@@ -91,7 +91,7 @@ domain_modules:
 
 ## 第一周落地建议
 
-1. 复制 `.claude/skills/id-workflow/references/domains/template-domain/`。
+1. 复制 `.claude/skills/idc-workflow/references/domains/template-domain/`。
 2. 填 2-3 个 Layer placeholder。
 3. 填 1-2 个 Test Domain placeholder。
 4. 写一个 mock TR3。

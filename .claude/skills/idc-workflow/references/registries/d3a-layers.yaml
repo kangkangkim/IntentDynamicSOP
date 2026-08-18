@@ -1,0 +1,15 @@
+layers:
+  - id: TRAN_CFG
+    knowledge_file: .claude/skills/idc-workflow/references/knowledge/d3a/layers/TRAN_CFG.md
+  - id: DO
+    knowledge_file: .claude/skills/idc-workflow/references/knowledge/d3a/layers/DO.md
+  - id: VISP_ADP
+    knowledge_file: .claude/skills/idc-workflow/references/knowledge/d3a/layers/VISP_ADP.md
+  - id: TFC_TFI
+    knowledge_file: .claude/skills/idc-workflow/references/knowledge/d3a/layers/TFC_TFI.md
+  - id: TFE
+    knowledge_file: .claude/skills/idc-workflow/references/knowledge/d3a/layers/TFE.md
+  - id: ADP
+    knowledge_file: .claude/skills/idc-workflow/references/knowledge/d3a/layers/ADP.md
+  - id: DRV
+    knowledge_file: .claude/skills/idc-workflow/references/knowledge/d3a/layers/DRV.md

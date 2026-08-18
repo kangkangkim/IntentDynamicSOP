@@ -5,7 +5,7 @@ Domain Module 是 IDC 的可插拔领域模块。
 D3A 不应该是 IDC Core 的一部分，而应该是第一个 Domain Module。其他团队复制这套 SOP 时，不需要改 core，只需要新增自己的模块：
 
 ```text
-.claude/skills/id-workflow/references/domains/<team-domain>/module.yaml
+.claude/skills/idc-workflow/references/domains/<team-domain>/module.yaml
 ```
 
 ## Core 和 Module 的边界
@@ -36,7 +36,7 @@ Domain Module 负责：
 新增一个目录：
 
 ```text
-.claude/skills/id-workflow/references/domains/<team-domain>/
+.claude/skills/idc-workflow/references/domains/<team-domain>/
 ```
 
 至少提供：
@@ -53,7 +53,7 @@ examples/
 然后在：
 
 ```text
-.claude/skills/id-workflow/references/domains/registry.yaml
+.claude/skills/idc-workflow/references/domains/registry.yaml
 ```
 
 注册：
@@ -61,7 +61,7 @@ examples/
 ```yaml
 domain_modules:
   - id: <team-domain>
-    module_file: .claude/skills/id-workflow/references/domains/<team-domain>/module.yaml
+    module_file: .claude/skills/idc-workflow/references/domains/<team-domain>/module.yaml
     status: active
 ```
 
@@ -70,16 +70,16 @@ domain_modules:
 当前 D3A 是一个 active module：
 
 ```text
-.claude/skills/id-workflow/references/domains/d3a/module.yaml
+.claude/skills/idc-workflow/references/domains/d3a/module.yaml
 ```
 
 它引用现有资产：
 
 ```text
-.claude/skills/id-workflow/references/registries/d3a-layers.yaml
-.claude/skills/id-workflow/references/registries/dt-domains.yaml
-.claude/skills/id-workflow/references/workflows/d3a-workflow.md
-.claude/skills/id-workflow/references/knowledge/d3a/
+.claude/skills/idc-workflow/references/registries/d3a-layers.yaml
+.claude/skills/idc-workflow/references/registries/dt-domains.yaml
+.claude/skills/idc-workflow/references/workflows/d3a-workflow.md
+.claude/skills/idc-workflow/references/knowledge/d3a/
 .claude/agents/
 .claude/skills/
 examples/mock-d3a-task/

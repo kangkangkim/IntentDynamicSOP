@@ -4,10 +4,11 @@ Intent Dynamic Code 是一个非敏感的企业 Coding 工作流骨架。
 
 它的目标不是在外部环境实现真实企业 D3A，而是先把一套可迁移、可验证、可填充的工作流骨架准备好。进入公司保密区后，再把真实代码知识、测试知识和构建命令绑定进去。
 
-## 两条顶层路径
+## 顶层路径
 
-- **Domain Module Coding**：通过可插拔 Domain Module 进入领域工作流。D3A 是当前第一个 active module。
-- **General Coding**：预留给非 D3A 的普通开发任务，未来根据复杂度、不确定性、风险和可测试性动态编排。
+- **Dynamic Scenario Coding**：不绑定固定领域模块，按复杂度、不确定性、风险和可测试性动态编排。
+- **Domain Module Coding**：通过可插拔 Domain Module 进入领域工作流。D3A 是当前第一个自定义 active module。
+- **General Coding Fallback**：保留给简单普通 coding 任务。
 
 同时，执行强度由 Lane 决定：
 
@@ -27,20 +28,32 @@ Domain Module 决定领域差异和 required contracts；Lane 只决定流程跑
 
 V0 重点完成 D3A workflow 结构、contract、subagent prompt、skill 接口、mock demo 和确定性的验证 gate。
 
+当前框架目标不是把 D3A 写进 Core，而是先形成：
+
+```text
+动态场景分流框架
++ 自定义 Domain Module
++ 可复用企业 SOP / 原仓 skill adapter
+```
+
 ## 怎么看这个仓库
 
 优先看这三个入口：
 
 ```text
 README.md
+  -> .claude/commands/id-workflow.md
   -> docs/architecture.md
   -> docs/adoption-guide.md
 ```
 
 - `README.md`：看当前完成了什么、目录怎么组织、怎么验证。
+- `.claude/commands/id-workflow.md`：用户侧统一 `/id-workflow` 入口。
 - `docs/architecture.md`：看整体架构和 D3A / General Coding 的关系。
 - `docs/adoption-guide.md`：看其他团队如何复制 SOP。
 - `docs/atomic-skills.md`：看哪些能力已经拆成可复用原子 skill。
+- `docs/skillization-boundary.md`：看哪些内容应该 skill 化，哪些应该保持 reference。
+- `.claude/skills/idc-workflow/assets/README.md`：看不能 skill 化的内容如何按官方 skill 目录语义沉淀为 `references/` 或 `assets/`。
 - `docs/architecture-diagram.md`：看 Core + Domain Module 的架构图。
 - `docs/flow-d3a-general.html`：看从输入开始的 D3A / General 双路径 HTML 图。
 - `docs/context-runtime-view.html`：看 main agent / subagent 的运行时上下文占用变化。
@@ -71,7 +84,7 @@ docs/deep-dive/
 D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 
 ```text
-.claude/skills/id-workflow/references/.claude/skills/id-workflow/references/domains/d3a/module.yaml
+.claude/skills/idc-workflow/references/domains/d3a/module.yaml
 ```
 
 ```text
@@ -104,30 +117,37 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 
 ## V0 已完成资产
 
-- `.claude/skills/id-workflow/SKILL.md`：Claude Code 项目级总入口 skill。
-- `.claude/skills/id-workflow/TEAM_CUSTOMIZATION.md`：其他团队接入时优先看的修改指南。
-- `.claude/skills/id-workflow/references/workflows/`：Scenario Router、Input Adapter、Lane Resolver、Contract Gate、Human Alignment、Automated Closure Loop 等运行时规则。
-- `.claude/skills/id-workflow/references/schemas/`：Alignment Pack、Escalation、Execution Unit、D3A Plan、General Plan 等机器 contract。
-- `.claude/skills/id-workflow/references/domains/`：Domain Module registry、D3A module、General module、团队模板 module。
-- `.claude/skills/id-workflow/references/registries/`：固定 D3A Layer、DT Domain、General placeholder taxonomy。
-- `.claude/skills/id-workflow/references/lanes/`：fast / lite / complex 三种执行强度定义。
-- `.claude/skills/id-workflow/references/human-views/`：给用户看的中文 Brainstorming / Clarification / Alignment / Completion / Escalation 模板。
-- `.claude/skills/id-workflow/references/constraints/`：decision / planning / execution 三段式约束。
-- `.claude/skills/id-workflow/references/knowledge/`：D3A Layer、DT Domain、General placeholder knowledge 模板。
+- `.claude/skills/idc-workflow/SKILL.md`：Claude Code 项目级总入口 skill。
+- `.claude/commands/id-workflow.md`：统一 slash command 入口，负责把用户输入交给 `idc-workflow`。
+- `.claude/skills/idc-input-adapter/SKILL.md`、`idc-scenario-router`、`idc-domain-module-router`、`idc-lane-resolver`、`idc-contract-gate`、`idc-requirement-assessor`、`idc-output-surface-router`、`idc-automated-closure`、`idc-execution-unit-planner`、`idc-progressive-constraint-loader`、`idc-delegation-router`、`idc-skill-adapter-router`、`idc-knowledge-gate`、`idc-provider-selection`、`idc-repo-context-provider`、`idc-tdd-state-machine`、`idc-lane-completion`、`idc-evidence-gate`、`idc-vertical-slice-readiness`、`idc-resume-run`：框架级原子 skill。
+- `.claude/skills/idc-workflow/assets/README.md`：asset / reference 边界说明，避免把 passive data 伪装成 skill。
+- `.claude/skills/idc-workflow/TEAM_CUSTOMIZATION.md`：其他团队接入时优先看的修改指南。
+- `.claude/skills/idc-workflow/references/workflows/`：Scenario Router、Input Adapter、Lane Resolver、Contract Gate、Human Alignment、Automated Closure Loop 等运行时规则。
+- `.claude/skills/idc-workflow/references/schemas/`：Alignment Pack、Escalation、Execution Unit、D3A Plan、General Plan 等机器 contract。
+- `.claude/skills/idc-workflow/references/domains/`：Domain Module registry、D3A module、General module、团队模板 module。
+- `.claude/skills/idc-workflow/references/registries/`：固定 D3A Layer、DT Domain、General placeholder taxonomy。
+- `.claude/skills/idc-workflow/references/lanes/`：fast / lite / complex 三种执行强度定义。
+- `.claude/skills/idc-workflow/references/human-views/`：给用户看的中文 Brainstorming / Clarification / Alignment / Completion / Escalation 模板。
+- `.claude/skills/idc-workflow/references/constraints/`：decision / planning / execution 三段式约束。
+- `.claude/skills/idc-workflow/references/knowledge/`：D3A Layer、DT Domain、General placeholder knowledge 模板。
 - `.claude/skills/brainstorming/SKILL.md`：仅用于模糊想法的发散和多方案探索原子 skill。
-- `.claude/skills/intent-discovery/SKILL.md`：IDC 内把模糊想法接入 draft spec 的原子 skill。
-- `.claude/skills/intent-grilling/SKILL.md`：Grill Me 收敛追问的原子 skill。
-- `.claude/skills/intent-alignment/SKILL.md`：人类前置确认的原子 skill。
+- `.claude/skills/idc-intent-discovery/SKILL.md`：IDC 内把模糊想法接入 draft spec 的原子 skill。
+- `.claude/skills/idc-intent-grilling/SKILL.md`：Grill Me 收敛追问的原子 skill。
+- `.claude/skills/idc-intent-alignment/SKILL.md`：人类前置确认的原子 skill。
 - `.claude/skills/general-coding/SKILL.md`：General Coding execution skill。
 - `.claude/skills/d3a-coding/SKILL.md`：D3A Coding execution skill。
+- `.claude/skills/gc-sop-adapter/SKILL.md`：企业 GC 全家桶 SOP 的外部 adapter placeholder。
+- `.claude/skills/dt-design/SKILL.md`：原代码仓 DT design skill 的外部 adapter。
+- `.claude/skills/dt-writer/SKILL.md`：原代码仓 DT writer skill 的外部 adapter。
+- `.claude/skills/gc-third-skill-placeholder/SKILL.md`：第三个原仓 skill 的显式 placeholder。
 - `.claude/skills/dt-build/SKILL.md`：DT build / run evidence 接口 skill。
 - `.claude/skills/tran-build/SKILL.md`：`tran_build` evidence 接口 skill。
 - `.claude/agents/`：Claude Code 项目级 subagent 定义。
 - `docs/domain-module-contract.md`：团队接入自己的 Domain Module 时遵循的契约。
 - `docs/adoption-guide.md`：其他团队复制 SOP 的指南。
-- `.claude/skills/id-workflow/CONTEXT_ENGINEERING.md`：Claude Code 渐进式上下文加载策略。
-- `.claude/skills/id-workflow/references/workflows/resume-policy.md`：保密区中断后的 checkpoint 恢复策略。
-- `.claude/skills/id-workflow/references/schemas/runtime-state.schema.yaml`：可恢复运行状态 schema。
+- `.claude/skills/idc-workflow/CONTEXT_ENGINEERING.md`：Claude Code 渐进式上下文加载策略。
+- `.claude/skills/idc-workflow/references/workflows/resume-policy.md`：保密区中断后的 checkpoint 恢复策略。
+- `.claude/skills/idc-workflow/references/schemas/runtime-state.schema.yaml`：可恢复运行状态 schema。
 - `docs/agent-team-architecture.md`：Main agent 只做 planning / delegation 的 agent team 架构。
 - `docs/source-attribution.md`：公开方法论来源和 license attribution。
 - `docs/atomic-skills.md`：可复用原子 skill 列表和边界。
@@ -167,13 +187,13 @@ python3 tests/test_harness.py
 - 每个 execution unit 的 max_change_loc 必须是 500。
 - Repo Context Provider 必须限制 max_results / max_snippet_chars，并要求 evidence_ref。
 - Provider Selection Matrix 必须明确有锚点 grep first、无锚点但有领域语义 OKL first。
-- Context Engineering 必须存在，并且 `id-workflow` 必须显式加载。
+- Context Engineering 必须存在，并且 `idc-workflow` 必须显式加载。
 - Runtime State / Resume Policy 必须存在，保密区中断后能从 checkpoint 恢复。
 - Progressive Constraint Loading 三段约束文件必须存在。
 - E2E TR3 D3A demo 必须包含完整链路文件。
 - E2E General Coding demo 必须包含完整链路文件。
 - Human View 模板必须存在，避免把完整 YAML 直接作为用户主界面。
-- Atomic Skills 必须存在，并且 `id-workflow` 只做编排。
+- Atomic Skills 必须存在，并且 `idc-workflow` 只做编排。
 - Discovery Provider 必须以 Superpowers Brainstorming 为 baseline，并且 TR3 默认跳过 Discovery。
 - Clarification Provider 必须支持 Grill Me method、frontier round 和 builtin fallback。
 - Requirement Assessor 能识别关键字段缺失。

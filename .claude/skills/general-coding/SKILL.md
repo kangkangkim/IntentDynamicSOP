@@ -12,7 +12,7 @@ If the General Coding request is rough, vague, sketchy, one-line, or says “大
 Route back to:
 
 ```text
-.claude/skills/intent-discovery/SKILL.md
+.claude/skills/idc-intent-discovery/SKILL.md
 ```
 
 General Coding starts only after the rough idea becomes a draft spec and passes Human Alignment.
@@ -20,9 +20,9 @@ General Coding starts only after the rough idea becomes a draft spec and passes 
 ## Flow
 
 ```text
-intent-discovery if raw_idea
-  -> intent-grilling if needed
-  -> intent-alignment
+idc-intent-discovery if raw_idea
+  -> idc-intent-grilling if needed
+  -> idc-intent-alignment
   -> General Plan
   -> Provider Selection Matrix
   -> Execution Unit <= 500 LOC
@@ -46,8 +46,8 @@ API Contract is optional and only required when the task changes API or external
 
 - Do not write code before Human Alignment approval.
 - Do not use D3A Layer or DT Domain registries.
-- Choose general components only from `../id-workflow/references/registries/general-components.yaml`.
-- Choose test domains only from `../id-workflow/references/registries/general-test-domains.yaml`.
+- Choose general components only from `../idc-workflow/references/registries/general-components.yaml`.
+- Choose test domains only from `../idc-workflow/references/registries/general-test-domains.yaml`.
 - Every execution unit code change must be `<= 500 LOC`.
 - Completion requires tool evidence, not model confidence.
 - Keep enterprise details as placeholders outside the confidential environment.

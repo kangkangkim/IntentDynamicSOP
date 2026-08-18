@@ -15,9 +15,11 @@ Scenario Router
   -> Domain Module Router
   -> Lane Resolver
   -> Contract Gate
+  -> Dynamic Scenario Workflow
   -> D3A Module
   -> Other Team Domain Module
-  -> General Coding Workflow
+  -> General Coding Fallback
+  -> Skill Adapter Router
 
 Engineering Control
   -> Requirement Assessor
@@ -37,14 +39,14 @@ Execution Runtime
 
 ## 顶层思路
 
-整个系统不是一个单一 Agent，而是一套 Intent-Driven Coding 工作流：
+整个系统不是一个单一 Agent，而是一套动态分流的 Intent-Driven Coding 框架：
 
 ```text
 用户 Intent
   -> Input Adapter / Intake
   -> 场景识别
   -> 需求清晰度判断
-  -> 选择 Domain Module / General Coding
+  -> 选择 Dynamic Scenario / Domain Module / General Coding fallback
   -> 选择执行强度 Lane
   -> 根据 Domain + Lane 决定 contract set
   -> 前置 Human Alignment
@@ -60,7 +62,7 @@ IDC Core 不直接绑定 D3A。它只认识 Domain Module Contract。
 
 ```text
 IDC Core
-  -> .claude/skills/id-workflow/references/domains/registry.yaml
+  -> .claude/skills/idc-workflow/references/domains/registry.yaml
   -> domains/<domain>/module.yaml
   -> module.workflow.entrypoint
 ```
@@ -80,16 +82,16 @@ IDC Core
 D3A 是当前第一个 active module：
 
 ```text
-.claude/skills/id-workflow/references/domains/d3a/module.yaml
+.claude/skills/idc-workflow/references/domains/d3a/module.yaml
 ```
 
 其他团队接入时新增：
 
 ```text
-.claude/skills/id-workflow/references/domains/<team-domain>/module.yaml
+.claude/skills/idc-workflow/references/domains/<team-domain>/module.yaml
 ```
 
-并在 `.claude/skills/id-workflow/references/domains/registry.yaml` 注册。
+并在 `.claude/skills/idc-workflow/references/domains/registry.yaml` 注册。
 
 ## Input Adapter
 
@@ -244,9 +246,28 @@ D3A 的动态性主要发生在：
 - Coding Layer 到 DT Domain 是多对多关系，不能在外部环境猜。
 - 所有真实 mapping 必须进入保密区后填写。
 
-## General Coding Mode
+## Dynamic Scenario Mode
 
-General Coding 用于非 D3A 的普通开发任务。
+Dynamic Scenario 用于没有固定 Domain Module、但仍需要按任务形态动态编排的场景。
+
+它可以根据：
+
+- 复杂度。
+- 不确定性。
+- 风险。
+- 可测试性。
+- 是否需要 GC SOP atomic ability。
+- 是否需要 subagent / agent team / official dynamic workflow。
+
+决定后续执行方式。
+
+它不允许猜测 D3A Layer、DT Domain 或企业内部 GC SOP 细节。
+
+## General Coding Fallback
+
+General Coding 用于简单普通开发任务 fallback。
+
+更复杂的非 D3A 任务优先进入 Dynamic Scenario Mode。
 
 V0 只预留 assessment 维度：
 

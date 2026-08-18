@@ -35,9 +35,9 @@ Copyright (c) 2026 Matt Pocock
 在 Intent Dynamic Code 中，这些思想被落到：
 
 ```text
-.claude/skills/id-workflow/references/workflows/clarification-provider.md
-.claude/skills/id-workflow/references/human-views/clarification-view.md
-.claude/skills/id-workflow/references/schemas/clarification-provider.schema.yaml
+.claude/skills/idc-workflow/references/workflows/clarification-provider.md
+.claude/skills/idc-workflow/references/human-views/clarification-view.md
+.claude/skills/idc-workflow/references/schemas/clarification-provider.schema.yaml
 ```
 
 ## Superpowers Brainstorming Inspiration
@@ -71,7 +71,51 @@ Baseline 保留点：
 在 Intent Dynamic Code 中，这些思想被落到：
 
 ```text
-.claude/skills/id-workflow/references/workflows/discovery-provider.md
-.claude/skills/id-workflow/references/human-views/brainstorming-view.md
-.claude/skills/id-workflow/references/schemas/discovery-provider.schema.yaml
+.claude/skills/idc-workflow/references/workflows/discovery-provider.md
+.claude/skills/idc-workflow/references/human-views/brainstorming-view.md
+.claude/skills/idc-workflow/references/schemas/discovery-provider.schema.yaml
+```
+
+## Superpowers Adapter Inspiration
+
+本仓库的 `superpowers-adapter` 将 Superpowers 的公开工程流程作为 IDC approved 后的内层执行纪律。
+
+Source:
+
+```text
+https://github.com/obra/superpowers
+https://github.com/obra/superpowers/tree/main/skills
+```
+
+License:
+
+```text
+MIT License
+Copyright (c) 2025 Jesse Vincent
+```
+
+本仓库吸收的是 workflow shape，不逐字复制 upstream skill prompt。
+
+当前 adapter 覆盖的 upstream skill family：
+
+- writing-plans。
+- executing-plans。
+- test-driven-development。
+- subagent-driven-development。
+- systematic-debugging。
+- requesting-code-review。
+- receiving-code-review。
+- verification-before-completion。
+- finishing-a-development-branch。
+
+IDC 保留外层控制权：
+
+```text
+Domain / Lane / Contract Gate / Completion Gate
+```
+
+在 Intent Dynamic Code 中，这些思想被落到：
+
+```text
+.claude/skills/superpowers-adapter/SKILL.md
 ```

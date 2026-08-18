@@ -2,7 +2,7 @@
 
 ## 目的
 
-体验 `rough general` 是否会先进入 `intent-discovery` / Brainstorming，而不是直接开始 General Coding。
+体验 `rough general` 是否会先进入 `idc-intent-discovery` / Brainstorming，而不是直接开始 General Coding。
 
 ## Prompt to paste
 
@@ -17,11 +17,11 @@ id-workflow
   -> Skill-level maturity routing
   -> input_maturity = raw_idea
   -> brainstorming
-  -> intent-discovery
+  -> idc-intent-discovery
   -> Brainstorming View
   -> draft spec
-  -> intent-grilling
-  -> intent-alignment
+  -> idc-intent-grilling
+  -> idc-intent-alignment
 ```
 
 ## Should see

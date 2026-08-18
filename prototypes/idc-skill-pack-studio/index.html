@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IDC Skill Pack Studio</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="product-mark" aria-hidden="true">IDC</div>
+        <div>
+          <h1>IDC Skill Pack Studio</h1>
+          <p>上传团队 skills，拖拽编排 SOP，导出可安装、可验证的工具包。</p>
+        </div>
+      </div>
+      <div class="sop-meta" aria-label="当前 SOP 信息">
+        <label>
+          <span>Team</span>
+          <input value="Payment Platform" aria-label="Team" />
+        </label>
+        <label>
+          <span>SOP</span>
+          <input value="Feature Delivery SOP" aria-label="SOP" />
+        </label>
+        <label>
+          <span>Version</span>
+          <input value="0.3.0" aria-label="Version" />
+        </label>
+      </div>
+      <div class="actions">
+        <button class="icon-button" id="validateBtn" title="Validate SOP" aria-label="Validate SOP">✓</button>
+        <button class="text-button" id="previewBtn">Preview YAML</button>
+        <button class="primary-button" id="exportBtn">Export Skill Pack</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="catalog-panel" aria-label="Capability Catalog">
+        <section class="upload-panel">
+          <div class="section-head">
+            <div>
+              <h2>Skill Intake</h2>
+              <p>支持 SKILL.md、目录压缩包、repo manifest。</p>
+            </div>
+            <span class="status-pill good">normalizer ready</span>
+          </div>
+          <label class="drop-zone" for="skillUpload">
+            <input id="skillUpload" type="file" multiple />
+            <span class="upload-icon" aria-hidden="true">↑</span>
+            <strong>Upload Skills</strong>
+            <small>解析 inputs / outputs / tools / evidence</small>
+          </label>
+          <div class="intake-checks">
+            <span>placeholder hygiene</span>
+            <span>metadata schema</span>
+            <span>tool boundary</span>
+          </div>
+        </section>
+
+        <section class="layer-panel">
+          <div class="section-head compact">
+            <h2>Harness Layers</h2>
+            <span class="status-pill" id="layerCount">7 layers</span>
+          </div>
+          <div class="layer-stack" id="layerStack"></div>
+        </section>
+
+        <section class="catalog">
+          <div class="section-head compact">
+            <div>
+              <h2>Atomic Capabilities</h2>
+              <p id="activeLayerLabel">Current layer</p>
+            </div>
+            <input class="search" id="catalogSearch" placeholder="Search capability" aria-label="Search capability" />
+          </div>
+          <div class="tabs" role="tablist" aria-label="Catalog filters">
+            <button class="tab active" data-filter="all">All</button>
+            <button class="tab" data-filter="skill">Skills</button>
+            <button class="tab" data-filter="agent">Agents</button>
+            <button class="tab" data-filter="gate">Gates</button>
+          </div>
+          <div class="capability-list" id="capabilityList"></div>
+        </section>
+      </aside>
+
+      <section class="canvas-panel" aria-label="SOP Canvas">
+        <div class="canvas-toolbar">
+          <div>
+            <h2>SOP Canvas</h2>
+            <p>Source of truth 会落到 YAML，画布只负责可视化编排。</p>
+          </div>
+          <div class="toolbar-group" aria-label="Canvas controls">
+            <button class="icon-button" id="alignBtn" title="Auto align" aria-label="Auto align">⇄</button>
+            <button class="icon-button" id="resetBtn" title="Reset demo flow" aria-label="Reset demo flow">↺</button>
+          </div>
+        </div>
+
+        <div class="layer-focus" id="layerFocus">
+          <div>
+            <span class="focus-kicker">Layer Focus</span>
+            <strong id="focusLayerName">Contract Gate</strong>
+            <p id="focusLayerSummary">当前层会高亮画布节点，并过滤左侧原子能力。</p>
+          </div>
+          <div class="focus-stats">
+            <span id="focusCapabilityCount">0 capabilities</span>
+            <span id="focusNodeCount">0 canvas nodes</span>
+          </div>
+        </div>
+
+        <section class="routing-board" aria-label="Routing Strategy Board">
+          <div class="route-card">
+            <span class="route-kicker">Scenario Route</span>
+            <strong>Dynamic Scenario</strong>
+            <p>按输入成熟度和任务类型决定进入 Domain 或 General。</p>
+          </div>
+          <div class="route-arrow">→</div>
+          <div class="route-card route-card-active" id="domainRouteCard">
+            <span class="route-kicker">Domain Route</span>
+            <strong id="domainRouteName">D3A Module</strong>
+            <p id="domainRouteSummary">固定 D3A layer registry，DT domain 使用 placeholder。</p>
+          </div>
+          <div class="route-arrow">→</div>
+          <div class="route-card route-card-active" id="laneRouteCard">
+            <span class="route-kicker">Lane Strategy</span>
+            <strong id="laneRouteName">lite</strong>
+            <p id="laneRouteSummary">默认开发路径，要求 focused contract 和 GREEN evidence。</p>
+          </div>
+        </section>
+
+        <div class="canvas" id="canvas">
+          <div class="lane-label intake">Intake</div>
+          <div class="lane-label design">Design</div>
+          <div class="lane-label build">Build</div>
+          <div class="lane-label verify">Verify</div>
+          <svg class="edges" id="edges" aria-hidden="true"></svg>
+          <div class="canvas-hint" id="canvasHint">
+            Drag capabilities here to add nodes
+          </div>
+        </div>
+      </section>
+
+      <aside class="properties-panel" aria-label="Properties Panel">
+        <section class="layer-detail">
+          <div class="section-head">
+            <div>
+              <h2 id="layerTitle">Layer Contract</h2>
+              <p id="layerDescription">选择左侧层后查看可替换实现。</p>
+            </div>
+            <span class="status-pill good" id="layerMode">core</span>
+          </div>
+          <label class="swap-control">
+            <span>Layer implementation</span>
+            <select id="layerImplementation"></select>
+          </label>
+          <div class="contract-list" id="layerContract"></div>
+        </section>
+
+        <section class="node-card">
+          <div class="section-head">
+            <div>
+              <h2>Properties</h2>
+              <p id="selectedSummary">选择节点后配置 inputs、outputs、gates。</p>
+            </div>
+            <span class="status-pill" id="selectedType">none</span>
+          </div>
+          <div id="propertiesEmpty" class="empty-state">
+            <strong>No node selected</strong>
+            <span>点击画布节点查看标准化后的 skill metadata。</span>
+          </div>
+          <form id="propertiesForm" class="properties-form hidden">
+            <label>
+              <span>Node name</span>
+              <input id="nodeName" />
+            </label>
+            <label>
+              <span>Capability id</span>
+              <input id="capabilityId" />
+            </label>
+            <label>
+              <span>Inputs</span>
+              <textarea id="nodeInputs" rows="3"></textarea>
+            </label>
+            <label>
+              <span>Outputs</span>
+              <textarea id="nodeOutputs" rows="3"></textarea>
+            </label>
+            <label>
+              <span>Required evidence</span>
+              <textarea id="nodeEvidence" rows="3"></textarea>
+            </label>
+            <div class="switch-row">
+              <label class="check-row">
+                <input id="requiredNode" type="checkbox" />
+                <span>Required in package</span>
+              </label>
+              <label class="check-row">
+                <input id="newSession" type="checkbox" />
+                <span>New agent session</span>
+              </label>
+            </div>
+          </form>
+        </section>
+
+        <section class="routing-detail">
+          <div class="section-head">
+            <div>
+              <h2>Routing Strategy</h2>
+              <p>编排 Domain 和 Lane 的选择策略。</p>
+            </div>
+            <span class="status-pill warn">visual route</span>
+          </div>
+          <label class="swap-control">
+            <span>Domain route</span>
+            <select id="domainSelection"></select>
+          </label>
+          <label class="swap-control">
+            <span>Lane strategy</span>
+            <select id="laneSelection"></select>
+          </label>
+          <div class="route-rules" id="routeRules"></div>
+        </section>
+
+        <section class="export-panel">
+          <div class="section-head compact">
+            <h2>Generated Pack</h2>
+            <span class="status-pill good">npm ready</span>
+          </div>
+          <div class="pack-tree">
+            <div>team-idc-pack/</div>
+            <div class="indent">package.json</div>
+            <div class="indent">bin/cli.js</div>
+            <div class="indent">templates/sop.yaml</div>
+            <div class="indent">templates/capability-registry.yaml</div>
+            <div class="indent">templates/skills/*/SKILL.md</div>
+            <div class="indent">templates/agents/*.md</div>
+            <div class="indent">templates/gates/verification.yaml</div>
+            <div class="indent">tests/test_harness.py</div>
+          </div>
+          <pre id="yamlPreview" class="yaml-preview"></pre>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="validation-console" aria-label="Validation Console">
+      <div class="console-head">
+        <div>
+          <h2>Validation Console</h2>
+          <p>Completion 只看工具证据，不看模型自信。</p>
+        </div>
+        <span id="validationStatus" class="status-pill warn">draft</span>
+      </div>
+      <div class="gate-grid" id="gateGrid"></div>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="./script.js"></script>
+</body>
+</html>

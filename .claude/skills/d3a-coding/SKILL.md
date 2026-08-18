@@ -27,13 +27,13 @@ Do not use when:
 If the D3A request is rough, route to:
 
 ```text
-.claude/skills/intent-discovery/SKILL.md
+.claude/skills/idc-intent-discovery/SKILL.md
 ```
 
 If D3A contract / scope / completion gate 不清楚，route to:
 
 ```text
-.claude/skills/intent-grilling/SKILL.md
+.claude/skills/idc-intent-grilling/SKILL.md
 ```
 
 ## 流程
