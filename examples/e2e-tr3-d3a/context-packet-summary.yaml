@@ -6,7 +6,7 @@ context_packet:
     - knowledge/d3a/layers/DO.md
     - knowledge/d3a/dt/TPRINT.md
   repo_native_rules:
-    - AGENTS.md
+    - CLAUDE.md
   repo_context:
     grep_findings:
       - summary: Mock dummy state symbol reference.

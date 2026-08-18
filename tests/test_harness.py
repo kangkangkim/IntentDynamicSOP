@@ -514,12 +514,11 @@ def test_repo_rules_are_canonical_in_claude_md():
     agents_path = ROOT / "AGENTS.md"
     claude_path = ROOT / "CLAUDE.md"
     claude = claude_path.read_text()
-    agents = agents_path.read_text()
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
     context = read_text(".claude/skills/idc-workflow/CONTEXT_ENGINEERING.md")
     README = read_text("README.md")
 
-    assert_true(agents_path.exists(), "缺少 AGENTS.md。")
+    assert_true(not agents_path.exists(), "AGENTS.md 不应继续存在；repo rules 只保留 CLAUDE.md。")
     assert_true(claude_path.exists(), "CLAUDE.md 应该作为 repo rules canonical 文件保留。")
     for fragment in [
         "# Intent-Driven Coding Harness",
@@ -533,12 +532,12 @@ def test_repo_rules_are_canonical_in_claude_md():
     ]:
         assert_true(fragment in claude, f"CLAUDE.md 缺少 canonical repo rule：{fragment}")
 
-    assert_true("CLAUDE.md" in agents and "single source of truth" in agents, "AGENTS.md 应该只作为 CLAUDE.md 兼容指针。")
     assert_true("CLAUDE.md" in id_workflow, "idc-workflow 必须读取 CLAUDE.md。")
     assert_true("AGENTS.md" not in id_workflow, "idc-workflow 不应把 AGENTS.md 当 canonical repo rules。")
     assert_true("CLAUDE.md" in context, "Context Engineering 必须读取 CLAUDE.md。")
     assert_true("AGENTS.md" not in context, "Context Engineering 不应把 AGENTS.md 当 canonical repo rules。")
     assert_true("├── CLAUDE.md" in README, "README 目录结构应列 CLAUDE.md。")
+    assert_true("├── AGENTS.md" not in README, "README 目录结构不应再列 AGENTS.md。")
 
 
 def test_delegation_contract_keeps_main_agent_as_planner():

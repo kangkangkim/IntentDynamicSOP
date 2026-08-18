@@ -72,7 +72,6 @@ docs/deep-dive/
 
 ```text
 .
-├── AGENTS.md
 ├── CLAUDE.md
 ├── .claude/
 ├── docs/
