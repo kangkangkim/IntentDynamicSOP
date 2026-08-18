@@ -31,8 +31,8 @@ domain_module:
       - agents/dt-test-writer.md
       - agents/build-error-analyzer.md
     skills:
-      - skills/d3a-coding/SKILL.md
-      - skills/dt-build/SKILL.md
-      - skills/tran-build/SKILL.md
+      - skills/idc-d3a-coding/SKILL.md
+      - skills/idc-dt-build/SKILL.md
+      - skills/idc-tran-build/SKILL.md
   examples:
     - examples/mock-d3a-task

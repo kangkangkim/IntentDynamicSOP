@@ -1,6 +1,6 @@
 ---
-name: dt-writer
-description: Use through gc-sop-adapter when an approved DT design should be turned into DT changes and RED/GREEN evidence; this external harness only defines the non-sensitive adapter boundary for the original enterprise repo skill.
+name: idc-dt-writer
+description: Use through idc-gc-sop-adapter when an approved DT design should be turned into DT changes and RED/GREEN evidence; this external harness only defines the non-sensitive adapter boundary for the original enterprise repo skill.
 ---
 
 # DT Writer Skill Adapter
@@ -15,7 +15,7 @@ It does not contain real enterprise DT implementation details.
 Use only after:
 
 - IDC Human Alignment is approved.
-- `dt-design` has produced `READY_FOR_DT_WRITER`, or an equivalent approved DT design ref exists.
+- `idc-dt-design` has produced `READY_FOR_DT_WRITER`, or an equivalent approved DT design ref exists.
 - The selected DT domain is known.
 - Allowed paths and forbidden paths are explicit.
 - DT build/run commands are available in the confidential zone.

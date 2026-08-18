@@ -16,7 +16,7 @@ Input Adapter
 
 ## Upstream Baseline
 
-本 workflow 以 `obra/superpowers` 项目中的 `brainstorming` skill 为 upstream baseline。
+本 workflow 以 `obra/superpowers` 项目中的 `idc-brainstorming` skill 为 upstream baseline。
 
 详见：
 
@@ -142,7 +142,7 @@ discovery_provider:
 
 - 只在 `raw_idea` 场景默认启用。
 - TR3 输入默认跳过 Discovery。
-- upstream brainstorming 是 baseline，IDC overlay 只做接线和边界微调。
+- upstream idc-brainstorming 是 baseline，IDC overlay 只做接线和边界微调。
 - 不在 Discovery 阶段写实现代码。
 - 不把 draft spec 当作 approved contract。
 - 用户用中文输入时，Discovery 问题和方案必须用中文。

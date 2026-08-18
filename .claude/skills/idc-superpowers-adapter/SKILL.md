@@ -1,5 +1,5 @@
 ---
-name: superpowers-adapter
+name: idc-superpowers-adapter
 description: Use after IDC Human Alignment approval when the task should execute with a Superpowers-inspired engineering loop for planning, TDD, subagent development, debugging, review, verification, and branch finishing while preserving IDC domain, contract, and evidence gates.
 ---
 
@@ -49,10 +49,10 @@ writing-plans
   -> finishing-a-development-branch
 ```
 
-`brainstorming` remains pre-alignment and is routed through:
+`idc-brainstorming` remains pre-alignment and is routed through:
 
 ```text
-.claude/skills/brainstorming/SKILL.md
+.claude/skills/idc-brainstorming/SKILL.md
 .claude/skills/idc-intent-discovery/SKILL.md
 ```
 
@@ -173,6 +173,25 @@ Use only after IDC Completion Gate is satisfied.
 It may prepare cleanup, summary, branch handoff, or PR material.
 
 Do not mark completion by branch cleanliness alone.
+
+## Output
+
+```yaml
+superpowers_adapter_result:
+  status: SUCCESS | BLOCKED | FAILED
+  stages_used: []
+  execution_plan_ref: string
+  execution_unit_refs: []
+  evidence_refs: []
+  completion_gate_status: pass | fail | not_evaluated
+```
+
+## Hard Rules
+
+- Do not own IDC Domain, Lane, Contract Gate, or Completion Gate.
+- Do not run before Human Alignment approval.
+- Do not replace IDC evidence requirements with process confidence.
+- Do not include real enterprise paths, commands, logs, APIs, or architecture facts.
 
 ## Source Boundary
 

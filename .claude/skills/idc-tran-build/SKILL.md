@@ -1,5 +1,5 @@
 ---
-name: tran-build
+name: idc-tran-build
 description: Use only as the final D3A build verification after all required DT domains are GREEN; return tran_build PASS/FAIL evidence and route failures to build-error-analyzer.
 ---
 
@@ -31,7 +31,7 @@ tran_build_request:
   command: <ENTERPRISE_TRAN_BUILD_COMMAND>
 ```
 
-## 输出
+## Output
 
 ```yaml
 tran_build_result:
@@ -42,7 +42,7 @@ tran_build_result:
   evidence: []
 ```
 
-## 规则
+## Hard Rules
 
 - D3A completion 要求 `status: PASS`。
 - 失败结果必须进入 `build-error-analyzer`。

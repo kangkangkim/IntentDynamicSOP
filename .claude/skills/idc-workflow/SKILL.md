@@ -26,7 +26,7 @@ This is the orchestration skill. It delegates reusable pre-alignment work to ato
 .claude/skills/idc-contract-gate/SKILL.md
 .claude/skills/idc-requirement-assessor/SKILL.md
 .claude/skills/idc-intent-discovery/SKILL.md
-.claude/skills/brainstorming/SKILL.md
+.claude/skills/idc-brainstorming/SKILL.md
 .claude/skills/idc-intent-grilling/SKILL.md
 .claude/skills/idc-intent-grilling/references/grill-me-method.md
 .claude/skills/idc-intent-grilling/assets/question-card-template.md
@@ -45,11 +45,15 @@ This is the orchestration skill. It delegates reusable pre-alignment work to ato
 .claude/skills/idc-lane-completion/SKILL.md
 .claude/skills/idc-evidence-gate/SKILL.md
 .claude/skills/idc-vertical-slice-readiness/SKILL.md
-.claude/skills/superpowers-adapter/SKILL.md
-.claude/skills/gc-sop-adapter/SKILL.md
-.claude/skills/dt-design/SKILL.md
-.claude/skills/dt-writer/SKILL.md
-.claude/skills/gc-third-skill-placeholder/SKILL.md
+.claude/skills/idc-general-coding/SKILL.md
+.claude/skills/idc-d3a-coding/SKILL.md
+.claude/skills/idc-dt-build/SKILL.md
+.claude/skills/idc-tran-build/SKILL.md
+.claude/skills/idc-superpowers-adapter/SKILL.md
+.claude/skills/idc-gc-sop-adapter/SKILL.md
+.claude/skills/idc-dt-design/SKILL.md
+.claude/skills/idc-dt-writer/SKILL.md
+.claude/skills/idc-gc-third-skill-placeholder/SKILL.md
 ```
 
 ## Trigger examples
@@ -112,8 +116,8 @@ After the user approves:
   -> Planner
   -> .claude/skills/idc-execution-unit-planner/SKILL.md
   -> .claude/skills/idc-progressive-constraint-loader/SKILL.md
-  -> superpowers-adapter if execution discipline is needed
-  -> gc-sop-adapter if confidential GC atomic abilities are needed
+  -> idc-superpowers-adapter if execution discipline is needed
+  -> idc-gc-sop-adapter if confidential GC atomic abilities are needed
   -> .claude/skills/idc-skill-adapter-router/SKILL.md if lower-level adapters are needed
   -> .claude/skills/idc-delegation-router/SKILL.md
   -> Progressive Constraint Loading
@@ -198,7 +202,7 @@ references/human-views/clarification-view.md
 If `input_maturity = raw_idea`, run Discovery Provider before Clarification Provider:
 
 ```text
-.claude/skills/brainstorming/SKILL.md
+.claude/skills/idc-brainstorming/SKILL.md
 references/workflows/discovery-provider.md
 references/schemas/discovery-provider.schema.yaml
 references/human-views/brainstorming-view.md
@@ -217,6 +221,9 @@ If Domain = D3A, also read:
 references/domains/d3a/module.yaml
 references/workflows/d3a-workflow.md
 references/schemas/d3a-plan.schema.yaml
+.claude/skills/idc-d3a-coding/SKILL.md
+.claude/skills/idc-dt-build/SKILL.md
+.claude/skills/idc-tran-build/SKILL.md
 ```
 
 If Domain = general, also read:
@@ -225,7 +232,7 @@ If Domain = general, also read:
 references/domains/general/module.yaml
 references/workflows/general-coding.md
 references/schemas/general-plan.schema.yaml
-.claude/skills/general-coding/SKILL.md
+.claude/skills/idc-general-coding/SKILL.md
 ```
 
 If the user has approved the Alignment Pack, also read:
@@ -249,11 +256,11 @@ references/workflows/execution-unit-policy.md
 references/workflows/lane-completion.md
 references/schemas/delegation-contract.schema.yaml
 references/schemas/escalation-policy.schema.yaml
-.claude/skills/superpowers-adapter/SKILL.md
-.claude/skills/gc-sop-adapter/SKILL.md
-.claude/skills/dt-design/SKILL.md
-.claude/skills/dt-writer/SKILL.md
-.claude/skills/gc-third-skill-placeholder/SKILL.md
+.claude/skills/idc-superpowers-adapter/SKILL.md
+.claude/skills/idc-gc-sop-adapter/SKILL.md
+.claude/skills/idc-dt-design/SKILL.md
+.claude/skills/idc-dt-writer/SKILL.md
+.claude/skills/idc-gc-third-skill-placeholder/SKILL.md
 ```
 
 If the user asks to resume after interruption, also read:
@@ -283,7 +290,7 @@ references/workflows/repo-context-providers.md
 references/schemas/repo-context-provider.schema.yaml
 ```
 
-## Hard rules
+## Hard Rules
 
 - Do not write implementation code before Human Alignment approval.
 - Follow `CONTEXT_ENGINEERING.md`: load stage-specific context, summarize long findings, and keep DONE evidence separate from knowledge findings.
@@ -299,7 +306,7 @@ references/schemas/repo-context-provider.schema.yaml
 - Do not skillize passive assets such as schemas, registries, examples, human-view templates, lane definitions, evidence files, and knowledge templates;沉淀 them as references or assets according to the official skill directory shape.
 - Superpowers Adapter may provide the inner engineering loop after approval, but IDC owns Domain, Lane, Contract Gate, and Completion Gate.
 - GC SOP Adapter may reuse confidential enterprise atomic abilities after approval, but must go through Skill Adapter Router and cannot invent original repository skill details.
-- Original repository DT skills are represented as adapters: `dt-design` for DT design, `dt-writer` for DT writing, and `gc-third-skill-placeholder` until the third skill is named in the confidential zone.
+- Original repository DT skills are represented as adapters: `idc-dt-design` for DT design, `idc-dt-writer` for DT writing, and `idc-gc-third-skill-placeholder` until the third skill is named in the confidential zone.
 - Use `upstream-superpowers-brainstorming` as the `raw_idea` baseline, then apply `idc-brainstorming-overlay` before handoff to `idc-intent-grilling`.
 - Skip Discovery Provider for TR3 unless the TR3 is too incomplete to identify behavior.
 - Before first confidential-zone D3A execution, run Vertical Slice Readiness Gate and require all required readiness checks PASS.
@@ -337,3 +344,16 @@ escalation triggers if any
 Render completion with `references/human-views/completion-view.md`.
 
 If escalation is triggered, render `references/human-views/escalation-view.md`.
+
+## Output
+
+```yaml
+idc_workflow_result:
+  status: alignment_needed | approved_running | done | blocked | escalated
+  selected_route: DOMAIN_MODULE | DYNAMIC_SCENARIO | GENERAL_CODING | NEED_TRIAGE
+  selected_domain: d3a | general | <TEAM_DOMAIN_PLACEHOLDER>
+  selected_lane: fast | lite | complex
+  human_view_ref: string
+  evidence_refs: []
+  completion_summary_ref: string
+```

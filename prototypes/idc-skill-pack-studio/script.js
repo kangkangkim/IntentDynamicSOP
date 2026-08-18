@@ -124,7 +124,7 @@ const initialCapabilities = [
     name: "Intent Discovery",
     inputs: ["raw_idea"],
     outputs: ["draft_spec"],
-    tools: ["brainstorming-adapter"],
+    tools: ["idc-brainstorming-adapter"],
     evidence: ["draft-spec.md"],
     verified: true
   },
@@ -184,7 +184,7 @@ const initialCapabilities = [
     verified: true
   },
   {
-    id: "team.dt-writer",
+    id: "team.idc-dt-writer",
     layer: "domain",
     type: "skill",
     name: "DT Writer",
@@ -239,7 +239,7 @@ const initialCapabilities = [
     verified: true
   },
   {
-    id: "idc.tran-build",
+    id: "idc.idc-tran-build",
     layer: "evidence",
     type: "gate",
     name: "tran_build PASS",
@@ -290,6 +290,7 @@ const capabilityList = document.getElementById("capabilityList");
 const canvas = document.getElementById("canvas");
 const edges = document.getElementById("edges");
 const canvasHint = document.getElementById("canvasHint");
+const architectureBoard = document.getElementById("architectureBoard");
 const propertiesEmpty = document.getElementById("propertiesEmpty");
 const propertiesForm = document.getElementById("propertiesForm");
 const selectedSummary = document.getElementById("selectedSummary");
@@ -331,12 +332,92 @@ function nodeFromCapability(capability, x, y) {
 function renderAll() {
   renderLayers();
   renderCapabilities();
+  renderArchitectureBoard();
   renderCanvas();
   renderProperties();
   renderLayerDetail();
   renderRoutingStrategy();
   renderValidation();
   renderYaml();
+}
+
+function renderArchitectureBoard() {
+  architectureBoard.innerHTML = "";
+
+  layers.forEach((layer, index) => {
+    const layerCapabilities = capabilities.filter((cap) => cap.layer === layer.id);
+    const layerNodes = nodes.filter((node) => node.layer === layer.id);
+    const selectedImplementation = layerSelections[layer.id];
+    const element = document.createElement("article");
+    element.className = `architecture-layer${layer.id === activeLayerId ? " active" : ""}`;
+    element.dataset.layerId = layer.id;
+    element.innerHTML = `
+      <div class="architecture-index">
+        <span>L${index + 1}</span>
+      </div>
+      <div class="architecture-main">
+        <div class="architecture-head">
+          <div>
+            <strong>${layer.name}</strong>
+            <p>${layer.summary}</p>
+          </div>
+          <div class="architecture-actions">
+            <span class="status-pill ${layer.mode === "core" ? "good" : "warn"}">${layer.mode}</span>
+            <span class="status-pill">${layerNodes.length} selected</span>
+          </div>
+        </div>
+        <div class="architecture-impl">
+          <span>Implementation</span>
+          <strong>${selectedImplementation}</strong>
+        </div>
+        <div class="architecture-slots">
+          ${layerNodes.length ? layerNodes.map((node) => `
+            <button class="slot-chip ${node.type}" data-node-id="${node.nodeId}">
+              ${node.name}
+              <span>${node.type}</span>
+            </button>
+          `).join("") : `<div class="empty-slot">Drop ${layerCapabilities.length} available atomic capabilities here</div>`}
+        </div>
+      </div>
+    `;
+
+    element.addEventListener("click", (event) => {
+      const slot = event.target.closest(".slot-chip");
+      activeLayerId = layer.id;
+      if (slot) {
+        selectedNodeId = slot.dataset.nodeId;
+      }
+      renderAll();
+    });
+
+    element.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      element.classList.add("drop-target");
+    });
+
+    element.addEventListener("dragleave", () => element.classList.remove("drop-target"));
+
+    element.addEventListener("drop", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      element.classList.remove("drop-target");
+      const capabilityId = event.dataTransfer.getData("text/plain");
+      const capability = capabilities.find((cap) => cap.id === capabilityId);
+      if (!capability) return;
+      const layerIndex = layers.findIndex((item) => item.id === layer.id);
+      const sameLayerCapability = capability.layer === layer.id
+        ? capability
+        : { ...capability, layer: layer.id, id: `${capability.id}.as-${layer.id}` };
+      const node = nodeFromCapability(sameLayerCapability, 70 + (layerIndex % 4) * 230, 80 + layerIndex * 74);
+      nodes.push(node);
+      activeLayerId = layer.id;
+      selectedNodeId = node.nodeId;
+      renderAll();
+      showToast(`${capability.name} added to ${layer.name}`);
+    });
+
+    architectureBoard.appendChild(element);
+  });
 }
 
 function renderLayers() {
@@ -449,45 +530,131 @@ function renderRoutingStrategy() {
 }
 
 function renderCanvas() {
-  canvas.querySelectorAll(".canvas-node").forEach((node) => node.remove());
+  canvas.querySelectorAll(".flow-layer").forEach((node) => node.remove());
   canvasHint.style.display = nodes.length ? "none" : "block";
   renderLayerFocus();
 
-  nodes.forEach((node) => {
-    const element = document.createElement("article");
-    const isActiveLayer = node.layer === activeLayerId;
-    element.className = `canvas-node ${node.type}${isActiveLayer ? " layer-active" : " layer-muted"}${node.nodeId === selectedNodeId ? " selected" : ""}`;
-    element.style.left = `${node.x}px`;
-    element.style.top = `${node.y}px`;
-    element.dataset.nodeId = node.nodeId;
+  layers.forEach((layer, index) => {
+    const layerNodes = nodes.filter((node) => node.layer === layer.id);
+    const element = document.createElement("section");
+    element.className = `flow-layer${layer.id === activeLayerId ? " active" : ""}`;
+    element.dataset.layerId = layer.id;
     element.innerHTML = `
-      <div class="node-title">
-        <span>${node.name}</span>
-        <span class="type-chip ${node.type}">${node.type}</span>
+      <div class="flow-spine">
+        <span>L${index + 1}</span>
       </div>
-      <div class="node-facts">
-        <span>in: ${compact(node.inputs)}</span>
-        <span>out: ${compact(node.outputs)}</span>
-      </div>
-      <div class="node-badges">
-        <span>${layerName(node.layer)}</span>
-        <span>${node.required ? "required" : "optional"}</span>
-        <span>${node.newSession ? "new session" : "same session"}</span>
+      <div class="flow-layer-main">
+        <div class="flow-layer-head">
+          <div>
+            <strong>${layer.name}</strong>
+            <p>${layer.summary}</p>
+          </div>
+          <div class="flow-layer-controls">
+            <select class="inline-implementation" data-layer-id="${layer.id}" aria-label="${layer.name} implementation">
+              ${layer.implementations.map((item) => `<option value="${item}"${item === layerSelections[layer.id] ? " selected" : ""}>${item}</option>`).join("")}
+            </select>
+            <button class="mini-button" data-action="move-up" data-layer-id="${layer.id}" ${index === 0 ? "disabled" : ""} title="Move layer up">↑</button>
+            <button class="mini-button" data-action="move-down" data-layer-id="${layer.id}" ${index === layers.length - 1 ? "disabled" : ""} title="Move layer down">↓</button>
+          </div>
+        </div>
+        <div class="flow-node-list">
+          ${layerNodes.length ? layerNodes.map((node) => `
+            <article class="flow-node ${node.type}${node.nodeId === selectedNodeId ? " selected" : ""}" data-node-id="${node.nodeId}">
+              <div class="node-title">
+                <span>${node.name}</span>
+                <span class="type-chip ${node.type}">${node.type}</span>
+              </div>
+              <div class="node-facts">
+                <span>in: ${compact(node.inputs)}</span>
+                <span>out: ${compact(node.outputs)}</span>
+              </div>
+              <button class="node-remove" data-node-id="${node.nodeId}" title="Remove capability" aria-label="Remove ${node.name}">×</button>
+            </article>
+          `).join("") : `<div class="flow-empty">Drop atomic capabilities for ${layer.name}</div>`}
+        </div>
       </div>
     `;
-    element.addEventListener("click", () => {
-      if (element.dataset.dragged === "true") {
-        element.dataset.dragged = "false";
-        return;
+
+    element.addEventListener("click", (event) => {
+      const actionButton = event.target.closest("[data-action]");
+      const removeButton = event.target.closest(".node-remove");
+      if (actionButton || removeButton || event.target.closest(".inline-implementation")) return;
+      const nodeElement = event.target.closest(".flow-node");
+      activeLayerId = layer.id;
+      if (nodeElement) {
+        selectedNodeId = nodeElement.dataset.nodeId;
       }
-      selectedNodeId = node.nodeId;
       renderAll();
     });
-    element.addEventListener("pointerdown", (event) => startNodeDrag(event, node, element));
+
+    element.addEventListener("change", (event) => {
+      const implementationSelect = event.target.closest(".inline-implementation");
+      if (!implementationSelect) return;
+      activeLayerId = implementationSelect.dataset.layerId;
+      layerSelections[activeLayerId] = implementationSelect.value;
+      renderAll();
+      showToast(`${layer.name} implementation updated`);
+    });
+
+    element.addEventListener("click", (event) => {
+      const actionButton = event.target.closest("[data-action]");
+      if (!actionButton) return;
+      event.stopPropagation();
+      moveLayer(actionButton.dataset.layerId, actionButton.dataset.action);
+    });
+
+    element.addEventListener("click", (event) => {
+      const removeButton = event.target.closest(".node-remove");
+      if (!removeButton) return;
+      event.stopPropagation();
+      removeNode(removeButton.dataset.nodeId);
+    });
+
+    element.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      element.classList.add("drop-target");
+    });
+
+    element.addEventListener("dragleave", () => element.classList.remove("drop-target"));
+
+    element.addEventListener("drop", (event) => {
+      event.preventDefault();
+      element.classList.remove("drop-target");
+      const capabilityId = event.dataTransfer.getData("text/plain");
+      const capability = capabilities.find((cap) => cap.id === capabilityId);
+      if (!capability) return;
+      const sameLayerCapability = capability.layer === layer.id
+        ? capability
+        : { ...capability, layer: layer.id, id: `${capability.id}.as-${layer.id}` };
+      const node = nodeFromCapability(sameLayerCapability, 0, index);
+      nodes.push(node);
+      activeLayerId = layer.id;
+      selectedNodeId = node.nodeId;
+      renderAll();
+      showToast(`${capability.name} added to ${layer.name}`);
+    });
+
     canvas.appendChild(element);
   });
+}
 
-  renderEdges();
+function moveLayer(layerId, direction) {
+  const index = layers.findIndex((layer) => layer.id === layerId);
+  const targetIndex = direction === "move-up" ? index - 1 : index + 1;
+  if (index < 0 || targetIndex < 0 || targetIndex >= layers.length) return;
+  const [layer] = layers.splice(index, 1);
+  layers.splice(targetIndex, 0, layer);
+  activeLayerId = layerId;
+  renderAll();
+  showToast(`${layer.name} moved ${direction === "move-up" ? "up" : "down"}`);
+}
+
+function removeNode(nodeId) {
+  const node = nodes.find((item) => item.nodeId === nodeId);
+  nodes = nodes.filter((item) => item.nodeId !== nodeId);
+  selectedNodeId = nodes[0]?.nodeId ?? null;
+  renderAll();
+  showToast(`${node?.name ?? "Capability"} removed from canvas`);
 }
 
 function renderLayerFocus() {
@@ -502,27 +669,7 @@ function renderLayerFocus() {
 }
 
 function renderEdges() {
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
-  edges.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  edges.innerHTML = `
-    <defs>
-      <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-        <path d="M 0 0 L 10 5 L 0 10 z" fill="#8997aa"></path>
-      </marker>
-    </defs>
-  `;
-
-  const sorted = [...nodes].sort((a, b) => a.y - b.y || a.x - b.x);
-  for (let i = 0; i < sorted.length - 1; i += 1) {
-    drawEdge(sorted[i], sorted[i + 1], false);
-  }
-
-  const coding = sorted.find((node) => node.id === "team.coding-agent");
-  const gate = sorted.find((node) => node.id === "idc.red-green-gate");
-  if (coding && gate) {
-    drawEdge(gate, coding, true);
-  }
+  return;
 }
 
 function drawEdge(from, to, failed) {
@@ -800,6 +947,7 @@ canvas.addEventListener("dragover", (event) => {
 canvas.addEventListener("dragleave", () => canvas.classList.remove("drag-over"));
 
 canvas.addEventListener("drop", (event) => {
+  if (event.target.closest(".flow-layer")) return;
   event.preventDefault();
   canvas.classList.remove("drag-over");
   const capabilityId = event.dataTransfer.getData("text/plain");

@@ -71,7 +71,7 @@ references/human-views/clarification-view.md
 禁止：
 
 - 因上下文裁剪牺牲需求探索质量。
-- 把 brainstorming 结果当作 approved contract。
+- 把 idc-brainstorming 结果当作 approved contract。
 - 在用户确认前写实现代码。
 
 ## Stage 3: Domain / Lane / Contract

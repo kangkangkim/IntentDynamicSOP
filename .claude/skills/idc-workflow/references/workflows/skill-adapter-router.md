@@ -34,15 +34,15 @@ domain_module_execution_skill
 Enterprise GC full-suite SOP is integrated as:
 
 ```text
-.claude/skills/gc-sop-adapter/SKILL.md
+.claude/skills/idc-gc-sop-adapter/SKILL.md
 ```
 
 Known original-repository skill adapters:
 
 ```text
-.claude/skills/dt-design/SKILL.md
-.claude/skills/dt-writer/SKILL.md
-.claude/skills/gc-third-skill-placeholder/SKILL.md
+.claude/skills/idc-dt-design/SKILL.md
+.claude/skills/idc-dt-writer/SKILL.md
+.claude/skills/idc-gc-third-skill-placeholder/SKILL.md
 ```
 
 The third skill remains a placeholder until the confidential environment
@@ -52,8 +52,8 @@ provides the real skill name and contract.
 
 - Dynamic scenarios may use GC atoms only after Human Alignment approval.
 - D3A may use GC atoms only inside D3A module constraints.
-- `dt-design` can produce DT design artifacts, not RED/GREEN evidence.
-- `dt-writer` can produce DT changes and RED/GREEN evidence refs, but cannot mark DONE.
+- `idc-dt-design` can produce DT design artifacts, not RED/GREEN evidence.
+- `idc-dt-writer` can produce DT changes and RED/GREEN evidence refs, but cannot mark DONE.
 - Placeholder adapters are not executable.
 - Adapter output must be summarized and bounded.
 - Full enterprise logs, paths, APIs, commands, and SOP internals must stay out of the external harness.
@@ -62,7 +62,7 @@ provides the real skill name and contract.
 
 ```yaml
 skill_adapter_route:
-  selected_adapter: gc-sop-adapter | dt-design | dt-writer | gc-third-skill-placeholder
+  selected_adapter: idc-gc-sop-adapter | idc-dt-design | idc-dt-writer | idc-gc-third-skill-placeholder
   selected_stage: planning | dt_design | dt_writing | implementation | debugging | review | verification
   route_reason: string
   input_contract_ref: string

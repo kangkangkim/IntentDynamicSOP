@@ -16,7 +16,7 @@
 id-workflow
   -> Skill-level maturity routing
   -> input_maturity = raw_idea
-  -> brainstorming
+  -> idc-brainstorming
   -> idc-intent-discovery
   -> Brainstorming View
   -> draft spec
@@ -32,6 +32,6 @@ id-workflow
 
 ## Should not happen
 
-- 不应该直接进入 `general-coding`。
+- 不应该直接进入 `idc-general-coding`。
 - 不应该直接写代码。
 - 不应该直接创建 execution unit。

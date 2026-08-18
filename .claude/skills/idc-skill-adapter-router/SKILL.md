@@ -16,10 +16,10 @@ Use when an approved task needs GC SOP atoms, original repository DT skills, or 
 ```text
 .claude/skills/idc-workflow/references/workflows/skill-adapter-router.md
 .claude/skills/idc-workflow/references/schemas/skill-adapter.schema.yaml
-.claude/skills/gc-sop-adapter/SKILL.md
-.claude/skills/dt-design/SKILL.md
-.claude/skills/dt-writer/SKILL.md
-.claude/skills/gc-third-skill-placeholder/SKILL.md
+.claude/skills/idc-gc-sop-adapter/SKILL.md
+.claude/skills/idc-dt-design/SKILL.md
+.claude/skills/idc-dt-writer/SKILL.md
+.claude/skills/idc-gc-third-skill-placeholder/SKILL.md
 ```
 
 ## Output
@@ -36,5 +36,5 @@ skill_adapter_route:
 
 - Placeholder adapters are not executable.
 - GC SOP atoms cannot choose Domain, Lane, Contract Gate, or Completion Gate.
-- `dt-design` is design, not RED/GREEN evidence.
-- `dt-writer` can return evidence refs, but cannot mark DONE.
+- `idc-dt-design` is design, not RED/GREEN evidence.
+- `idc-dt-writer` can return evidence refs, but cannot mark DONE.

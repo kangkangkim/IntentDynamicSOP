@@ -30,7 +30,7 @@
 - 真实 CodeGraph / Wiki / grep / repository search provider。
 - 真实 build error 到 responsible layer 的分析规则。
 - 真实 GC 全家桶 SOP atomic ability mapping。
-- 真实原代码仓 skill contract：`dt-design`、`dt-writer`、`<ENTERPRISE_GC_THIRD_SKILL_NAME>`。
+- 真实原代码仓 skill contract：`idc-dt-design`、`idc-dt-writer`、`<ENTERPRISE_GC_THIRD_SKILL_NAME>`。
 
 ## 入区前检查
 
@@ -65,8 +65,8 @@ python3 tests/test_harness.py
 1. 填一个 Layer knowledge 文件。
 2. 填一个 DT Domain knowledge 文件。
 3. 替换一个 mock context provider 为真实 repo search。
-4. 如果需要 DT 设计，先通过 `gc-sop-adapter -> dt-design` 产出 DT design ref。
-5. 如果需要 DT 编写，再通过 `gc-sop-adapter -> dt-writer` 产出 DT change 和 RED/GREEN evidence refs。
+4. 如果需要 DT 设计，先通过 `idc-gc-sop-adapter -> idc-dt-design` 产出 DT design ref。
+5. 如果需要 DT 编写，再通过 `idc-gc-sop-adapter -> idc-dt-writer` 产出 DT change 和 RED/GREEN evidence refs。
 6. 跑出一条真实 RED evidence。
 7. 跑出一条真实 GREEN evidence。
 8. 跑一次真实 `tran_build`。

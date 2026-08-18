@@ -1,5 +1,5 @@
 ---
-name: dt-build
+name: idc-dt-build
 description: Use inside D3A verification when a selected DT domain needs build/run evidence; return tool evidence only and never invent enterprise commands.
 ---
 
@@ -33,7 +33,7 @@ dt_build_request:
   command: <ENTERPRISE_DT_BUILD_COMMAND>
 ```
 
-## 输出
+## Output
 
 ```yaml
 dt_build_result:
@@ -44,7 +44,7 @@ dt_build_result:
   evidence: []
 ```
 
-## 规则
+## Hard Rules
 
 - 在保密区绑定前，只能使用 `<ENTERPRISE_DT_BUILD_COMMAND>` 和 `<ENTERPRISE_DT_RUN_COMMAND>`。
 - 有真实 stdout / stderr 或等价工具输出时，必须保留为 evidence。

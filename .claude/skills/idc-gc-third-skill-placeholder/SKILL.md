@@ -1,5 +1,5 @@
 ---
-name: gc-third-skill-placeholder
+name: idc-gc-third-skill-placeholder
 description: Placeholder adapter for the third original enterprise repository skill in the GC full-suite SOP; replace only inside the confidential environment after the real skill name and contract are known.
 ---
 
@@ -8,8 +8,8 @@ description: Placeholder adapter for the third original enterprise repository sk
 The user described three original-repository skills but only identified:
 
 ```text
-dt-design
-dt-writer
+idc-dt-design
+idc-dt-writer
 ```
 
 This placeholder reserves the third adapter slot without inventing enterprise
@@ -28,6 +28,17 @@ In the confidential zone, replace it only after the real third skill has:
 - allowed paths / forbidden paths rules.
 - evidence rules.
 - escalation rules.
+
+## Output
+
+```yaml
+third_skill_placeholder:
+  status: NOT_EXECUTABLE
+  required_confidential_inputs:
+    - <ENTERPRISE_GC_THIRD_SKILL_NAME>
+    - <ENTERPRISE_ORIGINAL_REPO_SKILL_REF>
+    - <ENTERPRISE_THIRD_SKILL_CONTRACT_REF>
+```
 
 ## Hard Rules
 

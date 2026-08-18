@@ -1,5 +1,5 @@
 ---
-name: gc-sop-adapter
+name: idc-gc-sop-adapter
 description: Use inside the confidential enterprise environment after IDC routing and Human Alignment approval to reuse the internal GC full-suite SOP atomic capabilities without letting GC own IDC Domain, Lane, Contract Gate, or Completion Gate decisions.
 ---
 
@@ -13,7 +13,7 @@ It does not contain real GC implementation details in this external harness.
 IDC Core = dynamic routing framework
 Domain Module = scenario-specific constraints such as d3a
 GC SOP Adapter = reusable enterprise atomic execution abilities
-Original repo skills = bounded adapters such as dt-design and dt-writer
+Original repo skills = bounded adapters such as idc-dt-design and idc-dt-writer
 ```
 
 ## When To Use
@@ -71,9 +71,9 @@ The first GC integration expects three original-repository skills.
 Known external adapter names:
 
 ```text
-.claude/skills/dt-design/SKILL.md
-.claude/skills/dt-writer/SKILL.md
-.claude/skills/gc-third-skill-placeholder/SKILL.md
+.claude/skills/idc-dt-design/SKILL.md
+.claude/skills/idc-dt-writer/SKILL.md
+.claude/skills/idc-gc-third-skill-placeholder/SKILL.md
 ```
 
 The third original-repository skill is intentionally a placeholder until the
@@ -100,6 +100,8 @@ gc_atomic_handoff:
 
 Every GC atom must return:
 
+## Output
+
 ```yaml
 gc_atomic_result:
   status: SUCCESS | BLOCKED | FAILED
@@ -109,6 +111,13 @@ gc_atomic_result:
   evidence_refs: []
   unresolved_questions: []
 ```
+
+## Hard Rules
+
+- Do not let GC choose IDC Domain, Lane, Contract Gate, or Completion Gate.
+- Do not execute unmapped GC atoms.
+- Do not expose real GC SOP content in this external harness.
+- Keep all enterprise paths, commands, logs, test names, and APIs as placeholders outside the confidential zone.
 
 ## Source Boundary
 

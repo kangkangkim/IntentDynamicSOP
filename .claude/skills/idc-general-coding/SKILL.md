@@ -1,9 +1,11 @@
 ---
-name: general-coding
+name: idc-general-coding
 description: Use when a coding task does not match a specialized domain module and should run through the General Coding workflow with task, verification, TDD, and evidence gates.
 ---
 
 # General Coding Skill
+
+## When To Use
 
 Use this skill when Domain Module Router selects `general`.
 
@@ -41,6 +43,18 @@ verification_contract
 ```
 
 API Contract is optional and only required when the task changes API or externally visible behavior.
+
+## Output
+
+```yaml
+general_coding_result:
+  status: done | blocked | needs_fix | escalated
+  selected_components: []
+  required_test_domains: []
+  changed_files: []
+  test_or_build_evidence_refs: []
+  completion_summary_ref: <COMPLETION_SUMMARY_REF>
+```
 
 ## Hard Rules
 

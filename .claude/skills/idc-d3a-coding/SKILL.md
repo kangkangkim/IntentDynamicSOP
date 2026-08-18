@@ -1,5 +1,5 @@
 ---
-name: d3a-coding
+name: idc-d3a-coding
 description: Use only after the IDC workflow selects Domain = d3a and Human Alignment is approved; execute D3A work through fixed layer planning, Layer Context Packets, DT RED/GREEN evidence, and tran_build completion gates.
 ---
 
@@ -50,6 +50,20 @@ If D3A contract / scope / completion gate 不清楚，route to:
 10. 每个 required DT Domain 都必须有 GREEN evidence。
 11. 运行 `tran_build`。
 12. 只有 `tran_build` PASS 后才能标记 Done。
+
+## Output
+
+```yaml
+d3a_execution_result:
+  status: done | blocked | needs_fix | escalated
+  selected_layers: []
+  required_dt_domains: []
+  changed_files: []
+  red_evidence_refs: []
+  green_evidence_refs: []
+  tran_build_evidence_ref: <ENTERPRISE_TRAN_BUILD_EVIDENCE_REF>
+  completion_summary_ref: <COMPLETION_SUMMARY_REF>
+```
 
 ## Hard Rules
 

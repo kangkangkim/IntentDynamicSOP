@@ -76,7 +76,7 @@ Do not show raw YAML as the primary user interface.
 ## Hard Rules
 
 - `/id-workflow` is the only user-facing entry command.
-- Do not call `d3a-coding`, `gc-sop-adapter`, `dt-design`, or `dt-writer` directly from user intent before IDC routing.
+- Do not call `idc-d3a-coding`, `idc-gc-sop-adapter`, `idc-dt-design`, or `idc-dt-writer` directly from user intent before IDC routing.
 - D3A is a custom Domain Module, not a Core special case.
 - Dynamic Scenario is available for non-domain tasks that still need dynamic orchestration.
 - General Coding is fallback for simple ordinary coding tasks.

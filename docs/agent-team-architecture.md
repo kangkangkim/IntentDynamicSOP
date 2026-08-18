@@ -54,8 +54,8 @@ Coding Team
   -> dt-test-writer
 
 Verification Team
-  -> dt-build
-  -> tran-build
+  -> idc-dt-build
+  -> idc-tran-build
   -> build-error-analyzer
   -> evidence summarizer
 ```
@@ -246,7 +246,7 @@ D3A Coding
   -> Knowledge Team as needed
   -> d3a-layer-coder per Layer Context Packet
   -> dt-test-writer
-  -> tran-build
+  -> idc-tran-build
 
 失败修复
   -> build-error-analyzer

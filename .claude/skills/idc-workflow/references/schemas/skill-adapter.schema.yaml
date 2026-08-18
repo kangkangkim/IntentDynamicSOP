@@ -37,7 +37,7 @@ rules:
 
 example:
   skill_adapter:
-    id: dt-design
+    id: idc-dt-design
     status: confidential_only
     source:
       kind: original_enterprise_repo_skill
@@ -49,6 +49,6 @@ example:
     forbidden_conditions:
       - Guessing enterprise DT design rules.
       - Treating DT design as RED/GREEN evidence.
-    input_contract_ref: .claude/skills/dt-design/SKILL.md
-    output_contract_ref: .claude/skills/dt-design/SKILL.md
+    input_contract_ref: .claude/skills/idc-dt-design/SKILL.md
+    output_contract_ref: .claude/skills/idc-dt-design/SKILL.md
     evidence_ref_required: true

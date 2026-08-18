@@ -132,18 +132,18 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 - `.claude/skills/idc-workflow/references/human-views/`：给用户看的中文 Brainstorming / Clarification / Alignment / Completion / Escalation 模板。
 - `.claude/skills/idc-workflow/references/constraints/`：decision / planning / execution 三段式约束。
 - `.claude/skills/idc-workflow/references/knowledge/`：D3A Layer、DT Domain、General placeholder knowledge 模板。
-- `.claude/skills/brainstorming/SKILL.md`：仅用于模糊想法的发散和多方案探索原子 skill。
+- `.claude/skills/idc-brainstorming/SKILL.md`：仅用于模糊想法的发散和多方案探索原子 skill。
 - `.claude/skills/idc-intent-discovery/SKILL.md`：IDC 内把模糊想法接入 draft spec 的原子 skill。
 - `.claude/skills/idc-intent-grilling/SKILL.md`：Grill Me 收敛追问的原子 skill。
 - `.claude/skills/idc-intent-alignment/SKILL.md`：人类前置确认的原子 skill。
-- `.claude/skills/general-coding/SKILL.md`：General Coding execution skill。
-- `.claude/skills/d3a-coding/SKILL.md`：D3A Coding execution skill。
-- `.claude/skills/gc-sop-adapter/SKILL.md`：企业 GC 全家桶 SOP 的外部 adapter placeholder。
-- `.claude/skills/dt-design/SKILL.md`：原代码仓 DT design skill 的外部 adapter。
-- `.claude/skills/dt-writer/SKILL.md`：原代码仓 DT writer skill 的外部 adapter。
-- `.claude/skills/gc-third-skill-placeholder/SKILL.md`：第三个原仓 skill 的显式 placeholder。
-- `.claude/skills/dt-build/SKILL.md`：DT build / run evidence 接口 skill。
-- `.claude/skills/tran-build/SKILL.md`：`tran_build` evidence 接口 skill。
+- `.claude/skills/idc-general-coding/SKILL.md`：General Coding execution skill。
+- `.claude/skills/idc-d3a-coding/SKILL.md`：D3A Coding execution skill。
+- `.claude/skills/idc-gc-sop-adapter/SKILL.md`：企业 GC 全家桶 SOP 的外部 adapter placeholder。
+- `.claude/skills/idc-dt-design/SKILL.md`：原代码仓 DT design skill 的外部 adapter。
+- `.claude/skills/idc-dt-writer/SKILL.md`：原代码仓 DT writer skill 的外部 adapter。
+- `.claude/skills/idc-gc-third-skill-placeholder/SKILL.md`：第三个原仓 skill 的显式 placeholder。
+- `.claude/skills/idc-dt-build/SKILL.md`：DT build / run evidence 接口 skill。
+- `.claude/skills/idc-tran-build/SKILL.md`：`tran_build` evidence 接口 skill。
 - `.claude/agents/`：Claude Code 项目级 subagent 定义。
 - `docs/domain-module-contract.md`：团队接入自己的 Domain Module 时遵循的契约。
 - `docs/adoption-guide.md`：其他团队复制 SOP 的指南。

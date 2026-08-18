@@ -76,8 +76,8 @@ knowledge/d3a/dt/<DT_DOMAIN>.md
 涉及文件：
 
 ```text
-skills/dt-build/SKILL.md
-skills/tran-build/SKILL.md
+skills/idc-dt-build/SKILL.md
+skills/idc-tran-build/SKILL.md
 knowledge/d3a/dt/*.md
 ```
 

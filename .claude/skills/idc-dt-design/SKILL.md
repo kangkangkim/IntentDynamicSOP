@@ -1,6 +1,6 @@
 ---
-name: dt-design
-description: Use through gc-sop-adapter when a D3A or registered domain task needs DT design planning before DT writing; this external harness only defines the non-sensitive adapter boundary for the original enterprise repo skill.
+name: idc-dt-design
+description: Use through idc-gc-sop-adapter when a D3A or registered domain task needs DT design planning before DT writing; this external harness only defines the non-sensitive adapter boundary for the original enterprise repo skill.
 ---
 
 # DT Design Skill Adapter
@@ -15,7 +15,7 @@ It does not contain real enterprise DT design rules.
 Use only after:
 
 - IDC Human Alignment is approved.
-- `gc-sop-adapter` has selected this atomic capability.
+- `idc-gc-sop-adapter` has selected this atomic capability.
 - A task contract and verification contract exist.
 - For D3A, selected DT domains come only from the DT Domain registry.
 - Required repository context is referenced by `evidence_ref`.

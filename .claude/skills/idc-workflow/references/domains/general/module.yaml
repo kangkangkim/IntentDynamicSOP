@@ -29,6 +29,6 @@ domain_module:
       - agents/general-coder.md
       - agents/build-error-analyzer.md
     skills:
-      - skills/general-coding/SKILL.md
+      - skills/idc-general-coding/SKILL.md
   examples:
     - examples/e2e-general-task

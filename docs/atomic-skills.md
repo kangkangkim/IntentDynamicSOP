@@ -37,6 +37,10 @@ idc-lane-completion
 idc-evidence-gate
 idc-vertical-slice-readiness
 idc-resume-run
+idc-general-coding
+idc-d3a-coding
+idc-dt-build
+idc-tran-build
 ```
 
 它们的共同边界：
@@ -46,7 +50,7 @@ idc-resume-run
 schema / registry / human-view / evidence / knowledge template 不 skill 化
 ```
 
-### brainstorming
+### idc-brainstorming
 
 ```text
 raw_idea -> approaches + draft_spec
@@ -54,7 +58,7 @@ raw_idea -> approaches + draft_spec
 
 仅用于模糊想法、raw idea 和早期产品方向。
 
-短需求不等于模糊需求；如果一句话已经包含目标、行为和验收线索，应跳过 `brainstorming`，进入 Grill Me / Alignment。
+短需求不等于模糊需求；如果一句话已经包含目标、行为和验收线索，应跳过 `idc-brainstorming`，进入 Grill Me / Alignment。
 
 这是可直接复用的发散原子能力，吸收 Superpowers Brainstorming 方法论，先探索 2-3 个方向，再产出 draft spec。
 
@@ -66,7 +70,7 @@ raw_idea -> draft_spec
 
 用于 IDC workflow 内的模糊想法。
 
-它是 `brainstorming` 的 IDC wrapper，负责把发散结果接入 normalized request、Grill Me 和 Alignment。
+它是 `idc-brainstorming` 的 IDC wrapper，负责把发散结果接入 normalized request、Grill Me 和 Alignment。
 
 ### idc-intent-grilling
 
@@ -94,7 +98,7 @@ machine contract -> human approval
 
 用于把 Alignment Pack 渲染成中文 Alignment View，并等待用户 approve。
 
-### superpowers-adapter
+### idc-superpowers-adapter
 
 ```text
 approved_alignment + bounded execution units -> Superpowers-style engineering loop
@@ -106,10 +110,10 @@ approved_alignment + bounded execution units -> Superpowers-style engineering lo
 
 ```text
 IDC Harness 决定 Domain / Lane / Contract / Completion Gate
-superpowers-adapter 只提供 approved 后的执行纪律
+idc-superpowers-adapter 只提供 approved 后的执行纪律
 ```
 
-### gc-sop-adapter
+### idc-gc-sop-adapter
 
 ```text
 approved_alignment + selected GC atom -> confidential GC SOP handoff
@@ -119,7 +123,7 @@ approved_alignment + selected GC atom -> confidential GC SOP handoff
 
 外部仓库只保留 adapter contract，不包含真实 GC SOP prompt、命令、路径、日志或内部规则。
 
-### dt-design
+### idc-dt-design
 
 ```text
 verification_contract + selected DT domain -> DT design artifact
@@ -127,7 +131,7 @@ verification_contract + selected DT domain -> DT design artifact
 
 原代码仓 DT design skill 的外部 adapter。它可以设计 DT，但 DT design 本身不是 RED / GREEN evidence。
 
-### dt-writer
+### idc-dt-writer
 
 ```text
 dt_design_ref + allowed paths -> DT changes + RED/GREEN evidence refs
@@ -135,7 +139,23 @@ dt_design_ref + allowed paths -> DT changes + RED/GREEN evidence refs
 
 原代码仓 DT writer skill 的外部 adapter。它可以写 DT 并返回 evidence refs，但不能标记 IDC DONE。
 
-### gc-third-skill-placeholder
+### idc-dt-build
+
+```text
+selected DT domain + enterprise command placeholder -> DT build/run evidence
+```
+
+D3A verification 阶段的 DT build / run evidence 接口 skill。外部 harness 只定义非敏感输入输出，不包含真实企业命令。
+
+### idc-tran-build
+
+```text
+required DT GREEN -> tran_build PASS/FAIL evidence
+```
+
+D3A final build verification 接口 skill。它只服务 D3A DONE gate，不作为 General Coding gate。
+
+### idc-gc-third-skill-placeholder
 
 ```text
 <ENTERPRISE_GC_THIRD_SKILL_NAME> -> placeholder adapter
@@ -147,25 +167,26 @@ dt_design_ref + allowed paths -> DT changes + RED/GREEN evidence refs
 
 ```text
 idc-workflow
-  -> brainstorming
+  -> idc-brainstorming
   -> idc-intent-discovery
   -> idc-intent-grilling
   -> idc-intent-alignment
-  -> superpowers-adapter
-  -> gc-sop-adapter
-  -> dt-design / dt-writer / gc-third-skill-placeholder
+  -> idc-superpowers-adapter
+  -> idc-gc-sop-adapter
+  -> idc-dt-design / idc-dt-writer / idc-dt-build / idc-tran-build / idc-gc-third-skill-placeholder
+  -> idc-general-coding / idc-d3a-coding
   -> automated closure loop
 ```
 
-## 不属于第一批
+## Domain Execution Skills
 
-D3A 不拆成通用 atomic skill。
+D3A 不拆成通用框架原子能力，但它作为本仓库 skill 也统一使用 `idc-` 前缀。
 
-D3A 是 Domain Module：
+D3A 是 Domain Module + domain execution skill：
 
 ```text
 .claude/skills/idc-workflow/references/domains/d3a/module.yaml
-.claude/skills/d3a-coding/SKILL.md
+.claude/skills/idc-d3a-coding/SKILL.md
 ```
 
 它可以复用 atomic skills，但自身保留领域边界。

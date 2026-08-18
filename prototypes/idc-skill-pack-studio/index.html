@@ -89,8 +89,8 @@
       <section class="canvas-panel" aria-label="SOP Canvas">
         <div class="canvas-toolbar">
           <div>
-            <h2>SOP Canvas</h2>
-            <p>Source of truth 会落到 YAML，画布只负责可视化编排。</p>
+            <h2>Harness Board</h2>
+            <p>从上到下定制 IDC Harness，每一层选择实现并拖入原子能力。</p>
           </div>
           <div class="toolbar-group" aria-label="Canvas controls">
             <button class="icon-button" id="alignBtn" title="Auto align" aria-label="Auto align">⇄</button>
@@ -109,6 +109,8 @@
             <span id="focusNodeCount">0 canvas nodes</span>
           </div>
         </div>
+
+        <section class="architecture-board" id="architectureBoard" aria-label="Top-down Harness Board"></section>
 
         <section class="routing-board" aria-label="Routing Strategy Board">
           <div class="route-card">
@@ -130,15 +132,8 @@
           </div>
         </section>
 
-        <div class="canvas" id="canvas">
-          <div class="lane-label intake">Intake</div>
-          <div class="lane-label design">Design</div>
-          <div class="lane-label build">Build</div>
-          <div class="lane-label verify">Verify</div>
-          <svg class="edges" id="edges" aria-hidden="true"></svg>
-          <div class="canvas-hint" id="canvasHint">
-            Drag capabilities here to add nodes
-          </div>
+        <div class="canvas vertical-canvas" id="canvas">
+          <div class="canvas-hint" id="canvasHint">Drag capabilities into a layer row</div>
         </div>
       </section>
 

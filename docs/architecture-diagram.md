@@ -58,9 +58,9 @@ flowchart TD
     F --> F1[".claude/agents/d3a-layer-coder.md"]
     F --> F2[".claude/agents/dt-test-writer.md"]
     F --> F3[".claude/agents/build-error-analyzer.md"]
-    F --> F4[".claude/skills/d3a-coding/"]
-    F --> F5[".claude/skills/dt-build/"]
-    F --> F6[".claude/skills/tran-build/"]
+    F --> F4[".claude/skills/idc-d3a-coding/"]
+    F --> F5[".claude/skills/idc-dt-build/"]
+    F --> F6[".claude/skills/idc-tran-build/"]
 
     G --> G1["examples/mock-d3a-task/"]
 ```

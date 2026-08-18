@@ -245,10 +245,10 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "Skill Adapter Router",
         "dynamic scenarios and custom domain",
         "enterprise_gc_sop_adapter",
-        ".claude/skills/gc-sop-adapter/SKILL.md",
-        ".claude/skills/dt-design/SKILL.md",
-        ".claude/skills/dt-writer/SKILL.md",
-        ".claude/skills/gc-third-skill-placeholder/SKILL.md",
+        ".claude/skills/idc-gc-sop-adapter/SKILL.md",
+        ".claude/skills/idc-dt-design/SKILL.md",
+        ".claude/skills/idc-dt-writer/SKILL.md",
+        ".claude/skills/idc-gc-third-skill-placeholder/SKILL.md",
         "Placeholder adapters are not executable.",
         "D3A may use GC atoms only inside D3A module constraints.",
     ]:
@@ -300,7 +300,7 @@ def test_general_domain_module_is_active_and_self_closing():
     module = read_text(".claude/skills/idc-workflow/references/domains/general/module.yaml")
     workflow = read_text(".claude/skills/idc-workflow/references/workflows/general-coding.md")
     plan_schema = read_text(".claude/skills/idc-workflow/references/schemas/general-plan.schema.yaml")
-    skill = read_text(".claude/skills/general-coding/SKILL.md")
+    skill = read_text(".claude/skills/idc-general-coding/SKILL.md")
 
     assert_true("id: general" in module, "general module id 不正确。")
     assert_true("status: active" in module, "general module 必须 active。")
@@ -804,7 +804,7 @@ def test_manual_test_scenarios_exist_for_user_experience():
         assert_true((ROOT / file_name).exists(), f"缺少手动体验场景：{file_name}")
 
     expectations = {
-        "test/01-rough-general.md": ["idc-intent-discovery", "Brainstorming View", "不应该直接进入 `general-coding`"],
+        "test/01-rough-general.md": ["idc-intent-discovery", "Brainstorming View", "不应该直接进入 `idc-general-coding`"],
         "test/02-structured-general.md": ["structured_requirement", "Clarification View", "不应该默认 Brainstorming", "不应该把待定细节或开放问题塞进 Alignment View"],
         "test/03-tr3-d3a.md": ["tr3_design_doc", "Domain = d3a", "不应该把 TR3 DT design 当 RED/GREEN evidence"],
         "test/04-approved-general-execution.md": ["general_execution", "Delegation Contract", "general-coder"],
@@ -887,10 +887,10 @@ def test_id_workflow_skill_exists_and_has_triggers():
     assert_true("references/human-views/clarification-view.md" in text, "ID workflow skill 必须加载 Clarification View。")
     assert_true("grill-me-method" in text, "ID workflow skill 必须声明 Grill Me method。")
     assert_true("upstream-superpowers-brainstorming" in text, "ID workflow skill 必须声明 upstream Superpowers brainstorming。")
-    assert_true("idc-brainstorming-overlay" in text, "ID workflow skill 必须声明 IDC brainstorming overlay。")
+    assert_true("idc-brainstorming-overlay" in text, "ID workflow skill 必须声明 IDC idc-brainstorming overlay。")
     assert_true("references/human-views/brainstorming-view.md" in text, "ID workflow skill 必须加载 Brainstorming View。")
     assert_true("rough" in text and "Domain = general" in text and "run `idc-intent-discovery` first" in text, "ID workflow skill 必须在 skill 层声明 rough general 先进入 discovery。")
-    for skill_name in ["brainstorming", "idc-intent-discovery", "idc-intent-grilling", "idc-intent-alignment"]:
+    for skill_name in ["idc-brainstorming", "idc-intent-discovery", "idc-intent-grilling", "idc-intent-alignment"]:
         assert_true(f".claude/skills/{skill_name}/SKILL.md" in text, f"ID workflow 必须编排 {skill_name}。")
 
     for fragment in [
@@ -910,7 +910,19 @@ def test_id_workflow_skill_exists_and_has_triggers():
 
 
 def test_framework_behaviors_are_skillized_with_boundaries():
+    for skill_dir in (ROOT / ".claude/skills").iterdir():
+        if skill_dir.is_dir():
+            assert_true(skill_dir.name.startswith("idc-"), f"所有本仓库 skill 都必须使用 idc- 前缀：{skill_dir.name}。")
+
     skill_names = [
+        "idc-brainstorming",
+        "idc-d3a-coding",
+        "idc-dt-build",
+        "idc-dt-design",
+        "idc-dt-writer",
+        "idc-gc-sop-adapter",
+        "idc-gc-third-skill-placeholder",
+        "idc-general-coding",
         "idc-input-adapter",
         "idc-scenario-router",
         "idc-domain-module-router",
@@ -931,6 +943,8 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         "idc-evidence-gate",
         "idc-vertical-slice-readiness",
         "idc-resume-run",
+        "idc-superpowers-adapter",
+        "idc-tran-build",
     ]
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
     command = read_text(".claude/commands/id-workflow.md")
@@ -1034,8 +1048,8 @@ def test_framework_behaviors_are_skillized_with_boundaries():
 
 def test_atomic_pre_alignment_skills_exist_and_are_reusable():
     expected = {
-        "brainstorming": [
-            "name: brainstorming",
+        "idc-brainstorming": [
+            "name: idc-brainstorming",
             "raw idea",
             "2-3 concrete approaches",
             "Use only when",
@@ -1048,9 +1062,9 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
         "idc-intent-discovery": [
             "name: idc-intent-discovery",
             "raw_idea",
-            "IDC wrapper around the reusable `brainstorming` skill",
-            ".claude/skills/brainstorming/SKILL.md",
-            "Do not use brainstorming merely because the request is short",
+            "IDC wrapper around the reusable `idc-brainstorming` skill",
+            ".claude/skills/idc-brainstorming/SKILL.md",
+            "Do not use idc-brainstorming merely because the request is short",
             "rough / vague / sketchy general coding request",
             "`general + rough` still uses this skill",
             "../idc-workflow/references/workflows/discovery-provider.md",
@@ -1085,21 +1099,21 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
         assert_true(skill_name in atomic_doc, f"atomic-skills 文档缺少 {skill_name}。")
     assert_true("D3A 是 Domain Module" in atomic_doc, "atomic-skills 文档必须说明 D3A 不是通用原子 skill。")
 
-    general_skill = read_text(".claude/skills/general-coding/SKILL.md")
-    assert_true("Route back to:" in general_skill and ".claude/skills/idc-intent-discovery/SKILL.md" in general_skill, "general-coding 必须把 rough general 请求导回 idc-intent-discovery。")
+    general_skill = read_text(".claude/skills/idc-general-coding/SKILL.md")
+    assert_true("Route back to:" in general_skill and ".claude/skills/idc-intent-discovery/SKILL.md" in general_skill, "idc-general-coding 必须把 rough general 请求导回 idc-intent-discovery。")
 
 
 def test_superpowers_adapter_skill_is_integrated_under_skills():
-    adapter = read_text(".claude/skills/superpowers-adapter/SKILL.md")
+    adapter = read_text(".claude/skills/idc-superpowers-adapter/SKILL.md")
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
     atomic_doc = read_text("docs/atomic-skills.md")
     attribution = read_text("docs/source-attribution.md")
 
-    assert_true(adapter.startswith("---\n"), "superpowers-adapter 必须有 skill frontmatter。")
-    assert_true("name: superpowers-adapter" in adapter, "superpowers-adapter 缺少 name。")
-    assert_true("IDC Harness = control plane" in adapter, "superpowers-adapter 必须声明 IDC 是控制面。")
-    assert_true("Superpowers Adapter = execution discipline" in adapter, "superpowers-adapter 必须声明自己是执行纪律。")
-    assert_true("Domain Module = enterprise domain constraints" in adapter, "superpowers-adapter 必须保留 Domain Module 边界。")
+    assert_true(adapter.startswith("---\n"), "idc-superpowers-adapter 必须有 skill frontmatter。")
+    assert_true("name: idc-superpowers-adapter" in adapter, "idc-superpowers-adapter 缺少 name。")
+    assert_true("IDC Harness = control plane" in adapter, "idc-superpowers-adapter 必须声明 IDC 是控制面。")
+    assert_true("Superpowers Adapter = execution discipline" in adapter, "idc-superpowers-adapter 必须声明自己是执行纪律。")
+    assert_true("Domain Module = enterprise domain constraints" in adapter, "idc-superpowers-adapter 必须保留 Domain Module 边界。")
     for stage in [
         "writing-plans",
         "executing-plans",
@@ -1111,7 +1125,7 @@ def test_superpowers_adapter_skill_is_integrated_under_skills():
         "verification-before-completion",
         "finishing-a-development-branch",
     ]:
-        assert_true(stage in adapter, f"superpowers-adapter 缺少阶段：{stage}")
+        assert_true(stage in adapter, f"idc-superpowers-adapter 缺少阶段：{stage}")
 
     for override in [
         "IDC rules override this adapter whenever they conflict.",
@@ -1123,58 +1137,58 @@ def test_superpowers_adapter_skill_is_integrated_under_skills():
         "Superpowers-style verification cannot replace IDC Completion Gate.",
         "OKL, docs, TR3 DT design, and repository search are knowledge inputs, not DONE evidence.",
     ]:
-        assert_true(override in adapter, f"superpowers-adapter 缺少 IDC override：{override}")
+        assert_true(override in adapter, f"idc-superpowers-adapter 缺少 IDC override：{override}")
 
-    assert_true(".claude/skills/superpowers-adapter/SKILL.md" in id_workflow, "idc-workflow 必须加载 superpowers-adapter。")
+    assert_true(".claude/skills/idc-superpowers-adapter/SKILL.md" in id_workflow, "idc-workflow 必须加载 idc-superpowers-adapter。")
     assert_true("Superpowers Adapter may provide the inner engineering loop" in id_workflow, "idc-workflow 必须声明 Superpowers Adapter 的边界。")
-    assert_true("superpowers-adapter" in atomic_doc, "atomic-skills 文档必须记录 superpowers-adapter。")
-    assert_true(".claude/skills/superpowers-adapter/SKILL.md" in attribution, "source attribution 必须记录 adapter 落点。")
+    assert_true("idc-superpowers-adapter" in atomic_doc, "atomic-skills 文档必须记录 idc-superpowers-adapter。")
+    assert_true(".claude/skills/idc-superpowers-adapter/SKILL.md" in attribution, "source attribution 必须记录 adapter 落点。")
     assert_true("https://github.com/obra/superpowers/tree/main/skills" in attribution, "source attribution 必须记录 Superpowers skills 来源。")
 
 
 def test_gc_sop_and_original_repo_skill_adapters_exist():
-    gc = read_text(".claude/skills/gc-sop-adapter/SKILL.md")
-    dt_design = read_text(".claude/skills/dt-design/SKILL.md")
-    dt_writer = read_text(".claude/skills/dt-writer/SKILL.md")
-    third = read_text(".claude/skills/gc-third-skill-placeholder/SKILL.md")
+    gc = read_text(".claude/skills/idc-gc-sop-adapter/SKILL.md")
+    dt_design = read_text(".claude/skills/idc-dt-design/SKILL.md")
+    dt_writer = read_text(".claude/skills/idc-dt-writer/SKILL.md")
+    third = read_text(".claude/skills/idc-gc-third-skill-placeholder/SKILL.md")
     atomic_doc = read_text("docs/atomic-skills.md")
     checklist = read_text("docs/confidential-migration-checklist.md")
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
 
     for path, text in [
-        (".claude/skills/gc-sop-adapter/SKILL.md", gc),
-        (".claude/skills/dt-design/SKILL.md", dt_design),
-        (".claude/skills/dt-writer/SKILL.md", dt_writer),
-        (".claude/skills/gc-third-skill-placeholder/SKILL.md", third),
+        (".claude/skills/idc-gc-sop-adapter/SKILL.md", gc),
+        (".claude/skills/idc-dt-design/SKILL.md", dt_design),
+        (".claude/skills/idc-dt-writer/SKILL.md", dt_writer),
+        (".claude/skills/idc-gc-third-skill-placeholder/SKILL.md", third),
     ]:
         assert_true(text.startswith("---\n"), f"{path} 必须有 skill frontmatter。")
 
     for fragment in [
-        "name: gc-sop-adapter",
+        "name: idc-gc-sop-adapter",
         "enterprise GC full-suite SOP",
         "IDC Core = dynamic routing framework",
         "GC SOP Adapter = reusable enterprise atomic execution abilities",
-        ".claude/skills/dt-design/SKILL.md",
-        ".claude/skills/dt-writer/SKILL.md",
-        ".claude/skills/gc-third-skill-placeholder/SKILL.md",
+        ".claude/skills/idc-dt-design/SKILL.md",
+        ".claude/skills/idc-dt-writer/SKILL.md",
+        ".claude/skills/idc-gc-third-skill-placeholder/SKILL.md",
         "The third original-repository skill is intentionally a placeholder",
         "evidence_ref_required: true",
         "<ENTERPRISE_GC_SOP_REF>",
     ]:
-        assert_true(fragment in gc, f"gc-sop-adapter 缺少：{fragment}")
+        assert_true(fragment in gc, f"idc-gc-sop-adapter 缺少：{fragment}")
 
     for fragment in [
-        "name: dt-design",
+        "name: idc-dt-design",
         "original enterprise repository skill used to design",
         "DT design is not RED evidence.",
         "DT design is not GREEN evidence.",
         "READY_FOR_DT_WRITER",
         "<ENTERPRISE_ORIGINAL_REPO_SKILL_REF>",
     ]:
-        assert_true(fragment in dt_design, f"dt-design adapter 缺少：{fragment}")
+        assert_true(fragment in dt_design, f"idc-dt-design adapter 缺少：{fragment}")
 
     for fragment in [
-        "name: dt-writer",
+        "name: idc-dt-writer",
         "original enterprise repository skill used to write",
         "dt_design_ref",
         "red_evidence_refs",
@@ -1182,47 +1196,47 @@ def test_gc_sop_and_original_repo_skill_adapters_exist():
         "Do not mark D3A DONE; IDC Completion Gate owns DONE.",
         "max_change_loc: 500",
     ]:
-        assert_true(fragment in dt_writer, f"dt-writer adapter 缺少：{fragment}")
+        assert_true(fragment in dt_writer, f"idc-dt-writer adapter 缺少：{fragment}")
 
     for fragment in [
-        "name: gc-third-skill-placeholder",
+        "name: idc-gc-third-skill-placeholder",
         "<ENTERPRISE_GC_THIRD_SKILL_NAME>",
         "Do not execute this placeholder",
         "Do not guess the third skill's purpose.",
     ]:
         assert_true(fragment in third, f"third skill placeholder 缺少：{fragment}")
 
-    for fragment in ["gc-sop-adapter", "dt-design", "dt-writer", "gc-third-skill-placeholder"]:
+    for fragment in ["idc-gc-sop-adapter", "idc-dt-design", "idc-dt-writer", "idc-gc-third-skill-placeholder"]:
         assert_true(fragment in atomic_doc, f"atomic-skills 文档缺少 {fragment}。")
         assert_true(f".claude/skills/{fragment}/SKILL.md" in id_workflow, f"idc-workflow 未加载 {fragment}。")
 
     assert_true("真实 GC 全家桶 SOP atomic ability mapping" in checklist, "保密区 checklist 必须包含 GC SOP mapping。")
-    assert_true("`dt-design`、`dt-writer`、`<ENTERPRISE_GC_THIRD_SKILL_NAME>`" in checklist, "保密区 checklist 必须列出三个原仓 skill。")
+    assert_true("`idc-dt-design`、`idc-dt-writer`、`<ENTERPRISE_GC_THIRD_SKILL_NAME>`" in checklist, "保密区 checklist 必须列出三个原仓 skill。")
 
 
 def test_domain_and_build_skills_define_entry_rules_at_skill_layer():
-    d3a_skill = read_text(".claude/skills/d3a-coding/SKILL.md")
-    dt_skill = read_text(".claude/skills/dt-build/SKILL.md")
-    tran_skill = read_text(".claude/skills/tran-build/SKILL.md")
+    d3a_skill = read_text(".claude/skills/idc-d3a-coding/SKILL.md")
+    dt_skill = read_text(".claude/skills/idc-dt-build/SKILL.md")
+    tran_skill = read_text(".claude/skills/idc-tran-build/SKILL.md")
     grilling_skill = read_text(".claude/skills/idc-intent-grilling/SKILL.md")
     alignment_skill = read_text(".claude/skills/idc-intent-alignment/SKILL.md")
 
     for path, text in [
-        (".claude/skills/d3a-coding/SKILL.md", d3a_skill),
-        (".claude/skills/dt-build/SKILL.md", dt_skill),
-        (".claude/skills/tran-build/SKILL.md", tran_skill),
+        (".claude/skills/idc-d3a-coding/SKILL.md", d3a_skill),
+        (".claude/skills/idc-dt-build/SKILL.md", dt_skill),
+        (".claude/skills/idc-tran-build/SKILL.md", tran_skill),
     ]:
         assert_true(text.startswith("---\n"), f"{path} 必须有 skill frontmatter。")
         assert_true("## When To Use" in text, f"{path} 必须在 skill 层定义 When To Use。")
         assert_true("Do not use" in text, f"{path} 必须在 skill 层定义 Do not use。")
 
-    assert_true("Domain = d3a" in d3a_skill and "Human Alignment 已 approved" in d3a_skill, "d3a-coding 必须声明 D3A 和 approval 入口条件。")
+    assert_true("Domain = d3a" in d3a_skill and "Human Alignment 已 approved" in d3a_skill, "idc-d3a-coding 必须声明 D3A 和 approval 入口条件。")
     assert_true(".claude/skills/idc-intent-discovery/SKILL.md" in d3a_skill, "rough D3A 必须导回 idc-intent-discovery。")
     assert_true(".claude/skills/idc-intent-grilling/SKILL.md" in d3a_skill, "D3A 缺 contract 必须导回 idc-intent-grilling。")
-    assert_true("任务是 General Coding" in dt_skill, "dt-build 必须禁止 General Coding 使用。")
-    assert_true("selected DT domain" in dt_skill, "dt-build 必须要求 selected DT domain。")
-    assert_true("所有 required DT domain 已有 GREEN evidence" in tran_skill, "tran-build 必须要求 required DT GREEN。")
-    assert_true("D3A DONE gate" in tran_skill, "tran-build 必须声明只作为 D3A DONE gate。")
+    assert_true("任务是 General Coding" in dt_skill, "idc-dt-build 必须禁止 General Coding 使用。")
+    assert_true("selected DT domain" in dt_skill, "idc-dt-build 必须要求 selected DT domain。")
+    assert_true("所有 required DT domain 已有 GREEN evidence" in tran_skill, "idc-tran-build 必须要求 required DT GREEN。")
+    assert_true("D3A DONE gate" in tran_skill, "idc-tran-build 必须声明只作为 D3A DONE gate。")
     assert_true("rough / raw idea requests" in grilling_skill and ".claude/skills/idc-intent-discovery/SKILL.md" in grilling_skill, "idc-intent-grilling 必须把 rough 请求导回 discovery。")
     assert_true("critical contract / scope / completion gate questions remain" in alignment_skill and ".claude/skills/idc-intent-grilling/SKILL.md" in alignment_skill, "idc-intent-alignment 必须把未澄清问题导回 grilling。")
     assert_true("Do not merge Clarification View into Alignment View." in alignment_skill, "idc-intent-alignment 必须禁止把澄清折进 Alignment。")
@@ -1235,7 +1249,7 @@ def test_claude_project_entries_expose_skills_and_agents():
             continue
         claude_skill = ROOT / ".claude" / "skills" / skill_dir.name / "SKILL.md"
         assert_true(claude_skill.exists(), f"Claude Code 项目级 skill 入口不存在：{claude_skill}")
-        assert_true(claude_skill.read_text().startswith("---\n") or skill_dir.name in {"d3a-coding", "dt-build", "tran-build"}, f"Claude Code skill 缺少 frontmatter 或 legacy placeholder 说明：{skill_dir.name}")
+        assert_true(claude_skill.read_text().startswith("---\n") or skill_dir.name in {"idc-d3a-coding", "idc-dt-build", "idc-tran-build"}, f"Claude Code skill 缺少 frontmatter 或 legacy placeholder 说明：{skill_dir.name}")
 
     for agent_file in sorted((ROOT / ".claude" / "agents").glob("*.md")):
         claude_agent = ROOT / ".claude" / "agents" / agent_file.name

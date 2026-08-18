@@ -385,8 +385,8 @@ blockers
 ### Verification Team
 
 ```text
-dt-build
-tran-build
+idc-dt-build
+idc-tran-build
 build-error-analyzer
 evidence summarizer
 ```

@@ -1,5 +1,5 @@
 ---
-name: brainstorming
+name: idc-brainstorming
 description: Use only when a coding request is a raw idea, vague thought, unclear feature concept, or early product direction that needs divergent exploration before clarification or implementation; produce 2-3 concrete approaches and a draft spec, without writing code.
 ---
 
@@ -83,5 +83,5 @@ When this skill is used inside IDC, hand off to:
 - Do not use this skill merely because the request is short; short structured requests go to Grill Me / Alignment, not Brainstorming.
 - Use Chinese if the user used Chinese.
 - TR3 skips this skill unless the TR3 is too incomplete to identify behavior.
-- Domain hint must not suppress brainstorming: `general + rough` still uses this skill.
+- Domain hint must not suppress idc-brainstorming: `general + rough` still uses this skill.
 - Keep enterprise details as placeholders outside the confidential environment.

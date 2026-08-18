@@ -1,6 +1,6 @@
 ---
 name: idc-intent-discovery
-description: Use only when a coding request is a raw idea, vague feature request, or early product thought that needs brainstorming before clarification; expand it into a draft spec without writing implementation code.
+description: Use only when a coding request is a raw idea, vague feature request, or early product thought that needs idc-brainstorming before clarification; expand it into a draft spec without writing implementation code.
 ---
 
 # Intent Discovery
@@ -9,9 +9,9 @@ Use this atomic skill to turn `raw_idea` input into a draft spec.
 
 It is reusable outside D3A and outside the full ID workflow.
 
-This is the IDC wrapper around the reusable `brainstorming` skill.
+This is the IDC wrapper around the reusable `idc-brainstorming` skill.
 
-Use `.claude/skills/brainstorming/SKILL.md` for divergent exploration, then apply the IDC overlay for handoff and contract shape.
+Use `.claude/skills/idc-brainstorming/SKILL.md` for divergent exploration, then apply the IDC overlay for handoff and contract shape.
 
 ## When To Use
 
@@ -38,14 +38,14 @@ Do not use by default for:
 ../idc-workflow/references/schemas/discovery-provider.schema.yaml
 ../idc-workflow/references/human-views/brainstorming-view.md
 ../idc-workflow/references/schemas/normalized-request.schema.yaml
-.claude/skills/brainstorming/SKILL.md
+.claude/skills/idc-brainstorming/SKILL.md
 ```
 
 ## Behavior
 
 ```text
 raw_idea
-  -> brainstorming
+  -> idc-brainstorming
   -> idc-brainstorming-overlay
   -> Explore lightweight project context
   -> Ask focused discovery questions
@@ -72,7 +72,7 @@ The draft spec must include:
 - Do not write implementation code.
 - Do not mark draft spec as approved contract.
 - Do not treat upstream design approval as implementation approval; hand off to `idc-intent-grilling` and `idc-intent-alignment`.
-- Do not use brainstorming merely because the request is short; short structured requests go to Grill Me / Alignment.
+- Do not use idc-brainstorming merely because the request is short; short structured requests go to Grill Me / Alignment.
 - Use Chinese if the user used Chinese.
 - TR3 skips this skill unless the TR3 is too incomplete to identify behavior.
 - Domain hint must not suppress discovery: `general + rough` still uses this skill.

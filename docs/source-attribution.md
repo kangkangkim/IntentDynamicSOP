@@ -42,7 +42,7 @@ Copyright (c) 2026 Matt Pocock
 
 ## Superpowers Brainstorming Inspiration
 
-本仓库的 Discovery Provider 以 `obra/superpowers` 项目中 `brainstorming` skill 的公开设计为 upstream baseline，并在其上添加 IDC overlay。
+本仓库的 Discovery Provider 以 `obra/superpowers` 项目中 `idc-brainstorming` skill 的公开设计为 upstream baseline，并在其上添加 IDC overlay。
 
 Source:
 
@@ -78,7 +78,7 @@ Baseline 保留点：
 
 ## Superpowers Adapter Inspiration
 
-本仓库的 `superpowers-adapter` 将 Superpowers 的公开工程流程作为 IDC approved 后的内层执行纪律。
+本仓库的 `idc-superpowers-adapter` 将 Superpowers 的公开工程流程作为 IDC approved 后的内层执行纪律。
 
 Source:
 
@@ -117,5 +117,5 @@ Domain / Lane / Contract Gate / Completion Gate
 在 Intent Dynamic Code 中，这些思想被落到：
 
 ```text
-.claude/skills/superpowers-adapter/SKILL.md
+.claude/skills/idc-superpowers-adapter/SKILL.md
 ```
