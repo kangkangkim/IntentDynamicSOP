@@ -25,6 +25,8 @@ skills, and reads router/gate/policy behavior from references.
 .claude/skills/idc-intent-grilling/SKILL.md
 .claude/skills/idc-intent-grilling/references/grill-me-method.md
 .claude/skills/idc-intent-grilling/assets/question-card-template.md
+.claude/skills/idc-intent-grilling-with-docs/SKILL.md
+.claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md
 .claude/skills/idc-intent-alignment/SKILL.md
 .claude/skills/idc-skill-adapter-router/SKILL.md
 .claude/skills/idc-general-coding/SKILL.md
@@ -99,6 +101,7 @@ references/workflows/input-adapter.md
   -> references/workflows/contract-gate.md
   -> references/workflows/requirement-assessor.md
   -> idc-intent-grilling if needed
+  -> idc-intent-grilling-with-docs if clarification must update docs
   -> Alignment Pack
   -> idc-intent-alignment
   -> references/human-views/
@@ -175,6 +178,8 @@ assets/README.md
 .claude/skills/idc-intent-grilling/SKILL.md
 .claude/skills/idc-intent-grilling/references/grill-me-method.md
 .claude/skills/idc-intent-grilling/assets/question-card-template.md
+.claude/skills/idc-intent-grilling-with-docs/SKILL.md
+.claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md
 .claude/skills/idc-intent-alignment/SKILL.md
 references/workflows/discovery-provider.md
 references/schemas/discovery-provider.schema.yaml
@@ -189,6 +194,8 @@ If Requirement Assessor returns `NEED_CLARIFICATION`, also read:
 references/workflows/clarification-provider.md
 references/schemas/clarification-provider.schema.yaml
 references/human-views/clarification-view.md
+.claude/skills/idc-intent-grilling-with-docs/SKILL.md if clarification must update docs
+.claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md if clarification must update docs
 ```
 
 If `input_maturity = raw_idea`, run Discovery Provider before Clarification Provider:
@@ -297,7 +304,7 @@ references/schemas/repo-context-provider.schema.yaml
 - Before first confidential-zone D3A execution, run Vertical Slice Readiness Gate and require all required readiness checks PASS.
 - Clarification Provider only asks for critical missing information needed for contracts, scope, or completion gates.
 - Prefer `grill-me-method` for clarification: decision tree, frontier rounds, commitment check, no implementation.
-- Use `grill-with-docs-method` only when clarification should create non-sensitive decision records.
+- Use `idc-intent-grilling-with-docs` and `grill-with-docs-method` only when clarification should create non-sensitive decision records.
 - Fallback to `builtin-critical-questions` if Grill Me method is unavailable or too expensive.
 - All Lanes must self-close with evidence.
 - `fast` does not mean "no verification"; it means small closure.

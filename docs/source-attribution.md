@@ -24,8 +24,10 @@ Copyright (c) 2026 Matt Pocock
 本仓库吸收的是方法论，不是逐字复制原始 skill prompt。
 
 公司内如果还没有 Grill Me，可直接复用本 GitHub 仓库携带的
-`idc-intent-grilling`、`grill-me-method.md` 和 `question-card-template.md`；
-如果未来有内部实现，再通过 Team Binding 替换。
+`idc-intent-grilling`、`idc-intent-grilling-with-docs`、
+`grill-me-method.md`、`grill-with-docs-method.md` 和
+`question-card-template.md`；如果未来有内部实现，再通过 Team Binding
+替换。
 
 吸收点：
 
@@ -42,6 +44,8 @@ Copyright (c) 2026 Matt Pocock
 .claude/skills/idc-workflow/references/workflows/clarification-provider.md
 .claude/skills/idc-workflow/references/human-views/clarification-view.md
 .claude/skills/idc-workflow/references/schemas/clarification-provider.schema.yaml
+.claude/skills/idc-intent-grilling/SKILL.md
+.claude/skills/idc-intent-grilling-with-docs/SKILL.md
 ```
 
 ## Superpowers Brainstorming Inspiration

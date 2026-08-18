@@ -91,6 +91,8 @@ implementation:
 .claude/skills/idc-intent-grilling/SKILL.md
 .claude/skills/idc-intent-grilling/references/grill-me-method.md
 .claude/skills/idc-intent-grilling/assets/question-card-template.md
+.claude/skills/idc-intent-grilling-with-docs/SKILL.md
+.claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md
 ```
 
 ## What D3A Teams Fill In Confidentially

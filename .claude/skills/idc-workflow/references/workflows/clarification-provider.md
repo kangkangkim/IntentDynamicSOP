@@ -68,6 +68,13 @@ grill-with-docs-method
 
 当澄清结果需要沉淀为团队知识时使用。
 
+Use the project skill:
+
+```text
+.claude/skills/idc-intent-grilling-with-docs/SKILL.md
+.claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md
+```
+
 它可以产出非敏感的决策记录草案，例如：
 
 ```text

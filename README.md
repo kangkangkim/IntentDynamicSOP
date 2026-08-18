@@ -25,7 +25,8 @@ Team Binding
 
 Pre-alignment 也遵守同一规则：公司已有 Brainstorming 时通过 Team
 Binding 复用；公司没有 Grill Me 时，直接使用本 GitHub 仓库提供的
-`idc-intent-grilling` 和 `grill-me-method.md`。
+`idc-intent-grilling`、`idc-intent-grilling-with-docs`、`grill-me-method.md`
+和 `grill-with-docs-method.md`。
 
 推荐复用方式：
 
@@ -165,6 +166,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 - `.claude/skills/idc-brainstorming/SKILL.md`：仅用于模糊想法的发散和多方案探索原子 skill。
 - `.claude/skills/idc-intent-discovery/SKILL.md`：IDC 内把模糊想法接入 draft spec 的原子 skill。
 - `.claude/skills/idc-intent-grilling/SKILL.md`：Grill Me 收敛追问的原子 skill。
+- `.claude/skills/idc-intent-grilling-with-docs/SKILL.md`：需要沉淀非敏感决策文档时使用的 Grill With Docs skill。
 - `.claude/skills/idc-intent-alignment/SKILL.md`：人类前置确认的原子 skill。
 - `.claude/skills/idc-general-coding/SKILL.md`：General Coding execution skill。
 - `.claude/skills/idc-d3a-coding/SKILL.md`：D3A Coding execution skill。

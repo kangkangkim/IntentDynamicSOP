@@ -21,6 +21,7 @@ idc-skill-adapter-router
 idc-brainstorming
 idc-intent-discovery
 idc-intent-grilling
+idc-intent-grilling-with-docs
 idc-intent-alignment
 idc-general-coding
 idc-d3a-coding
@@ -99,6 +100,22 @@ Skill package shape:
 .claude/skills/idc-intent-grilling/SKILL.md
 .claude/skills/idc-intent-grilling/references/grill-me-method.md
 .claude/skills/idc-intent-grilling/assets/question-card-template.md
+```
+
+### idc-intent-grilling-with-docs
+
+```text
+draft_spec / structured_requirement / tr3_design_doc + docs -> clarification answers + doc refs
+```
+
+用于需要把澄清结果沉淀为非敏感决策文档、CONTEXT 或 glossary 的场景。
+
+它和 `idc-intent-grilling` 共用 Grill Me 的 decision tree / frontier round
+方法，但额外读取：
+
+```text
+.claude/skills/idc-intent-grilling-with-docs/SKILL.md
+.claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md
 ```
 
 ### idc-intent-alignment
@@ -181,6 +198,7 @@ idc-workflow
   -> idc-brainstorming
   -> idc-intent-discovery
   -> idc-intent-grilling
+  -> idc-intent-grilling-with-docs if docs need updates
   -> idc-intent-alignment
   -> idc-superpowers-adapter
   -> idc-gc-sop-adapter

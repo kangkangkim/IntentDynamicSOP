@@ -976,6 +976,8 @@ def test_id_workflow_skill_exists_and_has_triggers():
     assert_true("rough" in text and "Domain = general" in text and "run `idc-intent-discovery` first" in text, "ID workflow skill 必须在 skill 层声明 rough general 先进入 discovery。")
     for skill_name in ["idc-brainstorming", "idc-intent-discovery", "idc-intent-grilling", "idc-intent-alignment"]:
         assert_true(f".claude/skills/{skill_name}/SKILL.md" in text, f"ID workflow 必须编排 {skill_name}。")
+    assert_true(".claude/skills/idc-intent-grilling-with-docs/SKILL.md" in text, "ID workflow 必须编排 idc-intent-grilling-with-docs。")
+    assert_true("grill-with-docs-method.md" in text, "ID workflow 必须加载 Grill With Docs method。")
 
     for fragment in [
         "# /id-workflow",
@@ -1011,6 +1013,7 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         "idc-intent-alignment",
         "idc-intent-discovery",
         "idc-intent-grilling",
+        "idc-intent-grilling-with-docs",
         "idc-skill-adapter-router",
         "idc-superpowers-adapter",
         "idc-tran-build",
@@ -1188,6 +1191,14 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
             "../idc-workflow/references/workflows/clarification-provider.md",
             "../idc-workflow/references/human-views/clarification-view.md",
             "Do not decide Domain or Lane.",
+        ],
+        "idc-intent-grilling-with-docs": [
+            "name: idc-intent-grilling-with-docs",
+            "Grill With Docs",
+            "references/grill-with-docs-method.md",
+            "updated_doc_refs",
+            "Do not edit source files",
+            "Documentation created here is not RED evidence",
         ],
         "idc-intent-alignment": [
             "name: idc-intent-alignment",
@@ -1412,6 +1423,8 @@ def test_clarification_provider_uses_grill_me_method_with_fallback():
     attribution = read_text("docs/source-attribution.md")
     skill = read_text(".claude/skills/idc-intent-grilling/SKILL.md")
     method = read_text(".claude/skills/idc-intent-grilling/references/grill-me-method.md")
+    docs_skill = read_text(".claude/skills/idc-intent-grilling-with-docs/SKILL.md")
+    docs_method = read_text(".claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md")
     template = read_text(".claude/skills/idc-intent-grilling/assets/question-card-template.md")
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
 
@@ -1439,6 +1452,18 @@ def test_clarification_provider_uses_grill_me_method_with_fallback():
     assert_true("next: \"Clarification Provider\"" in requirement_assessor, "Requirement Assessor 必须把澄清交给 Provider。")
     assert_true("references/grill-me-method.md" in skill, "idc-intent-grilling 必须加载 Grill Me method reference。")
     assert_true("assets/question-card-template.md" in skill, "idc-intent-grilling 必须加载 question card asset。")
+    assert_true("name: idc-intent-grilling-with-docs" in docs_skill, "必须内置 idc-intent-grilling-with-docs skill。")
+    assert_true("references/grill-with-docs-method.md" in docs_skill, "idc-intent-grilling-with-docs 必须加载 Grill With Docs reference。")
+    assert_true("Update non-sensitive docs only when decisions crystallize" in docs_skill, "Grill With Docs 必须只沉淀已明确决策。")
+    assert_true("Do not write implementation code." in docs_skill, "Grill With Docs 不能写实现代码。")
+    for fragment in [
+        "Grill With Docs Method",
+        "Read bounded docs",
+        "Update docs only for crystallized decisions",
+        "Writable Docs",
+        "Do not turn speculative options into recorded decisions",
+    ]:
+        assert_true(fragment in docs_method, f"Grill With Docs method reference 缺少：{fragment}")
     for fragment in [
         "Grill Me Method",
         "Build decision tree",
@@ -1460,6 +1485,8 @@ def test_clarification_provider_uses_grill_me_method_with_fallback():
         assert_true(fragment in template, f"Grill Me question card asset 缺少：{fragment}")
     assert_true(".claude/skills/idc-intent-grilling/references/grill-me-method.md" in id_workflow, "idc-workflow 必须加载 idc-intent-grilling method reference。")
     assert_true(".claude/skills/idc-intent-grilling/assets/question-card-template.md" in id_workflow, "idc-workflow 必须加载 idc-intent-grilling question card asset。")
+    assert_true(".claude/skills/idc-intent-grilling-with-docs/SKILL.md" in id_workflow, "idc-workflow 必须加载 idc-intent-grilling-with-docs。")
+    assert_true(".claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md" in id_workflow, "idc-workflow 必须加载 Grill With Docs method reference。")
 
 
 def test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea():
