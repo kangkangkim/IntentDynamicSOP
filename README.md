@@ -4,6 +4,55 @@ Intent Dynamic Code 是一个非敏感的企业 Coding 工作流骨架。
 
 它的目标不是在外部环境实现真实企业 D3A，而是先把一套可迁移、可验证、可填充的工作流骨架准备好。进入公司保密区后，再把真实代码知识、测试知识和构建命令绑定进去。
 
+## 项目优势
+
+IDC 的核心优势是把动态智能分流和企业固定 SOP 分开：外层可以根据输入动态判断，内层可以保护团队已经验证过的固定流程。
+
+- **公共框架可复用**：`IDC Core` 只保存 `/id-workflow`、router、lane、gate、schema、human views 和 adapter eligibility registry，不保存企业 secret。
+- **企业知识不外泄**：真实 D3A 知识、GC SOP 原子能力、repo path、构建命令、内部 skill 名都通过保密区 Team Binding / knowledge index 接入。
+- **D3A 主流程固定**：D3A 是用户设计的固定 workflow。IDC 只在固定流程内选择 Layer、DT Domain、adapter、execution unit 和 evidence，不重排 D3A。
+- **Human Alignment 管检测**：Discovery 只做 intake / normalize / signal；Human Alignment Check 统一检测 readiness、critical gap、docs needed、approval validity 和 scope drift。
+- **GC SOP 按需调用**：GC SOP 是企业能力池，不是默认全家桶。只有 stage、capability key、contract、team binding 和 blocks_when 都匹配时才触发。
+- **Evidence-first 完成标准**：API Contract 先于 implementation；RED evidence 先于 GREEN evidence；D3A DONE 必须满足 required DT GREEN 和 `tran_build PASS`。
+- **多团队低成本接入**：其他团队复用 IDC Core，只新增自己的 Domain Module 和 Team Binding，不需要 fork 出另一套框架。
+
+## V0 定位
+
+V0 不是完整企业 D3A 实现，而是可进入保密区落地的最小成熟框架。
+
+V0 已经固定：
+
+- 统一入口：`/id-workflow`。
+- 三条顶层路径：Dynamic Scenario Coding、Domain Module Coding、General Coding Fallback。
+- 三种 Lane：`fast`、`lite`、`complex`。
+- D3A 固定 Coding Layer：`TRAN_CFG`、`DO`、`VISP_ADP`、`TFC_TFI`、`TFE`、`ADP`、`DRV`。
+- V0 DT Domain placeholder：`TPRINT`、`FW`、`DPF`。
+- Human Alignment Check 作为 readiness / gap / approval gate。
+- Skill Adapter Router 作为 GC SOP、Superpowers、DT skill、build skill 的唯一接入门。
+- Team Binding 模板，用于在保密区绑定真实路径、命令、内部 skill 和 evidence parser。
+- Mock D3A / General E2E examples 和 harness tests。
+
+V0 不做：
+
+- 不复制企业内部 D3A 知识。
+- 不编造 Coding Layer 到 DT Domain 的真实 mapping。
+- 不内置真实 repo path、构建命令、日志、API 或企业 skill 名。
+- 不把 GC SOP 十几个能力全部默认打开。
+- 不让模型重新设计 D3A 主流程。
+
+进入企业内部后，优先补的是索引和 binding，而不是把企业知识搬进 public harness：
+
+```text
+真实 D3A 知识地址
++ 真实 GC SOP atom mapping
++ 原代码仓 dt-design / dt-writer skill ref
++ 真实 DT / tran_build command
++ repo context provider
++ evidence parser
+```
+
+第一阶段目标是跑通一条最小 D3A vertical slice：1 个 Layer、1 个 DT Domain、1 条 verification mapping、1 组 repo context provider、RED evidence、GREEN evidence、`tran_build PASS` 和 Completion Summary。
+
 ## 多团队复用模型
 
 IDC 的整体能力面向多个团队复用。公共仓库只维护稳定框架和非敏感
@@ -59,7 +108,7 @@ IDC V0 只允许这三种 Lane，不设置 `known-domain`、`d3a`、`gc` 或
 异常再回人
 ```
 
-V0 重点完成 D3A workflow 结构、contract、subagent prompt、skill 接口、mock demo 和确定性的验证 gate。
+V0 重点完成 D3A workflow 结构、contract、subagent prompt、skill 接口、mock demo、保密区 binding 入口和确定性的验证 gate。
 
 当前框架目标不是把 D3A 写进 Core，而是先形成：
 
