@@ -1,4 +1,30 @@
 skill_adapters:
+  - id: idc-brainstorming
+    class: team_pre_alignment_adapter
+    status: team_bindable
+    skill_ref: .claude/skills/idc-brainstorming/SKILL.md
+    binding_ref: <TEAM_ADAPTER_BINDING_REF>
+    capability_keys:
+      - brainstorming
+      - raw_idea_discovery
+      - divergent_exploration
+      - draft_spec_generation
+    allowed_stages: [discovery, pre_alignment]
+    requires:
+      - input_maturity_raw_idea
+      - team_adapter_binding_ref_optional
+    blocks_when:
+      - structured_requirement_ready
+      - tr3_contract_sufficient
+      - human_alignment_approved
+    evidence_ref_required: false
+    executable: true
+    may_override:
+      domain_selection: false
+      lane_selection: false
+      contract_gate: false
+      completion_gate: false
+
   - id: idc-superpowers-adapter
     class: public_methodology_adapter
     status: active
@@ -201,4 +227,6 @@ rules:
   - Placeholder adapters must return executable: false.
   - Confidential-only adapters require an explicit team adapter binding ref before execution.
   - Team adapter bindings live outside the shared harness or use placeholder refs in this repository.
+  - Team-owned brainstorming should bind to idc-brainstorming when available; otherwise use the shared IDC fallback.
+  - Grill Me is provided by idc-intent-grilling from the shared GitHub harness unless a team later adds its own binding.
   - Adapter registry rows cannot grant Domain, Lane, Contract Gate, or Completion Gate ownership.

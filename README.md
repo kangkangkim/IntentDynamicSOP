@@ -23,6 +23,10 @@ Team Binding
   用途：把公共 adapter 绑定到该团队自己的真实实现
 ```
 
+Pre-alignment 也遵守同一规则：公司已有 Brainstorming 时通过 Team
+Binding 复用；公司没有 Grill Me 时，直接使用本 GitHub 仓库提供的
+`idc-intent-grilling` 和 `grill-me-method.md`。
+
 推荐复用方式：
 
 1. 多团队共享 `IDC Core`，不要 fork 出不同 core。

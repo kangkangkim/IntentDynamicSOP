@@ -265,6 +265,8 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "schema: skill_adapter",
         "adapter_registry:",
         "match_inputs:",
+        "team_pre_alignment_adapter",
+        "team_bindable",
         "capability_keys",
         "allowed_stages",
         "no_match_result: NEEDS_ADAPTER_MAPPING",
@@ -279,11 +281,15 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "<ENTERPRISE_GC_SOP_REF>",
         "<ENTERPRISE_ORIGINAL_REPO_SKILL_REF>",
         "<ENTERPRISE_GC_THIRD_SKILL_NAME>",
+        "<ENTERPRISE_BRAINSTORMING_SKILL_REF>",
     ]:
         assert_true(fragment in adapter_schema, f"Skill Adapter schema 缺少：{fragment}")
 
     for fragment in [
         "skill_adapters:",
+        "id: idc-brainstorming",
+        "class: team_pre_alignment_adapter",
+        "status: team_bindable",
         "id: idc-superpowers-adapter",
         "id: idc-gc-sop-adapter",
         "id: idc-dt-design",
@@ -296,7 +302,10 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "confidential_gc_mapping_ref",
         "confidential_original_repo_skill_ref",
         "team_adapter_binding_ref",
+        "team_adapter_binding_ref_optional",
         "binding_ref: <TEAM_ADAPTER_BINDING_REF>",
+        "Team-owned brainstorming should bind to idc-brainstorming",
+        "Grill Me is provided by idc-intent-grilling",
         "executable: false",
         "Adapter selection is registry-driven, not name-driven.",
         "NEEDS_ADAPTER_MAPPING",
@@ -309,6 +318,11 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "multi-team reuse model",
         "IDC Core is shared by multiple teams",
         "Each adopting team owns its Team Binding",
+        "adapter_id: idc-brainstorming",
+        "internal_skill_ref: <ENTERPRISE_BRAINSTORMING_SKILL_REF>",
+        "required_shape: discovery_provider.draft_spec",
+        "If a team already has brainstorming",
+        "If a team does not have Grill Me",
         "adapter_id: idc-dt-design",
         "adapter_id: idc-dt-writer",
         "adapter_id: idc-dt-build",
@@ -344,6 +358,8 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "Team Binding",
         "reuse IDC Core unchanged",
         "team_adapter_binding_ref",
+        "already has a Brainstorming capability",
+        "does not have Grill Me",
     ]:
         assert_true(fragment in team_customization, f"TEAM_CUSTOMIZATION 必须明确多团队 DIY 边界：{fragment}")
 
@@ -1146,6 +1162,8 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
             "Use only when",
             "Do not use this skill merely because the request is short",
             "upstream Superpowers brainstorming",
+            "team brainstorming binding if available",
+            "Company-owned brainstorming should be reused through Team Binding",
             "../idc-workflow/references/workflows/discovery-provider.md",
             "../idc-workflow/references/human-views/brainstorming-view.md",
             "Do not write implementation code.",
@@ -1164,7 +1182,9 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
         ],
         "idc-intent-grilling": [
             "name: idc-intent-grilling",
+            "GitHub-carried IDC implementation",
             "frontier",
+            "Do not require a team binding for Grill Me",
             "../idc-workflow/references/workflows/clarification-provider.md",
             "../idc-workflow/references/human-views/clarification-view.md",
             "Do not decide Domain or Lane.",

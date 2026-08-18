@@ -11,6 +11,11 @@ It is reusable outside D3A and outside the full ID workflow.
 
 This skill uses upstream Superpowers brainstorming as the baseline, then keeps IDC-specific handoff fields small and explicit.
 
+In a confidential company environment, prefer the team's existing
+brainstorming implementation when `team_adapter_binding_ref` provides
+`idc-brainstorming`. This skill remains the shared IDC wrapper and fallback
+contract so every team returns the same draft-spec shape.
+
 ## When To Use
 
 Use for:
@@ -43,7 +48,8 @@ Do not use by default for:
 
 ```text
 raw_idea
-  -> upstream-superpowers-brainstorming baseline
+  -> team brainstorming binding if available
+  -> otherwise upstream-superpowers-brainstorming baseline
   -> Explore lightweight project context if it helps the discussion
   -> Ask focused discovery questions when the idea is too ambiguous
   -> Offer 2-3 approaches if there are real design branches
@@ -85,3 +91,5 @@ When this skill is used inside IDC, hand off to:
 - TR3 skips this skill unless the TR3 is too incomplete to identify behavior.
 - Domain hint must not suppress idc-brainstorming: `general + rough` still uses this skill.
 - Keep enterprise details as placeholders outside the confidential environment.
+- Company-owned brainstorming should be reused through Team Binding, not copied
+  into the shared harness.

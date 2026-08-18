@@ -79,6 +79,20 @@ references/registries/team-adapter-bindings.template.yaml
 The shared registry answers "which adapter may run here"; the team binding
 answers "where and how this team runs it".
 
+If your company already has a Brainstorming capability, bind it as
+`idc-brainstorming` in the team binding and normalize its output to the IDC
+draft-spec fields. Do not copy company brainstorming prompts into the shared
+harness.
+
+If your company does not have Grill Me, keep using the GitHub-carried IDC
+implementation:
+
+```text
+.claude/skills/idc-intent-grilling/SKILL.md
+.claude/skills/idc-intent-grilling/references/grill-me-method.md
+.claude/skills/idc-intent-grilling/assets/question-card-template.md
+```
+
 ## What D3A Teams Fill In Confidentially
 
 Only inside the confidential environment, fill placeholders for:

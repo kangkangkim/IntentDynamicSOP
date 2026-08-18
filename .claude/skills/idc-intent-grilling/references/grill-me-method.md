@@ -6,6 +6,10 @@ This reference defines the reusable clarification method used by
 It is inspired by the public `mattpocock/skills` Grill Me family and adapted for
 IDC. It does not copy upstream prompts verbatim.
 
+Use this GitHub-carried IDC version when a company team does not already have a
+Grill Me implementation. It is intentionally portable and should not require
+team-specific repository knowledge.
+
 ## Goal
 
 Turn an unclear draft spec, structured requirement, or TR3 design document into

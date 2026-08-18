@@ -24,6 +24,21 @@ team_adapter_bindings:
         - pass/fail detection rules
 
 bindings:
+  - adapter_id: idc-brainstorming
+    team_id: <TEAM_ID>
+    internal_skill_ref: <ENTERPRISE_BRAINSTORMING_SKILL_REF>
+    input_contract_ref: <ENTERPRISE_BRAINSTORMING_INPUT_CONTRACT_REF>
+    output_contract_ref: <ENTERPRISE_BRAINSTORMING_OUTPUT_CONTRACT_REF>
+    output_normalization:
+      required_shape: discovery_provider.draft_spec
+      required_fields:
+        - goal
+        - users_or_callers
+        - core_behavior
+        - out_of_scope
+        - acceptance_signals
+        - recommended_next_step
+
   - adapter_id: idc-dt-design
     team_id: <TEAM_ID>
     internal_skill_ref: <ENTERPRISE_ORIGINAL_REPO_SKILL_REF>
@@ -63,6 +78,8 @@ bindings:
 rules:
   - IDC Core is shared by multiple teams and should remain stable.
   - Each adopting team owns its Team Binding and may adjust it without changing IDC Core.
+  - If a team already has brainstorming, bind it here and normalize the result back into the IDC draft-spec shape.
+  - If a team does not have Grill Me, use the shared idc-intent-grilling skill and its GitHub-carried references instead of inventing a local placeholder.
   - The shared adapter registry decides whether an adapter is eligible.
   - The team adapter binding decides how the eligible adapter is executed.
   - A team may maintain its binding in a separate confidential repository.

@@ -9,6 +9,12 @@ Use this atomic skill to turn a draft spec, structured requirement, or TR3 desig
 
 It is reusable outside D3A and outside the full ID workflow.
 
+This repository carries the GitHub-carried IDC implementation for Grill Me
+because the target company environment does not yet have one. Bring this skill,
+its `references/grill-me-method.md`, and `assets/question-card-template.md` into
+the confidential environment as-is, then adjust only non-sensitive wording if a
+team needs local terminology.
+
 ## When To Use
 
 Use for:
@@ -81,3 +87,5 @@ Use free-form questions only when the answer cannot be represented as choices. I
 - Clarification answers are not DONE evidence.
 - Use Chinese if the user used Chinese.
 - Fallback to `builtin-critical-questions` if Grill Me method is unavailable or too expensive.
+- Do not require a team binding for Grill Me unless a team later creates a
+  better internal implementation.

@@ -36,6 +36,8 @@ Module 和 Team Binding：
 - 真实 repository path。
 - 真实 CodeGraph / Wiki / grep / repository search provider。
 - 真实 build error 到 responsible layer 的分析规则。
+- 公司已有 Brainstorming 能力：通过 Team Binding 绑定到 `idc-brainstorming`，并归一化到 IDC draft spec 输出。
+- 公司没有 Grill Me：直接带入 GitHub 仓库里的 `idc-intent-grilling`、`grill-me-method.md` 和 `question-card-template.md`。
 - 真实 GC 全家桶 SOP atomic ability mapping。
 - 真实原代码仓 skill contract：`idc-dt-design`、`idc-dt-writer`、`<ENTERPRISE_GC_THIRD_SKILL_NAME>`。
 - 真实 GC / DT adapter binding：基于 `.claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml` 在保密区填写团队自己的 binding。

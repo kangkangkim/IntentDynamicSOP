@@ -8,8 +8,8 @@ description: >
 
 skill_adapter:
   id: string
-  status: active | placeholder | confidential_only
-  class: public_methodology_adapter | enterprise_gc_sop_adapter | original_enterprise_repo_skill_adapter | domain_module_execution_skill
+  status: active | placeholder | confidential_only | team_bindable
+  class: public_methodology_adapter | team_pre_alignment_adapter | enterprise_gc_sop_adapter | original_enterprise_repo_skill_adapter | domain_module_execution_skill
   source:
     kind: external_public | enterprise_gc_sop | original_enterprise_repo_skill
     ref: string
@@ -30,6 +30,7 @@ skill_adapter:
     - <ENTERPRISE_GC_SOP_REF>
     - <ENTERPRISE_ORIGINAL_REPO_SKILL_REF>
     - <ENTERPRISE_GC_THIRD_SKILL_NAME>
+    - <ENTERPRISE_BRAINSTORMING_SKILL_REF>
     - <ENTERPRISE_PLACEHOLDER>
 
 adapter_registry:
@@ -51,6 +52,7 @@ rules:
   - Adapter matching uses capability_keys, allowed_stages, requires, and blocks_when.
   - If no registry row matches, return NEEDS_ADAPTER_MAPPING.
   - Shared registry rows decide adapter eligibility; team adapter bindings decide concrete execution.
+  - Team-bindable adapters may use a company binding when present and must keep a shared fallback contract.
   - Confidential-only adapters must provide a team_adapter_binding_ref before execution.
   - Skill adapters must not contain real enterprise paths, APIs, commands, logs, tests, or implementation facts in the external harness.
   - Skill adapters are called only after IDC routing has selected the workflow stage.

@@ -23,6 +23,10 @@ Copyright (c) 2026 Matt Pocock
 
 本仓库吸收的是方法论，不是逐字复制原始 skill prompt。
 
+公司内如果还没有 Grill Me，可直接复用本 GitHub 仓库携带的
+`idc-intent-grilling`、`grill-me-method.md` 和 `question-card-template.md`；
+如果未来有内部实现，再通过 Team Binding 替换。
+
 吸收点：
 
 - relentless interview：对模糊需求持续追问，直到能承诺方向。
@@ -59,6 +63,9 @@ Copyright (c) 2025 Jesse Vincent
 ```
 
 本仓库保留 upstream baseline 的核心流程，并用 IDC overlay 适配 handoff、Human View 和 machine contract。
+
+公司内如果已经有 Brainstorming 能力，应通过 Team Binding 复用内部实现，
+并把输出归一化到 IDC draft spec；不要把公司 prompt 复制到共享仓库。
 
 Baseline 保留点：
 
