@@ -906,6 +906,7 @@ def test_adoption_and_deep_dive_docs_exist():
     assert_true((ROOT / "docs/adoption-guide.md").exists(), "缺少 adoption guide。")
     html = read_text("docs/flow-d3a-general.html")
     context_html = read_text("docs/context-runtime-view.html")
+    intake_html = read_text("docs/intake-discovery-trigger-flow.html")
     for fragment in [
         "Intent Dynamic Code Workflow",
         "D3A Path",
@@ -939,6 +940,25 @@ def test_adoption_and_deep_dive_docs_exist():
         "repeat_until_pass",
     ]:
         assert_true(fragment in context_html, f"Context Runtime HTML 图缺少关键节点：{fragment}")
+    for fragment in [
+        "IDC Intake Trigger Flow",
+        "Intake",
+        "Discovery",
+        "Brainstorming",
+        "Grill Me",
+        "Grill With Docs",
+        "Alignment",
+        "Execution",
+        "raw / vague / incomplete",
+        "needs alternatives",
+        "direction chosen",
+        "docs needed",
+        "critical gaps closed",
+        "user approved",
+        "Company Brainstorming triggers through Team Binding",
+        "Execution adapters never run before user approval",
+    ]:
+        assert_true(fragment in intake_html, f"Intake Trigger HTML 图缺少关键节点或触发条件：{fragment}")
     for file_name in [
         "docs/deep-dive/repo-context-providers.md",
         "docs/deep-dive/progressive-constraint-loading.md",

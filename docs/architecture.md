@@ -44,6 +44,7 @@ Execution Runtime
 ```text
 用户 Intent
   -> Input Adapter / Intake
+  -> Intake Trigger Flow
   -> 场景识别
   -> 需求清晰度判断
   -> 选择 Dynamic Scenario / Domain Module / General Coding fallback
@@ -54,6 +55,12 @@ Execution Runtime
   -> 知识加载
   -> subagent 执行
   -> TDD / build verification
+```
+
+Intake Trigger Flow 的左到右可视化见：
+
+```text
+docs/intake-discovery-trigger-flow.html
 ```
 
 ## 可插拔 Domain Module
