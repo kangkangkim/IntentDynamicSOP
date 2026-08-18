@@ -177,6 +177,7 @@ references/workflows/resume-policy.md
 references/schemas/alignment-pack.schema.yaml
 references/schemas/delegation-contract.schema.yaml
 references/schemas/skill-adapter.schema.yaml
+references/registries/skill-adapters.yaml
 references/schemas/runtime-state.schema.yaml
 assets/README.md
 .claude/skills/idc-intent-discovery/SKILL.md
@@ -306,6 +307,7 @@ references/schemas/repo-context-provider.schema.yaml
 - Do not skillize passive assets such as schemas, registries, examples, human-view templates, lane definitions, evidence files, and knowledge templates;沉淀 them as references or assets according to the official skill directory shape.
 - Superpowers Adapter may provide the inner engineering loop after approval, but IDC owns Domain, Lane, Contract Gate, and Completion Gate.
 - GC SOP Adapter may reuse confidential enterprise atomic abilities after approval, but must go through Skill Adapter Router and cannot invent original repository skill details.
+- Skill Adapter Router must select GC / DT / Superpowers adapters from `references/registries/skill-adapters.yaml`; adapter names are not triggers by themselves.
 - Original repository DT skills are represented as adapters: `idc-dt-design` for DT design, `idc-dt-writer` for DT writing, and `idc-gc-third-skill-placeholder` until the third skill is named in the confidential zone.
 - Use `upstream-superpowers-brainstorming` as the `raw_idea` baseline, then apply `idc-brainstorming-overlay` before handoff to `idc-intent-grilling`.
 - Skip Discovery Provider for TR3 unless the TR3 is too incomplete to identify behavior.

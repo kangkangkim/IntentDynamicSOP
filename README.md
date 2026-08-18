@@ -126,7 +126,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 - `.claude/skills/idc-workflow/references/workflows/`：Scenario Router、Input Adapter、Lane Resolver、Contract Gate、Human Alignment、Automated Closure Loop 等运行时规则。
 - `.claude/skills/idc-workflow/references/schemas/`：Alignment Pack、Escalation、Execution Unit、D3A Plan、General Plan 等机器 contract。
 - `.claude/skills/idc-workflow/references/domains/`：Domain Module registry、D3A module、General module、团队模板 module。
-- `.claude/skills/idc-workflow/references/registries/`：固定 D3A Layer、DT Domain、General placeholder taxonomy。
+- `.claude/skills/idc-workflow/references/registries/`：固定 D3A Layer、DT Domain、General placeholder taxonomy、Skill Adapter registry。
 - `.claude/skills/idc-workflow/references/lanes/`：fast / lite / complex 三种执行强度定义。
 - `.claude/skills/idc-workflow/references/human-views/`：给用户看的中文 Brainstorming / Clarification / Alignment / Completion / Escalation 模板。
 - `.claude/skills/idc-workflow/references/constraints/`：decision / planning / execution 三段式约束。

@@ -153,6 +153,22 @@ API Contract 不是全局强制项。
 - Complex 通用开发：Task Contract + Detailed Plan + Verification Contract。
 - D3A Module：D3A Specification + API Contract + Task Contract + Verification Contract。
 
+## Skill Adapter Router
+
+Skill Adapter Router 不靠名字猜测是否使用 GC / DT / Superpowers。
+
+它读取：
+
+```text
+.claude/skills/idc-workflow/references/registries/skill-adapters.yaml
+```
+
+然后根据 `requested_capability_keys`、`selected_stage`、已有 contract refs、
+confidential mapping refs 和阻断条件匹配 adapter。
+
+如果没有 registry row 匹配，返回 `NEEDS_ADAPTER_MAPPING`，不能临时把某个
+`idc-gc-*` 或 `idc-dt-*` skill 当作万能入口。
+
 ## Human Alignment
 
 Human Alignment 是唯一默认人工对齐点。

@@ -225,6 +225,7 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     domain_router = read_text(".claude/skills/idc-workflow/references/workflows/domain-module-router.md")
     skill_router = read_text(".claude/skills/idc-workflow/references/workflows/skill-adapter-router.md")
     adapter_schema = read_text(".claude/skills/idc-workflow/references/schemas/skill-adapter.schema.yaml")
+    adapter_registry = read_text(".claude/skills/idc-workflow/references/registries/skill-adapters.yaml")
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
     architecture = read_text("docs/architecture.md")
     README = read_text("README.md")
@@ -249,6 +250,12 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         ".claude/skills/idc-dt-design/SKILL.md",
         ".claude/skills/idc-dt-writer/SKILL.md",
         ".claude/skills/idc-gc-third-skill-placeholder/SKILL.md",
+        "references/registries/skill-adapters.yaml",
+        "Adapter selection is registry-driven, not name-driven.",
+        "capability_keys",
+        "allowed_stages",
+        "NEEDS_ADAPTER_MAPPING",
+        "Do not use `gc` / `dt` / `superpowers` naming as a trigger by itself.",
         "Placeholder adapters are not executable.",
         "D3A may use GC atoms only inside D3A module constraints.",
     ]:
@@ -256,6 +263,12 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
 
     for fragment in [
         "schema: skill_adapter",
+        "adapter_registry:",
+        "match_inputs:",
+        "capability_keys",
+        "allowed_stages",
+        "no_match_result: NEEDS_ADAPTER_MAPPING",
+        "Skill Adapter Router must select adapters from the adapter_registry, not by name guessing.",
         "enterprise_gc_sop",
         "original_enterprise_repo_skill",
         "evidence_ref_required: true",
@@ -269,12 +282,32 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     ]:
         assert_true(fragment in adapter_schema, f"Skill Adapter schema 缺少：{fragment}")
 
+    for fragment in [
+        "skill_adapters:",
+        "id: idc-superpowers-adapter",
+        "id: idc-gc-sop-adapter",
+        "id: idc-dt-design",
+        "id: idc-dt-writer",
+        "id: idc-gc-third-skill-placeholder",
+        "capability_keys:",
+        "allowed_stages:",
+        "confidential_gc_mapping_ref",
+        "confidential_original_repo_skill_ref",
+        "executable: false",
+        "Adapter selection is registry-driven, not name-driven.",
+        "NEEDS_ADAPTER_MAPPING",
+    ]:
+        assert_true(fragment in adapter_registry, f"Skill Adapter registry 缺少：{fragment}")
+
     assert_true("references/workflows/skill-adapter-router.md" in id_workflow, "idc-workflow 必须加载 Skill Adapter Router。")
     assert_true("references/schemas/skill-adapter.schema.yaml" in id_workflow, "idc-workflow 必须加载 Skill Adapter schema。")
+    assert_true("references/registries/skill-adapters.yaml" in id_workflow, "idc-workflow 必须加载 Skill Adapter registry。")
     assert_true("Dynamic Scenario Coding" in README, "README 必须把 Dynamic Scenario 作为顶层路径。")
+    assert_true("Skill Adapter registry" in README, "README 必须记录 Skill Adapter registry。")
     assert_true("D3A 是当前第一个自定义 active module" in README, "README 必须声明 D3A 是自定义 module。")
     assert_true("动态分流的 Intent-Driven Coding 框架" in architecture, "architecture 必须声明动态分流框架定位。")
     assert_true("Dynamic Scenario Mode" in architecture, "architecture 必须包含 Dynamic Scenario Mode。")
+    assert_true("Skill Adapter Router 不靠名字猜测" in architecture, "architecture 必须声明 adapter registry-driven。")
 
 
 def test_active_domain_module_declares_required_contract():

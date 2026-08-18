@@ -1,0 +1,141 @@
+skill_adapters:
+  - id: idc-superpowers-adapter
+    class: public_methodology_adapter
+    status: active
+    skill_ref: .claude/skills/idc-superpowers-adapter/SKILL.md
+    capability_keys:
+      - execution_discipline
+      - planning
+      - tdd
+      - debugging
+      - review
+      - verification
+    allowed_stages: [planning, implementation, debugging, review, verification]
+    requires:
+      - human_alignment_approved
+      - selected_domain
+      - selected_lane
+      - required_contracts_present
+      - bounded_execution_unit
+    blocks_when:
+      - critical_clarification_missing
+      - human_alignment_not_approved
+    evidence_ref_required: true
+    executable: true
+    may_override:
+      domain_selection: false
+      lane_selection: false
+      contract_gate: false
+      completion_gate: false
+
+  - id: idc-gc-sop-adapter
+    class: enterprise_gc_sop_adapter
+    status: confidential_only
+    skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md
+    capability_keys:
+      - enterprise_gc_atom
+      - confidential_sop_reuse
+      - gc_planning_assistance
+      - gc_implementation_assistance
+      - gc_debugging_assistance
+      - gc_review_assistance
+      - gc_verification_assistance
+    allowed_stages: [planning, implementation, debugging, review, verification]
+    requires:
+      - human_alignment_approved
+      - selected_domain
+      - selected_lane
+      - task_contract_ref
+      - expected_outputs
+      - confidential_gc_mapping_ref
+    blocks_when:
+      - outside_confidential_zone
+      - missing_gc_atom_mapping
+      - critical_clarification_missing
+    evidence_ref_required: true
+    executable: true
+    may_override:
+      domain_selection: false
+      lane_selection: false
+      contract_gate: false
+      completion_gate: false
+
+  - id: idc-dt-design
+    class: original_enterprise_repo_skill_adapter
+    status: confidential_only
+    skill_ref: .claude/skills/idc-dt-design/SKILL.md
+    capability_keys:
+      - dt_design
+      - test_design
+    allowed_stages: [dt_design, planning]
+    requires:
+      - human_alignment_approved
+      - verification_contract_ref
+      - selected_dt_domain
+      - confidential_original_repo_skill_ref
+    blocks_when:
+      - outside_confidential_zone
+      - selected_dt_domain_missing
+      - missing_original_repo_skill_mapping
+    evidence_ref_required: false
+    executable: true
+    may_override:
+      domain_selection: false
+      lane_selection: false
+      contract_gate: false
+      completion_gate: false
+
+  - id: idc-dt-writer
+    class: original_enterprise_repo_skill_adapter
+    status: confidential_only
+    skill_ref: .claude/skills/idc-dt-writer/SKILL.md
+    capability_keys:
+      - dt_writing
+      - dt_red_green_evidence
+    allowed_stages: [dt_writing, verification]
+    requires:
+      - human_alignment_approved
+      - dt_design_ref
+      - allowed_paths
+      - selected_dt_domain
+      - confidential_original_repo_skill_ref
+    blocks_when:
+      - outside_confidential_zone
+      - dt_design_ref_missing
+      - selected_dt_domain_missing
+      - missing_original_repo_skill_mapping
+    evidence_ref_required: true
+    executable: true
+    may_override:
+      domain_selection: false
+      lane_selection: false
+      contract_gate: false
+      completion_gate: false
+
+  - id: idc-gc-third-skill-placeholder
+    class: original_enterprise_repo_skill_adapter
+    status: placeholder
+    skill_ref: .claude/skills/idc-gc-third-skill-placeholder/SKILL.md
+    capability_keys:
+      - <ENTERPRISE_GC_THIRD_SKILL_CAPABILITY>
+    allowed_stages: []
+    requires:
+      - <ENTERPRISE_GC_THIRD_SKILL_NAME>
+      - <ENTERPRISE_GC_THIRD_SKILL_CONTRACT_REF>
+    blocks_when:
+      - missing_original_repo_skill_mapping
+    evidence_ref_required: true
+    executable: false
+    may_override:
+      domain_selection: false
+      lane_selection: false
+      contract_gate: false
+      completion_gate: false
+
+rules:
+  - Adapter selection is registry-driven, not name-driven.
+  - Match by capability_keys, allowed_stages, requires, and blocks_when.
+  - If no registry row matches, return NEEDS_ADAPTER_MAPPING.
+  - Placeholder adapters must return executable: false.
+  - Confidential-only adapters require an explicit confidential mapping ref before execution.
+  - Adapter registry rows cannot grant Domain, Lane, Contract Gate, or Completion Gate ownership.
