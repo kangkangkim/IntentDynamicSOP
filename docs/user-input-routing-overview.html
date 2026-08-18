@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IDC User Input Routing Overview</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --ink: #17202a;
+      --muted: #5e6b7b;
+      --line: #cfd7e3;
+      --panel: #ffffff;
+      --input: #1d5fbf;
+      --input-soft: #eaf2ff;
+      --pre: #08745f;
+      --pre-soft: #e5f5f0;
+      --route: #91570f;
+      --route-soft: #fff0d8;
+      --domain: #6d28d9;
+      --domain-soft: #f1ebff;
+      --exec: #b42318;
+      --exec-soft: #fff0ed;
+      --done: #475467;
+      --done-soft: #eef1f4;
+      --shadow: 0 12px 28px rgba(23, 32, 42, 0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.42;
+    }
+
+    main {
+      width: min(1500px, calc(100vw - 36px));
+      margin: 0 auto;
+      padding: 28px 0 44px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 30px; letter-spacing: 0; }
+    h2 { font-size: 17px; letter-spacing: 0; }
+    h3 { font-size: 13px; letter-spacing: 0; }
+    p, li { color: var(--muted); font-size: 13px; }
+
+    code {
+      padding: 1px 5px;
+      border-radius: 5px;
+      background: rgba(23, 32, 42, 0.08);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .page-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 16px;
+    }
+
+    .subtitle {
+      max-width: 960px;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(2, max-content);
+      gap: 8px 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      margin-right: 6px;
+      border-radius: 50%;
+      vertical-align: 0;
+    }
+
+    .dot-input { background: var(--input); }
+    .dot-pre { background: var(--pre); }
+    .dot-route { background: var(--route); }
+    .dot-exec { background: var(--exec); }
+
+    .map {
+      display: grid;
+      grid-template-columns: 230px 120px 210px 120px 255px 120px 255px 120px 220px;
+      gap: 0;
+      align-items: center;
+      min-width: 1420px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .viewport {
+      overflow-x: auto;
+    }
+
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .node {
+      min-height: 86px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .node strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .node span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .node ul {
+      margin: 8px 0 0;
+      padding-left: 16px;
+    }
+
+    .node li {
+      margin: 2px 0;
+      font-size: 12px;
+    }
+
+    .input { border-color: #b9cff7; background: var(--input-soft); }
+    .pre { border-color: #bde0d6; background: var(--pre-soft); }
+    .route { border-color: #ebc998; background: var(--route-soft); }
+    .domain { border-color: #d6c3ff; background: var(--domain-soft); }
+    .exec { border-color: #f3c2bb; background: var(--exec-soft); }
+    .done { border-color: #d7dde6; background: var(--done-soft); }
+
+    .hub {
+      min-height: 402px;
+      display: grid;
+      align-content: center;
+      text-align: center;
+    }
+
+    .hub strong {
+      font-size: 16px;
+    }
+
+    .edge {
+      position: relative;
+      min-height: 402px;
+      display: grid;
+      align-items: center;
+      padding: 0 8px;
+    }
+
+    .edge.short {
+      min-height: 120px;
+    }
+
+    .edge::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      top: 50%;
+      border-top: 2px solid var(--line);
+    }
+
+    .edge::after {
+      content: "";
+      position: absolute;
+      right: 6px;
+      top: calc(50% - 5px);
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid var(--line);
+      border-right: 2px solid var(--line);
+      transform: rotate(45deg);
+    }
+
+    .trigger {
+      position: relative;
+      z-index: 1;
+      max-width: 112px;
+      margin: 0 auto;
+      padding: 7px 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 11px;
+      text-align: center;
+      box-shadow: 0 8px 18px rgba(23, 32, 42, 0.06);
+    }
+
+    .trigger small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .matrix {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .panel {
+      min-height: 160px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .panel h2 {
+      margin-bottom: 8px;
+    }
+
+    .panel ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .panel li {
+      margin: 5px 0;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        width: min(100vw - 24px, 760px);
+        padding-top: 22px;
+      }
+
+      .page-head {
+        grid-template-columns: 1fr;
+      }
+
+      .legend {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .matrix {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="page-head">
+      <div>
+        <h1>IDC User Input Routing Overview</h1>
+        <p class="subtitle">不同用户输入先汇入统一 Intake，再根据输入成熟度、是否已批准、是否命中 Domain Module 和是否需要企业 adapter，触发后续路径。</p>
+      </div>
+      <div class="legend" aria-label="legend">
+        <span><i class="dot dot-input"></i>输入类型</span>
+        <span><i class="dot dot-pre"></i>前置对齐</span>
+        <span><i class="dot dot-route"></i>路由判断</span>
+        <span><i class="dot dot-exec"></i>执行闭环</span>
+      </div>
+    </header>
+
+    <section class="viewport" aria-label="overall input routing">
+      <div class="map">
+        <div class="stack">
+          <article class="node input">
+            <strong>Raw Idea</strong>
+            <span>一句话、早期想法、目标不清。</span>
+          </article>
+          <article class="node input">
+            <strong>Structured Request</strong>
+            <span>已有目标、行为、部分验收线索。</span>
+          </article>
+          <article class="node input">
+            <strong>TR3 Design Doc</strong>
+            <span>已有设计文档、影响范围或 DT 线索。</span>
+          </article>
+          <article class="node input">
+            <strong>Approved Pack / Resume</strong>
+            <span>用户已批准，或从 checkpoint 恢复。</span>
+          </article>
+        </div>
+
+        <div class="edge">
+          <div class="trigger">all inputs<small>统一进入</small></div>
+        </div>
+
+        <article class="node input hub">
+          <strong>Intake</strong>
+          <span><code>/id-workflow</code></span>
+          <ul>
+            <li>normalize request</li>
+            <li>detect maturity</li>
+            <li>preserve input type</li>
+          </ul>
+        </article>
+
+        <div class="edge">
+          <div class="trigger">input type + maturity<small>选择前置路径</small></div>
+        </div>
+
+        <div class="stack">
+          <article class="node pre">
+            <strong>Discovery</strong>
+            <span>Trigger: raw / vague / incomplete.</span>
+          </article>
+          <article class="node pre">
+            <strong>Brainstorming</strong>
+            <span>Trigger: needs alternatives.</span>
+          </article>
+          <article class="node pre">
+            <strong>Grill Me</strong>
+            <span>Trigger: contract / scope / gate gap.</span>
+          </article>
+          <article class="node pre">
+            <strong>Grill With Docs</strong>
+            <span>Trigger: clarification must update docs.</span>
+          </article>
+        </div>
+
+        <div class="edge">
+          <div class="trigger">ready for approval<small>无 critical gaps</small></div>
+        </div>
+
+        <div class="stack">
+          <article class="node route">
+            <strong>Scenario Router</strong>
+            <span>Dynamic Scenario / Domain Module / General fallback.</span>
+          </article>
+          <article class="node route">
+            <strong>Domain Module Router</strong>
+            <span>D3A / team-domain / general.</span>
+          </article>
+          <article class="node route">
+            <strong>Lane Resolver</strong>
+            <span>fast / lite / complex.</span>
+          </article>
+          <article class="node route">
+            <strong>Contract Gate</strong>
+            <span>Alignment Pack + required contracts.</span>
+          </article>
+        </div>
+
+        <div class="edge">
+          <div class="trigger">Human Alignment approved<small>未批准不执行</small></div>
+        </div>
+
+        <div class="stack">
+          <article class="node domain">
+            <strong>General Coding</strong>
+            <span>Trigger: simple ordinary coding fallback.</span>
+          </article>
+          <article class="node domain">
+            <strong>D3A Coding</strong>
+            <span>Trigger: selected_domain = d3a.</span>
+          </article>
+          <article class="node domain">
+            <strong>Team Domain</strong>
+            <span>Trigger: selected registered team module.</span>
+          </article>
+          <article class="node domain">
+            <strong>Adapter Router</strong>
+            <span>Trigger: GC / DT / build / Superpowers capability needed.</span>
+          </article>
+        </div>
+
+        <div class="edge">
+          <div class="trigger">bounded execution unit<small>证据驱动闭环</small></div>
+        </div>
+
+        <div class="stack">
+          <article class="node exec">
+            <strong>Execute</strong>
+            <span>Code / DT / build / targeted fix.</span>
+          </article>
+          <article class="node exec">
+            <strong>Verify</strong>
+            <span>RED / GREEN / checks / tran_build.</span>
+          </article>
+          <article class="node done">
+            <strong>Completion View</strong>
+            <span>Trigger: required evidence PASS.</span>
+          </article>
+          <article class="node done">
+            <strong>Escalation View</strong>
+            <span>Trigger: blocker, missing binding, or failed evidence.</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="matrix" aria-label="input trigger matrix">
+      <article class="panel">
+        <h2>Input-Specific Triggers</h2>
+        <ul>
+          <li>Raw Idea -> Discovery, then Brainstorming if alternatives are needed.</li>
+          <li>Structured Request -> Grill Me only if critical contract fields are missing.</li>
+          <li>TR3 -> skip Discovery unless behavior cannot be identified.</li>
+          <li>Approved Pack / Resume -> skip pre-alignment and enter automated closure.</li>
+        </ul>
+      </article>
+
+      <article class="panel">
+        <h2>Routing Triggers</h2>
+        <ul>
+          <li>D3A signals -> D3A Domain Module.</li>
+          <li>Registered team-domain signals -> that team's Domain Module.</li>
+          <li>No fixed domain but dynamic orchestration needed -> Dynamic Scenario.</li>
+          <li>Simple ordinary coding -> General Coding Fallback.</li>
+        </ul>
+      </article>
+
+      <article class="panel">
+        <h2>Execution Triggers</h2>
+        <ul>
+          <li>GC / original repo ability needed -> Skill Adapter Router.</li>
+          <li>Company Brainstorming -> Team Binding.</li>
+          <li>DT build / tran_build -> team adapter binding required.</li>
+          <li>DONE -> only after evidence gate passes.</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

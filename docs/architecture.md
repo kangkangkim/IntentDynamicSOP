@@ -57,9 +57,10 @@ Execution Runtime
   -> TDD / build verification
 ```
 
-Intake Trigger Flow 的左到右可视化见：
+整体用户输入分流图和 Intake Trigger Flow 见：
 
 ```text
+docs/user-input-routing-overview.html
 docs/intake-discovery-trigger-flow.html
 ```
 

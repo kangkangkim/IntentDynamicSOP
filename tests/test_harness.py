@@ -907,6 +907,7 @@ def test_adoption_and_deep_dive_docs_exist():
     html = read_text("docs/flow-d3a-general.html")
     context_html = read_text("docs/context-runtime-view.html")
     intake_html = read_text("docs/intake-discovery-trigger-flow.html")
+    input_routing_html = read_text("docs/user-input-routing-overview.html")
     for fragment in [
         "Intent Dynamic Code Workflow",
         "D3A Path",
@@ -959,6 +960,34 @@ def test_adoption_and_deep_dive_docs_exist():
         "Execution adapters never run before user approval",
     ]:
         assert_true(fragment in intake_html, f"Intake Trigger HTML 图缺少关键节点或触发条件：{fragment}")
+    for fragment in [
+        "IDC User Input Routing Overview",
+        "Raw Idea",
+        "Structured Request",
+        "TR3 Design Doc",
+        "Approved Pack / Resume",
+        "Intake",
+        "Discovery",
+        "Brainstorming",
+        "Grill Me",
+        "Grill With Docs",
+        "Scenario Router",
+        "Domain Module Router",
+        "Lane Resolver",
+        "Contract Gate",
+        "General Coding",
+        "D3A Coding",
+        "Team Domain",
+        "Adapter Router",
+        "Human Alignment approved",
+        "bounded execution unit",
+        "Completion View",
+        "Escalation View",
+        "Input-Specific Triggers",
+        "Routing Triggers",
+        "Execution Triggers",
+    ]:
+        assert_true(fragment in input_routing_html, f"User Input Routing HTML 图缺少关键节点或触发条件：{fragment}")
     for file_name in [
         "docs/deep-dive/repo-context-providers.md",
         "docs/deep-dive/progressive-constraint-loading.md",
