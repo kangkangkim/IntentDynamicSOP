@@ -17,6 +17,13 @@
 
 ## 进入保密区后需要填写的内容
 
+多团队复用时，默认不要 fork IDC Core。每个团队只填写自己的 Domain
+Module 和 Team Binding：
+
+- IDC Core：共享 `/id-workflow`、router、lane、gate、schema、human views、adapter eligibility registry。
+- Domain Module：团队维护自己的 `<team-domain>/module.yaml`、领域 registry、领域 workflow / knowledge references。
+- Team Binding：团队在保密区维护真实 repo path、命令、内部 skill ref、evidence parser 和 pass/fail 规则。
+
 这些内容只能在公司保密区填写：
 
 - 真实 D3A Layer 职责 / 边界。

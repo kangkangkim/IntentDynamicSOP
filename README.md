@@ -4,6 +4,32 @@ Intent Dynamic Code 是一个非敏感的企业 Coding 工作流骨架。
 
 它的目标不是在外部环境实现真实企业 D3A，而是先把一套可迁移、可验证、可填充的工作流骨架准备好。进入公司保密区后，再把真实代码知识、测试知识和构建命令绑定进去。
 
+## 多团队复用模型
+
+IDC 的整体能力面向多个团队复用。公共仓库只维护稳定框架和非敏感
+contract；团队差异通过轻量 DIY 层接入。
+
+```text
+IDC Core
+  共享：/id-workflow、router、lane、gate、schema、human views、adapter eligibility registry
+  不放：真实团队路径、命令、内部 skill 名、日志、企业 API
+
+Domain Module
+  团队扩展：<team-domain>/module.yaml、团队 layer/test registry、团队 workflow references
+  用途：描述这个团队的领域怎么被 IDC 识别、规划和验证
+
+Team Binding
+  团队 DIY：team_adapter_binding_ref、repo path、build/run command、internal skill ref、evidence parser
+  用途：把公共 adapter 绑定到该团队自己的真实实现
+```
+
+推荐复用方式：
+
+1. 多团队共享 `IDC Core`，不要 fork 出不同 core。
+2. 新领域先新增 `Domain Module`，不要改 D3A 或 General 的核心规则。
+3. 真实路径、命令、内部 skill 只写在团队自己的 confidential binding。
+4. 团队确实需要差异化时，优先改 binding / domain module / provider rules，再考虑改 core。
+
 ## 顶层路径
 
 - **Dynamic Scenario Coding**：不绑定固定领域模块，按复杂度、不确定性、风险和可测试性动态编排。

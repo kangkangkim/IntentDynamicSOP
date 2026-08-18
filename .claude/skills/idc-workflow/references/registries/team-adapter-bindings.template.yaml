@@ -3,9 +3,11 @@ team_adapter_bindings:
     Non-sensitive template for team-owned adapter bindings. Copy this file into
     a confidential team location and replace placeholders there. Do not put real
     enterprise paths, commands, logs, APIs, or skill names in the shared harness.
+    This template is the Team Binding layer in the multi-team reuse model.
 
   ownership:
     shared_harness:
+      layer: IDC Core
       owns:
         - adapter ids
         - capability keys
@@ -13,6 +15,7 @@ team_adapter_bindings:
         - required contracts
         - override boundaries
     adopting_team:
+      layer: Team Binding
       owns:
         - concrete repository paths
         - concrete commands
@@ -58,6 +61,8 @@ bindings:
     evidence_parser_ref: <ENTERPRISE_EVIDENCE_PARSER_REF>
 
 rules:
+  - IDC Core is shared by multiple teams and should remain stable.
+  - Each adopting team owns its Team Binding and may adjust it without changing IDC Core.
   - The shared adapter registry decides whether an adapter is eligible.
   - The team adapter binding decides how the eligible adapter is executed.
   - A team may maintain its binding in a separate confidential repository.

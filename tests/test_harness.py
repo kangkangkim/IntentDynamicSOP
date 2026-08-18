@@ -306,6 +306,9 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     team_binding_template = read_text(".claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml")
     for fragment in [
         "team_adapter_bindings:",
+        "multi-team reuse model",
+        "IDC Core is shared by multiple teams",
+        "Each adopting team owns its Team Binding",
         "adapter_id: idc-dt-design",
         "adapter_id: idc-dt-writer",
         "adapter_id: idc-dt-build",
@@ -323,12 +326,26 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     assert_true("references/schemas/skill-adapter.schema.yaml" in id_workflow, "idc-workflow 必须加载 Skill Adapter schema。")
     assert_true("references/registries/skill-adapters.yaml" in id_workflow, "idc-workflow 必须加载 Skill Adapter registry。")
     assert_true("Dynamic Scenario Coding" in README, "README 必须把 Dynamic Scenario 作为顶层路径。")
+    assert_true("## 多团队复用模型" in README, "README 必须明确多团队复用模型。")
+    assert_true("IDC Core" in README and "Domain Module" in README and "Team Binding" in README, "README 必须声明 Core / Domain Module / Team Binding 三层。")
+    assert_true("多团队共享 `IDC Core`" in README, "README 必须声明 Core 可被多团队共享。")
     assert_true("Skill Adapter registry" in README, "README 必须记录 Skill Adapter registry。")
     assert_true("team-adapter-bindings.template.yaml" in README, "README 必须记录多团队 adapter binding 模板。")
     assert_true("D3A 是当前第一个自定义 active module" in README, "README 必须声明 D3A 是自定义 module。")
     assert_true("动态分流的 Intent-Driven Coding 框架" in architecture, "architecture 必须声明动态分流框架定位。")
     assert_true("Dynamic Scenario Mode" in architecture, "architecture 必须包含 Dynamic Scenario Mode。")
     assert_true("Skill Adapter Router 不靠名字猜测" in architecture, "architecture 必须声明 adapter registry-driven。")
+
+    team_customization = read_text(".claude/skills/idc-workflow/TEAM_CUSTOMIZATION.md")
+    for fragment in [
+        "## Multi-Team Reuse Model",
+        "IDC Core",
+        "Domain Module",
+        "Team Binding",
+        "reuse IDC Core unchanged",
+        "team_adapter_binding_ref",
+    ]:
+        assert_true(fragment in team_customization, f"TEAM_CUSTOMIZATION 必须明确多团队 DIY 边界：{fragment}")
 
 
 def test_active_domain_module_declares_required_contract():

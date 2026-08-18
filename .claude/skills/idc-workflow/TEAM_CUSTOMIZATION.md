@@ -8,6 +8,30 @@ Most teams should start here:
 .claude/skills/idc-workflow/
 ```
 
+## Multi-Team Reuse Model
+
+IDC is designed as a shared framework plus team-owned DIY layers:
+
+```text
+IDC Core
+  shared by multiple teams
+  owns /id-workflow, router policy, lane policy, gates, schemas, human views,
+  adapter eligibility registry
+
+Domain Module
+  owned by the adopting team
+  owns team-domain/module.yaml, domain registries, domain workflow references,
+  knowledge references
+
+Team Binding
+  owned by the adopting team in a confidential location
+  owns real repository paths, commands, internal skill refs, evidence parsers,
+  pass/fail rules
+```
+
+Default adoption rule: reuse IDC Core unchanged, add or adjust a Domain Module,
+then bind concrete execution through `team_adapter_binding_ref`.
+
 ## Skills vs Assets
 
 Active behavior should become skills.
