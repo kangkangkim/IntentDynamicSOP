@@ -1,4 +1,4 @@
-const layers = [
+let layers = [
   {
     id: "intake",
     name: "Input & Intent",
@@ -57,6 +57,69 @@ const layers = [
   }
 ];
 
+const transitionGates = [
+  {
+    from: "intake",
+    to: "routing",
+    nameZh: "输入已标准化",
+    nameEn: "Normalized Input",
+    question: "用户输入是否已经变成 normalized_request？",
+    passTo: "进入路由判断",
+    failTo: "回到 Input 补齐输入",
+    checks: ["normalized_request", "placeholder hygiene"]
+  },
+  {
+    from: "routing",
+    to: "contract",
+    nameZh: "路由已确定",
+    nameEn: "Route Decided",
+    question: "是否已选出 Domain 和 Lane？",
+    passTo: "进入契约阶段",
+    failTo: "回到 Routing 重判",
+    checks: ["domain selected", "lane selected"]
+  },
+  {
+    from: "contract",
+    to: "domain",
+    nameZh: "契约已冻结",
+    nameEn: "Contract Frozen",
+    question: "API Contract / Scope 是否已确认？",
+    passTo: "进入领域模块",
+    failTo: "回到 Contract 修改",
+    checks: ["API contract", "human alignment"]
+  },
+  {
+    from: "domain",
+    to: "knowledge",
+    nameZh: "领域计划可执行",
+    nameEn: "Domain Plan Ready",
+    question: "Layer / DT Domain 规划是否可执行？",
+    passTo: "进入知识加载",
+    failTo: "回到 Domain 重规划",
+    checks: ["layer plan", "DT domain candidates"]
+  },
+  {
+    from: "knowledge",
+    to: "execution",
+    nameZh: "上下文已就绪",
+    nameEn: "Context Ready",
+    question: "是否拿到有边界的上下文和 evidence_ref？",
+    passTo: "进入执行运行时",
+    failTo: "回到 Knowledge 重新加载",
+    checks: ["bounded context", "evidence_ref"]
+  },
+  {
+    from: "execution",
+    to: "evidence",
+    nameZh: "证据已就绪",
+    nameEn: "Evidence Ready",
+    question: "RED/GREEN 和变更证据是否齐全？",
+    passTo: "进入完成判定",
+    failTo: "回到 Execution 修复",
+    checks: ["RED before GREEN", "changed files"]
+  }
+];
+
 const domains = [
   {
     id: "d3a",
@@ -87,25 +150,67 @@ const lanes = [
     name: "fast",
     summary: "低风险、范围小、验收明确；最少 contract 和最短闭环。",
     rules: ["clear acceptance", "small change surface", "no API contract change"],
-    gates: ["task_summary", "focused_check"]
+    gates: ["task_summary", "focused_check"],
+    orchestration: {
+      plan: "inline",
+      agent: "same session",
+      loop: "x1 quick fix",
+      evidence: "focused"
+    }
   },
   {
     id: "lite",
     name: "lite",
     summary: "默认开发路径，要求 focused contract 和 GREEN evidence。",
     rules: ["not fast", "no complex hard trigger", "bounded implementation"],
-    gates: ["task_contract", "green_evidence", "build_check"]
+    gates: ["task_contract", "green_evidence", "build_check"],
+    orchestration: {
+      plan: "task contract",
+      agent: "single executor",
+      loop: "until GREEN",
+      evidence: "GREEN + build"
+    }
   },
   {
     id: "complex",
     name: "complex",
     summary: "高风险、跨层、API 或 DT 复杂变化；启用完整 planning 和 evidence gates。",
     rules: ["cross layer impact", "API / behavior semantics change", "shotgun modification risk"],
-    gates: ["detailed_plan", "api_contract", "red_evidence", "green_evidence", "tran_build"]
+    gates: ["detailed_plan", "api_contract", "red_evidence", "green_evidence", "tran_build"],
+    orchestration: {
+      plan: "API + plan",
+      agent: "split + handoff",
+      loop: "RED → GREEN",
+      evidence: "DT + tran_build"
+    }
   }
 ];
 
+const typeMeta = {
+  skill: { icon: "SK", label: "Skill", hint: "atomic capability" },
+  agent: { icon: "AG", label: "Agent", hint: "executor" },
+  gate: { icon: "GT", label: "Gate", hint: "must pass" },
+  router: { icon: "RT", label: "Router", hint: "branching rule" },
+  lane: { icon: "LN", label: "Lane", hint: "execution strategy" },
+  domain: { icon: "DM", label: "Domain", hint: "domain module" },
+  knowledge: { icon: "KG", label: "Knowledge", hint: "context gate" },
+  runtime: { icon: "RN", label: "Runtime", hint: "execution runtime" },
+  handoff: { icon: "HO", label: "Handoff", hint: "state transfer" },
+  adapter: { icon: "AD", label: "Adapter", hint: "input adapter" }
+};
+
 const initialCapabilities = [
+  {
+    id: "idc.input-adapter",
+    layer: "intake",
+    type: "adapter",
+    name: "Input Adapter",
+    inputs: ["raw_user_intent", "tr3_design_doc", "raw_idea"],
+    outputs: ["normalized_request"],
+    tools: ["input-parser", "intent-normalizer"],
+    evidence: ["normalized-request.yaml"],
+    verified: true
+  },
   {
     id: "idc.intent-intake",
     layer: "intake",
@@ -129,6 +234,28 @@ const initialCapabilities = [
     verified: true
   },
   {
+    id: "idc.brainstorming",
+    layer: "intake",
+    type: "skill",
+    name: "Brainstorming",
+    inputs: ["raw_idea", "open_questions"],
+    outputs: ["candidate_directions", "draft_spec_options"],
+    tools: ["divergent-option-generator"],
+    evidence: ["brainstorm-options.md"],
+    verified: true
+  },
+  {
+    id: "idc.grill-me",
+    layer: "intake",
+    type: "skill",
+    name: "Grill Me",
+    inputs: ["draft_spec", "assumptions", "open_questions"],
+    outputs: ["challenged_spec", "risk_questions"],
+    tools: ["assumption-challenger"],
+    evidence: ["challenge-notes.md"],
+    verified: true
+  },
+  {
     id: "team.requirement-clarify",
     layer: "contract",
     type: "skill",
@@ -148,6 +275,29 @@ const initialCapabilities = [
     outputs: ["api_contract"],
     tools: ["schema-writer", "contract-checker"],
     evidence: ["api-contract.yaml"],
+    laneProfiles: [
+      {
+        lane: "fast",
+        name: "Fast Contract",
+        strictness: "light",
+        checks: ["task summary", "acceptance clear", "small impact"],
+        evidence: ["focused_check"]
+      },
+      {
+        lane: "lite",
+        name: "Lite Contract",
+        strictness: "standard",
+        checks: ["task contract", "scope boundary", "verification plan"],
+        evidence: ["green_evidence", "build_check"]
+      },
+      {
+        lane: "complex",
+        name: "Complex Contract",
+        strictness: "strong",
+        checks: ["API contract", "human alignment", "RED evidence first"],
+        evidence: ["api_contract", "red_evidence", "completion_gate"]
+      }
+    ],
     verified: true
   },
   {
@@ -164,12 +314,23 @@ const initialCapabilities = [
   {
     id: "idc.lane-resolver",
     layer: "routing",
-    type: "skill",
+    type: "lane",
     name: "Lane Resolver",
     inputs: ["normalized_request", "scenario_signals"],
     outputs: ["fast_lite_complex_lane"],
     tools: ["lane-registry"],
     evidence: ["lane-decision.yaml"],
+    verified: true
+  },
+  {
+    id: "idc.domain-module",
+    layer: "domain",
+    type: "domain",
+    name: "Domain Module",
+    inputs: ["api_contract", "domain_route", "selected_lane"],
+    outputs: ["domain_plan", "required_evidence"],
+    tools: ["domain-registry"],
+    evidence: ["domain-plan.yaml"],
     verified: true
   },
   {
@@ -181,6 +342,17 @@ const initialCapabilities = [
     outputs: ["changed_files", "implementation_notes"],
     tools: ["file_read", "file_edit", "test_runner"],
     evidence: ["changed_files", "green_evidence"],
+    verified: true
+  },
+  {
+    id: "idc.execution-runtime",
+    layer: "execution",
+    type: "runtime",
+    name: "Execution Runtime",
+    inputs: ["domain_plan", "layer_context_packet"],
+    outputs: ["changed_files", "green_evidence"],
+    tools: ["agent-orchestrator", "test-runner"],
+    evidence: ["execution-report.yaml"],
     verified: true
   },
   {
@@ -206,6 +378,17 @@ const initialCapabilities = [
     verified: true
   },
   {
+    id: "idc.knowledge-module",
+    layer: "knowledge",
+    type: "knowledge",
+    name: "Knowledge Module",
+    inputs: ["domain_plan", "approved_alignment"],
+    outputs: ["layer_context_packet", "evidence_ref"],
+    tools: ["context-bundler"],
+    evidence: ["context-packet-summary.yaml"],
+    verified: true
+  },
+  {
     id: "team.wiki-adapter",
     layer: "knowledge",
     type: "skill",
@@ -215,6 +398,17 @@ const initialCapabilities = [
     tools: ["<PLACEHOLDER_WIKI_SEARCH>"],
     evidence: ["evidence_ref"],
     verified: false
+  },
+  {
+    id: "idc.completion-module",
+    layer: "evidence",
+    type: "gate",
+    name: "Completion Module",
+    inputs: ["changed_files", "red_evidence", "green_evidence"],
+    outputs: ["completion_decision"],
+    tools: ["evidence-checker"],
+    evidence: ["completion-summary.yaml"],
+    verified: true
   },
   {
     id: "idc.red-green-gate",
@@ -262,20 +456,27 @@ const initialCapabilities = [
   }
 ];
 
-const demoNodes = [
-  nodeFromCapability(initialCapabilities[0], 70, 92),
-  nodeFromCapability(initialCapabilities[1], 300, 92),
-  nodeFromCapability(initialCapabilities[2], 530, 92),
-  nodeFromCapability(initialCapabilities[3], 530, 242),
-  nodeFromCapability(initialCapabilities[5], 300, 392),
-  nodeFromCapability(initialCapabilities[4], 530, 392),
-  nodeFromCapability(initialCapabilities[6], 760, 392),
-  nodeFromCapability(initialCapabilities[7], 760, 542)
-];
+lanes.forEach((lane) => {
+  initialCapabilities.push({
+    id: `idc.lane.${lane.id}`,
+    layer: "routing",
+    type: "lane",
+    name: `${lane.name} Lane`,
+    inputs: ["scenario_signals"],
+    outputs: [`${lane.id}_lane_decision`],
+    tools: ["lane-registry"],
+    evidence: lane.gates,
+    verified: true
+  });
+});
+
+const initialLayers = structuredClone(layers);
+const initialDemoState = createDemoState();
 
 let capabilities = [...initialCapabilities];
-let nodes = demoNodes;
-let selectedNodeId = nodes[2].nodeId;
+let nodes = initialDemoState.nodes;
+let selectedNodeId = initialDemoState.selectedNodeId;
+let moduleAssignments = initialDemoState.moduleAssignments;
 let activeFilter = "all";
 let activeLayerId = "contract";
 let layerSelections = Object.fromEntries(layers.map((layer) => [layer.id, layer.implementations[0]]));
@@ -329,14 +530,83 @@ function nodeFromCapability(capability, x, y) {
   };
 }
 
+function capabilityById(id) {
+  const capability = initialCapabilities.find((item) => item.id === id);
+  if (!capability) {
+    throw new Error(`Missing demo capability: ${id}`);
+  }
+  return capability;
+}
+
+function createDemoState() {
+  const adapter = nodeFromCapability(capabilityById("idc.input-adapter"), 0, 0);
+  const intake = nodeFromCapability(capabilityById("idc.intent-intake"), 0, 0);
+  const discovery = nodeFromCapability(capabilityById("idc.intent-discovery"), 0, 0);
+  const brainstorming = nodeFromCapability(capabilityById("idc.brainstorming"), 0, 0);
+  const grillMe = nodeFromCapability(capabilityById("idc.grill-me"), 0, 0);
+  const requirement = nodeFromCapability(capabilityById("team.requirement-clarify"), 0, 0);
+  const apiContract = nodeFromCapability(capabilityById("team.api-contract"), 0, 0);
+  const domainRouter = nodeFromCapability(capabilityById("team.domain-router"), 0, 0);
+  const laneResolver = nodeFromCapability(capabilityById("idc.lane-resolver"), 0, 0);
+  const fastLane = nodeFromCapability(capabilityById("idc.lane.fast"), 0, 0);
+  const liteLane = nodeFromCapability(capabilityById("idc.lane.lite"), 0, 0);
+  const complexLane = nodeFromCapability(capabilityById("idc.lane.complex"), 0, 0);
+  const domainModule = nodeFromCapability(capabilityById("idc.domain-module"), 0, 0);
+  const dtWriter = nodeFromCapability(capabilityById("team.idc-dt-writer"), 0, 0);
+  const knowledgeModule = nodeFromCapability(capabilityById("idc.knowledge-module"), 0, 0);
+  const knowledgeGate = nodeFromCapability(capabilityById("idc.knowledge-gate"), 0, 0);
+  const executionRuntime = nodeFromCapability(capabilityById("idc.execution-runtime"), 0, 0);
+  const codingAgent = nodeFromCapability(capabilityById("team.coding-agent"), 0, 0);
+  const completionModule = nodeFromCapability(capabilityById("idc.completion-module"), 0, 0);
+  const redGreenGate = nodeFromCapability(capabilityById("idc.red-green-gate"), 0, 0);
+  const moduleAssignments = {
+    [intake.nodeId]: adapter.nodeId,
+    [discovery.nodeId]: adapter.nodeId,
+    [brainstorming.nodeId]: adapter.nodeId,
+    [grillMe.nodeId]: adapter.nodeId,
+    [fastLane.nodeId]: laneResolver.nodeId,
+    [liteLane.nodeId]: laneResolver.nodeId,
+    [complexLane.nodeId]: laneResolver.nodeId,
+    [dtWriter.nodeId]: domainModule.nodeId,
+    [knowledgeGate.nodeId]: knowledgeModule.nodeId,
+    [codingAgent.nodeId]: executionRuntime.nodeId,
+    [redGreenGate.nodeId]: completionModule.nodeId
+  };
+
+  return {
+    nodes: [
+      adapter,
+      intake,
+      discovery,
+      brainstorming,
+      grillMe,
+      domainRouter,
+      laneResolver,
+      fastLane,
+      liteLane,
+      complexLane,
+      requirement,
+      apiContract,
+      domainModule,
+      dtWriter,
+      knowledgeModule,
+      knowledgeGate,
+      executionRuntime,
+      codingAgent,
+      completionModule,
+      redGreenGate
+    ],
+    selectedNodeId: adapter.nodeId,
+    moduleAssignments
+  };
+}
+
 function renderAll() {
   renderLayers();
   renderCapabilities();
-  renderArchitectureBoard();
   renderCanvas();
   renderProperties();
   renderLayerDetail();
-  renderRoutingStrategy();
   renderValidation();
   renderYaml();
 }
@@ -448,11 +718,10 @@ function renderLayers() {
 function renderCapabilities() {
   const query = document.getElementById("catalogSearch").value.trim().toLowerCase();
   const activeLayer = layers.find((layer) => layer.id === activeLayerId);
-  activeLayerLabel.textContent = `${activeLayer.name}: ${activeLayer.summary}`;
+  activeLayerLabel.textContent = "Drag any capability into a layer row.";
   capabilityList.innerHTML = "";
 
   capabilities
-    .filter((cap) => cap.layer === activeLayerId)
     .filter((cap) => activeFilter === "all" || cap.type === activeFilter)
     .filter((cap) => !query || `${cap.name} ${cap.id} ${cap.type}`.toLowerCase().includes(query))
     .forEach((capability) => {
@@ -460,19 +729,7 @@ function renderCapabilities() {
       card.className = `capability-card ${capability.type}`;
       card.draggable = true;
       card.dataset.capabilityId = capability.id;
-      card.innerHTML = `
-        <div class="cap-title">
-          <span>${capability.name}</span>
-          <span class="type-chip ${capability.type}">${capability.type}</span>
-        </div>
-        <p>${capability.id}</p>
-        <div class="cap-meta">
-          <span>in: ${capability.inputs.join(", ")}</span>
-          <span>out: ${capability.outputs.join(", ")}</span>
-          <span>layer: ${activeLayer.name}</span>
-          <span>${capability.verified ? "verified" : "needs command binding"}</span>
-        </div>
-      `;
+      card.innerHTML = capabilityCardMarkup(capability, true);
       card.addEventListener("dragstart", (event) => {
         event.dataTransfer.setData("text/plain", capability.id);
       });
@@ -530,61 +787,105 @@ function renderRoutingStrategy() {
 }
 
 function renderCanvas() {
-  canvas.querySelectorAll(".flow-layer").forEach((node) => node.remove());
+  canvas.querySelectorAll(".pipeline-board").forEach((node) => node.remove());
   canvasHint.style.display = nodes.length ? "none" : "block";
-  renderLayerFocus();
+
+  const board = document.createElement("div");
+  board.className = "pipeline-board";
 
   layers.forEach((layer, index) => {
     const layerNodes = nodes.filter((node) => node.layer === layer.id);
+    const moduleNodes = layerNodes.filter((node) => isModuleType(node.type) && !moduleAssignments[node.nodeId]);
+    const looseSkills = layerNodes.filter((node) => node.type === "skill" && !moduleAssignments[node.nodeId]);
     const element = document.createElement("section");
-    element.className = `flow-layer${layer.id === activeLayerId ? " active" : ""}`;
+    element.className = `pipeline-column${layer.id === activeLayerId ? " active" : ""}`;
     element.dataset.layerId = layer.id;
+    element.draggable = true;
     element.innerHTML = `
-      <div class="flow-spine">
-        <span>L${index + 1}</span>
+      <div class="pipeline-head">
+        <span title="Drag column to reorder">L${index + 1}</span>
+        <button class="layer-remove" data-layer-id="${layer.id}" title="Remove layer" aria-label="Remove ${layer.name}">×</button>
+        <strong>${layer.name}</strong>
+        <p>${layer.summary}</p>
+        <select class="inline-implementation" data-layer-id="${layer.id}" aria-label="${layer.name} implementation">
+          ${layer.implementations.map((item) => `<option value="${item}"${item === layerSelections[layer.id] ? " selected" : ""}>${item}</option>`).join("")}
+        </select>
       </div>
-      <div class="flow-layer-main">
-        <div class="flow-layer-head">
-          <div>
-            <strong>${layer.name}</strong>
-            <p>${layer.summary}</p>
+      <div class="pipeline-dropzone">
+        ${moduleNodes.map((node) => moduleCardMarkup(node)).join("")}
+        ${looseSkills.length ? `
+          <div class="loose-skill-zone">
+            <span>Loose skills</span>
+            ${looseSkills.map((node) => skillNodeMarkup(node)).join("")}
           </div>
-          <div class="flow-layer-controls">
-            <select class="inline-implementation" data-layer-id="${layer.id}" aria-label="${layer.name} implementation">
-              ${layer.implementations.map((item) => `<option value="${item}"${item === layerSelections[layer.id] ? " selected" : ""}>${item}</option>`).join("")}
-            </select>
-            <button class="mini-button" data-action="move-up" data-layer-id="${layer.id}" ${index === 0 ? "disabled" : ""} title="Move layer up">↑</button>
-            <button class="mini-button" data-action="move-down" data-layer-id="${layer.id}" ${index === layers.length - 1 ? "disabled" : ""} title="Move layer down">↓</button>
-          </div>
-        </div>
-        <div class="flow-node-list">
-          ${layerNodes.length ? layerNodes.map((node) => `
-            <article class="flow-node ${node.type}${node.nodeId === selectedNodeId ? " selected" : ""}" data-node-id="${node.nodeId}">
-              <div class="node-title">
-                <span>${node.name}</span>
-                <span class="type-chip ${node.type}">${node.type}</span>
-              </div>
-              <div class="node-facts">
-                <span>in: ${compact(node.inputs)}</span>
-                <span>out: ${compact(node.outputs)}</span>
-              </div>
-              <button class="node-remove" data-node-id="${node.nodeId}" title="Remove capability" aria-label="Remove ${node.name}">×</button>
-            </article>
-          `).join("") : `<div class="flow-empty">Drop atomic capabilities for ${layer.name}</div>`}
-        </div>
+        ` : ""}
+        ${!moduleNodes.length && !looseSkills.length ? `<div class="flow-empty">Drop a module or skill here</div>` : ""}
       </div>
     `;
 
     element.addEventListener("click", (event) => {
       const actionButton = event.target.closest("[data-action]");
       const removeButton = event.target.closest(".node-remove");
-      if (actionButton || removeButton || event.target.closest(".inline-implementation")) return;
+      const layerRemoveButton = event.target.closest(".layer-remove");
+      if (actionButton || removeButton || layerRemoveButton || event.target.closest(".inline-implementation")) return;
       const nodeElement = event.target.closest(".flow-node");
       activeLayerId = layer.id;
       if (nodeElement) {
         selectedNodeId = nodeElement.dataset.nodeId;
       }
       renderAll();
+    });
+
+    element.querySelectorAll(".flow-node, .module-card, .module-skill-pill, .brainstorm-skill-step").forEach((nodeElement) => {
+      nodeElement.addEventListener("dragstart", (event) => {
+        event.stopPropagation();
+        event.dataTransfer.setData("application/x-idc-node", nodeElement.dataset.nodeId);
+        event.dataTransfer.effectAllowed = "move";
+        nodeElement.classList.add("dragging");
+      });
+
+      nodeElement.addEventListener("dragend", () => {
+        nodeElement.classList.remove("dragging");
+      });
+    });
+
+    element.querySelectorAll(".module-card").forEach((moduleElement) => {
+      moduleElement.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        moduleElement.classList.add("module-drop-target");
+      });
+
+      moduleElement.addEventListener("dragleave", () => {
+        moduleElement.classList.remove("module-drop-target");
+      });
+
+      moduleElement.addEventListener("drop", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        moduleElement.classList.remove("module-drop-target");
+        const draggedNodeId = event.dataTransfer.getData("application/x-idc-node");
+        const capabilityId = event.dataTransfer.getData("text/plain");
+        if (draggedNodeId) {
+          assignNodeToModule(draggedNodeId, moduleElement.dataset.moduleId);
+          return;
+        }
+        if (capabilityId) {
+          addCapabilityToModule(capabilityId, moduleElement.dataset.moduleId);
+        }
+      });
+    });
+
+    element.addEventListener("dragstart", (event) => {
+      if (event.target.closest(".flow-node") || event.target.closest("select") || event.target.closest("button")) return;
+      event.dataTransfer.setData("application/x-idc-layer", layer.id);
+      event.dataTransfer.effectAllowed = "move";
+      element.classList.add("dragging-layer");
+    });
+
+    element.addEventListener("dragend", () => {
+      element.classList.remove("dragging-layer");
+      document.querySelectorAll(".drop-before, .drop-after").forEach((item) => item.classList.remove("drop-before", "drop-after"));
     });
 
     element.addEventListener("change", (event) => {
@@ -610,16 +911,39 @@ function renderCanvas() {
       removeNode(removeButton.dataset.nodeId);
     });
 
-    element.addEventListener("dragover", (event) => {
-      event.preventDefault();
-      element.classList.add("drop-target");
+    element.addEventListener("click", (event) => {
+      const removeLayerButton = event.target.closest(".layer-remove");
+      if (!removeLayerButton) return;
+      event.stopPropagation();
+      removeLayer(removeLayerButton.dataset.layerId);
     });
 
-    element.addEventListener("dragleave", () => element.classList.remove("drop-target"));
+    element.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      const draggedLayerId = event.dataTransfer.types.includes("application/x-idc-layer")
+        ? event.dataTransfer.getData("application/x-idc-layer")
+        : "";
+      element.classList.add("drop-target");
+      element.classList.toggle("drop-before", Boolean(draggedLayerId) && event.offsetX < element.offsetWidth / 2);
+      element.classList.toggle("drop-after", Boolean(draggedLayerId) && event.offsetX >= element.offsetWidth / 2);
+    });
+
+    element.addEventListener("dragleave", () => element.classList.remove("drop-target", "drop-before", "drop-after"));
 
     element.addEventListener("drop", (event) => {
       event.preventDefault();
-      element.classList.remove("drop-target");
+      event.stopPropagation();
+      element.classList.remove("drop-target", "drop-before", "drop-after");
+      const draggedLayerId = event.dataTransfer.getData("application/x-idc-layer");
+      const draggedNodeId = event.dataTransfer.getData("application/x-idc-node");
+      if (draggedLayerId) {
+        reorderLayerByDrop(draggedLayerId, layer.id, event.offsetX >= element.offsetWidth / 2);
+        return;
+      }
+      if (draggedNodeId) {
+        moveNodeToLayer(draggedNodeId, layer.id);
+        return;
+      }
       const capabilityId = event.dataTransfer.getData("text/plain");
       const capability = capabilities.find((cap) => cap.id === capabilityId);
       if (!capability) return;
@@ -634,8 +958,604 @@ function renderCanvas() {
       showToast(`${capability.name} added to ${layer.name}`);
     });
 
-    canvas.appendChild(element);
+    board.appendChild(element);
+    if (index < layers.length - 1) {
+      board.appendChild(gateDividerMarkup(layer.id, layers[index + 1].id));
+    }
   });
+
+  canvas.appendChild(board);
+}
+
+function gateDividerMarkup(fromLayerId, toLayerId) {
+  const gate = transitionGates.find((item) => item.from === fromLayerId && item.to === toLayerId) ?? {
+    nameZh: "通过门禁",
+    nameEn: "Gate",
+    question: "是否满足进入下一层的条件？",
+    passTo: "进入下一层",
+    failTo: "回到上一层修复",
+    checks: ["required evidence"]
+  };
+  const element = document.createElement("aside");
+  element.className = "gate-divider";
+  element.innerHTML = `
+    <div class="gate-line"></div>
+    <article class="gate-door">
+      <span class="gate-badge">GT</span>
+      <strong>${gate.nameZh}</strong>
+      <em>${gate.nameEn}</em>
+      <p>${gate.question}</p>
+      <div>
+        ${gate.checks.map((check) => `<span>${check}</span>`).join("")}
+      </div>
+      <div class="gate-outcomes">
+        <small class="pass-path">PASS → ${gate.passTo}</small>
+        <small class="fail-path">FAIL ↩ ${gate.failTo}</small>
+      </div>
+    </article>
+    <div class="gate-arrow">PASS →</div>
+  `;
+  return element;
+}
+
+function reorderLayerByDrop(draggedLayerId, targetLayerId, placeAfter) {
+  if (draggedLayerId === targetLayerId) return;
+  const fromIndex = layers.findIndex((layer) => layer.id === draggedLayerId);
+  const targetIndex = layers.findIndex((layer) => layer.id === targetLayerId);
+  if (fromIndex < 0 || targetIndex < 0) return;
+  const [draggedLayer] = layers.splice(fromIndex, 1);
+  const adjustedTargetIndex = layers.findIndex((layer) => layer.id === targetLayerId);
+  layers.splice(placeAfter ? adjustedTargetIndex + 1 : adjustedTargetIndex, 0, draggedLayer);
+  activeLayerId = draggedLayerId;
+  renderAll();
+  showToast(`${draggedLayer.name} reordered by drag`);
+}
+
+function addLayer() {
+  const nextNumber = layers.filter((layer) => layer.id.startsWith("custom-layer")).length + 1;
+  const id = `custom-layer-${Date.now().toString(36)}`;
+  const layer = {
+    id,
+    name: `Custom Layer ${nextNumber}`,
+    summary: "团队自定义流程阶段，可拖入 module 和 skills。",
+    mode: "replaceable",
+    contract: ["custom gate required", "evidence must be declared"],
+    implementations: ["Custom Layer Adapter", "<PLACEHOLDER_LAYER_IMPL>"]
+  };
+  layers.push(layer);
+  layerSelections[id] = layer.implementations[0];
+  activeLayerId = id;
+  renderAll();
+  showToast(`${layer.name} added`);
+}
+
+function removeLayer(layerId) {
+  if (layers.length <= 2) {
+    showToast("At least two layers are required");
+    return;
+  }
+  const layer = layers.find((item) => item.id === layerId);
+  layers = layers.filter((item) => item.id !== layerId);
+  const removedNodeIds = nodes.filter((node) => node.layer === layerId).map((node) => node.nodeId);
+  nodes = nodes.filter((node) => node.layer !== layerId);
+  delete layerSelections[layerId];
+  removedNodeIds.forEach((nodeId) => delete moduleAssignments[nodeId]);
+  Object.keys(moduleAssignments).forEach((nodeId) => {
+    if (removedNodeIds.includes(moduleAssignments[nodeId])) {
+      delete moduleAssignments[nodeId];
+    }
+  });
+  activeLayerId = layers[0].id;
+  selectedNodeId = nodes[0]?.nodeId ?? null;
+  renderAll();
+  showToast(`${layer?.name ?? "Layer"} removed`);
+}
+
+function moveNodeToLayer(nodeId, targetLayerId) {
+  const node = nodes.find((item) => item.nodeId === nodeId);
+  const targetLayer = layers.find((layer) => layer.id === targetLayerId);
+  if (!node || !targetLayer) return;
+  node.layer = targetLayerId;
+  delete moduleAssignments[nodeId];
+  if (!node.id.endsWith(`.as-${targetLayerId}`) && !capabilities.some((cap) => cap.id === node.id && cap.layer === targetLayerId)) {
+    node.id = `${node.id}.as-${targetLayerId}`;
+  }
+  activeLayerId = targetLayerId;
+  selectedNodeId = nodeId;
+  renderAll();
+  showToast(`${node.name} moved to ${targetLayer.name}`);
+}
+
+function assignNodeToModule(nodeId, moduleId) {
+  const node = nodes.find((item) => item.nodeId === nodeId);
+  const module = nodes.find((item) => item.nodeId === moduleId);
+  if (!node || !module || node.nodeId === module.nodeId) return;
+  node.layer = module.layer;
+  moduleAssignments[nodeId] = moduleId;
+  activeLayerId = module.layer;
+  selectedNodeId = moduleId;
+  renderAll();
+  showToast(`${node.name} assigned to ${module.name}`);
+}
+
+function addCapabilityToModule(capabilityId, moduleId) {
+  const capability = capabilities.find((cap) => cap.id === capabilityId);
+  const module = nodes.find((item) => item.nodeId === moduleId);
+  if (!capability || !module) return;
+  const node = nodeFromCapability(
+    capability.layer === module.layer ? capability : { ...capability, layer: module.layer, id: `${capability.id}.as-${module.layer}` },
+    0,
+    0
+  );
+  nodes.push(node);
+  moduleAssignments[node.nodeId] = moduleId;
+  activeLayerId = module.layer;
+  selectedNodeId = moduleId;
+  renderAll();
+  showToast(`${capability.name} added inside ${module.name}`);
+}
+
+function isModuleType(type) {
+  return ["adapter", "router", "agent", "gate", "lane", "domain", "knowledge", "runtime", "handoff"].includes(type);
+}
+
+function skillNodeMarkup(node) {
+  if (node.layer === "contract" && node.laneProfiles) {
+    return contractProfileNodeMarkup(node);
+  }
+  return `
+    <article class="flow-node ${node.type}${node.nodeId === selectedNodeId ? " selected" : ""}" data-node-id="${node.nodeId}" draggable="true">
+      ${capabilityCardMarkup(node, false)}
+      <button class="node-remove" data-node-id="${node.nodeId}" title="Remove capability" aria-label="Remove ${node.name}">×</button>
+    </article>
+  `;
+}
+
+function contractProfileNodeMarkup(node) {
+  return `
+    <article class="flow-node contract-profile-node ${node.nodeId === selectedNodeId ? " selected" : ""}" data-node-id="${node.nodeId}" draggable="true">
+      ${capabilityCardMarkup(node, false)}
+      <div class="contract-profile-flow">
+        <strong>Lane-aware profiles / 按 Lane 切换 Contract Gate</strong>
+        <div class="contract-profile-source">
+          <span>from Lane Resolver</span>
+          <b>selected_lane</b>
+        </div>
+        <div class="contract-profile-grid">
+          ${node.laneProfiles.map((profile) => contractProfileCardMarkup(profile)).join("")}
+        </div>
+      </div>
+      <button class="node-remove" data-node-id="${node.nodeId}" title="Remove capability" aria-label="Remove ${node.name}">×</button>
+    </article>
+  `;
+}
+
+function contractProfileCardMarkup(profile) {
+  return `
+    <div class="contract-profile-card ${profile.lane}">
+      <span>${profile.name}</span>
+      <small>${profile.strictness}</small>
+      <div>
+        ${profile.checks.slice(0, 3).map((check) => `<em>${check}</em>`).join("")}
+      </div>
+      <b>${profile.evidence.slice(0, 2).join(" + ")}</b>
+    </div>
+  `;
+}
+
+function moduleCardMarkup(module) {
+  const moduleSkills = nodes.filter((node) => moduleAssignments[node.nodeId] === module.nodeId);
+  if (module.type === "adapter") {
+    return adapterModuleCardMarkup(module, moduleSkills);
+  }
+  if (module.type === "router" && module.id === "team.domain-router") {
+    return domainRouterCardMarkup(module, moduleSkills);
+  }
+  if (module.type === "lane") {
+    return laneModuleCardMarkup(module, moduleSkills);
+  }
+  if (["domain", "knowledge", "runtime"].includes(module.type) || module.id === "idc.completion-module") {
+    return stageModuleCardMarkup(module, moduleSkills);
+  }
+  return `
+    <article class="module-card ${module.type}${module.nodeId === selectedNodeId ? " selected" : ""}" data-node-id="${module.nodeId}" data-module-id="${module.nodeId}" draggable="true">
+      <div class="module-shell-head">
+        ${capabilityCardMarkup(module, false)}
+        <button class="node-remove" data-node-id="${module.nodeId}" title="Remove module" aria-label="Remove ${module.name}">×</button>
+      </div>
+      <div class="module-skill-slot">
+        <strong>Uses skills</strong>
+        ${moduleSkills.length ? moduleSkills.map((skill) => `
+          <div class="module-skill-pill ${skill.type}" data-node-id="${skill.nodeId}" draggable="true">
+            <span>${skill.name}</span>
+            <small>${moduleSkillRelation(module, skill)}</small>
+            <button class="node-remove" data-node-id="${skill.nodeId}" title="Remove skill" aria-label="Remove ${skill.name}">×</button>
+          </div>
+        `).join("") : `<span class="module-empty">Drop skills into this ${module.type}</span>`}
+      </div>
+    </article>
+  `;
+}
+
+function stageModuleCardMarkup(module, moduleSkills) {
+  const stage = stageSpec(module);
+  return `
+    <article class="module-card ${module.type}${module.nodeId === selectedNodeId ? " selected" : ""}" data-node-id="${module.nodeId}" data-module-id="${module.nodeId}" draggable="true">
+      <div class="module-shell-head">
+        ${capabilityCardMarkup(module, false)}
+        <button class="node-remove" data-node-id="${module.nodeId}" title="Remove module" aria-label="Remove ${module.name}">×</button>
+      </div>
+      <div class="stage-flow ${stage.kind}">
+        <strong>${stage.title}</strong>
+        <div class="stage-step-row">
+          ${stage.steps.map((step, index) => `
+            <span>${step}</span>
+            ${index < stage.steps.length - 1 ? "<i></i>" : ""}
+          `).join("")}
+        </div>
+        <div class="stage-policy-grid">
+          ${stage.policies.map((policy) => `<em>${policy}</em>`).join("")}
+        </div>
+        ${moduleSkills.length ? `
+          <div class="module-skill-slot compact">
+            <strong>Atomic skills</strong>
+            ${moduleSkills.map((skill) => `
+              <div class="module-skill-pill ${skill.type}" data-node-id="${skill.nodeId}" draggable="true">
+                <span>${skill.name}</span>
+                <small>${moduleSkillRelation(module, skill)}</small>
+                <button class="node-remove" data-node-id="${skill.nodeId}" title="Remove skill" aria-label="Remove ${skill.name}">×</button>
+              </div>
+            `).join("")}
+          </div>
+        ` : `<div class="module-empty">Drop atomic skills into ${module.name}</div>`}
+      </div>
+    </article>
+  `;
+}
+
+function stageSpec(module) {
+  if (module.type === "domain") {
+    return {
+      kind: "domain",
+      title: "Domain planning / 领域规划",
+      steps: ["domain_route", "layer plan", "required evidence"],
+      policies: ["D3A uses fixed layer registry", "Custom domain declares own gates", "General keeps bounded scope"]
+    };
+  }
+  if (module.type === "runtime") {
+    return {
+      kind: "runtime",
+      title: "Execution loop / 执行闭环",
+      steps: ["plan unit", "agent run", "test feedback"],
+      policies: ["lane controls loop depth", "agent/session policy from lane", "handoff when context grows"]
+    };
+  }
+  if (module.type === "knowledge") {
+    return {
+      kind: "knowledge",
+      title: "Context assembly / 上下文装配",
+      steps: ["domain needs", "bounded context", "evidence_ref"],
+      policies: ["repo context is bounded", "static knowledge is referenced", "no enterprise secrets"]
+    };
+  }
+  return {
+    kind: "completion",
+    title: "Completion evidence / 完成判定",
+    steps: ["RED evidence", "GREEN evidence", "completion decision"],
+    policies: ["tool evidence only", "RED before GREEN", "required gates must pass"]
+  };
+}
+
+function domainRouterCardMarkup(module, moduleSkills) {
+  return `
+    <article class="module-card router${module.nodeId === selectedNodeId ? " selected" : ""}" data-node-id="${module.nodeId}" data-module-id="${module.nodeId}" draggable="true">
+      <div class="module-shell-head">
+        ${capabilityCardMarkup(module, false)}
+        <button class="node-remove" data-node-id="${module.nodeId}" title="Remove module" aria-label="Remove ${module.name}">×</button>
+      </div>
+      <div class="domain-router-flow">
+        <strong>Domain route selector / 领域路线选择</strong>
+        <div class="domain-router-line">
+          <span>intent + repo signals</span>
+          <b>choose domain</b>
+        </div>
+        <div class="domain-option-grid">
+          ${domains.map((domain) => domainOptionMarkup(domain)).join("")}
+        </div>
+        <div class="domain-output">output: domain_route → Domain Module</div>
+        ${moduleSkills.length ? `
+          <div class="module-skill-slot compact">
+            <strong>Optional router skills</strong>
+            ${moduleSkills.map((skill) => `
+              <div class="module-skill-pill ${skill.type}" data-node-id="${skill.nodeId}" draggable="true">
+                <span>${skill.name}</span>
+                <small>${moduleSkillRelation(module, skill)}</small>
+                <button class="node-remove" data-node-id="${skill.nodeId}" title="Remove skill" aria-label="Remove ${skill.name}">×</button>
+              </div>
+            `).join("")}
+          </div>
+        ` : `<div class="domain-no-skills">No skills required by default / 默认不需要挂载 skill</div>`}
+      </div>
+    </article>
+  `;
+}
+
+function domainOptionMarkup(domain) {
+  const labels = {
+    d3a: "D3A",
+    "team-domain": "Custom",
+    general: "General"
+  };
+  return `
+    <div class="domain-option-card ${domain.id}">
+      <span>${labels[domain.id] ?? domain.name}</span>
+      <small>${domain.name}</small>
+      <div>
+        ${domain.rules.slice(0, 2).map((rule) => `<em>${rule}</em>`).join("")}
+      </div>
+      <b>${domain.requiredGates.slice(0, 2).join(" + ")}</b>
+    </div>
+  `;
+}
+
+function laneModuleCardMarkup(module, moduleSkills) {
+  const laneSkills = lanes
+    .map((lane) => moduleSkills.find((skill) => skill.id.includes(`lane.${lane.id}`)))
+    .filter(Boolean);
+  const extraSkills = moduleSkills.filter((skill) => !laneSkills.includes(skill));
+
+  return `
+    <article class="module-card lane${module.nodeId === selectedNodeId ? " selected" : ""}" data-node-id="${module.nodeId}" data-module-id="${module.nodeId}" draggable="true">
+      <div class="module-shell-head">
+        ${capabilityCardMarkup(module, false)}
+        <button class="node-remove" data-node-id="${module.nodeId}" title="Remove module" aria-label="Remove ${module.name}">×</button>
+      </div>
+      <div class="lane-flow">
+        <strong>Lane strategy selector / 执行策略选择</strong>
+        <div class="lane-router-line">
+          <span>scenario_signals</span>
+          <b>choose one lane</b>
+        </div>
+        <div class="lane-strategy-grid">
+          ${laneSkills.length ? laneSkills.map((skill) => laneStrategyMarkup(skill)).join("") : `<span class="module-empty">Drop fast / lite / complex lanes here</span>`}
+        </div>
+        <div class="lane-output">output: fast_lite_complex_lane → downstream gates and execution policy</div>
+        ${extraSkills.length ? `
+          <div class="module-skill-slot compact">
+            <strong>Extra lane skills</strong>
+            ${extraSkills.map((skill) => `
+              <div class="module-skill-pill ${skill.type}" data-node-id="${skill.nodeId}" draggable="true">
+                <span>${skill.name}</span>
+                <small>${moduleSkillRelation(module, skill)}</small>
+                <button class="node-remove" data-node-id="${skill.nodeId}" title="Remove skill" aria-label="Remove ${skill.name}">×</button>
+              </div>
+            `).join("")}
+          </div>
+        ` : ""}
+      </div>
+    </article>
+  `;
+}
+
+function laneStrategyMarkup(skill) {
+  const lane = lanes.find((item) => skill.id.includes(`lane.${item.id}`));
+  const titles = {
+    fast: "Fast / 快速",
+    lite: "Lite / 默认",
+    complex: "Complex / 完整"
+  };
+  const rules = lane?.rules ?? skill.inputs;
+  const gates = lane?.gates ?? skill.evidence;
+  const orchestration = lane?.orchestration ?? {
+    plan: "custom plan",
+    agent: "custom runtime",
+    loop: "custom loop",
+    evidence: "custom evidence"
+  };
+  return `
+    <div class="module-skill-pill lane-strategy-card ${lane?.id ?? "custom"}" data-node-id="${skill.nodeId}" draggable="true">
+      <div>
+        <span>${titles[lane?.id] ?? skill.name}</span>
+        <small>${lane?.summary ?? moduleSkillRelation({ type: "lane" }, skill)}</small>
+      </div>
+      <div class="lane-orchestration">
+        <strong>Orchestration</strong>
+        <em>Plan: ${orchestration.plan}</em>
+        <em>Agent: ${orchestration.agent}</em>
+        <em>Loop: ${orchestration.loop}</em>
+        <em>Evidence: ${orchestration.evidence}</em>
+      </div>
+      <div class="lane-rule-list">
+        <strong>When</strong>
+        ${rules.slice(0, 1).map((rule) => `<em>${rule}</em>`).join("")}
+      </div>
+      <div class="lane-gate-list">
+        <strong>Gates</strong>
+        ${gates.slice(0, 2).map((gate) => `<b>${gate}</b>`).join("")}
+      </div>
+      <button class="node-remove" data-node-id="${skill.nodeId}" title="Remove lane" aria-label="Remove ${skill.name}">×</button>
+    </div>
+  `;
+}
+
+function adapterModuleCardMarkup(module, moduleSkills) {
+  const intake = moduleSkills.find((skill) => skill.id.includes("intent-intake"));
+  const discovery = moduleSkills.find((skill) => skill.id.includes("intent-discovery"));
+  const brainstorming = moduleSkills.find((skill) => skill.id.includes("brainstorming"));
+  const grillMe = moduleSkills.find((skill) => skill.id.includes("grill-me"));
+  const extraSkills = moduleSkills.filter((skill) => skill !== intake && skill !== discovery && skill !== brainstorming && skill !== grillMe);
+
+  return `
+    <article class="module-card adapter${module.nodeId === selectedNodeId ? " selected" : ""}" data-node-id="${module.nodeId}" data-module-id="${module.nodeId}" draggable="true">
+      <div class="module-shell-head">
+        ${capabilityCardMarkup(module, false)}
+        <button class="node-remove" data-node-id="${module.nodeId}" title="Remove module" aria-label="Remove ${module.name}">×</button>
+      </div>
+      <div class="adapter-flow">
+        <strong>Intent intake decision / 意图接入判定</strong>
+        <div class="adapter-trigger-row">
+          ${intake ? adapterFlowStep(intake, "IN", "Receives request / 接住输入") : `<span class="module-empty">Drop Intent Intake here</span>`}
+          <div class="adapter-trigger-line" aria-label="if vague idea trigger discovery">
+            <span>if vague idea / 如果意图模糊</span>
+          </div>
+          ${discovery ? adapterFlowStep(discovery, "DS", "Clarifies vague idea / 澄清模糊意图") : `<span class="module-empty">Drop Intent Discovery here</span>`}
+        </div>
+        <div class="brainstorm-flow" aria-label="brainstorming orchestration for unclear intent">
+          <strong>Brainstorming orchestration / 意图不清时编排</strong>
+          <div class="brainstorm-triggers">
+            <span>Call Brainstorming: vague idea, many possible directions</span>
+            <span>Call Grill Me: assumptions, missing constraints, weak acceptance</span>
+          </div>
+          <div class="brainstorm-steps">
+            <span>clarify</span>
+            <i></i>
+            ${brainstorming ? brainstormSkillStep(brainstorming, "explore options") : `<span>Brainstorming</span>`}
+            <i></i>
+            ${grillMe ? brainstormSkillStep(grillMe, "assumption check") : `<span>Grill Me</span>`}
+            <i></i>
+            <span>draft_spec</span>
+          </div>
+          <b>loop until intent is actionable / 循环直到意图可执行</b>
+        </div>
+        <div class="adapter-direct-row" aria-label="other intake cases normalize directly">
+          <span>clear/actionable / 明确可执行输入</span>
+          <i></i>
+          <b>normalized_request</b>
+        </div>
+        <div class="adapter-loopback">draft_spec from discovery ↩ back to intake → normalized_request</div>
+        ${extraSkills.length ? `
+          <div class="module-skill-slot compact">
+            <strong>Extra adapter skills</strong>
+            ${extraSkills.map((skill) => `
+              <div class="module-skill-pill ${skill.type}" data-node-id="${skill.nodeId}" draggable="true">
+                <span>${skill.name}</span>
+                <small>${moduleSkillRelation(module, skill)}</small>
+                <button class="node-remove" data-node-id="${skill.nodeId}" title="Remove skill" aria-label="Remove ${skill.name}">×</button>
+              </div>
+            `).join("")}
+          </div>
+        ` : ""}
+      </div>
+    </article>
+  `;
+}
+
+function brainstormSkillStep(skill, hint) {
+  return `
+    <span class="brainstorm-skill-step" data-node-id="${skill.nodeId}" draggable="true">
+      ${skill.name}
+      <small>${hint}</small>
+      <button class="node-remove" data-node-id="${skill.nodeId}" title="Remove skill" aria-label="Remove ${skill.name}">×</button>
+    </span>
+  `;
+}
+
+function adapterFlowStep(skill, index, relation) {
+  return `
+    <div class="adapter-step module-skill-pill ${skill.type}" data-node-id="${skill.nodeId}" draggable="true">
+      <b>${index}</b>
+      <span>${skill.name}</span>
+      <small>${relation}</small>
+      <button class="node-remove" data-node-id="${skill.nodeId}" title="Remove skill" aria-label="Remove ${skill.name}">×</button>
+    </div>
+  `;
+}
+
+function moduleSkillRelation(module, skill) {
+  if (module.type === "adapter" && skill.id.includes("intent-intake")) {
+    return "入口 / intake: classify clear vs vague";
+  }
+  if (module.type === "adapter" && skill.id.includes("intent-discovery")) {
+    return "发现 / discovery: triggered by vague idea";
+  }
+  if (module.type === "router") {
+    return "routing input";
+  }
+  if (module.type === "agent") {
+    return "tool used by agent";
+  }
+  if (module.type === "gate") {
+    return "constraint check";
+  }
+  return typeMeta[skill.type]?.hint ?? "contained capability";
+}
+
+function capabilityCardMarkup(capability, showSuggestedLayer) {
+  const meta = typeMeta[capability.type] ?? typeMeta.skill;
+  return `
+    <div class="capability-topline">
+      <span class="type-badge ${capability.type}">${meta.icon}</span>
+      <div class="capability-name">
+        <strong>${capability.name}</strong>
+        <span>${meta.hint}</span>
+      </div>
+    </div>
+    <div class="capability-body ${capability.type}">
+      ${capabilityFacts(capability, showSuggestedLayer)}
+    </div>
+  `;
+}
+
+function capabilityFacts(capability, showSuggestedLayer) {
+  if (capability.type === "agent") {
+    return `
+      <span>tools: ${compact(capability.tools)}</span>
+      <span>session: ${capability.newSession ? "new" : "same"}</span>
+    `;
+  }
+  if (capability.type === "gate") {
+    return `
+      <span>checks: ${compact(capability.evidence)}</span>
+      <span>${capability.verified ? "verified evidence" : "bind command"}</span>
+    `;
+  }
+  if (capability.type === "router") {
+    return `
+      <span>routes from: ${compact(capability.inputs)}</span>
+      <span>decides: ${compact(capability.outputs)}</span>
+    `;
+  }
+  if (capability.type === "lane") {
+    return `
+      <span>strategy: ${capability.name.replace(" Lane", "")}</span>
+      <span>gates: ${compact(capability.evidence)}</span>
+    `;
+  }
+  if (capability.type === "domain") {
+    return `
+      <span>route: ${compact(capability.inputs)}</span>
+      <span>plans: ${compact(capability.outputs)}</span>
+    `;
+  }
+  if (capability.type === "knowledge") {
+    return `
+      <span>context: ${compact(capability.inputs)}</span>
+      <span>outputs: ${compact(capability.outputs)}</span>
+    `;
+  }
+  if (capability.type === "runtime") {
+    return `
+      <span>orchestrates: ${compact(capability.inputs)}</span>
+      <span>produces: ${compact(capability.outputs)}</span>
+    `;
+  }
+  if (capability.type === "handoff") {
+    return `
+      <span>state: ${compact(capability.inputs)}</span>
+      <span>handoff: ${compact(capability.outputs)}</span>
+    `;
+  }
+  if (capability.type === "adapter") {
+    return `
+      <span>normalizes: ${compact(capability.inputs)}</span>
+      <span>outputs: ${compact(capability.outputs)}</span>
+    `;
+  }
+  return `
+    <span>in: ${compact(capability.inputs)}</span>
+    <span>out: ${compact(capability.outputs)}</span>
+    ${showSuggestedLayer ? `<span>suggested: ${layerName(capability.layer)}</span>` : ""}
+  `;
 }
 
 function moveLayer(layerId, direction) {
@@ -652,6 +1572,12 @@ function moveLayer(layerId, direction) {
 function removeNode(nodeId) {
   const node = nodes.find((item) => item.nodeId === nodeId);
   nodes = nodes.filter((item) => item.nodeId !== nodeId);
+  delete moduleAssignments[nodeId];
+  Object.keys(moduleAssignments).forEach((skillNodeId) => {
+    if (moduleAssignments[skillNodeId] === nodeId) {
+      delete moduleAssignments[skillNodeId];
+    }
+  });
   selectedNodeId = nodes[0]?.nodeId ?? null;
   renderAll();
   showToast(`${node?.name ?? "Capability"} removed from canvas`);
@@ -916,17 +1842,21 @@ layerImplementation.addEventListener("change", () => {
   showToast(`${layers.find((layer) => layer.id === activeLayerId)?.name} layer swapped`);
 });
 
-domainSelection.addEventListener("change", () => {
-  selectedDomainId = domainSelection.value;
-  renderAll();
-  showToast(`Domain route switched to ${domains.find((domain) => domain.id === selectedDomainId)?.name}`);
-});
+if (domainSelection) {
+  domainSelection.addEventListener("change", () => {
+    selectedDomainId = domainSelection.value;
+    renderAll();
+    showToast(`Domain route switched to ${domains.find((domain) => domain.id === selectedDomainId)?.name}`);
+  });
+}
 
-laneSelection.addEventListener("change", () => {
-  selectedLaneId = laneSelection.value;
-  renderAll();
-  showToast(`Lane strategy switched to ${selectedLaneId}`);
-});
+if (laneSelection) {
+  laneSelection.addEventListener("change", () => {
+    selectedLaneId = laneSelection.value;
+    renderAll();
+    showToast(`Lane strategy switched to ${selectedLaneId}`);
+  });
+}
 
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
@@ -980,6 +1910,8 @@ document.getElementById("exportBtn").addEventListener("click", () => {
   showToast("Export package mock generated: templates, skills, agents, gates, tests");
 });
 
+document.getElementById("addLayerBtn").addEventListener("click", addLayer);
+
 document.getElementById("alignBtn").addEventListener("click", () => {
   const sorted = [...nodes].sort((a, b) => a.y - b.y || a.x - b.x);
   sorted.forEach((node, index) => {
@@ -990,8 +1922,13 @@ document.getElementById("alignBtn").addEventListener("click", () => {
 });
 
 document.getElementById("resetBtn").addEventListener("click", () => {
-  nodes = demoNodes.map((node) => ({ ...structuredClone(node), nodeId: `${node.id}-${Math.random().toString(16).slice(2, 7)}` }));
-  selectedNodeId = nodes[2].nodeId;
+  const demoState = createDemoState();
+  layers = structuredClone(initialLayers);
+  layerSelections = Object.fromEntries(layers.map((layer) => [layer.id, layer.implementations[0]]));
+  moduleAssignments = demoState.moduleAssignments;
+  nodes = demoState.nodes;
+  selectedNodeId = demoState.selectedNodeId;
+  activeLayerId = "intake";
   renderAll();
   showToast("Demo SOP reset");
 });

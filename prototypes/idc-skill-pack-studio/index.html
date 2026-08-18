@@ -81,6 +81,7 @@
             <button class="tab" data-filter="skill">Skills</button>
             <button class="tab" data-filter="agent">Agents</button>
             <button class="tab" data-filter="gate">Gates</button>
+            <button class="tab" data-filter="lane">Lanes</button>
           </div>
           <div class="capability-list" id="capabilityList"></div>
         </section>
@@ -89,48 +90,15 @@
       <section class="canvas-panel" aria-label="SOP Canvas">
         <div class="canvas-toolbar">
           <div>
-            <h2>Harness Board</h2>
-            <p>从上到下定制 IDC Harness，每一层选择实现并拖入原子能力。</p>
+            <h2>Workflow Grid</h2>
+            <p>拖拽 Layer、Module 和 Skill，Gate 会自动出现在阶段之间。</p>
           </div>
           <div class="toolbar-group" aria-label="Canvas controls">
+            <button class="text-button" id="addLayerBtn">Add Layer</button>
             <button class="icon-button" id="alignBtn" title="Auto align" aria-label="Auto align">⇄</button>
             <button class="icon-button" id="resetBtn" title="Reset demo flow" aria-label="Reset demo flow">↺</button>
           </div>
         </div>
-
-        <div class="layer-focus" id="layerFocus">
-          <div>
-            <span class="focus-kicker">Layer Focus</span>
-            <strong id="focusLayerName">Contract Gate</strong>
-            <p id="focusLayerSummary">当前层会高亮画布节点，并过滤左侧原子能力。</p>
-          </div>
-          <div class="focus-stats">
-            <span id="focusCapabilityCount">0 capabilities</span>
-            <span id="focusNodeCount">0 canvas nodes</span>
-          </div>
-        </div>
-
-        <section class="architecture-board" id="architectureBoard" aria-label="Top-down Harness Board"></section>
-
-        <section class="routing-board" aria-label="Routing Strategy Board">
-          <div class="route-card">
-            <span class="route-kicker">Scenario Route</span>
-            <strong>Dynamic Scenario</strong>
-            <p>按输入成熟度和任务类型决定进入 Domain 或 General。</p>
-          </div>
-          <div class="route-arrow">→</div>
-          <div class="route-card route-card-active" id="domainRouteCard">
-            <span class="route-kicker">Domain Route</span>
-            <strong id="domainRouteName">D3A Module</strong>
-            <p id="domainRouteSummary">固定 D3A layer registry，DT domain 使用 placeholder。</p>
-          </div>
-          <div class="route-arrow">→</div>
-          <div class="route-card route-card-active" id="laneRouteCard">
-            <span class="route-kicker">Lane Strategy</span>
-            <strong id="laneRouteName">lite</strong>
-            <p id="laneRouteSummary">默认开发路径，要求 focused contract 和 GREEN evidence。</p>
-          </div>
-        </section>
 
         <div class="canvas vertical-canvas" id="canvas">
           <div class="canvas-hint" id="canvasHint">Drag capabilities into a layer row</div>
