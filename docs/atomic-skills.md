@@ -12,43 +12,54 @@ Atomic Skill 是可以被其他团队单独复用的小能力。
 
 ## 第一批
 
-### 框架级原子 skill
+### 保留为 skill 的能力
 
-这些 skill 负责动态分流、门禁和 handoff：
+这些 skill 有稳定输入/输出，能被 workflow 独立调用：
 
 ```text
-idc-input-adapter
-idc-scenario-router
-idc-domain-module-router
-idc-lane-resolver
-idc-contract-gate
-idc-requirement-assessor
-idc-output-surface-router
-idc-automated-closure
-idc-execution-unit-planner
-idc-progressive-constraint-loader
-idc-delegation-router
 idc-skill-adapter-router
-idc-knowledge-gate
-idc-provider-selection
-idc-repo-context-provider
-idc-tdd-state-machine
-idc-lane-completion
-idc-evidence-gate
-idc-vertical-slice-readiness
-idc-resume-run
+idc-brainstorming
+idc-intent-discovery
+idc-intent-grilling
+idc-intent-alignment
 idc-general-coding
 idc-d3a-coding
 idc-dt-build
 idc-tran-build
+idc-superpowers-adapter
+idc-gc-sop-adapter
+idc-dt-design
+idc-dt-writer
+idc-gc-third-skill-placeholder
 ```
 
-它们的共同边界：
+### 降级为 references 的流程节点
+
+这些是规则、决策表、schema 或 gate policy，不需要独立 skill：
 
 ```text
-主动决策 / 路由 / 门禁 / handoff 可以 skill 化
-schema / registry / human-view / evidence / knowledge template 不 skill 化
+input-adapter
+scenario-router
+domain-module-router
+lane-resolver
+contract-gate
+requirement-assessor
+output-surface-router
+automated-closure-loop
+execution-unit-policy
+progressive-constraint-loading
+delegation-router
+knowledge-gate
+provider-selection-matrix
+repo-context-providers
+tdd-state-machine
+lane-completion
+vertical-slice-readiness-gate
+resume-policy
+verification-contract
 ```
+
+共同边界：只有需要独立调用、独立 handoff、独立输入输出的主动能力才保留为 skill；schema / registry / human-view / evidence / knowledge template / gate policy 沉淀为 `references/` 或 `assets/`。
 
 ### idc-brainstorming
 

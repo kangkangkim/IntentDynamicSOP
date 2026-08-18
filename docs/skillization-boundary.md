@@ -1,33 +1,28 @@
 # Skillization Boundary
 
-IDC should skill-ize executable decisions, handoffs, adapters, and gates.
+IDC should skill-ize independently callable abilities: orchestration,
+pre-alignment, domain execution, and external adapters.
 
-It should not skill-ize passive data. Passive data must be沉淀为 assets or references, not left as ambiguous loose notes.
+It should not turn every workflow node into a skill. Router rules, gate policy,
+lane definitions, evidence contracts, and completion checks are loaded by the
+orchestration skill as references unless they need their own stable invocation
+surface.
+
+Passive data must be沉淀为 assets or references, not left as ambiguous loose
+notes.
 
 ## Should Be Skills
 
-These are active behaviors:
+These are active behaviors with stable input/output and independent reuse:
 
-- input normalization.
-- scenario routing.
-- domain module routing.
-- lane resolving.
-- contract selection.
-- requirement assessment.
-- human-output surface routing.
-- knowledge loading.
-- provider selection.
-- repository context collection.
-- delegation selection.
+- workflow orchestration.
+- intent discovery.
+- brainstorming.
+- intent grilling.
+- intent alignment.
 - skill adapter routing.
-- execution unit planning.
-- automated closure.
-- TDD state transition checking.
-- lane completion checking.
-- evidence gate checking.
-- vertical slice readiness checking.
-- resume handling.
-- domain execution.
+- General Coding execution.
+- D3A Coding execution.
 - build / DT / enterprise SOP adapters.
 
 ## Should Become Assets / References
@@ -37,6 +32,23 @@ These are passive assets and references:
 - schemas.
 - registries.
 - lane definitions.
+- input adapter rules.
+- scenario router rules.
+- domain module router rules.
+- contract gate policy.
+- requirement assessment policy.
+- human-output surface routing policy.
+- knowledge loading policy.
+- provider selection policy.
+- repository context policy.
+- delegation policy.
+- execution unit planning policy.
+- automated closure policy.
+- TDD state machine policy.
+- lane completion policy.
+- evidence gate policy.
+- vertical slice readiness policy.
+- resume policy.
 - human-view templates.
 - knowledge templates.
 - examples.

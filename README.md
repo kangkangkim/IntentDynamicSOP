@@ -120,7 +120,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 
 - `.claude/skills/idc-workflow/SKILL.md`：Claude Code 项目级总入口 skill。
 - `.claude/commands/id-workflow.md`：统一 slash command 入口，负责把用户输入交给 `idc-workflow`。
-- `.claude/skills/idc-input-adapter/SKILL.md`、`idc-scenario-router`、`idc-domain-module-router`、`idc-lane-resolver`、`idc-contract-gate`、`idc-requirement-assessor`、`idc-output-surface-router`、`idc-automated-closure`、`idc-execution-unit-planner`、`idc-progressive-constraint-loader`、`idc-delegation-router`、`idc-skill-adapter-router`、`idc-knowledge-gate`、`idc-provider-selection`、`idc-repo-context-provider`、`idc-tdd-state-machine`、`idc-lane-completion`、`idc-evidence-gate`、`idc-vertical-slice-readiness`、`idc-resume-run`：框架级原子 skill。
+- `.claude/skills/`：只保留少量可独立调用的 `idc-*` skills；router、gate、lane、provider、completion、resume、evidence 等流程节点沉淀在 `references/`。
 - `.claude/skills/idc-workflow/assets/README.md`：asset / reference 边界说明，避免把 passive data 伪装成 skill。
 - `.claude/skills/idc-workflow/TEAM_CUSTOMIZATION.md`：其他团队接入时优先看的修改指南。
 - `.claude/skills/idc-workflow/references/workflows/`：Scenario Router、Input Adapter、Lane Resolver、Contract Gate、Human Alignment、Automated Closure Loop 等运行时规则。

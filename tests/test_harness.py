@@ -401,12 +401,10 @@ def lane_resolver_decision(signals):
 def test_lane_resolver_fixtures_are_stable():
     resolver = read_text(".claude/skills/idc-workflow/references/workflows/lane-resolver.md")
     schema = read_text(".claude/skills/idc-workflow/references/schemas/lane.schema.yaml")
-    skill = read_text(".claude/skills/idc-lane-resolver/SKILL.md")
 
     for text, name in [
         (resolver, "Lane Resolver workflow"),
         (schema, "Lane schema"),
-        (skill, "idc-lane-resolver skill"),
     ]:
         assert_true("fast" in text and "lite" in text and "complex" in text, f"{name} 必须声明三档 lane。")
         assert_true("known-domain" in text and "d3a" in text and "gc" in text and "dynamic" in text, f"{name} 必须禁止把 domain/scenario/adapter 当 lane。")
@@ -946,7 +944,8 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         if skill_dir.is_dir():
             assert_true(skill_dir.name.startswith("idc-"), f"所有本仓库 skill 都必须使用 idc- 前缀：{skill_dir.name}。")
 
-    skill_names = [
+    retained_skill_names = [
+        "idc-workflow",
         "idc-brainstorming",
         "idc-d3a-coding",
         "idc-dt-build",
@@ -955,29 +954,34 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         "idc-gc-sop-adapter",
         "idc-gc-third-skill-placeholder",
         "idc-general-coding",
-        "idc-input-adapter",
-        "idc-scenario-router",
-        "idc-domain-module-router",
-        "idc-lane-resolver",
-        "idc-contract-gate",
-        "idc-requirement-assessor",
-        "idc-output-surface-router",
-        "idc-automated-closure",
-        "idc-execution-unit-planner",
-        "idc-progressive-constraint-loader",
-        "idc-delegation-router",
+        "idc-intent-alignment",
+        "idc-intent-discovery",
+        "idc-intent-grilling",
         "idc-skill-adapter-router",
-        "idc-knowledge-gate",
-        "idc-provider-selection",
-        "idc-repo-context-provider",
-        "idc-tdd-state-machine",
-        "idc-lane-completion",
-        "idc-evidence-gate",
-        "idc-vertical-slice-readiness",
-        "idc-resume-run",
         "idc-superpowers-adapter",
         "idc-tran-build",
     ]
+    degraded_reference_nodes = {
+        "idc-input-adapter": "references/workflows/input-adapter.md",
+        "idc-scenario-router": "references/workflows/scenario-router.md",
+        "idc-domain-module-router": "references/workflows/domain-module-router.md",
+        "idc-lane-resolver": "references/workflows/lane-resolver.md",
+        "idc-contract-gate": "references/workflows/contract-gate.md",
+        "idc-requirement-assessor": "references/workflows/requirement-assessor.md",
+        "idc-output-surface-router": "references/human-views/",
+        "idc-automated-closure": "references/workflows/automated-closure-loop.md",
+        "idc-execution-unit-planner": "references/workflows/execution-unit-policy.md",
+        "idc-progressive-constraint-loader": "references/workflows/progressive-constraint-loading.md",
+        "idc-delegation-router": "references/workflows/delegation-router.md",
+        "idc-knowledge-gate": "references/workflows/knowledge-gate.md",
+        "idc-provider-selection": "references/workflows/provider-selection-matrix.md",
+        "idc-repo-context-provider": "references/workflows/repo-context-providers.md",
+        "idc-tdd-state-machine": "references/workflows/tdd-state-machine.md",
+        "idc-lane-completion": "references/workflows/lane-completion.md",
+        "idc-evidence-gate": "references/schemas/verification-contract.schema.yaml",
+        "idc-vertical-slice-readiness": "references/workflows/vertical-slice-readiness-gate.md",
+        "idc-resume-run": "references/workflows/resume-policy.md",
+    }
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
     command = read_text(".claude/commands/id-workflow.md")
     atomic_doc = read_text("docs/atomic-skills.md")
@@ -986,7 +990,14 @@ def test_framework_behaviors_are_skillized_with_boundaries():
     README = read_text("README.md")
     team_customization = read_text(".claude/skills/idc-workflow/TEAM_CUSTOMIZATION.md")
 
-    for skill_name in skill_names:
+    actual_skill_names = {
+        skill_dir.name
+        for skill_dir in (ROOT / ".claude/skills").iterdir()
+        if skill_dir.is_dir() and (skill_dir / "SKILL.md").exists()
+    }
+    assert_true(actual_skill_names == set(retained_skill_names), f"保留 skill 集合漂移：{sorted(actual_skill_names)}。")
+
+    for skill_name in retained_skill_names:
         path = f".claude/skills/{skill_name}/SKILL.md"
         skill = read_text(path)
         assert_true(skill_name.startswith("idc-"), f"IDC core skill 必须使用 idc- 前缀：{skill_name}。")
@@ -995,8 +1006,18 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         assert_true("## When To Use" in skill, f"{skill_name} 必须声明 When To Use。")
         assert_true("## Output" in skill, f"{skill_name} 必须声明 Output。")
         assert_true("## Hard Rules" in skill, f"{skill_name} 必须声明 Hard Rules。")
-        assert_true(path in id_workflow, f"idc-workflow 必须编排 {skill_name}。")
+        if skill_name == "idc-workflow":
+            assert_true(".claude/commands/id-workflow.md" in id_workflow, "idc-workflow 必须声明 slash command 入口。")
+        else:
+            assert_true(path in id_workflow, f"idc-workflow 必须编排 {skill_name}。")
         assert_true(skill_name in atomic_doc, f"atomic-skills 文档必须列出 {skill_name}。")
+
+    for skill_name, reference_path in degraded_reference_nodes.items():
+        assert_true(not (ROOT / ".claude/skills" / skill_name / "SKILL.md").exists(), f"{skill_name} 应降级为 references，不应继续作为 skill。")
+        assert_true(reference_path in id_workflow, f"idc-workflow 必须加载 {skill_name} 对应 reference：{reference_path}。")
+        assert_true(reference_path in command, f"/id-workflow command 必须显示 {skill_name} 对应 reference：{reference_path}。")
+        if not reference_path.endswith("/"):
+            assert_true((ROOT / ".claude/skills/idc-workflow" / reference_path).exists(), f"{skill_name} 对应 reference 不存在：{reference_path}。")
 
     for legacy_skill_name in [
         "id-workflow",
@@ -1027,21 +1048,21 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         assert_true(not (ROOT / ".claude/skills" / legacy_skill_name).exists(), f"IDC legacy skill 不能继续存在：{legacy_skill_name}。")
 
     for fragment in [
-        ".claude/skills/idc-input-adapter/SKILL.md",
-        ".claude/skills/idc-scenario-router/SKILL.md",
-        ".claude/skills/idc-domain-module-router/SKILL.md if matched",
+        "references/workflows/input-adapter.md",
+        "references/workflows/scenario-router.md",
+        "references/workflows/domain-module-router.md if matched",
         ".claude/skills/idc-skill-adapter-router/SKILL.md if GC / original-repo abilities are needed",
-        ".claude/skills/idc-automated-closure/SKILL.md",
-        ".claude/skills/idc-execution-unit-planner/SKILL.md",
-        ".claude/skills/idc-progressive-constraint-loader/SKILL.md",
-        ".claude/skills/idc-provider-selection/SKILL.md",
-        ".claude/skills/idc-repo-context-provider/SKILL.md",
-        ".claude/skills/idc-tdd-state-machine/SKILL.md",
-        ".claude/skills/idc-lane-completion/SKILL.md",
-        ".claude/skills/idc-evidence-gate/SKILL.md",
-        ".claude/skills/idc-output-surface-router/SKILL.md",
+        "references/workflows/automated-closure-loop.md",
+        "references/workflows/execution-unit-policy.md",
+        "references/workflows/progressive-constraint-loading.md",
+        "references/workflows/provider-selection-matrix.md",
+        "references/workflows/repo-context-providers.md",
+        "references/workflows/tdd-state-machine.md",
+        "references/workflows/lane-completion.md",
+        "references/schemas/verification-contract.schema.yaml",
+        "references/human-views/",
     ]:
-        assert_true(fragment in command, f"/id-workflow command 必须使用 skillized flow：{fragment}")
+        assert_true(fragment in command, f"/id-workflow command 必须使用 consolidated flow：{fragment}")
 
     for fragment in [
         "Should Be Skills",
@@ -1281,7 +1302,7 @@ def test_claude_project_entries_expose_skills_and_agents():
             continue
         claude_skill = ROOT / ".claude" / "skills" / skill_dir.name / "SKILL.md"
         assert_true(claude_skill.exists(), f"Claude Code 项目级 skill 入口不存在：{claude_skill}")
-        assert_true(claude_skill.read_text().startswith("---\n") or skill_dir.name in {"idc-d3a-coding", "idc-dt-build", "idc-tran-build"}, f"Claude Code skill 缺少 frontmatter 或 legacy placeholder 说明：{skill_dir.name}")
+        assert_true(claude_skill.read_text().startswith("---\n"), f"Claude Code skill 缺少 frontmatter：{skill_dir.name}")
 
     for agent_file in sorted((ROOT / ".claude" / "agents").glob("*.md")):
         claude_agent = ROOT / ".claude" / "agents" / agent_file.name

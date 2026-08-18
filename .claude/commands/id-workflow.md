@@ -17,7 +17,7 @@ $ARGUMENTS
 - a structured coding request.
 - a TR3 design document.
 - an approved Alignment Pack reference.
-- a resume checkpoint reference.
+- a resume checkpoint reference routed by `references/workflows/resume-policy.md`.
 - a request to route a task into Dynamic Scenario / Domain Module / General fallback.
 
 ## Required Routing
@@ -31,32 +31,34 @@ Invoke the orchestration skill:
 Then route through:
 
 ```text
-.claude/skills/idc-input-adapter/SKILL.md                # Input Adapter
+references/workflows/input-adapter.md                    # Input Adapter policy
   -> Intent Maturity Router
-  -> .claude/skills/idc-scenario-router/SKILL.md         # Scenario Router
-  -> .claude/skills/idc-domain-module-router/SKILL.md if matched # Domain Module Router if matched
-  -> .claude/skills/idc-lane-resolver/SKILL.md           # Lane Resolver
-  -> .claude/skills/idc-contract-gate/SKILL.md           # Contract Gate
-  -> .claude/skills/idc-requirement-assessor/SKILL.md    # Requirement Assessor
-  -> .claude/skills/idc-output-surface-router/SKILL.md   # Human View
+  -> references/workflows/resume-policy.md if resuming from checkpoint # Resume policy
+  -> references/workflows/scenario-router.md             # Scenario Router policy
+  -> references/workflows/domain-module-router.md if matched # Domain Module Router if matched
+  -> references/workflows/lane-resolver.md               # Lane Resolver policy
+  -> references/workflows/contract-gate.md               # Contract Gate policy
+  -> references/workflows/requirement-assessor.md        # Requirement Assessor policy
+  -> references/human-views/                             # Human View templates
 ```
 
 After Human Alignment approval, continue through:
 
 ```text
-.claude/skills/idc-automated-closure/SKILL.md            # Automated Closure Loop
-  -> .claude/skills/idc-execution-unit-planner/SKILL.md  # Execution Unit Planner
-  -> .claude/skills/idc-progressive-constraint-loader/SKILL.md # Progressive Constraint Loading
+references/workflows/automated-closure-loop.md           # Automated Closure Loop policy
+  -> references/workflows/execution-unit-policy.md       # Execution Unit Planner policy
+  -> references/workflows/progressive-constraint-loading.md # Progressive Constraint Loading
   -> .claude/skills/idc-skill-adapter-router/SKILL.md if GC / original-repo abilities are needed # Skill Adapter Router if GC / original-repo abilities are needed
-  -> .claude/skills/idc-delegation-router/SKILL.md       # Delegation Router
-  -> .claude/skills/idc-knowledge-gate/SKILL.md          # Knowledge Gate
-  -> .claude/skills/idc-provider-selection/SKILL.md      # Provider Selection
-  -> .claude/skills/idc-repo-context-provider/SKILL.md   # Repo Context Provider
+  -> references/workflows/delegation-router.md           # Delegation Router policy
+  -> references/workflows/knowledge-gate.md              # Knowledge Gate policy
+  -> references/workflows/provider-selection-matrix.md   # Provider Selection policy
+  -> references/workflows/repo-context-providers.md      # Repo Context Provider policy
   -> Execution
-  -> .claude/skills/idc-tdd-state-machine/SKILL.md if TDD is required # TDD State Machine
-  -> .claude/skills/idc-lane-completion/SKILL.md         # Lane Completion
-  -> .claude/skills/idc-evidence-gate/SKILL.md           # Evidence Gate
-  -> .claude/skills/idc-output-surface-router/SKILL.md   # Completion View / Escalation View
+  -> references/workflows/tdd-state-machine.md if TDD is required # TDD State Machine
+  -> references/workflows/lane-completion.md             # Lane Completion policy
+  -> references/schemas/verification-contract.schema.yaml # Evidence Gate contract
+  -> references/workflows/vertical-slice-readiness-gate.md # Vertical Slice Readiness policy
+  -> references/human-views/                             # Completion View / Escalation View
 ```
 
 ## Output Surface

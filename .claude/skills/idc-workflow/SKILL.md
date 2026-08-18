@@ -16,35 +16,17 @@ The user-facing slash command entrypoint is:
 Users should enter through `/id-workflow`; this skill remains the orchestration
 implementation behind that command.
 
-This is the orchestration skill. It delegates reusable pre-alignment work to atomic skills:
+This is the orchestration skill. It delegates reusable work to a small set of
+skills, and reads router/gate/policy behavior from references.
 
 ```text
-.claude/skills/idc-input-adapter/SKILL.md
-.claude/skills/idc-scenario-router/SKILL.md
-.claude/skills/idc-domain-module-router/SKILL.md
-.claude/skills/idc-lane-resolver/SKILL.md
-.claude/skills/idc-contract-gate/SKILL.md
-.claude/skills/idc-requirement-assessor/SKILL.md
 .claude/skills/idc-intent-discovery/SKILL.md
 .claude/skills/idc-brainstorming/SKILL.md
 .claude/skills/idc-intent-grilling/SKILL.md
 .claude/skills/idc-intent-grilling/references/grill-me-method.md
 .claude/skills/idc-intent-grilling/assets/question-card-template.md
 .claude/skills/idc-intent-alignment/SKILL.md
-.claude/skills/idc-output-surface-router/SKILL.md
-.claude/skills/idc-resume-run/SKILL.md
-.claude/skills/idc-automated-closure/SKILL.md
-.claude/skills/idc-execution-unit-planner/SKILL.md
-.claude/skills/idc-progressive-constraint-loader/SKILL.md
-.claude/skills/idc-knowledge-gate/SKILL.md
-.claude/skills/idc-provider-selection/SKILL.md
-.claude/skills/idc-repo-context-provider/SKILL.md
-.claude/skills/idc-delegation-router/SKILL.md
 .claude/skills/idc-skill-adapter-router/SKILL.md
-.claude/skills/idc-tdd-state-machine/SKILL.md
-.claude/skills/idc-lane-completion/SKILL.md
-.claude/skills/idc-evidence-gate/SKILL.md
-.claude/skills/idc-vertical-slice-readiness/SKILL.md
 .claude/skills/idc-general-coding/SKILL.md
 .claude/skills/idc-d3a-coding/SKILL.md
 .claude/skills/idc-dt-build/SKILL.md
@@ -55,6 +37,19 @@ This is the orchestration skill. It delegates reusable pre-alignment work to ato
 .claude/skills/idc-dt-writer/SKILL.md
 .claude/skills/idc-gc-third-skill-placeholder/SKILL.md
 ```
+
+Router, gate, lane, provider, completion, resume, and evidence behavior remains
+under `references/` as passive policy/configuration, not standalone skills.
+
+## When To Use
+
+Use this skill when `/id-workflow` needs to classify an input, produce an
+Alignment Pack, route to IDC pre-alignment skills, or continue an approved pack
+through General Coding or D3A Coding evidence gates.
+
+Do not use it as a lower-level adapter. For external SOP reuse or domain build
+steps, route through `idc-skill-adapter-router` and the specific `idc-*` adapter
+or execution skill.
 
 ## Trigger examples
 
@@ -95,39 +90,39 @@ Do not let `Domain = general` skip Brainstorming when the input is still rough.
 Default mode:
 
 ```text
-.claude/skills/idc-input-adapter/SKILL.md
+references/workflows/input-adapter.md
   -> Intent Maturity Router
-  -> .claude/skills/idc-scenario-router/SKILL.md
+  -> references/workflows/scenario-router.md
   -> idc-intent-discovery if raw_idea
-  -> .claude/skills/idc-domain-module-router/SKILL.md if DOMAIN_MODULE
-  -> .claude/skills/idc-lane-resolver/SKILL.md
-  -> .claude/skills/idc-contract-gate/SKILL.md
-  -> .claude/skills/idc-requirement-assessor/SKILL.md
+  -> references/workflows/domain-module-router.md if DOMAIN_MODULE
+  -> references/workflows/lane-resolver.md
+  -> references/workflows/contract-gate.md
+  -> references/workflows/requirement-assessor.md
   -> idc-intent-grilling if needed
   -> Alignment Pack
   -> idc-intent-alignment
-  -> .claude/skills/idc-output-surface-router/SKILL.md
+  -> references/human-views/
 ```
 
 After the user approves:
 
 ```text
-.claude/skills/idc-automated-closure/SKILL.md
+references/workflows/automated-closure-loop.md
   -> Planner
-  -> .claude/skills/idc-execution-unit-planner/SKILL.md
-  -> .claude/skills/idc-progressive-constraint-loader/SKILL.md
+  -> references/workflows/execution-unit-policy.md
+  -> references/workflows/progressive-constraint-loading.md
   -> idc-superpowers-adapter if execution discipline is needed
   -> idc-gc-sop-adapter if confidential GC atomic abilities are needed
   -> .claude/skills/idc-skill-adapter-router/SKILL.md if lower-level adapters are needed
-  -> .claude/skills/idc-delegation-router/SKILL.md
+  -> references/workflows/delegation-router.md
   -> Progressive Constraint Loading
-  -> .claude/skills/idc-knowledge-gate/SKILL.md
-  -> .claude/skills/idc-provider-selection/SKILL.md
-  -> .claude/skills/idc-repo-context-provider/SKILL.md
+  -> references/workflows/knowledge-gate.md
+  -> references/workflows/provider-selection-matrix.md
+  -> references/workflows/repo-context-providers.md
   -> Agent Team / Subagent Execution
-  -> .claude/skills/idc-tdd-state-machine/SKILL.md if TDD is required
-  -> .claude/skills/idc-lane-completion/SKILL.md
-  -> .claude/skills/idc-evidence-gate/SKILL.md
+  -> references/workflows/tdd-state-machine.md if TDD is required
+  -> references/workflows/lane-completion.md
+  -> Evidence Gate
   -> DONE / Targeted Fix / Re-plan
 ```
 
@@ -160,16 +155,12 @@ Read these files first:
 ```text
 CONTEXT_ENGINEERING.md
 CLAUDE.md
-.claude/skills/idc-input-adapter/SKILL.md
-.claude/skills/idc-scenario-router/SKILL.md
-.claude/skills/idc-domain-module-router/SKILL.md
-.claude/skills/idc-lane-resolver/SKILL.md
-.claude/skills/idc-contract-gate/SKILL.md
-.claude/skills/idc-requirement-assessor/SKILL.md
-.claude/skills/idc-output-surface-router/SKILL.md
 references/workflows/input-adapter.md
+references/workflows/scenario-router.md
+references/workflows/domain-module-router.md
 references/workflows/lane-resolver.md
 references/workflows/contract-gate.md
+references/workflows/requirement-assessor.md
 references/workflows/human-alignment.md
 references/workflows/delegation-router.md
 references/workflows/skill-adapter-router.md
@@ -239,21 +230,15 @@ references/schemas/general-plan.schema.yaml
 If the user has approved the Alignment Pack, also read:
 
 ```text
-.claude/skills/idc-automated-closure/SKILL.md
-.claude/skills/idc-execution-unit-planner/SKILL.md
-.claude/skills/idc-progressive-constraint-loader/SKILL.md
-.claude/skills/idc-delegation-router/SKILL.md
 .claude/skills/idc-skill-adapter-router/SKILL.md
-.claude/skills/idc-knowledge-gate/SKILL.md
-.claude/skills/idc-provider-selection/SKILL.md
-.claude/skills/idc-repo-context-provider/SKILL.md
-.claude/skills/idc-tdd-state-machine/SKILL.md
-.claude/skills/idc-lane-completion/SKILL.md
-.claude/skills/idc-evidence-gate/SKILL.md
 references/workflows/automated-closure-loop.md
 references/workflows/delegation-router.md
 references/workflows/progressive-constraint-loading.md
 references/workflows/execution-unit-policy.md
+references/workflows/knowledge-gate.md
+references/workflows/provider-selection-matrix.md
+references/workflows/repo-context-providers.md
+references/workflows/tdd-state-machine.md
 references/workflows/lane-completion.md
 references/schemas/delegation-contract.schema.yaml
 references/schemas/escalation-policy.schema.yaml
@@ -267,7 +252,6 @@ references/schemas/escalation-policy.schema.yaml
 If the user asks to resume after interruption, also read:
 
 ```text
-.claude/skills/idc-resume-run/SKILL.md
 references/workflows/resume-policy.md
 references/schemas/runtime-state.schema.yaml
 references/schemas/delegation-contract.schema.yaml
@@ -276,7 +260,6 @@ references/schemas/delegation-contract.schema.yaml
 If the user is preparing the first confidential-zone D3A vertical slice, also read:
 
 ```text
-.claude/skills/idc-vertical-slice-readiness/SKILL.md
 references/workflows/vertical-slice-readiness-gate.md
 references/schemas/vertical-slice-readiness.schema.yaml
 docs/confidential-migration-checklist.md
@@ -302,8 +285,8 @@ references/schemas/repo-context-provider.schema.yaml
 - Main agent must not directly execute complex implementation, consume full logs, consume full search results, or merge full subagent sessions back into main context.
 - Interruption resume must use `runtime_state` checkpoint refs, not main agent memory.
 - After resuming an interrupted execution, re-run verification unless tool evidence proves the interrupted step completed.
-- Keep `idc-workflow` as orchestration; reusable pre-alignment behavior lives in atomic skills.
-- Prefer skillized active behaviors: input adapter, scenario router, domain module router, lane resolver, contract gate, requirement assessor, output surface router, automated closure, execution unit planner, progressive constraint loader, delegation router, skill adapter router, knowledge gate, provider selection, repo context provider, tdd state machine, lane completion, evidence gate, vertical slice readiness, and idc-resume-run.
+- Keep `idc-workflow` as orchestration; reusable pre-alignment, domain execution, and adapter behavior lives in skills.
+- Keep router, gate, lane, provider, completion, resume, and evidence behavior in `references/`; do not promote them to standalone skills unless they need independent invocation.
 - Do not skillize passive assets such as schemas, registries, examples, human-view templates, lane definitions, evidence files, and knowledge templates;沉淀 them as references or assets according to the official skill directory shape.
 - Superpowers Adapter may provide the inner engineering loop after approval, but IDC owns Domain, Lane, Contract Gate, and Completion Gate.
 - GC SOP Adapter may reuse confidential enterprise atomic abilities after approval, but must go through Skill Adapter Router and cannot invent original repository skill details.
