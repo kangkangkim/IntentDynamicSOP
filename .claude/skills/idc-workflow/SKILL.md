@@ -99,11 +99,12 @@ references/workflows/input-adapter.md
   -> references/workflows/domain-module-router.md if DOMAIN_MODULE
   -> references/workflows/lane-resolver.md
   -> references/workflows/contract-gate.md
-  -> references/workflows/requirement-assessor.md
-  -> idc-intent-grilling if needed
+  -> idc-intent-alignment as Human Alignment Check
+  -> idc-brainstorming if alternatives are needed
+  -> idc-intent-grilling if critical gaps remain
   -> idc-intent-grilling-with-docs if clarification must update docs
   -> Alignment Pack
-  -> idc-intent-alignment
+  -> idc-intent-alignment for Human Alignment approval
   -> references/human-views/
 ```
 

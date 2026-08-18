@@ -7,6 +7,8 @@ description: Use only after the IDC workflow selects Domain = d3a and Human Alig
 
 当 IDC workflow 选择 `Domain = d3a` 且 Human Alignment 已批准后，使用这个 skill。
 
+D3A 场景使用用户设计的固定 D3A workflow。这个 skill 只能在固定流程内做 layer planning、DT mapping、execution unit 拆分、adapter 绑定和 evidence 收集，不能重排或重新设计 D3A 主流程。
+
 ## When To Use
 
 Use when all are true:
@@ -68,6 +70,7 @@ d3a_execution_result:
 ## Hard Rules
 
 - 不允许绕过 Human Alignment approval。
+- 不允许重排或重新设计用户定义的固定 D3A workflow。
 - 不允许使用 General component registry。
 - 不允许猜 Coding Layer 到 DT Domain mapping。
 - 不允许把 TR3 DT design 当作 RED / GREEN evidence。

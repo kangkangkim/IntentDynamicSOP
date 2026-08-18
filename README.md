@@ -88,8 +88,8 @@ README.md
 - `docs/skillization-boundary.md`：看哪些内容应该 skill 化，哪些应该保持 reference。
 - `.claude/skills/idc-workflow/assets/README.md`：看不能 skill 化的内容如何按官方 skill 目录语义沉淀为 `references/` 或 `assets/`。
 - `docs/architecture-diagram.md`：看 Core + Domain Module 的架构图。
-- `docs/user-input-routing-overview.html`：看不同用户输入如何先进入 Discovery，再分流到前置对齐、Domain、Lane、adapter 和执行闭环。
-- `docs/intake-discovery-trigger-flow.html`：看 Discovery 从左到右触发 Brainstorming / Grill Me / Alignment 的条件。
+- `docs/user-input-routing-overview.html`：看不同用户输入如何先进入 Discovery，再由 Human Alignment Gate 检测成熟度、关键缺口、approval 有效性，并分流到前置能力、Domain、Lane、adapter 和执行闭环。
+- `docs/intake-discovery-trigger-flow.html`：看 Discovery 产出 draft intent 后，Human Alignment Check 如何从左到右触发 Brainstorming / Grill Me / Grill With Docs / Alignment 的条件。
 - `docs/flow-d3a-general.html`：看从输入开始的 D3A / General 双路径 HTML 图。
 - `docs/context-runtime-view.html`：看 main agent / subagent 的运行时上下文占用变化。
 - `docs/confidential-migration-checklist.md`：看进入保密区后要填什么、先做哪条 vertical slice。
@@ -121,6 +121,8 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
 .claude/skills/idc-workflow/references/domains/d3a/module.yaml
 ```
 
+D3A 场景的流程是固定的用户设计流程。IDC 不重新设计 D3A 主流程，只在这个固定流程内判断进入条件、选择固定 Coding Layer、选择 required DT Domain、拆 Layer Context Packet、绑定 adapter，并用 DT RED / GREEN 与 `tran_build` evidence 判定完成。
+
 ```text
 用户任务
   -> Scenario Router
@@ -131,6 +133,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module：
   -> Lane Resolver
   -> Contract Gate
   -> D3A Requirement Assessor
+  -> Human Alignment Check
   -> Clarification Provider / Grill Me 收敛
   -> Alignment Pack
   -> Human Alignment
@@ -234,7 +237,7 @@ python3 tests/test_harness.py
 - Atomic Skills 必须存在，并且 `idc-workflow` 只做编排。
 - Discovery Provider 必须以 Superpowers Brainstorming 为 baseline，并且 TR3 默认跳过 Discovery。
 - Clarification Provider 必须支持 Grill Me method、frontier round 和 builtin fallback。
-- Requirement Assessor 能识别关键字段缺失。
+- Requirement Assessor 作为 Human Alignment Check 的被动检查表，能识别关键字段缺失。
 - Layer Context Packet 只能包含当前 Layer。
 - 没有 RED evidence 不能进入 GREEN。
 - 未通过全部 DT 不能进入 `ALL_LAYERS_GREEN`。

@@ -1,17 +1,17 @@
 # Requirement Assessor
 
-Requirement Assessor 判断任务信息是否足够进入 specification。
+Requirement Assessor 是 Human Alignment Check 使用的被动检查表。它判断任务信息是否足够进入 specification，但最终 readiness / gap / approval 决策归 Human Alignment Gate 统一管理。
 
-它只负责决策：
+它只负责产出检查结论：
 
 ```text
 NEED_CLARIFICATION
 READY_FOR_SPEC
 ```
 
-它不负责澄清、设计、规划或写代码。
+它不负责澄清、设计、规划、approval 或写代码。
 
-当决策为 `NEED_CLARIFICATION` 时，下一步交给 `workflows/clarification-provider.md`。
+当决策为 `NEED_CLARIFICATION` 时，Human Alignment Check 才能触发 `workflows/clarification-provider.md`。
 
 ## 必查项
 

@@ -195,10 +195,21 @@ def test_registry_files_match_fixed_architecture():
     domains = extract_registry_ids(".claude/skills/idc-workflow/references/registries/dt-domains.yaml")
     general_components = extract_registry_ids(".claude/skills/idc-workflow/references/registries/general-components.yaml")
     general_tests = extract_registry_ids(".claude/skills/idc-workflow/references/registries/general-test-domains.yaml")
+    d3a_workflow = read_text(".claude/skills/idc-workflow/references/workflows/d3a-workflow.md")
+    d3a_skill = read_text(".claude/skills/idc-d3a-coding/SKILL.md")
+    architecture = read_text("docs/architecture.md")
+    readme = read_text("README.md")
     assert_true(layers == LAYER_REGISTRY, "D3A layer registry 发生漂移。")
     assert_true(domains == DT_REGISTRY, "DT domain registry 发生漂移。")
     assert_true(general_components == GENERAL_COMPONENT_REGISTRY, "General component registry 发生漂移。")
     assert_true(general_tests == GENERAL_TEST_REGISTRY, "General test registry 发生漂移。")
+    for label, text in [
+        ("d3a workflow", d3a_workflow),
+        ("d3a skill", d3a_skill),
+        ("architecture", architecture),
+        ("README", readme),
+    ]:
+        assert_true("固定" in text and "用户设计" in text, f"{label} 必须声明 D3A 是用户设计的固定流程。")
 
 
 def test_registry_knowledge_templates_exist():
@@ -942,34 +953,49 @@ def test_adoption_and_deep_dive_docs_exist():
     ]:
         assert_true(fragment in context_html, f"Context Runtime HTML 图缺少关键节点：{fragment}")
     for fragment in [
-        "IDC Discovery Trigger Flow",
+        "IDC Discovery to Human Alignment Gate",
         "Discovery 是第一个显性能力节点",
-        "Intake / normalize / maturity detection 是 Discovery 内部动作",
+        "Human Alignment Check 负责检测 readiness",
         "Discovery",
+        "Human Alignment Check",
         "Brainstorming",
         "Grill Me",
         "Grill With Docs",
-        "Alignment",
+        "Human Alignment",
         "Execution",
         "raw / vague / incomplete",
+        "readiness detection",
+        "critical gap detection",
+        "NEEDS_BRAINSTORMING",
+        "NEEDS_CLARIFICATION",
+        "READY_FOR_ALIGNMENT",
+        "APPROVED_TO_EXECUTE",
         "needs alternatives",
-        "direction chosen",
+        "critical gap",
         "docs needed",
         "critical gaps closed",
         "user approved",
+        "approval ref is validated",
         "Company Brainstorming triggers through Team Binding",
+        "Provider choice is a Human Alignment Gate decision",
         "Execution is not part of Discovery",
     ]:
         assert_true(fragment in intake_html, f"Intake Trigger HTML 图缺少关键节点或触发条件：{fragment}")
     for fragment in [
-        "IDC Discovery-First Input Routing Map",
+        "IDC Discovery and Human Alignment Routing Map",
         "Raw Idea",
         "Structured Request",
         "TR3 Design Doc",
         "Approved Pack / Resume",
         "Discovery Owns",
+        "Human Alignment Owns",
+        "Human Alignment Gate",
+        "Human Alignment Check",
         "intake / normalize",
-        "maturity detection",
+        "maturity signal, not readiness decision",
+        "alignment readiness detection",
+        "critical gap detection",
+        "approval / stale approval gate",
         "Discovery",
         "Brainstorming",
         "Grill Me",
@@ -982,7 +1008,9 @@ def test_adoption_and_deep_dive_docs_exist():
         "D3A Coding",
         "Team Domain",
         "Adapter Router",
-        "approved D3A plan",
+        "D3A fixed user-designed workflow",
+        "approved fixed D3A workflow",
+        "fixed layer registry only",
         "valid checkpoint",
         "Team Binding for confidential commands",
         "Completion / Escalation",

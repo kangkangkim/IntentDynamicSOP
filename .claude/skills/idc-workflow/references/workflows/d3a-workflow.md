@@ -1,5 +1,7 @@
 # D3A Workflow
 
+D3A 场景的 workflow 是固定的用户设计流程。IDC 可以检测输入是否足够进入 D3A、选择哪些固定 layer / DT domain、拆 execution unit、收集 evidence，但不能重新设计 D3A 主流程。
+
 D3A 使用固定 architecture space，并在这个固定空间内做动态 planning。
 
 ## 固定 Architecture Space
@@ -26,6 +28,8 @@ DPF
 
 ## 主流程
 
+主流程顺序固定：
+
 ```text
 用户任务
   -> Scenario Router
@@ -47,6 +51,8 @@ DPF
   -> tran_build
   -> DONE
 ```
+
+动态部分只允许发生在固定流程内部：选择命中的 Coding Layer、需要的 DT Domain、dependency DAG、execution unit 拆分、provider / adapter 绑定和 evidence refs。
 
 如果 `tran_build` 失败：
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>IDC Discovery Trigger Flow</title>
+  <title>IDC Discovery to Human Alignment Gate</title>
   <style>
     :root {
       --bg: #f6f7f9;
@@ -13,8 +13,10 @@
       --panel: #ffffff;
       --discovery: #0f766e;
       --discovery-soft: #e5f5f1;
-      --brainstorm: #1d5fbf;
-      --brainstorm-soft: #eaf2ff;
+      --gate: #1d5fbf;
+      --gate-soft: #eaf2ff;
+      --brainstorm: #0f5d7a;
+      --brainstorm-soft: #e8f6fb;
       --grill: #91570f;
       --grill-soft: #fff0d8;
       --align: #6d28d9;
@@ -104,9 +106,9 @@
     }
 
     .flow {
-      min-width: 1120px;
+      min-width: 1500px;
       display: grid;
-      grid-template-columns: 190px 135px 185px 135px 185px 135px 185px 135px 170px;
+      grid-template-columns: 190px 120px 220px 120px 185px 120px 185px 120px 185px 120px 170px;
       align-items: center;
     }
 
@@ -141,7 +143,8 @@
     }
 
     .discovery { border-color: #b7dfd6; background: var(--discovery-soft); }
-    .brainstorm { border-color: #b9cff7; background: var(--brainstorm-soft); }
+    .gate { border-color: #b9cff7; background: var(--gate-soft); }
+    .brainstorm { border-color: #b6dcea; background: var(--brainstorm-soft); }
     .grill { border-color: #ebc998; background: var(--grill-soft); }
     .align { border-color: #d8c7ff; background: var(--align-soft); }
     .execute { border-color: #f3c2bb; background: var(--execute-soft); }
@@ -203,6 +206,38 @@
       margin-top: 14px;
     }
 
+    .matrix {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .matrix-card {
+      min-height: 138px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .matrix-card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .matrix-card p {
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .matrix-card code {
+      display: inline-block;
+      margin-top: 2px;
+    }
+
     .panel {
       min-height: 154px;
       padding: 14px;
@@ -248,7 +283,7 @@
         grid-template-columns: 1fr;
       }
 
-      .legend, .rules {
+      .legend, .rules, .matrix {
         grid-template-columns: 1fr;
       }
     }
@@ -258,12 +293,12 @@
   <main>
     <header class="page-head">
       <div>
-        <h1>IDC Discovery Trigger Flow</h1>
-        <p class="subtitle">Discovery 是第一个显性能力节点；Intake / normalize / maturity detection 是 Discovery 内部动作。后续能力从左到右按明确触发条件推进。</p>
+        <h1>IDC Discovery to Human Alignment Gate</h1>
+        <p class="subtitle">Discovery 是第一个显性能力节点，只产出可检测的 draft intent；Human Alignment Check 负责检测 readiness、critical gap、docs needed、stale approval，并决定继续发散、澄清、补文档、请求 approval 或阻断 execution。</p>
       </div>
       <div class="legend" aria-label="legend">
         <span><i class="dot dot-discovery"></i>Discovery first</span>
-        <span><i class="dot dot-brainstorm"></i>发散探索</span>
+        <span><i class="dot dot-brainstorm"></i>Human Alignment Check</span>
         <span><i class="dot dot-grill"></i>澄清收敛</span>
         <span><i class="dot dot-align"></i>确认执行</span>
       </div>
@@ -276,9 +311,25 @@
           <span>First visible step for <code>/id-workflow</code>.</span>
           <ul>
             <li>normalize input</li>
-            <li>detect maturity</li>
+            <li>capture maturity signal</li>
             <li>preserve input type</li>
-            <li>draft spec seed</li>
+            <li>draft intent seed</li>
+            <li>extract facts / unknowns</li>
+          </ul>
+        </article>
+
+        <div class="edge">
+          <div class="trigger">normalized signal<small>facts + unknowns</small></div>
+        </div>
+
+        <article class="node gate">
+          <strong>Human Alignment Check</strong>
+          <span>Owns detection before any approval or execution.</span>
+          <ul>
+            <li>readiness detection</li>
+            <li>critical gap detection</li>
+            <li>provider trigger</li>
+            <li>approval gate</li>
           </ul>
         </article>
 
@@ -297,7 +348,7 @@
         </article>
 
         <div class="edge">
-          <div class="trigger">direction chosen<small>仍缺 contract / scope / gate</small></div>
+          <div class="trigger">critical gap<small>direction chosen, contract missing</small></div>
         </div>
 
         <article class="node grill">
@@ -311,7 +362,7 @@
         </article>
 
         <div class="edge">
-          <div class="trigger">docs needed<small>需要沉淀决策记录</small></div>
+          <div class="trigger">docs needed<small>决策需要沉淀</small></div>
         </div>
 
         <article class="node grill">
@@ -325,13 +376,14 @@
         </article>
 
         <div class="edge">
-          <div class="trigger">critical gaps closed<small>可以给用户确认</small></div>
+          <div class="trigger">critical gaps closed<small>ready for approval</small></div>
         </div>
 
         <article class="node align">
-          <strong>Alignment</strong>
-          <span>Render Human View and wait for approval.</span>
+          <strong>Human Alignment</strong>
+          <span>Render Human View and wait for user approved.</span>
           <ul>
+            <li>task understanding</li>
             <li>scope</li>
             <li>contracts</li>
             <li>evidence plan</li>
@@ -340,13 +392,42 @@
       </div>
     </section>
 
+    <section class="matrix" aria-label="human alignment detection matrix">
+      <article class="matrix-card">
+        <strong>Raw / Vague</strong>
+        <p>检测到 goal、direction、acceptance 都不稳定。</p>
+        <code>NEEDS_BRAINSTORMING</code>
+      </article>
+      <article class="matrix-card">
+        <strong>Critical Gap</strong>
+        <p>检测到 contract、scope、completion gate、API semantics 或 file placement 缺关键决策。</p>
+        <code>NEEDS_CLARIFICATION</code>
+      </article>
+      <article class="matrix-card">
+        <strong>Docs Needed</strong>
+        <p>检测到用户决策需要同步到非敏感 CONTEXT.md、ADR 或 glossary。</p>
+        <code>NEEDS_CLARIFICATION_WITH_DOCS</code>
+      </article>
+      <article class="matrix-card">
+        <strong>Approval Ready</strong>
+        <p>检测到理解、Domain / Lane、contract、scope 和 evidence plan 都足够稳定。</p>
+        <code>READY_FOR_ALIGNMENT</code>
+      </article>
+      <article class="matrix-card">
+        <strong>Approved / Resume</strong>
+        <p>检测 approval ref、runtime checkpoint 和 scope 是否仍有效；失效则回到 Re-alignment。</p>
+        <code>APPROVED_TO_EXECUTE</code>
+      </article>
+    </section>
+
     <section class="rules" aria-label="trigger details">
       <article class="panel">
-        <h2>Skip Rules</h2>
+        <h2>Detection Rules</h2>
         <ul>
-          <li>Structured input can skip Brainstorming.</li>
-          <li>TR3 skips Brainstorming unless behavior is unclear.</li>
-          <li>Approved Pack / Resume skips pre-alignment.</li>
+          <li>Human Alignment Check detects whether input is approval-ready.</li>
+          <li>Raw idea triggers Brainstorming when alternatives are still needed.</li>
+          <li>Structured input triggers Grill Me only when critical gaps remain.</li>
+          <li>Approved Pack / Resume bypasses new questions only after approval ref is validated.</li>
         </ul>
       </article>
 
@@ -356,6 +437,7 @@
           <li>Company Brainstorming triggers through Team Binding.</li>
           <li>Grill Me is built into this project.</li>
           <li>Grill With Docs runs only when docs should be updated.</li>
+          <li>Provider choice is a Human Alignment Gate decision, not a Discovery decision.</li>
         </ul>
       </article>
 
@@ -364,7 +446,8 @@
         <ul>
           <li>Execution is not part of Discovery.</li>
           <li>user approved is required before Execution.</li>
-          <li>Alignment must be approved first.</li>
+          <li>Human Alignment must be approved first.</li>
+          <li>Stale approval returns to Escalation / Re-alignment.</li>
           <li>Completion must use tool evidence, not confidence.</li>
         </ul>
       </article>
@@ -372,7 +455,7 @@
 
     <section class="rule">
       <strong>Core rule</strong>
-      <p>Discovery 先把输入变成可判断的 draft intent；只有关键缺口关闭并完成 Alignment approval 后，才进入 General / D3A / GC / DT / build 执行。</p>
+      <p>Discovery 先把输入变成可判断的 draft intent；Human Alignment Check 统一检测成熟度、关键缺口、文档需要和 approval 有效性。只有关键缺口关闭并完成 Human Alignment approval 后，才进入 General / D3A / GC / DT / build 执行。</p>
     </section>
   </main>
 </body>

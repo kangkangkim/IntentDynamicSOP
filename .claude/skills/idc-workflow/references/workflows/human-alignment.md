@@ -1,6 +1,6 @@
 # Human Alignment
 
-Human Alignment 是前置人工对齐点。
+Human Alignment 是前置人工对齐点，也是 readiness / gap / approval 的统一检测 gate。
 
 设计哲学：
 
@@ -17,12 +17,38 @@ Input Adapter
   -> Domain Resolver
   -> Lane Resolver
   -> Contract Gate
-  -> Requirement Assessor
-  -> Clarification Provider if needed
+  -> Human Alignment Check
+  -> Clarification Provider / Discovery Provider if needed
   -> Alignment Pack
   -> Human Alignment
   -> Automated Closure Loop
 ```
+
+## Human Alignment Check 管什么检测
+
+Human Alignment Check 不写代码、不做最终实现规划。它只决定当前材料能不能给人确认，或者应该先回到哪个前置能力。
+
+它统一检测：
+
+- `readiness`: 是否已经能生成 Alignment View。
+- `critical_gap`: contract / scope / completion gate / API semantics / test evidence / file placement 是否缺关键决策。
+- `needs_alternatives`: raw idea 是否还需要 Brainstorming 发散。
+- `docs_needed`: 澄清结果是否需要同步到非敏感 docs / ADR / glossary。
+- `approval_validity`: 已有 approval ref / runtime checkpoint 是否仍可信。
+- `scope_drift`: 当前事实是否超出已 approve 的 scope。
+
+检测结果只允许进入这些状态：
+
+```text
+NEEDS_BRAINSTORMING
+NEEDS_CLARIFICATION
+NEEDS_CLARIFICATION_WITH_DOCS
+READY_FOR_ALIGNMENT
+APPROVED_TO_EXECUTE
+NEEDS_RE_ALIGNMENT
+```
+
+Discovery 可以产出 `maturity_signal`，但不能替代 Human Alignment Check 做 readiness decision。
 
 ## Human Alignment 确认什么
 
@@ -38,19 +64,19 @@ Input Adapter
 
 它不确认具体实现细节。
 
-## Clarification Provider 的位置
+## Provider 触发位置
 
-Grill Me / Clarification 发生在 Human Alignment 之前，由 `workflows/clarification-provider.md` 统一管理。
+Brainstorming、Grill Me、Grill With Docs 发生在 Human Alignment approval 之前，由 Human Alignment Check 触发。澄清 provider 规则仍由 `workflows/clarification-provider.md` 管理。
 
-如果 Requirement Assessor 发现关键信息不足：
+如果 Human Alignment Check 发现关键信息不足：
 
 ```text
-NEED_CLARIFICATION
+NEEDS_CLARIFICATION
   -> Clarification Provider
   -> grill-me-method / grill-with-docs-method / builtin-critical-questions
   -> Clarification View
   -> 更新 normalized_request / contracts
-  -> 回到 Requirement Assessor
+  -> 回到 Human Alignment Check
 ```
 
 `grill-me-method` 是默认推荐澄清方式。
@@ -62,11 +88,11 @@ NEED_CLARIFICATION
 如果存在 contract / scope / completion gate / API semantics / test evidence / file placement gap：
 
 ```text
-NEED_CLARIFICATION
+NEEDS_CLARIFICATION
   -> Clarification View
   -> 用户回答
-  -> Requirement Assessor
-  -> Alignment View only after READY_FOR_SPEC
+  -> Human Alignment Check
+  -> Alignment View only after READY_FOR_ALIGNMENT
 ```
 
 禁止把 Clarification 折叠进 Alignment View。

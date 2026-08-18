@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>IDC Discovery-First Input Routing Map</title>
+  <title>IDC Discovery and Human Alignment Routing Map</title>
   <style>
     :root {
       --bg: #f5f7fa;
@@ -106,9 +106,9 @@
     }
 
     .routing {
-      min-width: 1480px;
+      min-width: 1660px;
       display: grid;
-      grid-template-columns: 170px 210px 230px 230px 245px 245px 190px;
+      grid-template-columns: 170px 225px 290px 245px 250px 250px 230px;
     }
 
     .cell {
@@ -240,12 +240,12 @@
   <main>
     <header class="page-head">
       <div>
-        <h1>IDC Discovery-First Input Routing Map</h1>
-        <p class="subtitle">所有输入先进入 Discovery。Discovery 内部完成 intake、normalize、input type detection 和 maturity detection；后续路径由每一行的触发条件决定，未 approval 前不进入 execution。</p>
+        <h1>IDC Discovery and Human Alignment Routing Map</h1>
+        <p class="subtitle">所有输入先进入 Discovery；Discovery 只负责 intake、normalize、preserve input type 和产出可检测的 draft intent signal。是否成熟、缺什么、能不能进 approval / execution，由 Human Alignment Gate 统一检测和放行。</p>
       </div>
       <div class="legend" aria-label="legend">
         <span><i class="dot teal"></i>Discovery first</span>
-        <span><i class="dot blue"></i>Pre-alignment</span>
+        <span><i class="dot blue"></i>Human Alignment Gate</span>
         <span><i class="dot violet"></i>Routing / contract</span>
         <span><i class="dot amber"></i>Evidence output</span>
       </div>
@@ -255,8 +255,8 @@
       <div class="routing">
         <div class="cell head">User Input</div>
         <div class="cell head">Discovery Output</div>
-        <div class="cell head">Pre-Alignment Trigger</div>
-        <div class="cell head">Human View</div>
+        <div class="cell head">Human Alignment Check</div>
+        <div class="cell head">Pre-Execution Human Surface</div>
         <div class="cell head">Routing After Approval</div>
         <div class="cell head">Execution Trigger</div>
         <div class="cell head">Final Surface</div>
@@ -270,29 +270,36 @@
           <strong>normalized_request</strong>
           <ul>
             <li>input_type: raw_idea</li>
-            <li>input_maturity: vague</li>
+            <li>maturity_signal: vague</li>
             <li>draft intent seed</li>
+            <li>known unknowns preserved</li>
           </ul>
         </div>
         <div class="cell">
-          <span class="stage stage-blue">Brainstorming</span>
-          <strong>Trigger: needs alternatives</strong>
+          <span class="stage stage-blue">Human Alignment Gate</span>
+          <strong>Detects: idea not alignment-ready</strong>
           <ul>
-            <li>公司已有 Brainstorming -> Team Binding</li>
-            <li>否则使用 shared fallback</li>
-            <li>输出 2-3 approaches</li>
+            <li>goal is unstable</li>
+            <li>solution direction missing</li>
+            <li>acceptance cannot be checked</li>
+            <li>Domain / Lane would be guesswork</li>
           </ul>
-          <div class="trigger"><b>Next:</b> direction chosen -> Grill Me</div>
+          <div class="trigger"><b>Trigger:</b> needs alternatives -> Brainstorming</div>
         </div>
         <div class="cell">
           <span class="stage stage-blue">Brainstorming View</span>
           <strong>先发散，不要 approval</strong>
-          <p>给用户方案、取舍、推荐方向和 draft spec。</p>
+          <ul>
+            <li>公司已有 Brainstorming -> Team Binding</li>
+            <li>否则 shared fallback</li>
+            <li>输出 2-3 approaches / trade-offs / recommended direction</li>
+          </ul>
+          <div class="trigger"><b>Next check:</b> direction chosen but contract gap -> Grill Me</div>
         </div>
         <div class="cell">
           <span class="stage stage-violet">Pending</span>
-          <strong>不进入 Domain / Lane</strong>
-          <p>Raw idea 没有稳定 contract 前，不做 D3A / General / Team Domain 判断。</p>
+          <strong>Hold Domain / Lane</strong>
+          <p>Human Alignment Gate 判定 raw idea 没有稳定 contract 前，不做 D3A / General / Team Domain 最终判断。</p>
         </div>
         <div class="cell">
           <span class="stage stage-red">Blocked</span>
@@ -316,26 +323,32 @@
             <li>goal present</li>
             <li>behavior present</li>
             <li>acceptance maybe partial</li>
+            <li>risk / boundary signal extracted</li>
           </ul>
         </div>
         <div class="cell">
-          <span class="stage stage-blue">Grill Me</span>
-          <strong>Trigger: critical gap exists</strong>
+          <span class="stage stage-blue">Human Alignment Gate</span>
+          <strong>Detects: critical gap or approval-ready</strong>
           <ul>
             <li>contract gap</li>
             <li>scope gap</li>
             <li>completion gate gap</li>
+            <li>API semantics / file placement gap</li>
           </ul>
-          <div class="trigger"><b>Skip:</b> no critical gaps -> Alignment</div>
+          <div class="trigger"><b>If gap:</b> Grill Me. <b>If clean:</b> Alignment View.</div>
         </div>
         <div class="cell">
           <span class="stage stage-blue">Clarification View</span>
           <strong>选择题问题卡</strong>
-          <p>每轮最多 5 个 frontier questions。</p>
+          <ul>
+            <li>每轮最多 5 个 frontier questions</li>
+            <li>答案回写 normalized_request / contracts</li>
+            <li>再次进入 Human Alignment Check</li>
+          </ul>
         </div>
         <div class="cell">
           <span class="stage stage-violet">Scenario Router</span>
-          <strong>Trigger: ready for approval</strong>
+          <strong>Trigger: Human Alignment ready</strong>
           <ul>
             <li>Dynamic Scenario</li>
             <li>Domain Module</li>
@@ -367,35 +380,45 @@
             <li>extract API / behavior</li>
             <li>extract DT design hints</li>
             <li>extract lane signals</li>
+            <li>extract evidence candidates</li>
           </ul>
         </div>
         <div class="cell">
-          <span class="stage stage-blue">Usually skip Brainstorming</span>
-          <strong>Trigger: TR3 incomplete</strong>
+          <span class="stage stage-blue">Human Alignment Gate</span>
+          <strong>Detects: TR3 sufficient or incomplete</strong>
           <ul>
-            <li>behavior unclear -> Grill Me</li>
-            <li>DT ambiguity -> Grill Me / Docs</li>
+            <li>behavior/API semantics clear?</li>
+            <li>DT ambiguity exists?</li>
+            <li>required evidence named?</li>
+            <li>repo facts conflict with doc?</li>
           </ul>
-          <div class="trigger"><b>Skip:</b> identifiable behavior -> routing</div>
+          <div class="trigger"><b>If incomplete:</b> Grill Me / Grill With Docs. <b>If sufficient:</b> Alignment View.</div>
         </div>
         <div class="cell">
           <span class="stage stage-blue">Alignment View</span>
           <strong>TR3 summary</strong>
-          <p>展示 change type、change shape、Domain / Lane 候选和 evidence plan。</p>
+          <ul>
+            <li>change type / change shape</li>
+            <li>Domain / Lane candidates</li>
+            <li>required contracts</li>
+            <li>evidence plan</li>
+          </ul>
         </div>
         <div class="cell">
           <span class="stage stage-violet">D3A / Team Domain</span>
-          <strong>Trigger: domain signals</strong>
+          <strong>Trigger: D3A domain signals</strong>
           <ul>
             <li>Domain Module Router</li>
             <li>Lane Resolver</li>
             <li>Contract Gate</li>
+            <li>D3A fixed user-designed workflow</li>
           </ul>
         </div>
         <div class="cell">
           <span class="stage stage-red">D3A Coding / DT Adapters</span>
-          <strong>Trigger: approved D3A plan</strong>
+          <strong>Trigger: approved fixed D3A workflow</strong>
           <ul>
+            <li>fixed layer registry only</li>
             <li>DT design / writer if needed</li>
             <li>DT RED / GREEN</li>
             <li>tran_build</li>
@@ -415,20 +438,26 @@
           <span class="stage stage-teal">Discovery</span>
           <strong>approved_or_resume</strong>
           <ul>
-            <li>validate approval ref</li>
+            <li>approval ref signal</li>
             <li>load runtime_state</li>
             <li>resume checkpoint</li>
           </ul>
         </div>
         <div class="cell">
-          <span class="stage stage-gray">Skip pre-alignment</span>
-          <strong>Trigger: approval exists</strong>
-          <p>除非 contract 已失效或 checkpoint 不可信。</p>
+          <span class="stage stage-blue">Human Alignment Gate</span>
+          <strong>Detects: valid approval or stale state</strong>
+          <ul>
+            <li>validate approval ref</li>
+            <li>contract still current?</li>
+            <li>checkpoint trustworthy?</li>
+            <li>scope changed since approval?</li>
+          </ul>
+          <div class="trigger"><b>If stale:</b> Escalation / re-alignment. <b>If valid:</b> resume.</div>
         </div>
         <div class="cell">
           <span class="stage stage-gray">No new Human View</span>
           <strong>默认不再追问</strong>
-          <p>只在 blocker / missing binding / stale contract 时回人。</p>
+          <p>Human Alignment Gate 只在 blocker / missing binding / stale contract / scope drift 时回人。</p>
         </div>
         <div class="cell">
           <span class="stage stage-violet">Automated Closure</span>
@@ -460,19 +489,21 @@
         <h2>Discovery Owns</h2>
         <ul>
           <li>intake / normalize</li>
-          <li>input type detection</li>
-          <li>maturity detection</li>
+          <li>preserve input type</li>
+          <li>maturity signal, not readiness decision</li>
           <li>draft intent seed</li>
+          <li>facts and unknowns extraction</li>
         </ul>
       </article>
 
       <article class="panel">
-        <h2>Pre-Alignment Owns</h2>
+        <h2>Human Alignment Owns</h2>
         <ul>
-          <li>Brainstorming for raw idea alternatives</li>
-          <li>Grill Me for critical gaps</li>
-          <li>Grill With Docs for recorded decisions</li>
-          <li>Alignment before execution</li>
+          <li>alignment readiness detection</li>
+          <li>critical gap detection</li>
+          <li>provider trigger decision</li>
+          <li>approval / stale approval gate</li>
+          <li>blocks execution before user approved</li>
         </ul>
       </article>
 

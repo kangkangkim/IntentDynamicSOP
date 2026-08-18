@@ -45,9 +45,10 @@ Execution Runtime
 用户 Intent
   -> Discovery
   -> Intake / normalize inside Discovery
-  -> Discovery Trigger Flow
+  -> Human Alignment Check
+  -> Discovery Trigger Flow / Clarification Trigger Flow
   -> 场景识别
-  -> 需求清晰度判断
+  -> readiness / critical gap / approval validity 检测
   -> 选择 Dynamic Scenario / Domain Module / General Coding fallback
   -> 选择执行强度 Lane
   -> 根据 Domain + Lane 决定 contract set
@@ -180,7 +181,7 @@ confidential mapping refs 和阻断条件匹配 adapter。
 
 ## Human Alignment
 
-Human Alignment 是唯一默认人工对齐点。
+Human Alignment 是唯一默认人工对齐点，也是 readiness / critical gap / approval validity 的统一检测 gate。
 
 设计哲学：
 
@@ -190,9 +191,18 @@ Human Alignment 是唯一默认人工对齐点。
 异常再回人
 ```
 
-Human Alignment 发生在 Planner 之前。
+Human Alignment 发生在 Planner 之前。Discovery 只提供 normalized request、input type、maturity signal 和已知未知项；是否能进入 approval / execution 由 Human Alignment Check 决定。
 
-它确认：
+它检测：
+
+- 是否需要 Brainstorming 继续发散。
+- 是否存在 contract / scope / completion gate / API semantics / test evidence / file placement gap。
+- 是否需要 Grill With Docs 同步非敏感决策记录。
+- 是否可以生成 Alignment View。
+- 已有 approval ref / checkpoint 是否仍有效。
+- 是否发生 scope drift，需要 Re-alignment。
+
+它让人确认：
 
 - 输入理解。
 - Domain / Lane 判断。
@@ -234,6 +244,8 @@ Planner
 
 ## D3A Module
 
+D3A 场景的主流程是固定的用户设计流程。IDC 只能判断输入是否满足进入条件，并在固定流程内部做 layer、DT domain、execution unit、adapter 和 evidence 的动态选择；不能重排或重新设计 D3A 主流程。
+
 D3A 使用固定架构空间，但在这个固定空间内动态规划。
 
 固定 Coding Layer：
@@ -267,10 +279,14 @@ D3A 的动态性主要发生在：
 
 重要约束：
 
+- D3A 主流程顺序固定。
 - D3A Planner 不能创建新的 D3A Layer。
 - D3A Planner 不能删除已有 D3A Layer。
 - Coding Layer 到 DT Domain 是多对多关系，不能在外部环境猜。
 - 所有真实 mapping 必须进入保密区后填写。
+- API Contract 必须先于 implementation。
+- RED evidence 必须先于 GREEN evidence。
+- DONE 必须同时满足 required DT GREEN 和 `tran_build PASS`。
 
 ## Dynamic Scenario Mode
 
@@ -321,13 +337,13 @@ Domain Module Router
   -> 判断选中哪个可插拔 module
 
 Requirement Assessor
-  -> 判断需求信息够不够
+  -> 作为 Human Alignment Check 的被动检查表，判断需求信息够不够
 
 Domain / Dynamic Planner
   -> 判断这条路具体怎么走
 ```
 
-Requirement Assessor 只负责 `Decide`，不负责澄清、设计、规划或写代码。
+Requirement Assessor 只负责检查结论，不负责澄清、设计、规划、approval 或写代码；是否触发 Grill Me、Grill With Docs、Re-alignment 或 execution 放行，由 Human Alignment Gate 决定。
 
 ## 知识系统
 
