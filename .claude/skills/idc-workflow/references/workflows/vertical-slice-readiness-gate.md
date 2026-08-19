@@ -27,8 +27,8 @@ All required checks must PASS before `READY_FOR_EXECUTION`:
 - `dt_knowledge_bound`
 - `verification_mapping_bound`
 - `repo_context_provider_bound`
-- `dt_red_green_commands_bound`
-- `tran_build_command_bound`
+- `dt_red_green_build_skill_bound`
+- `tran_build_skill_bound`
 - `placeholder_hygiene_preserved`
 
 Each check must include an `evidence_ref`.
@@ -68,8 +68,8 @@ Return `BLOCKED` when any required binding is missing:
 - no real DT knowledge for the selected DT domain.
 - no real Coding Layer -> DT Domain verification mapping.
 - no bounded repo context provider with `evidence_ref`.
-- no real DT RED/GREEN command interface.
-- no real `tran_build` command interface.
+- no bound DT RED/GREEN build skill (`bindings.dt_build.skill_ref`).
+- no bound `tran_build` skill (`bindings.tran_build.skill_ref`).
 - placeholder hygiene cannot be proven.
 
 When blocked, use Escalation View and ask only for the missing binding or scope

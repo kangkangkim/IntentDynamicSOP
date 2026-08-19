@@ -2,14 +2,14 @@
 
 Intent Dynamic Code 是一个非敏感的企业 Coding 工作流骨架。
 
-它的目标不是在外部环境实现真实企业 D3A，而是先把一套可迁移、可验证、可填充的工作流骨架准备好。进入公司保密区后，只填 `team-config.yaml` 一个文件即可接入真实知识、skills 和构建命令。
+它的目标不是在外部环境实现真实企业 D3A，而是先把一套可迁移、可验证、可填充的工作流骨架准备好。进入公司保密区后，只填 `team-config.yaml` 一个文件即可接入真实知识、skills 和构建能力（命令封装在 build skill 内部）。
 
 ## 项目优势
 
 IDC 的核心优势是把动态智能分流和企业固定 SOP 分开：外层可以根据输入动态判断，内层可以保护团队已经验证过的固定流程。
 
 - **公共框架可复用**：`IDC Core` 只保存 `/id-workflow` 薄入口、`idc-*` skills、router、lane、gate、schema、human views 和 adapter eligibility registry，不保存企业 secret。
-- **企业知识不外泄**：真实 D3A 知识、GC SOP 原子能力、repo path、构建命令、内部 skill 名都通过保密区 `team-config.yaml` / knowledge index 接入。
+- **企业知识不外泄**：真实 D3A 知识、GC SOP 原子能力、repo path、内部 skill 名（构建命令封装在 build skill 内部）都通过保密区 `team-config.yaml` / knowledge index 接入。
 - **D3A 主流程固定**：D3A 是用户设计的固定 workflow。IDC 只在固定流程内选择 Layer、DT Domain、adapter、execution unit 和 evidence，不重排 D3A。
 - **Human Alignment 管检测**：Discovery 只做 intake / normalize / signal；Human Alignment Check 统一检测 readiness、critical gap、docs needed、approval validity 和 scope drift。
 - **GC SOP 按需调用**：GC SOP 是企业能力池，不是默认全家桶。只有 stage、capability key、contract、team binding 和 blocks_when 都匹配时才触发。
@@ -30,7 +30,7 @@ V0 已经固定：
 - V0 DT Domain placeholder：`TPRINT`、`FW`、`DPF`。
 - Human Alignment Check 作为 readiness / gap / approval gate。
 - Skill Adapter Router 作为 GC SOP、Superpowers、DT skill、build skill 的唯一接入门。
-- `team-config.yaml.template` 入口配置，用于在保密区绑定真实路径、命令、内部 skill、knowledge index 和 evidence parser。
+- `team-config.yaml.template` 入口配置，用于在保密区绑定真实路径、内部 skill（含 build skill）、knowledge index 和 evidence parser。
 - Team Binding 模板作为兼容参考；新团队优先填 `team-config.yaml`。
 - Mock D3A / General E2E examples 和 harness tests。
 
@@ -42,7 +42,7 @@ V0 不做：不复制企业内部 D3A 知识；不编造 Coding Layer 到 DT Dom
 真实 D3A 知识地址
 + 真实 GC SOP atom mapping
 + 原代码仓 dt-design / dt-writer skill ref
-+ 真实 DT / tran_build command
++ 真实 DT / tran_build build skill
 + repo context provider
 + evidence parser
 ```
@@ -62,7 +62,7 @@ Domain Module
   团队扩展：<team-domain>/module.yaml、团队 layer/test registry、团队 workflow references
 
 Team Config
-  团队 DIY：team-config.yaml、repo path、build/run command、internal skill ref、knowledge index、evidence parser
+  团队 DIY：team-config.yaml、repo path、internal skill ref（含 build skill）、knowledge index、evidence parser
 ```
 
 推荐复用方式：
@@ -142,7 +142,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module（`references/d
 - `.claude/skills/idc-workflow/assets/README.md`：asset / reference 边界说明。
 - `.claude/skills/idc-workflow/references/registries/`：固定 D3A Layer、DT Domain、General placeholder taxonomy、Skill Adapter registry；企业接入方只读，通过 team-config 非空列表整体覆盖。
 - `.claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml`：保留的兼容 binding 模板（已接 `team_adapter_binding_ref` 的老团队用）。
-- `team-config.yaml.template`：新团队唯一入口配置，收敛 team id、repo path、skill bindings、knowledge refs、build commands、lane defaults，以及 DT domain / GC component / test domain 的整体替换列表。
+- `team-config.yaml.template`：新团队唯一入口配置，收敛 team id、repo path、skill bindings（含 build skill）、knowledge refs、lane defaults，以及 DT domain / GC component / test domain 的整体替换列表。
 - `.claude/agents/`：`d3a-layer-coder`、`dt-test-writer`、`build-error-analyzer`、`general-coder` subagent 定义。
 - `examples/`：mock D3A、E2E TR3 D3A、E2E General 三个非敏感 walkthrough。
 - `test/`：可复制到 Claude Code 手动体验的场景卡。
@@ -158,4 +158,4 @@ python3 tests/test_harness.py
 
 ## 保密区迁移
 
-真实 Layer 职责、verification mapping、DT / `tran_build` 命令、repo path 等只能在公司保密区填写，且只写进 `team-config.yaml`（知识正文留在企业本地）。完整 checklist 见 `docs/confidential-migration-checklist.md`。
+真实 Layer 职责、verification mapping、DT / `tran_build` build skill、repo path 等只能在公司保密区填写，且只写进 `team-config.yaml`（知识正文留在企业本地）。完整 checklist 见 `docs/confidential-migration-checklist.md`。

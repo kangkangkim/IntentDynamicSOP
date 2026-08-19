@@ -317,10 +317,10 @@
         </div>
         <div class="cell">
           <span class="stage stage-violet">bindings.*.skill_ref</span>
-          <strong>16 个 skill 槽 + 2 个构建槽，按能力语义对号入座</strong>
+          <strong>20 个槽位全部绑定 skill_ref，按能力语义对号入座</strong>
           <ul>
             <li>brainstorming / ut_design / impl_review / tdd_workflow ...</li>
-            <li>dt_build / tran_build 绑定命令（见下行），无 skill_ref</li>
+            <li>dt_design / dt_writer / dt_build / tran_build 同为 skill 槽（见下行）</li>
             <li>没有的能力留 null</li>
           </ul>
           <pre class="example">bindings:
@@ -343,31 +343,31 @@
 
         <div class="cell rowlabel">
           构建与验证系统
-          <p>真实 DT build / run 命令、tran_build 命令和 PASS 条件。</p>
+          <p>真实 DT build / run、tran_build 和 PASS 判定，封装在企业 skill 里。</p>
         </div>
         <div class="cell">
-          <span class="stage stage-violet">bindings 构建槽</span>
-          <strong>命令与 PASS 条件绑定</strong>
+          <span class="stage stage-violet">bindings 构建槽（同为 skill 槽）</span>
+          <strong>绑定企业 build skill，配置里永远不出现命令</strong>
           <ul>
-            <li>dt_build.build_command / run_command</li>
-            <li>tran_build.command / pass_condition</li>
+            <li>dt_build.skill_ref / tran_build.skill_ref</li>
+            <li>没有现成 build skill？先把真实命令包成极小 wrapper skill（跑命令、回传日志 / exit code），再绑定</li>
           </ul>
           <pre class="example">bindings:
   dt_build:
-    build_command: make demo-dt-build
+    skill_ref: /repos/demo-skills/dt-build.sh
   tran_build:
-    command: make demo-tran-build
-    pass_condition: exit 0 且日志含 BUILD PASS</pre>
+    skill_ref: /repos/demo-skills/tran-build.sh</pre>
           </ul>
         </div>
         <div class="cell">
           <span class="stage stage-blue">idc-dt-build / idc-tran-build</span>
-          <strong>只执行绑定的真实命令，产出 evidence</strong>
+          <strong>委托绑定的企业 skill 执行，产出 evidence</strong>
           <ul>
+            <li>命令封装在 skill 内部，harness 只见 skill_ref</li>
             <li>RED / GREEN / PASS 只认工具输出，不认模型自信</li>
             <li>失败交给 build-error-analyzer 生成 targeted fix task</li>
           </ul>
-          <div class="trigger"><b>未配置时：</b>占位命令产不出真 evidence -> 到不了 DONE</div>
+          <div class="trigger"><b>未配置时：</b>槽位为 null -> <code>NEEDS_TEAM_CONFIG</code>，产不出真 evidence -> 到不了 DONE</div>
         </div>
 
         <div class="cell rowlabel">
@@ -442,7 +442,7 @@
           <li>按上表左列资产对号填中列插槽</li>
           <li>再跑 harness：填错的就地校验变红</li>
         </ol>
-        <div class="trigger"><b>例：</b>最小可用 = team 三行 + use_d3a + 一个 dt_build_command。可用 <a href="team-config-generator.html">交互式生成器</a>填表生成。</div>
+        <div class="trigger"><b>例：</b>最小可用 = team 三行 + use_d3a + 一个 dt_build skill_ref。可用 <a href="team-config-generator.html">交互式生成器</a>填表生成。</div>
       </article>
       <article class="phase">
         <h2>2 过 Readiness Gate</h2>
@@ -451,7 +451,7 @@
           <li>看 BLOCKED 清单还缺哪个 binding</li>
           <li>gate 只证明能启动，不替代 evidence</li>
         </ol>
-        <div class="trigger"><b>例：</b>BLOCKED 项 <code>tran_build_command 未绑定</code> -> 回第 1 步补。</div>
+        <div class="trigger"><b>例：</b>BLOCKED 项 <code>tran_build skill 未绑定</code> -> 回第 1 步补。</div>
       </article>
       <article class="phase">
         <h2>3 第一条 vertical slice</h2>
@@ -479,7 +479,7 @@
         <ul>
           <li>一个可访问的代码仓路径</li>
           <li>内部 skill 清单与存放根目录</li>
-          <li>真实 DT / tran_build 命令和 PASS 条件</li>
+          <li>真实 DT / tran_build 能力（企业 skill，命令封装在 skill 内部）</li>
           <li>领域知识地址（不搬正文）</li>
         </ul>
       </article>

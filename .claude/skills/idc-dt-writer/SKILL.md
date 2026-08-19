@@ -18,7 +18,7 @@ Use only after:
 - `idc-dt-design` has produced `READY_FOR_DT_WRITER`, or an equivalent approved DT design ref exists.
 - The selected DT domain is known.
 - Allowed paths and forbidden paths are explicit.
-- DT build/run commands are available in the confidential zone.
+- The DT build skill is bound (`bindings.dt_build.skill_ref`) in the confidential zone.
 
 Do not use when:
 
@@ -35,8 +35,7 @@ dt_writer_input:
   selected_dt_domains: []
   allowed_paths: []
   forbidden_paths: []
-  dt_build_command_ref: string
-  dt_run_command_ref: string
+  dt_build_skill_ref: string
   max_change_loc: 500
 ```
 

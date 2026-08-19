@@ -307,7 +307,7 @@ references/schemas/repo-context-provider.schema.yaml
 - Superpowers Adapter may provide the inner engineering loop after approval, but IDC owns Domain, Lane, Contract Gate, and Completion Gate.
 - GC SOP Adapter may reuse confidential enterprise atomic abilities after approval, but must go through Skill Adapter Router and cannot invent original repository skill details.
 - Skill Adapter Router must select GC / DT / Superpowers adapters from `references/registries/skill-adapters.yaml`; adapter names are not triggers by themselves.
-- Team-specific paths, commands, knowledge refs, and internal skill refs must be supplied through `team-config.yaml`; use `team-config.yaml.template` as the fill-parameters entrypoint.
+- Team-specific paths, knowledge refs, and internal skill refs (including DT design / writing / build skills) must be supplied through `team-config.yaml`; real build commands live inside the bound skill, never in the config. Use `team-config.yaml.template` as the fill-parameters entrypoint.
 - Registries (`dt-domains.yaml`, `general-components.yaml`, `general-test-domains.yaml`) are repo read-only defaults; a non-empty team-config list (`domain.d3a_dt_domains`, `general.components`, `general.test_domains`) replaces the registry wholesale — never merge sources.
 - Original repository DT skills are represented as adapters: `idc-dt-design` for DT design, `idc-dt-writer` for DT writing, and `idc-gc-third-skill-placeholder` until the third skill is named in the confidential zone.
 - Use `upstream-superpowers-brainstorming` as the `raw_idea` baseline, then apply `idc-brainstorming-overlay` before handoff to `idc-intent-grilling`.

@@ -21,9 +21,8 @@ vertical_slice:
       architecture_rules_ref: <ENTERPRISE_PLACEHOLDER>
     verification:
       verification_mapping_ref: <ENTERPRISE_PLACEHOLDER>
-      dt_build_command: <ENTERPRISE_DT_BUILD_COMMAND>
-      dt_run_command: <ENTERPRISE_DT_RUN_COMMAND>
-      tran_build_command: <ENTERPRISE_TRAN_BUILD_COMMAND>
+      dt_build_skill_ref: <ENTERPRISE_DT_BUILD_SKILL_REF>
+      tran_build_skill_ref: <ENTERPRISE_TRAN_BUILD_SKILL_REF>
     providers:
       grep:
         status: PLACEHOLDER
@@ -51,11 +50,11 @@ vertical_slice:
       required: true
       status: FAIL
       evidence_ref: <ENTERPRISE_PLACEHOLDER>
-    - id: dt_red_green_commands_bound
+    - id: dt_red_green_build_skill_bound
       required: true
       status: FAIL
       evidence_ref: <ENTERPRISE_PLACEHOLDER>
-    - id: tran_build_command_bound
+    - id: tran_build_skill_bound
       required: true
       status: FAIL
       evidence_ref: <ENTERPRISE_PLACEHOLDER>

@@ -28,7 +28,7 @@ Do not use when:
 ```yaml
 tran_build_request:
   working_directory: <ENTERPRISE_REPO_PATH>
-  command: <ENTERPRISE_TRAN_BUILD_COMMAND>
+  skill_ref: <ENTERPRISE_TRAN_BUILD_SKILL_REF>
 ```
 
 ## Output
@@ -37,7 +37,7 @@ tran_build_request:
 tran_build_result:
   status: PASS | FAIL | NOT_RUN
   stage: tran_build
-  command: <ENTERPRISE_TRAN_BUILD_COMMAND>
+  skill_ref: <ENTERPRISE_TRAN_BUILD_SKILL_REF>
   errors: []
   evidence: []
 ```
@@ -46,6 +46,6 @@ tran_build_result:
 
 - D3A completion 要求 `status: PASS`。
 - 失败结果必须进入 `build-error-analyzer`。
-- 外部环境不能填写真实 command。
-- 真实 command 与 PASS 条件只通过 `team-config.yaml`（`bindings.tran_build.command` / `bindings.tran_build.pass_condition`）绑定，不从其他文件读取。
+- 外部环境不能绑定真实企业 skill。
+- 真实 `tran_build` 能力（命令与 PASS 判定）只通过 `team-config.yaml`（`bindings.tran_build.skill_ref`）绑定；命令封装在绑定的企业 skill 内部，配置里不出现命令。
 - `tran_build` PASS 是 D3A DONE gate，不是 General Coding gate。

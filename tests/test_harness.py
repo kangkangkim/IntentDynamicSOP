@@ -373,15 +373,22 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "test_domains: []",
         "bindings:",
         "brainstorming:",
+        "dt_design:",
+        "dt_writer:",
         "dt_build:",
         "tran_build:",
         "knowledge:",
         "layer_docs: {}",
-        "build:",
         "lane:",
         "default: lite",
     ]:
         assert_true(fragment in team_config, f"team-config.yaml.template 缺少字段：{fragment}")
+    for key in ["build_command", "run_command", "pass_condition", "command:"]:
+        assert_true(key not in team_config, f"team-config 绑定槽不允许出现命令键（严格 skill_ref 模型）：{key}")
+    bindings_block = team_config.split("bindings:")[1].split("knowledge:")[0]
+    slot_names = re.findall(r"^  ([a-z_]+):$", bindings_block, flags=re.M)
+    assert_true(len(slot_names) == 20, f"绑定槽必须是 20 个 skill 槽（实际 {len(slot_names)}）。")
+    assert_true("skill_ref: null" in bindings_block, "绑定槽必须用 skill_ref 绑定。")
     for fragment in [
         "Step 1: Copy The Harness",
         "Step 2: Create Team Config",
@@ -389,7 +396,7 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "Step 4: Select Domain",
         "Step 5: Fill Skill Bindings",
         "Step 6: Fill Knowledge Indexes",
-        "Step 7: Fill Build Commands",
+        "Step 7: Bind Build Skills",
         "Step 8: Validate Harness",
         "Step 9: Run One Vertical Slice",
     ]:
@@ -820,9 +827,8 @@ def test_confidential_vertical_slice_readiness_gate_exists():
         "max_dt_domains: 1",
         "max_change_loc_per_execution_unit: 500",
         "verification_mapping_ref",
-        "dt_build_command: <ENTERPRISE_DT_BUILD_COMMAND>",
-        "dt_run_command: <ENTERPRISE_DT_RUN_COMMAND>",
-        "tran_build_command: <ENTERPRISE_TRAN_BUILD_COMMAND>",
+        "dt_build_skill_ref: <ENTERPRISE_DT_BUILD_SKILL_REF>",
+        "tran_build_skill_ref: <ENTERPRISE_TRAN_BUILD_SKILL_REF>",
         "evidence_ref_required: true",
         "placeholder_hygiene_preserved",
         "Do not mark READY_FOR_EXECUTION while any required readiness check is FAIL.",
@@ -1848,11 +1854,8 @@ def test_filled_team_config_when_present():
     for match in re.finditer(r"-\s+id:\s*(\S+)\s*\n\s+knowledge_ref:\s*(\S+)", text):
         domain_id, knowledge_ref = match.group(1), match.group(2)
         assert_true(not knowledge_ref.startswith("<"), f"{domain_id} 的 knowledge_ref 未填写真实值。")
-    for key in ["build_command", "run_command", "command:", "tran_build_command"]:
-        for match in re.finditer(rf"{key}\s*(\S+)", text):
-            value = match.group(1)
-            if value != "null":
-                assert_true(not value.startswith("<"), f"{key} 不能保留占位符（当前值以 < 开头）。")
+    for key in ["build_command", "run_command", "pass_condition", "command:"]:
+        assert_true(key not in text, f"填好的 team-config.yaml 不允许出现命令键（严格 skill_ref 模型）：{key}")
 
 
 def can_enter_all_layers_green(required_domains, green_domains):

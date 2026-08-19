@@ -30,7 +30,7 @@ dt_build_request:
   domain: TPRINT
   stage: build | run
   working_directory: <ENTERPRISE_REPO_PATH>
-  command: <ENTERPRISE_DT_BUILD_COMMAND>
+  skill_ref: <ENTERPRISE_DT_BUILD_SKILL_REF>
 ```
 
 ## Output
@@ -39,15 +39,15 @@ dt_build_request:
 dt_build_result:
   status: PASS | FAIL | NOT_RUN
   stage: dt_build
-  command: <ENTERPRISE_DT_BUILD_COMMAND>
+  skill_ref: <ENTERPRISE_DT_BUILD_SKILL_REF>
   errors: []
   evidence: []
 ```
 
 ## Hard Rules
 
-- 在保密区绑定前，只能使用 `<ENTERPRISE_DT_BUILD_COMMAND>` 和 `<ENTERPRISE_DT_RUN_COMMAND>`。
-- 真实命令只通过 `team-config.yaml`（`bindings.dt_build`）绑定，不从其他文件读取。
+- 在保密区绑定前，只能使用 `<ENTERPRISE_DT_BUILD_SKILL_REF>` placeholder，不得编造命令。
+- 真实构建能力只通过 `team-config.yaml`（`bindings.dt_build.skill_ref`）绑定；真实命令封装在绑定的企业 skill 内部，配置里不出现命令，也不从其他文件读取。
 - 有真实 stdout / stderr 或等价工具输出时，必须保留为 evidence。
 - 不允许把模型自信转换成测试 evidence。
 - 失败结果必须进入 `build-error-analyzer` 或回到 targeted fix。

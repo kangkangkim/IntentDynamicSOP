@@ -24,7 +24,7 @@ Module 和 Team Config：
 
 - IDC Core：共享 `/id-workflow`、router、lane、gate、schema、human views、adapter eligibility registry。
 - Domain Module：团队维护自己的 `<team-domain>/module.yaml`、领域 registry、领域 workflow / knowledge references。
-- Team Config：团队在保密区维护 `team-config.yaml`，填写真实 repo path、命令、内部 skill ref、knowledge index、evidence parser 和 pass/fail 规则；DT domain / GC component / test domain 通过非空列表整体替换仓库默认注册表（不合并）。
+- Team Config：团队在保密区维护 `team-config.yaml`，填写真实 repo path、内部 skill ref（含 DT 设计 / 编写 / 构建能力）、knowledge index、evidence parser 和 pass/fail 规则；DT domain / GC component / test domain 通过非空列表整体替换仓库默认注册表（不合并）。
 
 仓库内注册表（`dt-domains.yaml`、`general-components.yaml`、`general-test-domains.yaml`）对企业接入方只读。
 
@@ -35,8 +35,8 @@ Module 和 Team Config：
 - 真实 forbidden patterns / common errors。
 - 真实 DT Domain 目的 / 编写规则 / evidence 要求。
 - 真实 Coding Layer 到 DT Domain 的 verification mapping。
-- 真实 DT build / run 命令。
-- 真实 `tran_build` 命令和环境。
+- 真实 DT build 能力（企业 skill，命令封装在 skill 内部；没有现成 skill 就先包一个极小 wrapper skill 再绑定）。
+- 真实 `tran_build` 能力和环境（企业 skill，含 PASS 判定）。
 - 真实 repository path。
 - 真实 CodeGraph / Wiki / grep / repository search provider。
 - 真实 build error 到 responsible layer 的分析规则。

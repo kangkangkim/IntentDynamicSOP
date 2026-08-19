@@ -293,10 +293,10 @@
         </details>
 
         <details>
-          <summary>3 Skill 绑定 <code>bindings.*</code>（18 个槽位，没有的留空）</summary>
+          <summary>3 Skill 绑定 <code>bindings.*</code>（20 个槽位，全部绑 skill_ref，没有的留空）</summary>
           <div class="body">
             <div id="bindingArea"></div>
-            <p class="hint">skill_ref 支持绝对路径或仓库相对路径（如 <code>.claude/skills/idc-brainstorming/SKILL.md</code>）。构建槽没有 skill_ref：能力本体是 harness 自带 skill，绑定物就是命令本身。</p>
+            <p class="hint">skill_ref 支持绝对路径或仓库相对路径（如 <code>.claude/skills/idc-brainstorming/SKILL.md</code>）。dt_design / dt_writer / dt_build / tran_build 也是 skill 槽：真实命令封装在企业 skill 内部，配置里永远不出现命令。没有现成 build skill？先把命令包成极小 wrapper skill（跑命令、回传日志 / exit code）再绑定。</p>
           </div>
         </details>
 
@@ -360,7 +360,7 @@
             <button class="btn" id="downloadBtn" type="button">下载 team-config.yaml</button>
             <button class="btn danger" id="clearBtn" type="button">清空草稿</button>
           </div>
-          <div class="note">填好的 team-config.yaml 含企业真实路径与命令：只放保密区，不要提交回共享 harness 仓库。</div>
+          <div class="note">填好的 team-config.yaml 含企业真实路径与 skill ref（真实命令封装在企业 skill 内部）：只放保密区，不要提交回共享 harness 仓库。</div>
         </div>
 
         <div class="panel">
@@ -381,7 +381,8 @@
       { title: "通用与前置", items: ["coding_standard", "brainstorming"] },
       { title: "需求与设计", items: ["asis_miner", "scene_challenge", "req_check", "tech_design", "phase_plan"] },
       { title: "测试", items: ["ut_design", "ut_generate", "tdd_workflow", "system_test"] },
-      { title: "质量与收尾", items: ["impl_review", "static_scan", "defect_fix", "git_commit", "knowledge_archive"] }
+      { title: "质量与收尾", items: ["impl_review", "static_scan", "defect_fix", "git_commit", "knowledge_archive"] },
+      { title: "DT 与构建", items: ["dt_design", "dt_writer", "dt_build", "tran_build"] }
     ];
 
     var STORAGE_KEY = "idc-team-config-draft";
@@ -463,25 +464,6 @@
         });
         area.appendChild(box);
       });
-      var box = document.createElement("div");
-      box.className = "binding-group";
-      var h = document.createElement("h3");
-      h.textContent = "构建绑定";
-      box.appendChild(h);
-      [["dt_build.build_command", "binding.dt_build.build_command"], ["dt_build.run_command", "binding.dt_build.run_command"], ["tran_build.command", "binding.tran_build.command"], ["tran_build.pass_condition", "binding.tran_build.pass_condition"]].forEach(function (pair) {
-        var item = document.createElement("div");
-        item.className = "binding-item";
-        var k = document.createElement("span");
-        k.className = "k";
-        k.textContent = pair[0];
-        var inp = document.createElement("input");
-        inp.type = "text";
-        inp.dataset.path = pair[1];
-        inp.placeholder = "null";
-        item.appendChild(k); item.appendChild(inp);
-        box.appendChild(item);
-      });
-      area.appendChild(box);
     })();
 
     // ---- yaml helpers ----
@@ -549,16 +531,10 @@
       else { L.push("  test_domains: []"); }
       L.push("");
       L.push("bindings:");
-      ["coding_standard", "brainstorming", "asis_miner", "scene_challenge", "req_check", "tech_design", "phase_plan", "ut_design", "ut_generate", "impl_review", "tdd_workflow", "static_scan", "defect_fix", "git_commit", "knowledge_archive", "system_test"].forEach(function (key) {
+      ["coding_standard", "brainstorming", "asis_miner", "scene_challenge", "req_check", "tech_design", "phase_plan", "ut_design", "ut_generate", "impl_review", "tdd_workflow", "static_scan", "defect_fix", "git_commit", "knowledge_archive", "system_test", "dt_design", "dt_writer", "dt_build", "tran_build"].forEach(function (key) {
         L.push("  " + key + ":");
         L.push("    skill_ref: " + yv(plain(d["binding." + key])));
       });
-      L.push("  dt_build:");
-      L.push("    build_command: " + yv(plain(d["binding.dt_build.build_command"])));
-      L.push("    run_command: " + yv(plain(d["binding.dt_build.run_command"])));
-      L.push("  tran_build:");
-      L.push("    command: " + yv(plain(d["binding.tran_build.command"])));
-      L.push("    pass_condition: " + yv(plain(d["binding.tran_build.pass_condition"])));
       L.push("");
       L.push("knowledge:");
       L.push("  architecture_doc: " + yv(plain(d["knowledge.architecture_doc"])));

@@ -63,17 +63,22 @@ skills, commands, and evidence sources into that workflow.
 
 ## Step 5: Fill Skill Bindings
 
-Fill only skills your team already has. Leave missing skills as `null`.
+Every slot binds an enterprise skill by `skill_ref` — including the DT and
+build slots. Fill only skills your team already has. Leave missing skills as
+`null`.
 
 ```yaml
 bindings:
   brainstorming:
     skill_ref: <ENTERPRISE_BRAINSTORMING_SKILL_REF>
+  dt_design:
+    skill_ref: <ENTERPRISE_DT_DESIGN_SKILL_REF>
+  dt_writer:
+    skill_ref: <ENTERPRISE_DT_WRITER_SKILL_REF>
   dt_build:
-    build_command: <ENTERPRISE_DT_BUILD_COMMAND>
-    run_command: <ENTERPRISE_DT_RUN_COMMAND>
+    skill_ref: <ENTERPRISE_DT_BUILD_SKILL_REF>
   tran_build:
-    command: <ENTERPRISE_TRAN_BUILD_COMMAND>
+    skill_ref: <ENTERPRISE_TRAN_BUILD_SKILL_REF>
 ```
 
 Unfilled GC SOP atoms are skipped unless the Skill Adapter Router sees a
@@ -96,19 +101,23 @@ knowledge:
 DT knowledge refs ride on the `domain.d3a_dt_domains` entries shown in Step 4;
 `knowledge.dt_docs` no longer exists.
 
-## Step 7: Fill Build Commands
+## Step 7: Bind Build Skills
 
-Fill the commands and pass condition used by your team (they live next to the build bindings, not in a separate `build:` section):
+`dt_build` and `tran_build` are skills, not commands. Bind the enterprise
+build skill in each slot:
 
 ```yaml
 bindings:
   dt_build:
-    build_command: <ENTERPRISE_DT_BUILD_COMMAND>
-    run_command: <ENTERPRISE_DT_RUN_COMMAND>
+    skill_ref: <ENTERPRISE_DT_BUILD_SKILL_REF>
   tran_build:
-    command: <ENTERPRISE_TRAN_BUILD_COMMAND>
-    pass_condition: <ENTERPRISE_TRAN_BUILD_PASS_CONDITION_REF>
+    skill_ref: <ENTERPRISE_TRAN_BUILD_SKILL_REF>
 ```
+
+If the team has no packaged build skill yet, wrap the real command in a
+minimal skill first (run the command, return logs / exit code as evidence),
+then bind that skill. The command itself stays inside the skill file in the
+confidential zone — it never appears in `team-config.yaml`.
 
 ## Step 8: Validate Harness
 

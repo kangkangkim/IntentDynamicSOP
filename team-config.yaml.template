@@ -58,15 +58,17 @@ bindings:
     skill_ref: null
   system_test:
     skill_ref: null
-  # Build slots bind the enterprise build system by command only. The skill
-  # identity is fixed in the adapter registry (idc-dt-build / idc-tran-build),
-  # so these slots carry no skill_ref.
+  # DT / build slots are ordinary skill slots. Every slot binds an enterprise
+  # skill by ref; real commands live inside the skill, never in this config.
+  # A team without a build skill wraps its command in a minimal skill first.
+  dt_design:
+    skill_ref: null
+  dt_writer:
+    skill_ref: null
   dt_build:
-    build_command: null
-    run_command: null
+    skill_ref: null
   tran_build:
-    command: null
-    pass_condition: null
+    skill_ref: null
 
 knowledge:
   architecture_doc: null
