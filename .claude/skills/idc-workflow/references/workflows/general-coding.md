@@ -30,11 +30,13 @@ Input Adapter
 
 General Coding 不使用 D3A Layer registry。
 
-它使用：
+它使用仓库默认注册表：
 
 ```text
 registries/general-components.yaml
 ```
+
+`team-config.yaml` 的 `general.components` 非空时整体替换该注册表（不合并）；空值回落此默认。
 
 V0 components 是 placeholder，不代表真实团队分类：
 
@@ -48,11 +50,13 @@ GENERAL_COMPONENT_SUPPORT_PLACEHOLDER
 
 General Coding 不使用 D3A DT Domain registry。
 
-它使用：
+它使用仓库默认注册表：
 
 ```text
 registries/general-test-domains.yaml
 ```
+
+`team-config.yaml` 的 `general.test_domains` 非空时整体替换该注册表（不合并）；空值回落此默认。
 
 V0 test domains 是 placeholder，不代表真实团队测试体系：
 
@@ -81,7 +85,7 @@ API Contract 不是所有 General Coding 都必须要。
 ## 规则
 
 - 不使用 D3A Layer / DT Domain registry。
-- 不编造 General component / test domain taxonomy；进入真实团队后再替换 placeholder。
+- 不编造 General component / test domain taxonomy；进入真实团队后通过 `team-config.yaml.general.*` 整体替换 placeholder，不直接编辑共享注册表。
 - 每个 execution unit 代码变更 `<= 500 LOC`。
 - 如果 verification contract 要求测试，必须先 RED 再 GREEN。
 - Completion 必须基于工具 evidence。

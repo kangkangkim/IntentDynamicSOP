@@ -45,7 +45,7 @@ If D3A contract / scope / completion gate 不清楚，route to:
 3. 产出 D3A Specification。
 4. 在 implementation 前 freeze API Contract。
 5. Planner 只能在固定 D3A Layer registry 内规划。
-6. DT Domain 只能从 V0 DT registry 选择。
+6. DT Domain 只能从生效 registry 选择：仓库默认 `dt-domains.yaml`，或 `team-config.yaml.domain.d3a_dt_domains` 非空时整体替换；禁止合并两个来源、禁止 registry 外编造。
 7. 构造 dependency DAG。
 8. 为每个选中 Coding Layer 创建一个 Layer Context Packet。
 9. Implementation 完成前必须确认 RED evidence。

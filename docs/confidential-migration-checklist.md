@@ -18,11 +18,13 @@
 ## 进入保密区后需要填写的内容
 
 多团队复用时，默认不要 fork IDC Core。每个团队只填写自己的 Domain
-Module 和 Team Binding：
+Module 和 Team Config：
 
 - IDC Core：共享 `/id-workflow`、router、lane、gate、schema、human views、adapter eligibility registry。
 - Domain Module：团队维护自己的 `<team-domain>/module.yaml`、领域 registry、领域 workflow / knowledge references。
-- Team Binding：团队在保密区维护真实 repo path、命令、内部 skill ref、evidence parser 和 pass/fail 规则。
+- Team Config：团队在保密区维护 `team-config.yaml`，填写真实 repo path、命令、内部 skill ref、knowledge index、evidence parser 和 pass/fail 规则；DT domain / GC component / test domain 通过非空列表整体替换仓库默认注册表（不合并）。
+
+仓库内注册表（`dt-domains.yaml`、`general-components.yaml`、`general-test-domains.yaml`）对企业接入方只读。
 
 这些内容只能在公司保密区填写：
 
@@ -40,10 +42,13 @@ Module 和 Team Binding：
 - 公司没有 Grill Me / Grill With Docs：直接带入 GitHub 仓库里的 `idc-intent-grilling`、`idc-intent-grilling-with-docs`、`grill-me-method.md`、`grill-with-docs-method.md` 和 `question-card-template.md`。
 - 真实 GC 全家桶 SOP atomic ability mapping。
 - 真实原代码仓 skill contract：`idc-dt-design`、`idc-dt-writer`、`<ENTERPRISE_GC_THIRD_SKILL_NAME>`。
-- 真实 GC / DT adapter binding：基于 `.claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml` 在保密区填写团队自己的 binding。
+- 真实 GC / DT adapter binding：基于 `team-config.yaml.template` 在保密区复制出 `team-config.yaml` 并填写团队自己的参数。
 
 公共 `.claude/skills/idc-workflow/references/registries/skill-adapters.yaml`
 只作为 adapter eligibility registry，不放任何团队真实路径、命令或内部 skill 名。
+
+`.claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml`
+保留为兼容参考；新团队优先使用根目录 `team-config.yaml.template`。
 
 ## 入区前检查
 
@@ -59,7 +64,7 @@ python3 tests/test_harness.py
 - Placeholder hygiene 通过。
 - 仓库里没有企业 secret。
 - D3A Layer registry 仍然匹配固定架构。
-- DT Domain registry 仍然只包含 V0 placeholder domain，除非保密区内明确扩展。
+- DT Domain registry 仍然只包含 V0 placeholder domain；真实 DT domain 只通过 `team-config.yaml.domain.d3a_dt_domains` 覆盖，不直接改注册表。
 - 没有 `.DS_Store` 等无关元数据文件。
 
 ## 入区后的第一条 Vertical Slice
@@ -75,8 +80,8 @@ python3 tests/test_harness.py
 
 第一轮建议只做一条最小闭环：
 
-1. 填一个 Layer knowledge 文件。
-2. 填一个 DT Domain knowledge 文件。
+1. 在 `team-config.yaml.knowledge.layer_docs` 绑一个 Layer knowledge ref（正文留在企业本地）。
+2. 在 `team-config.yaml.domain.d3a_dt_domains` 填一个 DT domain 条目（含 `knowledge_ref`）。
 3. 替换一个 mock context provider 为真实 repo search。
 4. 如果需要 DT 设计，先通过 `idc-gc-sop-adapter -> idc-dt-design` 产出 DT design ref。
 5. 如果需要 DT 编写，再通过 `idc-gc-sop-adapter -> idc-dt-writer` 产出 DT change 和 RED/GREEN evidence refs。

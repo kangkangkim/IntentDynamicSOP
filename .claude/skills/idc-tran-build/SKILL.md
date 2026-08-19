@@ -47,4 +47,5 @@ tran_build_result:
 - D3A completion 要求 `status: PASS`。
 - 失败结果必须进入 `build-error-analyzer`。
 - 外部环境不能填写真实 command。
+- 真实 command 只通过 `team-config.yaml`（`bindings.tran_build` 或 `build.tran_build_command`）绑定，不从其他文件读取。
 - `tran_build` PASS 是 D3A DONE gate，不是 General Coding gate。

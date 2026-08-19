@@ -95,15 +95,17 @@ examples/mock-d3a-task/
 - TDD / build gate。
 - Evidence-based completion。
 
-其他团队必须替换：
+其他团队必须替换（接入团队全部通过 `team-config.yaml` 覆盖，不改共享文件）：
 
-- Domain layer registry。
-- Test domain registry。
-- Verification mapping。
-- Knowledge templates。
-- Build / run commands。
-- Repo context provider。
+- Test domain registry（`domain.d3a_dt_domains` / `general.test_domains` / `general.components` 非空时整体替换，不合并）。
+- Verification mapping（`knowledge.verification_mapping_ref`）。
+- Knowledge refs（registry 条目的 `knowledge_ref`、`knowledge.layer_docs`）。
+- Build / run commands（`bindings.*` / `build:`）。
+- Repo context provider（`knowledge.repo_context_provider_ref`）。
 - Mock example。
+
+Domain layer registry 只在自建 custom domain module 时替换（编辑自己的
+`domains/<team-domain>/` 文件）；D3A 的 7 层固定，不提供配置覆盖。
 
 ## 禁止事项
 

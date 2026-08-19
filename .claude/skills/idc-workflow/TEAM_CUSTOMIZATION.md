@@ -25,12 +25,21 @@ Domain Module
 
 Team Binding
   owned by the adopting team in a confidential location
-  owns real repository paths, commands, internal skill refs, evidence parsers,
-  pass/fail rules
+  owns team-config.yaml with real repository paths, commands, internal skill
+  refs, knowledge indexes, evidence parsers, pass/fail rules
 ```
 
 Default adoption rule: reuse IDC Core unchanged, add or adjust a Domain Module,
-then bind concrete execution through `team_adapter_binding_ref`.
+then bind concrete execution through `team-config.yaml`.
+
+Start by copying:
+
+```text
+team-config.yaml.template -> team-config.yaml
+```
+
+`team-config.yaml` is the fill-parameters entrypoint. Leave values null to use
+framework defaults, built-in fallbacks, or skip optional abilities.
 
 ## Skills vs Assets
 
@@ -53,14 +62,24 @@ into skills.
 
 ## What Teams Usually Change
 
-Change these files when adopting the workflow:
+An adopting team changes exactly one file:
+
+```text
+team-config.yaml
+```
+
+Shared registries (`dt-domains.yaml`, `general-components.yaml`,
+`general-test-domains.yaml`) are read-only defaults: a non-empty
+`domain.d3a_dt_domains` / `general.components` / `general.test_domains` in
+`team-config.yaml` replaces the corresponding registry wholesale (never merge).
+Do not edit shared registry files in the confidential copy.
+
+Only teams building a custom domain module (a harness-extension development
+task, not adoption) still change:
 
 ```text
 references/domains/template-domain/
 references/domains/registry.yaml
-references/registries/general-components.yaml
-references/registries/general-test-domains.yaml
-references/registries/team-adapter-bindings.template.yaml
 CONTEXT_ENGINEERING.md
 references/workflows/provider-selection-matrix.md
 references/workflows/repo-context-providers.md
@@ -69,18 +88,20 @@ assets/README.md
 
 For multi-team reuse, do not put concrete team paths or commands into the shared
 adapter registry. Keep `references/registries/skill-adapters.yaml` as the common
-eligibility table, and let each adopting team provide a confidential
-`team_adapter_binding_ref` based on:
+eligibility table, and let each adopting team provide confidential values in:
 
 ```text
-references/registries/team-adapter-bindings.template.yaml
+team-config.yaml
 ```
 
 The shared registry answers "which adapter may run here"; the team binding
 answers "where and how this team runs it".
 
+`references/registries/team-adapter-bindings.template.yaml` is retained as a
+compatibility reference for teams that already adopted `team_adapter_binding_ref`.
+
 If your company already has a Brainstorming capability, bind it as
-`idc-brainstorming` in the team binding and normalize its output to the IDC
+`idc-brainstorming` in `team-config.yaml` and normalize its output to the IDC
 draft-spec fields. Do not copy company brainstorming prompts into the shared
 harness.
 
@@ -97,15 +118,19 @@ implementation:
 
 ## What D3A Teams Fill In Confidentially
 
-Only inside the confidential environment, fill placeholders for:
+Only inside the confidential environment, fill real values in exactly one file:
 
 ```text
-references/registries/d3a-layers.yaml
-references/registries/dt-domains.yaml
-references/domains/d3a/module.yaml
-references/workflows/d3a-workflow.md
-references/registries/team-adapter-bindings.template.yaml
+team-config.yaml
 ```
+
+- Real DT domains and their knowledge refs go to `domain.d3a_dt_domains`
+  (non-empty replaces `dt-domains.yaml` wholesale, no merge).
+- Layer knowledge refs go to `knowledge.layer_docs`; the 7 layer names stay fixed.
+- Commands go to `bindings.*` / `build:`; knowledge indexes go to `knowledge:`.
+
+The repo registries (`d3a-layers.yaml`, `dt-domains.yaml`), `d3a/module.yaml`,
+and `d3a-workflow.md` stay untouched placeholders in the confidential copy.
 
 Keep the fixed D3A Coding Layer names:
 

@@ -10,6 +10,8 @@ domain_module:
       - 输入包含通用 feature、bugfix、refactor、documentation 需求。
     fallback: GENERAL_CODING
   registries:
+    # Both are repo defaults; non-empty team-config.yaml general.components /
+    # general.test_domains replace them wholesale (never merge).
     coding_layers: registries/general-components.yaml
     test_domains: registries/general-test-domains.yaml
   workflow:

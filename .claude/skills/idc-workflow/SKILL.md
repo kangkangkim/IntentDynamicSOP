@@ -174,6 +174,7 @@ references/schemas/alignment-pack.schema.yaml
 references/schemas/delegation-contract.schema.yaml
 references/schemas/skill-adapter.schema.yaml
 references/registries/skill-adapters.yaml
+../../../team-config.yaml.template
 references/schemas/runtime-state.schema.yaml
 assets/README.md
 .claude/skills/idc-intent-discovery/SKILL.md
@@ -248,6 +249,11 @@ references/workflows/knowledge-gate.md
 references/workflows/provider-selection-matrix.md
 references/workflows/repo-context-providers.md
 references/workflows/tdd-state-machine.md
+references/workflows/impl-review.md
+references/workflows/scan-and-fix-loop.md
+references/workflows/atomic-commit.md
+references/workflows/knowledge-archive.md
+references/workflows/transfer-to-test.md
 references/workflows/lane-completion.md
 references/schemas/delegation-contract.schema.yaml
 references/schemas/escalation-policy.schema.yaml
@@ -301,6 +307,8 @@ references/schemas/repo-context-provider.schema.yaml
 - Superpowers Adapter may provide the inner engineering loop after approval, but IDC owns Domain, Lane, Contract Gate, and Completion Gate.
 - GC SOP Adapter may reuse confidential enterprise atomic abilities after approval, but must go through Skill Adapter Router and cannot invent original repository skill details.
 - Skill Adapter Router must select GC / DT / Superpowers adapters from `references/registries/skill-adapters.yaml`; adapter names are not triggers by themselves.
+- Team-specific paths, commands, knowledge refs, and internal skill refs must be supplied through `team-config.yaml`; use `team-config.yaml.template` as the fill-parameters entrypoint.
+- Registries (`dt-domains.yaml`, `general-components.yaml`, `general-test-domains.yaml`) are repo read-only defaults; a non-empty team-config list (`domain.d3a_dt_domains`, `general.components`, `general.test_domains`) replaces the registry wholesale — never merge sources.
 - Original repository DT skills are represented as adapters: `idc-dt-design` for DT design, `idc-dt-writer` for DT writing, and `idc-gc-third-skill-placeholder` until the third skill is named in the confidential zone.
 - Use `upstream-superpowers-brainstorming` as the `raw_idea` baseline, then apply `idc-brainstorming-overlay` before handoff to `idc-intent-grilling`.
 - Skip Discovery Provider for TR3 unless the TR3 is too incomplete to identify behavior.

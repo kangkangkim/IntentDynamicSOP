@@ -10,6 +10,8 @@ domain_module:
     fallback: GENERAL_CODING
   registries:
     coding_layers: registries/d3a-layers.yaml
+    # test_domains is the repo default; a non-empty team-config.yaml
+    # domain.d3a_dt_domains replaces it wholesale (never merge).
     test_domains: registries/dt-domains.yaml
   workflow:
     entrypoint: workflows/d3a-workflow.md

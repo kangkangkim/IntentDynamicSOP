@@ -10,10 +10,12 @@ Adapter selection is registry-driven, not name-driven. The router reads:
 
 ```text
 references/registries/skill-adapters.yaml
+team-config.yaml
 ```
 
 and matches the current execution need against `capability_keys`,
-`allowed_stages`, `requires`, and `blocks_when`.
+`allowed_stages`, `requires`, `blocks_when`, and the team-filled binding values
+in `team-config.yaml`.
 
 ## Routing Order
 
@@ -43,9 +45,10 @@ domain_module_execution_skill
 ```text
 requested_capability_keys + selected_stage + approved contracts
   -> load adapter registry
+  -> load team-config.yaml
   -> filter rows by capability_keys
   -> filter rows by allowed_stages
-  -> verify required inputs / mapping refs
+  -> verify required inputs / mapping refs / team-config bindings
   -> reject rows with active blocks_when conditions
   -> choose the most specific executable adapter
   -> return NEEDS_ADAPTER_MAPPING if no row matches
@@ -77,6 +80,7 @@ provides the real skill name and contract.
 ## Rules
 
 - Adapter selection must come from `references/registries/skill-adapters.yaml`.
+- Concrete skill refs, commands, repo paths, knowledge refs, and evidence parsers must come from `team-config.yaml`.
 - If no registry row matches, return `NEEDS_ADAPTER_MAPPING`.
 - Do not use `gc` / `dt` / `superpowers` naming as a trigger by itself.
 - Dynamic scenarios may use GC atoms only after Human Alignment approval.

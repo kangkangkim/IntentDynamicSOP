@@ -20,10 +20,10 @@
 
 - [ ] 把仓库复制到企业保密环境。
 - [ ] 保留 IDC Core 不变：`/id-workflow`、router、lane、gate、schema、human views、adapter eligibility registry。
-- [ ] 在保密区新增团队自己的 confidential binding 文件，基于：
+- [ ] 在保密区复制根目录配置模板并填写真实参数：
 
 ```text
-.claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml
+team-config.yaml.template -> team-config.yaml
 ```
 
 - [ ] 不把真实路径、真实命令、内部 skill 名写进 public `skill-adapters.yaml`。
@@ -32,7 +32,7 @@
 
 ## 2. 填 D3A Domain Module
 
-目标：把你设计的固定 D3A 流程接上真实企业知识。
+目标：把你设计的固定 D3A 流程接上真实企业知识。真实值只进 `team-config.yaml`（DT domain 条目带 `knowledge_ref`、`knowledge.layer_docs` 绑 Layer 知识 ref），知识正文留在企业本地文档，不搬运进 harness。
 
 - [ ] 补 7 个 Coding Layer 的真实职责、边界、常见输入输出。
 - [ ] 补每个 Layer 的 API rules、coding patterns、forbidden patterns、common errors。
@@ -111,7 +111,7 @@
 - [ ] 抽出哪些是 IDC Core 共享能力。
 - [ ] 明确哪些是 D3A-only。
 - [ ] 为其他团队准备 `<team-domain>/module.yaml` 模板。
-- [ ] 为其他团队准备独立 `team_adapter_binding_ref`。
+- [ ] 为其他团队准备独立 `team-config.yaml`（老团队 `team_adapter_binding_ref` 仅作兼容）。
 - [ ] 保证不同团队不会互相污染真实路径、命令、skill 名。
 
 验收：新团队接入时只新增 domain module / team binding，不 fork IDC Core。

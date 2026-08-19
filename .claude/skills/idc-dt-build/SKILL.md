@@ -47,6 +47,7 @@ dt_build_result:
 ## Hard Rules
 
 - 在保密区绑定前，只能使用 `<ENTERPRISE_DT_BUILD_COMMAND>` 和 `<ENTERPRISE_DT_RUN_COMMAND>`。
+- 真实命令只通过 `team-config.yaml`（`bindings.dt_build` 或 `build:` section）绑定，不从其他文件读取。
 - 有真实 stdout / stderr 或等价工具输出时，必须保留为 evidence。
 - 不允许把模型自信转换成测试 evidence。
 - 失败结果必须进入 `build-error-analyzer` 或回到 targeted fix。

@@ -240,6 +240,9 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
     architecture = read_text("docs/architecture.md")
     README = read_text("README.md")
+    team_config = read_text("team-config.yaml.template")
+    quickstart = read_text("QUICKSTART.md")
+    gitignore = read_text(".gitignore")
 
     for fragment in [
         "DYNAMIC_SCENARIO",
@@ -356,6 +359,41 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     assert_true("多团队共享 `IDC Core`" in README, "README 必须声明 Core 可被多团队共享。")
     assert_true("Skill Adapter registry" in README, "README 必须记录 Skill Adapter registry。")
     assert_true("team-adapter-bindings.template.yaml" in README, "README 必须记录多团队 adapter binding 模板。")
+    assert_true("team-config.yaml.template" in README, "README 必须记录统一 team config 入口。")
+    assert_true("team-config.yaml" in gitignore, "真实 team-config.yaml 必须被 git ignore。")
+    for fragment in [
+        "team:",
+        "repo_path: <REPO_PATH>",
+        "skill_base_path: <SKILL_BASE_PATH>",
+        "domain:",
+        "use_d3a: true",
+        "d3a_dt_domains: []",
+        "general:",
+        "components: []",
+        "test_domains: []",
+        "bindings:",
+        "brainstorming:",
+        "dt_build:",
+        "tran_build:",
+        "knowledge:",
+        "layer_docs: {}",
+        "build:",
+        "lane:",
+        "default: lite",
+    ]:
+        assert_true(fragment in team_config, f"team-config.yaml.template 缺少字段：{fragment}")
+    for fragment in [
+        "Step 1: Copy The Harness",
+        "Step 2: Create Team Config",
+        "cp team-config.yaml.template team-config.yaml",
+        "Step 4: Select Domain",
+        "Step 5: Fill Skill Bindings",
+        "Step 6: Fill Knowledge Indexes",
+        "Step 7: Fill Build Commands",
+        "Step 8: Validate Harness",
+        "Step 9: Run One Vertical Slice",
+    ]:
+        assert_true(fragment in quickstart, f"QUICKSTART 缺少步骤：{fragment}")
     assert_true("D3A 是当前第一个自定义 active module" in README, "README 必须声明 D3A 是自定义 module。")
     assert_true("## 项目优势" in README, "README 必须总结项目优势。")
     assert_true("## V0 定位" in README, "README 必须明确 V0 定位。")
@@ -1691,8 +1729,12 @@ ALLOWED_LAYER_TRANSITIONS = {
     "SPEC_READY": {"TEST_PREPARING"},
     "TEST_PREPARING": {"RED_CONFIRMED"},
     "RED_CONFIRMED": {"IMPLEMENTING"},
-    "IMPLEMENTING": {"GREEN_CONFIRMED"},
-    "GREEN_CONFIRMED": {"LAYER_COMPLETE"},
+    "IMPLEMENTING": {"IMPL_REVIEW", "GREEN_CONFIRMED"},
+    "IMPL_REVIEW": {"GREEN_CONFIRMED", "DT_REVERIFY"},
+    "GREEN_CONFIRMED": {"SCAN_RUNNING", "ATOMIC_COMMIT_CREATED", "LAYER_COMPLETE"},
+    "SCAN_RUNNING": {"SCAN_GREEN", "DEFECT_FIX"},
+    "SCAN_GREEN": {"ATOMIC_COMMIT_CREATED", "LAYER_COMPLETE"},
+    "ATOMIC_COMMIT_CREATED": {"LAYER_COMPLETE"},
 }
 
 
@@ -1721,6 +1763,35 @@ def test_dummy_widget_state_query_unknown_id():
 def test_no_red_evidence_cannot_enter_green():
     assert_true(not can_transition("IMPLEMENTING", "GREEN_CONFIRMED", has_red_evidence=False), "没有 RED 却允许进入 GREEN。")
     assert_true(can_transition("IMPLEMENTING", "GREEN_CONFIRMED", has_red_evidence=True), "已有 RED 却阻塞 GREEN。")
+
+
+def test_tdd_extensions_are_team_config_driven():
+    tdd = read_text(".claude/skills/idc-workflow/references/workflows/tdd-state-machine.md")
+    id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
+    expected_workflows = {
+        "impl-review.md": "team-config.yaml.bindings.impl_review.skill_ref",
+        "scan-and-fix-loop.md": "team-config.yaml.bindings.static_scan.skill_ref",
+        "atomic-commit.md": "team-config.yaml.bindings.git_commit.skill_ref",
+        "knowledge-archive.md": "team-config.yaml.bindings.knowledge_archive.skill_ref",
+        "transfer-to-test.md": "team-config.yaml.bindings.system_test.skill_ref",
+    }
+    for file_name, binding_ref in expected_workflows.items():
+        path = f".claude/skills/idc-workflow/references/workflows/{file_name}"
+        text = read_text(path)
+        assert_true(binding_ref in text, f"{file_name} 必须通过 team-config 引用 skill。")
+        assert_true("Do not hard-code" in text or "does not hard-code" in text, f"{file_name} 必须禁止硬编码企业路径或命令。")
+        assert_true(f"references/workflows/{file_name}" in id_workflow, f"idc-workflow 必须加载 {file_name}。")
+    for state in [
+        "IMPL_REVIEW",
+        "SCAN_RUNNING",
+        "SCAN_GREEN",
+        "ATOMIC_COMMIT_CREATED",
+        "KNOWLEDGE_ARCHIVE",
+        "TRANSFER_TO_TEST",
+        "DEFECT_FIX",
+    ]:
+        assert_true(state in tdd, f"TDD 状态机缺少扩展状态：{state}")
+    assert_true("team-config.yaml" in tdd and "NEEDS_TEAM_CONFIG" in tdd, "TDD 扩展必须由 team-config 驱动。")
 
 
 def can_enter_all_layers_green(required_domains, green_domains):
@@ -1796,6 +1867,7 @@ def run():
         test_requirement_assessor_detects_missing_critical_fields,
         test_layer_context_packet_only_contains_selected_layer,
         test_no_red_evidence_cannot_enter_green,
+        test_tdd_extensions_are_team_config_driven,
         test_unpassed_dt_blocks_all_layers_green,
         test_tran_build_must_pass_before_done,
         test_placeholder_hygiene,

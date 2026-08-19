@@ -60,8 +60,8 @@ general_coding_result:
 
 - Do not write code before Human Alignment approval.
 - Do not use D3A Layer or DT Domain registries.
-- Choose general components only from `../idc-workflow/references/registries/general-components.yaml`.
-- Choose test domains only from `../idc-workflow/references/registries/general-test-domains.yaml`.
+- Choose general components only from the effective registry: repo default `../idc-workflow/references/registries/general-components.yaml`, or replaced wholesale by `team-config.yaml.general.components` when non-empty (never merge).
+- Choose test domains only from the effective registry: repo default `../idc-workflow/references/registries/general-test-domains.yaml`, or replaced wholesale by `team-config.yaml.general.test_domains` when non-empty (never merge).
 - Every execution unit code change must be `<= 500 LOC`.
 - Completion requires tool evidence, not model confidence.
 - Keep enterprise details as placeholders outside the confidential environment.

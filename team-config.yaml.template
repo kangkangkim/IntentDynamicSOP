@@ -1,0 +1,86 @@
+# team-config.yaml.template
+#
+# Copy this file to team-config.yaml in the confidential environment.
+# Fill only the parameters your team needs. Leave null / {} / [] to use IDC
+# defaults, built-in fallback behavior, or skip optional capabilities.
+# Registry lists (domain.d3a_dt_domains, general.components, general.test_domains)
+# replace the repo registries WHOLESALE when non-empty; they never merge sources.
+# Do not commit the filled team-config.yaml back to the shared harness.
+
+team:
+  id: <TEAM_ID>
+  repo_path: <REPO_PATH>
+  skill_base_path: <SKILL_BASE_PATH>
+
+domain:
+  use_d3a: true
+  custom_domain_id: null
+  # Non-empty replaces registries/dt-domains.yaml wholesale (no merge).
+  # Entries: {id: <DT_ID>, knowledge_ref: <ENTERPRISE_DT_KNOWLEDGE_REF>}
+  d3a_dt_domains: []
+
+general:
+  # Non-empty lists replace the repo registries wholesale (no merge).
+  # Entries: {id: <ID>, knowledge_ref: <ENTERPRISE_KNOWLEDGE_REF>}
+  components: []    # replaces registries/general-components.yaml
+  test_domains: []  # replaces registries/general-test-domains.yaml
+
+bindings:
+  coding_standard:
+    skill_ref: null
+  brainstorming:
+    skill_ref: null
+  asis_miner:
+    skill_ref: null
+  scene_challenge:
+    skill_ref: null
+  req_check:
+    skill_ref: null
+  tech_design:
+    skill_ref: null
+  phase_plan:
+    skill_ref: null
+  ut_design:
+    skill_ref: null
+  ut_generate:
+    skill_ref: null
+  impl_review:
+    skill_ref: null
+  tdd_workflow:
+    skill_ref: null
+  static_scan:
+    skill_ref: null
+  defect_fix:
+    skill_ref: null
+  git_commit:
+    skill_ref: null
+  knowledge_archive:
+    skill_ref: null
+  system_test:
+    skill_ref: null
+  dt_build:
+    skill_ref: null
+    build_command: null
+    run_command: null
+  tran_build:
+    skill_ref: null
+    command: null
+
+knowledge:
+  architecture_doc: null
+  feature_docs_root: null
+  layer_docs: {}
+  verification_mapping_ref: null
+  repo_context_provider_ref: null
+
+build:
+  dt_build_command: null
+  dt_run_command: null
+  tran_build_command: null
+  tran_build_pass_condition: null
+
+lane:
+  default: lite
+  fast_skip_steps: []
+  lite_skip_steps: []
+  complex_skip_steps: []

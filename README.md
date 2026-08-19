@@ -9,7 +9,7 @@ Intent Dynamic Code 是一个非敏感的企业 Coding 工作流骨架。
 IDC 的核心优势是把动态智能分流和企业固定 SOP 分开：外层可以根据输入动态判断，内层可以保护团队已经验证过的固定流程。
 
 - **公共框架可复用**：`IDC Core` 只保存 `/id-workflow` 薄入口、`idc-*` skills、router、lane、gate、schema、human views 和 adapter eligibility registry，不保存企业 secret。
-- **企业知识不外泄**：真实 D3A 知识、GC SOP 原子能力、repo path、构建命令、内部 skill 名都通过保密区 Team Binding / knowledge index 接入。
+- **企业知识不外泄**：真实 D3A 知识、GC SOP 原子能力、repo path、构建命令、内部 skill 名都通过保密区 `team-config.yaml` / knowledge index 接入。
 - **D3A 主流程固定**：D3A 是用户设计的固定 workflow。IDC 只在固定流程内选择 Layer、DT Domain、adapter、execution unit 和 evidence，不重排 D3A。
 - **Human Alignment 管检测**：Discovery 只做 intake / normalize / signal；Human Alignment Check 统一检测 readiness、critical gap、docs needed、approval validity 和 scope drift。
 - **GC SOP 按需调用**：GC SOP 是企业能力池，不是默认全家桶。只有 stage、capability key、contract、team binding 和 blocks_when 都匹配时才触发。
@@ -30,7 +30,8 @@ V0 已经固定：
 - V0 DT Domain placeholder：`TPRINT`、`FW`、`DPF`。
 - Human Alignment Check 作为 readiness / gap / approval gate。
 - Skill Adapter Router 作为 GC SOP、Superpowers、DT skill、build skill 的唯一接入门。
-- Team Binding 模板，用于在保密区绑定真实路径、命令、内部 skill 和 evidence parser。
+- `team-config.yaml.template` 入口配置，用于在保密区绑定真实路径、命令、内部 skill、knowledge index 和 evidence parser。
+- Team Binding 模板作为兼容参考；新团队优先填 `team-config.yaml`。
 - Mock D3A / General E2E examples 和 harness tests。
 
 V0 不做：
@@ -68,9 +69,9 @@ Domain Module
   团队扩展：<team-domain>/module.yaml、团队 layer/test registry、团队 workflow references
   用途：描述这个团队的领域怎么被 IDC 识别、规划和验证
 
-Team Binding
-  团队 DIY：team_adapter_binding_ref、repo path、build/run command、internal skill ref、evidence parser
-  用途：把公共 adapter 绑定到该团队自己的真实实现
+Team Config
+  团队 DIY：team-config.yaml、repo path、build/run command、internal skill ref、knowledge index、evidence parser
+  用途：把公共 adapter 和 workflow extension 绑定到该团队自己的真实实现
 ```
 
 Pre-alignment 也遵守同一规则：公司已有 Brainstorming 时通过 Team
@@ -82,8 +83,8 @@ Binding 复用；公司没有 Grill Me 时，直接使用本 GitHub 仓库提供
 
 1. 多团队共享 `IDC Core`，不要 fork 出不同 core。
 2. 新领域先新增 `Domain Module`，不要改 D3A 或 General 的核心规则。
-3. 真实路径、命令、内部 skill 只写在团队自己的 confidential binding。
-4. 团队确实需要差异化时，优先改 binding / domain module / provider rules，再考虑改 core。
+3. 真实路径、命令、内部 skill 和 knowledge index 只写在团队自己的 `team-config.yaml`。
+4. 团队确实需要差异化时，优先改 team config / domain module / provider rules，再考虑改 core。
 
 ## 顶层路径
 
@@ -132,7 +133,9 @@ README.md
 
 - `README.md`：看当前完成了什么、目录怎么组织、怎么验证。
 - `.claude/commands/id-workflow.md`：用户侧统一 `/id-workflow` 薄入口；不承载 workflow 逻辑。
+- `team-config.yaml.template`：保密区复制成 `team-config.yaml` 后填参即用的唯一入口配置。
 - `docs/architecture.md`：看整体架构和 D3A / General Coding 的关系。
+- `QUICKSTART.md`：看如何从复制仓库到第一条 vertical slice。
 - `docs/adoption-guide.md`：看其他团队如何复制 SOP。
 - `docs/atomic-skills.md`：看哪些能力已经拆成可复用原子 skill。
 - `docs/skillization-boundary.md`：看哪些内容应该 skill 化，哪些应该保持 reference。
@@ -212,8 +215,10 @@ D3A 场景的流程是固定的用户设计流程。IDC 不重新设计 D3A 主�
 - `.claude/skills/idc-workflow/references/workflows/`：Scenario Router、Input Adapter、Lane Resolver、Contract Gate、Human Alignment、Automated Closure Loop 等运行时规则。
 - `.claude/skills/idc-workflow/references/schemas/`：Alignment Pack、Escalation、Execution Unit、D3A Plan、General Plan 等机器 contract。
 - `.claude/skills/idc-workflow/references/domains/`：Domain Module registry、D3A module、General module、团队模板 module。
-- `.claude/skills/idc-workflow/references/registries/`：固定 D3A Layer、DT Domain、General placeholder taxonomy、Skill Adapter registry。
-- `.claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml`：多团队复用时的 confidential adapter binding 模板。
+- `.claude/skills/idc-workflow/references/registries/`：固定 D3A Layer、DT Domain、General placeholder taxonomy、Skill Adapter registry；企业接入方只读，通过 team-config 非空列表整体覆盖。
+- `.claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml`：保留的兼容 binding 模板（已接 `team_adapter_binding_ref` 的老团队用）。
+- `team-config.yaml.template`：推荐的新团队唯一入口配置，收敛 team id、repo path、skill bindings、knowledge refs、build commands、lane defaults，以及 DT domain / GC component / test domain 的整体替换列表。
+- `QUICKSTART.md`：9 步快速上手文档。
 - `.claude/skills/idc-workflow/references/lanes/`：fast / lite / complex 三种执行强度定义。
 - `.claude/skills/idc-workflow/references/human-views/`：给用户看的中文 Brainstorming / Clarification / Alignment / Completion / Escalation 模板。
 - `.claude/skills/idc-workflow/references/constraints/`：decision / planning / execution 三段式约束。

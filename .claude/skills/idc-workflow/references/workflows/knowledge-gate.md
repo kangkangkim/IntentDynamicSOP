@@ -37,6 +37,8 @@ workflows/provider-selection-matrix.md
 
 禁止一次性加载全部 D3A 知识。
 
+知识条目来源：生效 registry（仓库默认，或 team-config.yaml 非空时整体替换）条目的 `knowledge_ref`，加上 `team-config.yaml.knowledge.layer_docs` 的 Layer 知识 ref。禁止从两个来源各取一部分合并。
+
 ## Provider Interface
 
 ```yaml

@@ -43,6 +43,7 @@ NEED_TRIAGE
 - Router 不选择 module 内部 Layer。
 - Router 不选择 module 内部 test domain。
 - Router 不读取真实企业知识。
+- module.yaml 的 registries 指向仓库默认注册表；team-config.yaml 的 `domain.d3a_dt_domains` / `general.components` / `general.test_domains` 非空时整体替换对应注册表，空值回落仓库默认；不合并两个来源。
 - Module 内部规划由该 module 的 planner 负责。
 - D3A 是自定义 domain module，不是 Core 特例。
 - GC SOP atomic abilities 通过 Skill Adapter Router 复用，不写进 Domain Module Router。
