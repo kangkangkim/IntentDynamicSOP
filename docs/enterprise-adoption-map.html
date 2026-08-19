@@ -346,17 +346,18 @@
           <p>真实 DT build / run 命令、tran_build 命令和 PASS 条件。</p>
         </div>
         <div class="cell">
-          <span class="stage stage-violet">bindings + build:</span>
+          <span class="stage stage-violet">bindings 构建槽</span>
           <strong>命令与 PASS 条件绑定</strong>
           <ul>
             <li>dt_build.build_command / run_command</li>
-            <li>tran_build.command</li>
-            <li>build.tran_build_pass_condition</li>
+            <li>tran_build.command / pass_condition</li>
           </ul>
-          <pre class="example">build:
-  dt_build_command: make demo-dt-build
-  tran_build_command: make demo-tran-build
-  tran_build_pass_condition: exit 0 且日志含 BUILD PASS</pre>
+          <pre class="example">bindings:
+  dt_build:
+    build_command: make demo-dt-build
+  tran_build:
+    command: make demo-tran-build
+    pass_condition: exit 0 且日志含 BUILD PASS</pre>
           </ul>
         </div>
         <div class="cell">

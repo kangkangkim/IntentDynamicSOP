@@ -100,14 +100,16 @@ DT knowledge refs ride on the `domain.d3a_dt_domains` entries shown in Step 4;
 
 ## Step 7: Fill Build Commands
 
-Fill the commands and pass condition used by your team:
+Fill the commands and pass condition used by your team (they live next to the build bindings, not in a separate `build:` section):
 
 ```yaml
-build:
-  dt_build_command: <ENTERPRISE_DT_BUILD_COMMAND>
-  dt_run_command: <ENTERPRISE_DT_RUN_COMMAND>
-  tran_build_command: <ENTERPRISE_TRAN_BUILD_COMMAND>
-  tran_build_pass_condition: <ENTERPRISE_TRAN_BUILD_PASS_CONDITION_REF>
+bindings:
+  dt_build:
+    build_command: <ENTERPRISE_DT_BUILD_COMMAND>
+    run_command: <ENTERPRISE_DT_RUN_COMMAND>
+  tran_build:
+    command: <ENTERPRISE_TRAN_BUILD_COMMAND>
+    pass_condition: <ENTERPRISE_TRAN_BUILD_PASS_CONDITION_REF>
 ```
 
 ## Step 8: Validate Harness

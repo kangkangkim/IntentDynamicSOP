@@ -65,6 +65,7 @@ bindings:
   tran_build:
     skill_ref: null
     command: null
+    pass_condition: null
 
 knowledge:
   architecture_doc: null
@@ -72,12 +73,6 @@ knowledge:
   layer_docs: {}
   verification_mapping_ref: null
   repo_context_provider_ref: null
-
-build:
-  dt_build_command: null
-  dt_run_command: null
-  tran_build_command: null
-  tran_build_pass_condition: null
 
 lane:
   default: lite

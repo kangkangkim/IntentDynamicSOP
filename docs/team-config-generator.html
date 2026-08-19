@@ -328,29 +328,7 @@
         </details>
 
         <details>
-          <summary>5 构建命令 <code>build:</code></summary>
-          <div class="body">
-            <div class="field">
-              <label>DT 构建命令 <code>build.dt_build_command</code></label>
-              <input type="text" data-path="build.dt_build_command" placeholder="make demo-dt-build" />
-            </div>
-            <div class="field">
-              <label>DT 运行命令 <code>build.dt_run_command</code></label>
-              <input type="text" data-path="build.dt_run_command" placeholder="make demo-dt-run" />
-            </div>
-            <div class="field">
-              <label>tran_build 命令 <code>build.tran_build_command</code></label>
-              <input type="text" data-path="build.tran_build_command" placeholder="make demo-tran-build" />
-            </div>
-            <div class="field">
-              <label>PASS 条件 <code>build.tran_build_pass_condition</code></label>
-              <input type="text" data-path="build.tran_build_pass_condition" placeholder="exit 0 且日志含 BUILD PASS" />
-            </div>
-          </div>
-        </details>
-
-        <details>
-          <summary>6 流程偏好 <code>lane:</code></summary>
+          <summary>5 流程偏好 <code>lane:</code></summary>
           <div class="body">
             <div class="field">
               <label>默认 Lane <code>lane.default</code></label>
@@ -490,7 +468,7 @@
       var h = document.createElement("h3");
       h.textContent = "构建绑定";
       box.appendChild(h);
-      [["dt_build.skill_ref", "binding.dt_build.skill_ref"], ["dt_build.build_command", "binding.dt_build.build_command"], ["dt_build.run_command", "binding.dt_build.run_command"], ["tran_build.skill_ref", "binding.tran_build.skill_ref"], ["tran_build.command", "binding.tran_build.command"]].forEach(function (pair) {
+      [["dt_build.skill_ref", "binding.dt_build.skill_ref"], ["dt_build.build_command", "binding.dt_build.build_command"], ["dt_build.run_command", "binding.dt_build.run_command"], ["tran_build.skill_ref", "binding.tran_build.skill_ref"], ["tran_build.command", "binding.tran_build.command"], ["tran_build.pass_condition", "binding.tran_build.pass_condition"]].forEach(function (pair) {
         var item = document.createElement("div");
         item.className = "binding-item";
         var k = document.createElement("span");
@@ -582,6 +560,7 @@
       L.push("  tran_build:");
       L.push("    skill_ref: " + yv(plain(d["binding.tran_build.skill_ref"])));
       L.push("    command: " + yv(plain(d["binding.tran_build.command"])));
+      L.push("    pass_condition: " + yv(plain(d["binding.tran_build.pass_condition"])));
       L.push("");
       L.push("knowledge:");
       L.push("  architecture_doc: " + yv(plain(d["knowledge.architecture_doc"])));
@@ -593,12 +572,6 @@
       } else { L.push("  layer_docs: {}"); }
       L.push("  verification_mapping_ref: " + yv(plain(d["knowledge.verification_mapping_ref"])));
       L.push("  repo_context_provider_ref: " + yv(plain(d["knowledge.repo_context_provider_ref"])));
-      L.push("");
-      L.push("build:");
-      L.push("  dt_build_command: " + yv(plain(d["build.dt_build_command"])));
-      L.push("  dt_run_command: " + yv(plain(d["build.dt_run_command"])));
-      L.push("  tran_build_command: " + yv(plain(d["build.tran_build_command"])));
-      L.push("  tran_build_pass_condition: " + yv(plain(d["build.tran_build_pass_condition"])));
       L.push("");
       L.push("lane:");
       L.push("  default: " + (d["lane.default"] || "lite"));
