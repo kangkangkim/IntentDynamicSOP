@@ -413,7 +413,7 @@
     function rowInputs(listEl) {
       return Array.prototype.map.call(
         listEl.querySelectorAll(".row"),
-        function (r) { return Array.prototype.map.call(r.querySelectorAll("input"), function (i) { return i.value.trim(); }); }
+        function (r) { return Array.prototype.map.call(r.querySelectorAll("input, select"), function (i) { return i.value.trim(); }); }
       );
     }
 
@@ -519,13 +519,7 @@
     function collect() {
       var data = {};
       Array.prototype.forEach.call(document.querySelectorAll("[data-path]"), function (inp) {
-        var path = inp.getAttribute("data-path").split(".");
-        var node = data;
-        for (var i = 0; i < path.length - 1; i++) {
-          node[path[i]] = node[path[i]] || {};
-          node = node[path[i]];
-        }
-        node[path[path.length - 1]] = inp.value.trim();
+        data[inp.getAttribute("data-path")] = inp.value.trim();
       });
       data.use3a = el("d_use3a").checked;
       data.dt = rowInputs(el("dtlist"));
