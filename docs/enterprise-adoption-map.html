@@ -173,6 +173,18 @@
 
     .trigger b { color: var(--ink); }
 
+    pre.example {
+      margin: 8px 0 0;
+      padding: 8px 10px;
+      border-left: 3px solid var(--violet);
+      background: #fbfcfe;
+      border-radius: 0 6px 6px 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11.5px;
+      color: var(--ink);
+      white-space: pre-wrap;
+    }
+
     .phases {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -226,7 +238,7 @@
     <header class="page-head">
       <div>
         <h1>IDC Enterprise Adoption and Matching Map</h1>
-        <p class="subtitle">企业接入不改 harness：左列是企业已有资产，中列是 <code>team-config.yaml</code> 里对应的插槽，右列是 harness 里谁消费它、怎么生效。配置非空即整体替换仓库默认注册表（不合并）；没填的能力不会被猜，而是显式失败。</p>
+        <p class="subtitle">企业接入不改 harness：左列是企业已有资产，中列是 <code>team-config.yaml</code> 里对应的插槽，右列是 harness 里谁消费它、怎么生效。配置非空即整体替换仓库默认注册表（不合并）；没填的能力不会被猜，而是显式失败。各示例均为 demo 虚拟值，仅示意格式，不代表任何企业真实信息。</p>
       </div>
       <div class="legend" aria-label="legend">
         <span><i class="dot amber"></i>企业已有资产</span>
@@ -254,6 +266,11 @@
             <li>repo_path: &lt;REPO_PATH&gt;</li>
             <li>skill_base_path: &lt;SKILL_BASE_PATH&gt;</li>
           </ul>
+          <pre class="example">team:
+  id: demo-team
+  repo_path: /repos/demo-vehicle
+  skill_base_path: /repos/demo-skills</pre>
+          </ul>
         </div>
         <div class="cell">
           <span class="stage stage-blue">SKILL.md 首读映射</span>
@@ -276,6 +293,12 @@
             <li>条目形如 {id, knowledge_ref}</li>
             <li>非空列表整体替换仓库注册表</li>
             <li>留 [] 用仓库 V0 placeholder</li>
+          </ul>
+          <pre class="example">domain:
+  d3a_dt_domains:
+    - id: DT_DEMO
+      knowledge_ref: docs/dt/DT_DEMO.md
+# 填了这 1 条，TPRINT/FW/DPF 整个被替换</pre>
           </ul>
         </div>
         <div class="cell">
@@ -300,6 +323,13 @@
             <li>dt_build / tran_build 也各有 skill_ref</li>
             <li>没有的能力留 null</li>
           </ul>
+          <pre class="example">bindings:
+  impl_review:
+    skill_ref: /repos/demo-skills/impl-review.md
+  brainstorming:
+    skill_ref: .claude/skills/idc-brainstorming/SKILL.md
+# skill_ref 是独立路径，不会自动拼在 skill_base_path 后</pre>
+          </ul>
         </div>
         <div class="cell">
           <span class="stage stage-blue">Skill Adapter Router</span>
@@ -322,6 +352,11 @@
             <li>dt_build.build_command / run_command</li>
             <li>tran_build.command</li>
             <li>build.tran_build_pass_condition</li>
+          </ul>
+          <pre class="example">build:
+  dt_build_command: make demo-dt-build
+  tran_build_command: make demo-tran-build
+  tran_build_pass_condition: exit 0 且日志含 BUILD PASS</pre>
           </ul>
         </div>
         <div class="cell">
@@ -346,6 +381,11 @@
             <li>layer_docs: {LAYER: ref}</li>
             <li>verification_mapping_ref / repo_context_provider_ref</li>
           </ul>
+          <pre class="example">knowledge:
+  layer_docs:
+    TFE: /repos/demo-docs/layers/TFE.md
+  verification_mapping_ref: /repos/demo-docs/verify-map.md</pre>
+          </ul>
         </div>
         <div class="cell">
           <span class="stage stage-blue">Layer Context Packet</span>
@@ -368,6 +408,10 @@
             <li>default: fast / lite / complex</li>
             <li>fast_skip_steps / lite_skip_steps / complex_skip_steps</li>
           </ul>
+          <pre class="example">lane:
+  default: complex          # D3A 重流程团队
+  lite_skip_steps: [static_scan]</pre>
+          </ul>
         </div>
         <div class="cell">
           <span class="stage stage-blue">Lane Resolver</span>
@@ -388,6 +432,7 @@
           <li><code>python3 tests/test_harness.py</code> 全绿</li>
           <li>确认无企业 secret 混入</li>
         </ol>
+        <div class="trigger"><b>例：</b>输出 <code>45 个测试通过</code> 才算过。</div>
       </article>
       <article class="phase">
         <h2>1 填一个文件</h2>
@@ -396,6 +441,7 @@
           <li>按上表左列资产对号填中列插槽</li>
           <li>再跑 harness：填错的就地校验变红</li>
         </ol>
+        <div class="trigger"><b>例：</b>最小可用 = team 三行 + use_d3a + 一个 dt_build_command。</div>
       </article>
       <article class="phase">
         <h2>2 过 Readiness Gate</h2>
@@ -404,6 +450,7 @@
           <li>看 BLOCKED 清单还缺哪个 binding</li>
           <li>gate 只证明能启动，不替代 evidence</li>
         </ol>
+        <div class="trigger"><b>例：</b>BLOCKED 项 <code>tran_build_command 未绑定</code> -> 回第 1 步补。</div>
       </article>
       <article class="phase">
         <h2>3 第一条 vertical slice</h2>
@@ -412,6 +459,7 @@
           <li>freeze API Contract -> RED -> GREEN</li>
           <li><code>tran_build</code> PASS -> Completion Summary</li>
         </ol>
+        <div class="trigger"><b>例：</b>TFE 层 × DT_DEMO：RED ref -> GREEN ref -> tran_build PASS。</div>
       </article>
       <article class="phase">
         <h2>4 扩展与复用</h2>
@@ -420,6 +468,7 @@
           <li>第二团队：另一个 team-config.yaml</li>
           <li>非 D3A 领域：复制 template-domain/ 模块</li>
         </ol>
+        <div class="trigger"><b>例：</b>第二团队只改 team.id / repo_path，skill 池共用。</div>
       </article>
     </section>
 
