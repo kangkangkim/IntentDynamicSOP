@@ -11,6 +11,20 @@
 不要改 Core
 ```
 
+## Core 和 Module 的边界
+
+IDC Core 负责：Scenario Router、Requirement Assessor、Contract-first 规则、
+Knowledge Gate、TDD State Machine、Verification Gate、Evidence-based
+completion。
+
+Domain Module 负责：自己的 route id、coding layer registry、test domain
+registry、planner schema、workflow entrypoint、knowledge root、agents /
+skills、completion gate。
+
+D3A 不是 Core 的一部分，而是第一个 active Domain Module
+（`references/domains/d3a/module.yaml`），引用固定 layer registry、DT
+registry、workflow 与知识目录。
+
 ## 适合使用的团队
 
 适合：
@@ -81,13 +95,33 @@ domain_modules:
 - context loading boundary。
 - 第一条 mock vertical slice。
 
+## 复制原则
+
+复用：Core workflow 思想、Contract-first、Knowledge Gate、TDD / build gate、
+Evidence-based completion。
+
+必须替换（接入团队全部通过 `team-config.yaml` 覆盖，不改共享文件）：
+
+- Test domain registry（`domain.d3a_dt_domains` / `general.test_domains` / `general.components` 非空时整体替换，不合并）。
+- Verification mapping（`knowledge.verification_mapping_ref`）。
+- Knowledge refs（registry 条目的 `knowledge_ref`、`knowledge.layer_docs`）。
+- Build / run commands（`bindings.*` / `build:`）。
+- Repo context provider（`knowledge.repo_context_provider_ref`）。
+- Mock example。
+
+Domain layer registry 只在自建 custom domain module 时替换（编辑自己的
+`domains/<team-domain>/` 文件）；D3A 的 7 层固定，不提供配置覆盖。
+
 ## 不要改
 
 - 不要改 D3A module。
 - 不要把团队领域写进 IDC Core。
+- 不要让 Scenario Router 知道某个 module 的内部 layer。
+- 不要把 test domain 和 coding layer 简化成一对一。
 - 不要绕过 Human Alignment。
 - 不要绕过 Lane Completion。
 - 不要绕过 Evidence-based Completion。
+- 不要绕过 API Contract 与 RED / GREEN evidence。
 
 ## 第一周落地建议
 

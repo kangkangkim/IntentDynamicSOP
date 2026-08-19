@@ -382,3 +382,99 @@ V0 只定义接口和模板，不接真实企业 CodeGraph / Wiki。
 - 真实 build / run 命令。
 - 真实 repo context provider。
 - 真实 build error 到 Layer 的归因规则。
+
+## 架构图
+
+### 总架构
+
+```mermaid
+flowchart TD
+    A["用户任务 / Intent"] --> B["IDC Core"]
+
+    B --> C["Scenario Router<br/>判断进入 Domain Module 还是 General Coding"]
+    C --> D["Domain Module Router<br/>读取 .claude/skills/idc-workflow/references/domains/registry.yaml"]
+    C --> G["General Coding<br/>未来动态编排"]
+
+    D --> E["D3A Module<br/>.claude/skills/idc-workflow/references/domains/d3a/module.yaml"]
+    D --> F["其他团队 Module<br/>domains/&lt;team-domain&gt;/module.yaml"]
+
+    E --> H["Lane Resolver<br/>fast / lite / complex"]
+    F --> H
+    G --> H
+
+    H --> C0["Contract Gate<br/>根据 Domain + Lane 决定 contract set"]
+    C0 --> I["Requirement Assessor"]
+    I --> A0["Alignment Pack"]
+    A0 --> A1["Human Alignment<br/>前置一次性确认"]
+    A1 --> J["Automated Closure Loop"]
+    J --> K["Specification / Contracts"]
+    K --> L["Domain Planner<br/>Layer / Test Domain / DAG / Mapping"]
+    L --> M["Knowledge Gate"]
+    M --> N["Layer Context Packet"]
+    N --> O["Agents / Skills / Scripts"]
+    O --> P["RED / GREEN Evidence"]
+    P --> Q["Final Build Gate"]
+    Q --> R["DONE / Fix / Re-plan"]
+    R --> S["Escalation Policy<br/>异常才回人"]
+    S --> A1
+```
+
+### D3A 作为一个 Module
+
+```mermaid
+flowchart TD
+    A[".claude/skills/idc-workflow/references/domains/d3a/module.yaml"] --> B["Route<br/>D3A_CODING"]
+    A --> C["Registries"]
+    A --> D["Workflow"]
+    A --> E["Knowledge"]
+    A --> F["Execution"]
+    A --> G["Examples"]
+
+    C --> C1[".claude/skills/idc-workflow/references/registries/d3a-layers.yaml<br/>TRAN_CFG / DO / VISP_ADP / TFC_TFI / TFE / ADP / DRV"]
+    C --> C2[".claude/skills/idc-workflow/references/registries/dt-domains.yaml<br/>TPRINT / FW / DPF"]
+
+    D --> D1[".claude/skills/idc-workflow/references/workflows/d3a-workflow.md"]
+    D --> D2["schemas/d3a-plan.schema.yaml"]
+    D --> D3["workflows/tdd-state-machine.md"]
+
+    E --> E1[".claude/skills/idc-workflow/references/knowledge/d3a/layers/"]
+    E --> E2[".claude/skills/idc-workflow/references/knowledge/d3a/dt/"]
+
+    F --> F1[".claude/agents/d3a-layer-coder.md"]
+    F --> F2[".claude/agents/dt-test-writer.md"]
+    F --> F3[".claude/agents/build-error-analyzer.md"]
+    F --> F4[".claude/skills/idc-d3a-coding/"]
+    F --> F5[".claude/skills/idc-dt-build/"]
+    F --> F6[".claude/skills/idc-tran-build/"]
+
+    G --> G1["examples/mock-d3a-task/"]
+```
+
+### 其他团队复制方式
+
+```mermaid
+flowchart LR
+    A["IDC Core<br/>不改"] --> B[".claude/skills/idc-workflow/references/domains/registry.yaml<br/>新增一条 module"]
+    B --> C["domains/&lt;team-domain&gt;/module.yaml"]
+    C --> D["layers.yaml"]
+    C --> E["test-domains.yaml"]
+    C --> F["workflow.md"]
+    C --> G["knowledge/"]
+    C --> H["agents / skills"]
+    C --> I["examples/mock-task"]
+```
+
+## 命名约定
+
+本项目采用"中文说明 + 稳定英文标识"：人看的解释用中文；被脚本、agent、
+schema 稳定读取的内容保持英文，避免字段不一致、测试失效或跨工具传递失败。
+
+保持英文的四类内容：
+
+- 文件 / 目录名（`docs/`、`schemas/`、`.claude/skills/` 等）。
+- YAML / Python 字段名（`api_contract`、`required_dt_domains` 等机器接口 key）。
+- 固定架构标识（`TRAN_CFG`…`DRV`、`TPRINT` / `FW` / `DPF` registry id）。
+- 状态与 evidence 枚举（`RED` / `GREEN` / `PASS` / `DONE` 等 gate 使用的值）。
+
+要改 contract 或测试时再看 `schemas/` 与 `tests/test_harness.py`；只理解
+项目看本文档与 `docs/confidential-migration-checklist.md` 即可。

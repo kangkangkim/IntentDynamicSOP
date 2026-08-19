@@ -78,6 +78,12 @@ python3 tests/test_harness.py
 .claude/skills/idc-workflow/references/schemas/vertical-slice-readiness.schema.yaml
 ```
 
+完整前端流程：通过 `/id-workflow` 输入真实需求或 TR3，走 Discovery →
+Human Alignment（有 critical gap 先走 Grill Me）→ 用户 approve → freeze
+API Contract → Layer Context Packet → RED → GREEN → `tran_build` →
+Completion Summary。绑定哪些任务走 `dt-design`、哪些走 `dt-writer`、哪些
+只需要 DT build / tran build，由 task contract 决定，不靠猜。
+
 第一轮建议只做一条最小闭环：
 
 1. 在 `team-config.yaml.knowledge.layer_docs` 绑一个 Layer knowledge ref（正文留在企业本地）。
@@ -107,3 +113,22 @@ Readiness Gate 只能证明真实绑定已经足够启动执行，不能替代�
 - 不要跳过 RED evidence。
 - 不要把 DT GREEN 当成任务完成。
 - 不要在 `tran_build` 未 PASS 时标记 DONE。
+
+## 打通真实 Repo Context
+
+- 配置真实 repo path 与 grep / CodeGraph / Wiki / repository search provider。
+- 定义有 anchor 时用什么 provider、无 anchor 但有领域语义时用什么 provider。
+- 定义 context packet 最大范围，Layer Context Packet 一次只包含当前 D3A Layer。
+- 验收：给一个真实任务能生成 bounded context packet，而不是靠模型猜代码结构。
+
+## 失败时补闭环
+
+- DT build / `tran_build` 失败时保留 failure evidence ref，交给 `build-error-analyzer` 生成 targeted fix task。
+- 判断失败属于哪个 Layer / DT Domain / adapter binding，只加载相关 Layer Context Packet。
+- 修复后重新跑 RED / GREEN / `tran_build`；连续失败触发 Escalation，不靠模型硬猜。
+
+## 扩展到多团队复用
+
+其他团队复用 IDC Core、只换自己的 `team-config.yaml`（自定义 domain 走
+`template-domain/`），操作细节见 `.claude/skills/idc-workflow/TEAM_CUSTOMIZATION.md`
+与 `docs/adoption-guide.md`。

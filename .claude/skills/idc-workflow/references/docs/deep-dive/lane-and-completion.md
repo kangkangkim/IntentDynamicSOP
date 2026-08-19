@@ -8,6 +8,9 @@ lite
 complex
 ```
 
+IDC V0 只允许这三种 Lane。不要把 `known-domain`、`d3a`、`gc`、
+`dynamic`、`unknown` 这类 domain / scenario / adapter 概念写成 Lane。
+
 所有 Lane 都必须自闭环：
 
 ```text
