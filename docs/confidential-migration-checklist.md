@@ -2,6 +2,8 @@
 
 这份 checklist 用来判断：当前非敏感 harness 能不能进入公司保密区，以及进入后第一步应该做什么。
 
+企业已有资产与 `team-config.yaml` 插槽的逐项匹配关系，见图 `docs/enterprise-adoption-map.html`。
+
 ## 外部环境保持通用的内容
 
 这些内容不应该绑定真实企业信息：

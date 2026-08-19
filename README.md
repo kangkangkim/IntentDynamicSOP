@@ -102,7 +102,8 @@ python3 tests/test_harness.py                   # 全绿即生效（含填好配
 | `docs/agent-team-architecture.md` | Main agent 只做 planning / delegation 的 agent team 架构。 |
 | `docs/source-attribution.md` | 公开方法论来源和 license attribution。 |
 | `docs/deep-dive/` | Lane、约束加载、repo context、TR3 输入的专题深入。 |
-| `docs/*.html`（4 个） | 输入分流、Discovery 触发、D3A/General 双路径、上下文运行视角的可视化。 |
+| `docs/enterprise-adoption-map.html` | 企业资产 ↔ team-config 插槽逐项匹配图 + 入区五步。 |
+| `docs/*.html`（其余 4 个） | 输入分流、Discovery 触发、D3A/General 双路径、上下文运行视角的可视化。 |
 | `.claude/skills/idc-workflow/TEAM_CUSTOMIZATION.md` | 团队接入时优先看的定制指南。 |
 | `.claude/skills/idc-workflow/CONTEXT_ENGINEERING.md` | 渐进式上下文加载策略。 |
 
