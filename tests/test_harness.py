@@ -1794,6 +1794,67 @@ def test_tdd_extensions_are_team_config_driven():
     assert_true("team-config.yaml" in tdd and "NEEDS_TEAM_CONFIG" in tdd, "TDD 扩展必须由 team-config 驱动。")
 
 
+def test_registries_are_team_config_overridable():
+    template = read_text("team-config.yaml.template")
+    assert_true("d3a_dt_domains: []" in template, "team-config 模板必须保留 domain.d3a_dt_domains 覆盖键。")
+    assert_true("components: []" in template and "test_domains: []" in template, "team-config 模板必须有 general.components / general.test_domains 覆盖键。")
+    assert_true("dt_docs" not in template, "knowledge.dt_docs 已并入 domain.d3a_dt_domains 条目，不得复活。")
+    assert_true("d3a_layers" not in template, "D3A Layer 架构固定，不提供配置覆盖键。")
+    chain_files = [
+        ".claude/skills/idc-workflow/references/workflows/domain-module-router.md",
+        ".claude/skills/idc-workflow/references/workflows/knowledge-gate.md",
+        ".claude/skills/idc-workflow/references/workflows/general-coding.md",
+        ".claude/skills/idc-general-coding/SKILL.md",
+        ".claude/skills/idc-d3a-coding/SKILL.md",
+        ".claude/skills/idc-dt-build/SKILL.md",
+        ".claude/skills/idc-tran-build/SKILL.md",
+        ".claude/skills/idc-workflow/SKILL.md",
+    ]
+    for path in chain_files:
+        assert_true("team-config.yaml" in read_text(path), f"{path} 必须声明 team-config 覆盖规则。")
+    router = read_text(chain_files[0])
+    id_workflow = read_text(chain_files[-1])
+    assert_true("整体替换" in router and "不合并" in router, "Domain Module Router 必须声明整体替换、不合并。")
+    assert_true("never merge sources" in id_workflow, "idc-workflow 必须声明 registry 覆盖不合并来源。")
+
+
+def test_filled_team_config_when_present():
+    config_file = ROOT / "team-config.yaml"
+    if not config_file.exists():
+        return
+    text = config_file.read_text(encoding="utf-8")
+    for leftover in ["<TEAM_ID>", "<REPO_PATH>", "<SKILL_BASE_PATH>", "<DT_ID>", "<ENTERPRISE_"]:
+        assert_true(leftover not in text, f"team-config.yaml 仍有未填占位符：{leftover}")
+    team_block = text.split("domain:")[0]
+    for key in ["id:", "repo_path:", "skill_base_path:"]:
+        line = next((l for l in team_block.splitlines() if l.strip().startswith(key)), "")
+        value = line.split(":", 1)[1].strip() if line else ""
+        assert_true(value and value != "null", f"team.{key[:-1]} 必须填写真实值。")
+    base = re.search(r"skill_base_path:\s*(\S+)", text)
+    if base:
+        base_path = Path(base.group(1)) if base.group(1).startswith("/") else ROOT / base.group(1)
+        assert_true(base_path.exists(), "team.skill_base_path 指向的目录不存在。")
+    for match in re.finditer(r"skill_ref:\s*(\S+)", text):
+        ref = match.group(1)
+        if ref == "null":
+            continue
+        resolved = Path(ref) if ref.startswith("/") else ROOT / ref
+        assert_true(resolved.exists(), f"skill_ref 指向的文件不存在：{ref}")
+    assert_true(
+        ("use_d3a: true" in text and "custom_domain_id: null" in text)
+        or ("use_d3a: false" in text and re.search(r"custom_domain_id:\s*\S+", text) and "custom_domain_id: null" not in text),
+        "domain 设置必须二选一：use_d3a=true 且 custom_domain_id=null，或 use_d3a=false 且填写 custom_domain_id。",
+    )
+    for match in re.finditer(r"-\s+id:\s*(\S+)\s*\n\s+knowledge_ref:\s*(\S+)", text):
+        domain_id, knowledge_ref = match.group(1), match.group(2)
+        assert_true(not knowledge_ref.startswith("<"), f"{domain_id} 的 knowledge_ref 未填写真实值。")
+    for key in ["build_command", "run_command", "command:", "tran_build_command"]:
+        for match in re.finditer(rf"{key}\s*(\S+)", text):
+            value = match.group(1)
+            if value != "null":
+                assert_true(not value.startswith("<"), f"{key} 不能保留占位符（当前值以 < 开头）。")
+
+
 def can_enter_all_layers_green(required_domains, green_domains):
     return set(required_domains) <= set(green_domains)
 
@@ -1868,6 +1929,8 @@ def run():
         test_layer_context_packet_only_contains_selected_layer,
         test_no_red_evidence_cannot_enter_green,
         test_tdd_extensions_are_team_config_driven,
+        test_registries_are_team_config_overridable,
+        test_filled_team_config_when_present,
         test_unpassed_dt_blocks_all_layers_green,
         test_tran_build_must_pass_before_done,
         test_placeholder_hygiene,

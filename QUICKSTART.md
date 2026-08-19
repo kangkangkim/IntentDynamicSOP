@@ -118,7 +118,10 @@ Run:
 python3 tests/test_harness.py
 ```
 
-All tests should pass before the first confidential run.
+All tests should pass before the first confidential run. In the confidential
+copy the same command also validates the filled `team-config.yaml`: unfilled
+placeholders, non-existent `skill_ref` targets, inconsistent `domain` settings,
+and leftover placeholder commands are reported before the first run.
 
 ## Step 9: Run One Vertical Slice
 

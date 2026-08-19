@@ -174,7 +174,7 @@ references/schemas/alignment-pack.schema.yaml
 references/schemas/delegation-contract.schema.yaml
 references/schemas/skill-adapter.schema.yaml
 references/registries/skill-adapters.yaml
-../../../team-config.yaml.template
+../../../team-config.yaml (filled copy; in the public repo fall back to ../../../team-config.yaml.template)
 references/schemas/runtime-state.schema.yaml
 assets/README.md
 .claude/skills/idc-intent-discovery/SKILL.md
