@@ -70,11 +70,9 @@ bindings:
   brainstorming:
     skill_ref: <ENTERPRISE_BRAINSTORMING_SKILL_REF>
   dt_build:
-    skill_ref: <ENTERPRISE_DT_BUILD_SKILL_REF>
     build_command: <ENTERPRISE_DT_BUILD_COMMAND>
     run_command: <ENTERPRISE_DT_RUN_COMMAND>
   tran_build:
-    skill_ref: <ENTERPRISE_TRAN_BUILD_SKILL_REF>
     command: <ENTERPRISE_TRAN_BUILD_COMMAND>
 ```
 

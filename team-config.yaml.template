@@ -58,16 +58,13 @@ bindings:
     skill_ref: null
   system_test:
     skill_ref: null
-  # Build slots: the harness build adapters own the capability; bind the
-  # enterprise build system here. skill_ref only if the team wraps builds in
-  # its own skill; normally the command IS the binding and pass_condition
-  # judges its output.
+  # Build slots bind the enterprise build system by command only. The skill
+  # identity is fixed in the adapter registry (idc-dt-build / idc-tran-build),
+  # so these slots carry no skill_ref.
   dt_build:
-    skill_ref: null
     build_command: null
     run_command: null
   tran_build:
-    skill_ref: null
     command: null
     pass_condition: null
 

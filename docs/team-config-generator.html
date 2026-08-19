@@ -296,7 +296,7 @@
           <summary>3 Skill 绑定 <code>bindings.*</code>（18 个槽位，没有的留空）</summary>
           <div class="body">
             <div id="bindingArea"></div>
-            <p class="hint">skill_ref 支持绝对路径或仓库相对路径（如 <code>.claude/skills/idc-brainstorming/SKILL.md</code>）。构建槽例外：能力本体是 harness 自带 skill，命令本身就是绑定，skill_ref 仅当企业把构建包装成自己的 skill 时才填。</p>
+            <p class="hint">skill_ref 支持绝对路径或仓库相对路径（如 <code>.claude/skills/idc-brainstorming/SKILL.md</code>）。构建槽没有 skill_ref：能力本体是 harness 自带 skill，绑定物就是命令本身。</p>
           </div>
         </details>
 
@@ -468,7 +468,7 @@
       var h = document.createElement("h3");
       h.textContent = "构建绑定";
       box.appendChild(h);
-      [["dt_build.skill_ref", "binding.dt_build.skill_ref"], ["dt_build.build_command", "binding.dt_build.build_command"], ["dt_build.run_command", "binding.dt_build.run_command"], ["tran_build.skill_ref", "binding.tran_build.skill_ref"], ["tran_build.command", "binding.tran_build.command"], ["tran_build.pass_condition", "binding.tran_build.pass_condition"]].forEach(function (pair) {
+      [["dt_build.build_command", "binding.dt_build.build_command"], ["dt_build.run_command", "binding.dt_build.run_command"], ["tran_build.command", "binding.tran_build.command"], ["tran_build.pass_condition", "binding.tran_build.pass_condition"]].forEach(function (pair) {
         var item = document.createElement("div");
         item.className = "binding-item";
         var k = document.createElement("span");
@@ -554,11 +554,9 @@
         L.push("    skill_ref: " + yv(plain(d["binding." + key])));
       });
       L.push("  dt_build:");
-      L.push("    skill_ref: " + yv(plain(d["binding.dt_build.skill_ref"])));
       L.push("    build_command: " + yv(plain(d["binding.dt_build.build_command"])));
       L.push("    run_command: " + yv(plain(d["binding.dt_build.run_command"])));
       L.push("  tran_build:");
-      L.push("    skill_ref: " + yv(plain(d["binding.tran_build.skill_ref"])));
       L.push("    command: " + yv(plain(d["binding.tran_build.command"])));
       L.push("    pass_condition: " + yv(plain(d["binding.tran_build.pass_condition"])));
       L.push("");
