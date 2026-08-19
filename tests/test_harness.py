@@ -627,6 +627,10 @@ def test_repo_rules_are_canonical_in_claude_md():
         "# Intent-Driven Coding Harness",
         "仓库内不得包含企业 secret",
         "用户侧统一入口是 `.claude/commands/id-workflow.md`",
+        "这个 command 只是薄入口 alias",
+        "所有可执行 IDC 能力都必须沉淀为 `.claude/skills/idc-*/SKILL.md`",
+        "名字必须以 `idc-` 开头",
+        "先经过 `idc-workflow` skill",
         "Scenario Router 先动态分流",
         "D3A Layer Registry",
         "DT Domain Registry",
@@ -1040,6 +1044,8 @@ def test_id_workflow_skill_exists_and_has_triggers():
     assert_true(command_path.exists(), "缺少 /id-workflow slash command。")
     text = skill_path.read_text()
     command = command_path.read_text()
+    command_files = sorted(path.name for path in (ROOT / ".claude/commands").glob("*.md"))
+    assert_true(command_files == ["id-workflow.md"], f"只允许保留 /id-workflow 薄入口 command：{command_files}。")
     assert_true("name: idc-workflow" in text, "ID workflow skill 缺少 name。")
     assert_true("description:" in text, "ID workflow skill 缺少 description。")
     assert_true("This is the orchestration skill" in text, "ID workflow 必须声明自己是编排 skill。")
@@ -1068,16 +1074,24 @@ def test_id_workflow_skill_exists_and_has_triggers():
         "# /id-workflow",
         "$ARGUMENTS",
         ".claude/skills/idc-workflow/SKILL.md",
-        "Scenario Router",
-        "Domain Module Router if matched",
-        "Skill Adapter Router if GC / original-repo abilities are needed",
-        "Show only one default Human View",
-        "`/id-workflow` is the only user-facing entry command.",
-        "D3A is a custom Domain Module, not a Core special case.",
-        "GC SOP and original-repo skills must go through Skill Adapter Router.",
-        "<ENTERPRISE_GC_THIRD_SKILL_NAME>",
+        "Thin user-facing alias",
+        "This command intentionally contains no workflow logic.",
+        "All executable behavior",
+        "idc-*",
+        "`/id-workflow` is the only user-facing command alias.",
+        "Command files must stay thin",
+        "All IDC capabilities must live under `.claude/skills/idc-*/SKILL.md`.",
+        "All IDC skill names must start with `idc-`.",
     ]:
         assert_true(fragment in command, f"/id-workflow command 缺少：{fragment}")
+    for forbidden in [
+        "Then route through:",
+        "After Human Alignment approval, continue through:",
+        "references/workflows/scenario-router.md",
+        "references/workflows/lane-resolver.md",
+        "references/workflows/tdd-state-machine.md",
+    ]:
+        assert_true(forbidden not in command, f"/id-workflow command 必须保持薄入口，不能包含流程逻辑：{forbidden}")
 
 
 def test_framework_behaviors_are_skillized_with_boundaries():
@@ -1157,7 +1171,6 @@ def test_framework_behaviors_are_skillized_with_boundaries():
     for skill_name, reference_path in degraded_reference_nodes.items():
         assert_true(not (ROOT / ".claude/skills" / skill_name / "SKILL.md").exists(), f"{skill_name} 应降级为 references，不应继续作为 skill。")
         assert_true(reference_path in id_workflow, f"idc-workflow 必须加载 {skill_name} 对应 reference：{reference_path}。")
-        assert_true(reference_path in command, f"/id-workflow command 必须显示 {skill_name} 对应 reference：{reference_path}。")
         if not reference_path.endswith("/"):
             assert_true((ROOT / ".claude/skills/idc-workflow" / reference_path).exists(), f"{skill_name} 对应 reference 不存在：{reference_path}。")
 
@@ -1192,8 +1205,8 @@ def test_framework_behaviors_are_skillized_with_boundaries():
     for fragment in [
         "references/workflows/input-adapter.md",
         "references/workflows/scenario-router.md",
-        "references/workflows/domain-module-router.md if matched",
-        ".claude/skills/idc-skill-adapter-router/SKILL.md if GC / original-repo abilities are needed",
+        "references/workflows/domain-module-router.md if DOMAIN_MODULE",
+        ".claude/skills/idc-skill-adapter-router/SKILL.md if lower-level adapters are needed",
         "references/workflows/automated-closure-loop.md",
         "references/workflows/execution-unit-policy.md",
         "references/workflows/progressive-constraint-loading.md",
@@ -1204,7 +1217,9 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         "references/schemas/verification-contract.schema.yaml",
         "references/human-views/",
     ]:
-        assert_true(fragment in command, f"/id-workflow command 必须使用 consolidated flow：{fragment}")
+        assert_true(fragment in id_workflow, f"idc-workflow skill 必须使用 consolidated flow：{fragment}")
+
+    assert_true("薄入口" in README and "command 只保留薄入口别名" in README, "README 必须声明 commands 已转为 idc-* skills 的薄入口模型。")
 
     for fragment in [
         "Should Be Skills",

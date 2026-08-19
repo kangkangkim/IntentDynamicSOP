@@ -7,14 +7,15 @@ description: Use when the user asks to run, try, trigger, or apply the Intent Dy
 
 Use this skill to run the Intent Dynamic Code workflow.
 
-The user-facing slash command entrypoint is:
+The user-facing slash command alias is:
 
 ```text
 .claude/commands/id-workflow.md
 ```
 
-Users should enter through `/id-workflow`; this skill remains the orchestration
-implementation behind that command.
+Users can enter through `/id-workflow`, but the command must stay thin. This
+skill is the orchestration implementation, and all executable IDC capabilities
+must live in `idc-*` skills.
 
 This is the orchestration skill. It delegates reusable work to a small set of
 skills, and reads router/gate/policy behavior from references.
@@ -41,7 +42,7 @@ skills, and reads router/gate/policy behavior from references.
 ```
 
 Router, gate, lane, provider, completion, resume, and evidence behavior remains
-under `references/` as passive policy/configuration, not standalone skills.
+under `references/` as passive policy/configuration, not command logic.
 
 ## When To Use
 
@@ -294,6 +295,7 @@ references/schemas/repo-context-provider.schema.yaml
 - Interruption resume must use `runtime_state` checkpoint refs, not main agent memory.
 - After resuming an interrupted execution, re-run verification unless tool evidence proves the interrupted step completed.
 - Keep `idc-workflow` as orchestration; reusable pre-alignment, domain execution, and adapter behavior lives in skills.
+- Keep `.claude/commands/id-workflow.md` as a thin alias only; do not move workflow logic back into commands.
 - Keep router, gate, lane, provider, completion, resume, and evidence behavior in `references/`; do not promote them to standalone skills unless they need independent invocation.
 - Do not skillize passive assets such as schemas, registries, examples, human-view templates, lane definitions, evidence files, and knowledge templates;沉淀 them as references or assets according to the official skill directory shape.
 - Superpowers Adapter may provide the inner engineering loop after approval, but IDC owns Domain, Lane, Contract Gate, and Completion Gate.

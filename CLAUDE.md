@@ -23,16 +23,17 @@
 
 ## 运行原则
 
-1. 用户侧统一入口是 `.claude/commands/id-workflow.md`，也就是 `/id-workflow`。
-2. 编辑代码前，所有 IDC-run 任务都必须先经过 workflow entrypoint。
-3. Scenario Router 先动态分流：Domain Module、Dynamic Scenario、General Coding fallback 或 NEED_TRIAGE。
-4. 只有任务属于 D3A domain module 时，才使用 D3A workflow。
-5. D3A architecture 是固定的，不能创建或删除 D3A Layer。
-6. D3A knowledge 必须渐进加载，只加载受影响的 coding layer 和 DT domain。
-7. 企业特定细节在进入保密区前都必须保持 placeholder。
-8. API Contract 和 task contract 形成前，不要实现 production code。
-9. 没有 RED / GREEN evidence，不要标记 implementation complete。
-10. required DT domain 全部 GREEN 且 `tran_build` PASS 后，才能标记 D3A task done。
+1. 用户侧统一入口是 `.claude/commands/id-workflow.md`，也就是 `/id-workflow`；这个 command 只是薄入口 alias。
+2. 所有可执行 IDC 能力都必须沉淀为 `.claude/skills/idc-*/SKILL.md`，名字必须以 `idc-` 开头。
+3. 编辑代码前，所有 IDC-run 任务都必须先经过 `idc-workflow` skill。
+4. Scenario Router 先动态分流：Domain Module、Dynamic Scenario、General Coding fallback 或 NEED_TRIAGE。
+5. 只有任务属于 D3A domain module 时，才使用 D3A workflow。
+6. D3A architecture 是固定的，不能创建或删除 D3A Layer。
+7. D3A knowledge 必须渐进加载，只加载受影响的 coding layer 和 DT domain。
+8. 企业特定细节在进入保密区前都必须保持 placeholder。
+9. API Contract 和 task contract 形成前，不要实现 production code。
+10. 没有 RED / GREEN evidence，不要标记 implementation complete。
+11. required DT domain 全部 GREEN 且 `tran_build` PASS 后，才能标记 D3A task done。
 
 ## D3A Layer Registry
 
