@@ -1,7 +1,8 @@
 # QUICKSTART
 
-This is the shortest path from the shared IDC harness to a confidential team
-setup. A team authors one file: `team-config.yaml`.
+This is the shortest path from the shared IDC harness to the first verified
+team task. A team authors one file: `team-config.yaml`. IDC owns all generated
+runtime state.
 
 For a General Coding team, the smallest valid file is:
 
@@ -13,13 +14,14 @@ bindings: {}
 ```
 
 Lane defaults, autonomous profiles, capability budgets, and disabled
-self-optimization are materialized safely. Add only the Skill and knowledge
-bindings the team can really execute.
+self-optimization are materialized safely. Bind only Skills and knowledge that
+the team can really execute.
 
 ## Step 1: Copy The Harness
 
 Copy this repository into the confidential environment. Do not add enterprise
-paths, commands, logs, APIs, or internal skill names to the public harness.
+paths, commands, logs, APIs, knowledge bodies, or internal Skill names to the
+public harness.
 
 ## Step 2: Create Team Config
 
@@ -27,10 +29,12 @@ paths, commands, logs, APIs, or internal skill names to the public harness.
 cp team-config.yaml.template team-config.yaml
 ```
 
-`team-config.yaml` is ignored by git. Files generated under `.idc/` are
-read-only runtime state and are not a second configuration entry.
+`team-config.yaml` is ignored by git. Files under `.idc/` are framework-owned,
+read-only runtime state, not another configuration entry.
 
-## Step 3: Fill Team Basics
+## Step 3: Configure Team And Domain
+
+Fill the team identity and repository root:
 
 ```yaml
 config_version: 1
@@ -39,13 +43,20 @@ team:
   repo_path: <REPO_PATH>
 ```
 
-## Step 4: Select Or Define Domain
-
-Use a built-in Domain:
+Choose a built-in Domain:
 
 ```yaml
 domain:
-  mode: d3a # or general
+  mode: general # or d3a
+```
+
+General dynamically selects `fast`, `lite`, or `complex`. D3A never selects a
+Lane and always materializes:
+
+```yaml
+lane_applicability: not_applicable
+selected_lane: null
+execution_profile: d3a_fixed_workflow
 ```
 
 D3A DT domains may replace the public defaults wholesale:
@@ -60,13 +71,14 @@ domain:
 ```
 
 For a Custom Domain, fill `domain.custom` in the same file. Include trigger
-rules, Lane policy, coding/test registries, required contracts, and workflow,
-planner, and completion skill refs. Do not edit the shared Domain registry.
+rules, `dynamic | fixed | not_applicable` Lane policy, coding/test registries,
+required contracts, and workflow/planner/completion Skill refs. Do not edit the
+shared Domain registry.
 
-## Step 5: Fill Skill Bindings
+## Step 4: Bind Skills And Resolve Ownership
 
-Bindings declare which enterprise capabilities are available. They do not cause
-every skill to execute.
+Bindings declare which enterprise capabilities are available. They do not
+cause every Skill to execute, and real commands remain inside the bound Skill.
 
 ```yaml
 bindings:
@@ -82,11 +94,34 @@ bindings:
     skill_ref: <ENTERPRISE_TRAN_BUILD_SKILL_REF>
 ```
 
-Add capabilities outside the fixed slots through `adapter_extensions`. Each
-extension declares capability keys, stages, Lane/profile eligibility, signals,
-and a skill ref. Shared registries remain unchanged.
+Add capabilities outside the fixed slots through `adapter_extensions`:
 
-## Step 6: Fill Knowledge Indexes
+```yaml
+adapter_extensions:
+  - id: idc-team-api-review
+    execution_role: atomic_capability
+    capability_keys: [api_review]
+    allowed_stages: [review]
+    eligible_lanes: [lite, complex]
+    execution_profiles: []
+    trigger_signals: [api_semantic_change]
+    skill_ref: <ENTERPRISE_API_REVIEW_SKILL_REF>
+    evidence_required: true
+    composes_with: []
+    supersedes: []
+```
+
+Registration overlap is never resolved by name guessing:
+
+- Leave both arrays empty when the capability is unique.
+- Use `composes_with: [<SKILL_ID>]` when both Skills must run.
+- Use `supersedes: [<SKILL_ID>]` when the team Skill replaces another Skill.
+- Do not bind `idc-workflow`, General/D3A execution protocols, Human Alignment,
+  or another orchestration Skill as an atomic capability.
+
+Unresolved capability/stage/Lane/profile/trigger overlap blocks preflight.
+
+## Step 5: Fill Knowledge Indexes
 
 ```yaml
 knowledge:
@@ -101,9 +136,12 @@ knowledge:
     fallback: bounded_grep
 ```
 
-Only refs belong here. Knowledge bodies remain in enterprise storage.
+Only refs belong here. Knowledge bodies remain in enterprise storage and are
+loaded progressively for the current stage or execution unit.
 
-## Step 7: Configure Capability Selection
+## Step 6: Configure Execution Profiles
+
+Capability budgets control how many optional Skills Selector may add:
 
 ```yaml
 capability_selection:
@@ -116,7 +154,7 @@ capability_selection:
   require_selected_and_skipped_reasons: true
 ```
 
-Then configure each Lane's executable Skill policy under `lane.profiles`:
+General and lane-applicable Custom Domains configure each Lane independently:
 
 ```yaml
 lane:
@@ -138,59 +176,114 @@ lane:
 
 `autonomous` runs configured step Skills first and may add the smallest useful
 set. `ordered` runs only the matching step in configured order; a missing stage
-mapping blocks with `NEEDS_ORCHESTRATION_MAPPING`. Resolver rejects a Skill ID
-that is unbound, unknown, Lane-ineligible, or assigned to an unsupported stage.
-The three `max_optional_skills` values are defaults, not constants; set any of
-them to a non-negative integer or `null` to match the team's SOP.
+mapping blocks with `NEEDS_ORCHESTRATION_MAPPING`. Resolver rejects unbound,
+unknown, Lane-ineligible, or stage-ineligible Skill IDs.
 
-Fast, Lite, and Complex independently choose the smallest sufficient set from
-the bound skills. D3A uses its workflow stage and Layer Context Packet instead
-of a Lane.
+D3A does not configure a Lane workflow. Its fixed stages and Layer Context
+Packets drive selection, while `d3a_profile` only limits optional atomic Skills.
 
-## Step 8: Validate And Resolve
+## Step 7: Run Preflight
 
-Normal `idc-workflow` usage runs preflight automatically and atomically rebuilds
-effective config. The team still edits only `team-config.yaml`. The commands
-below are optional diagnostics and CI checks:
+Run the same preflight that `$idc-workflow` executes automatically:
+
+```sh
+ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb
+```
+
+Continue only when it reports:
+
+```yaml
+runtime_preflight:
+  status: READY
+  registration_audit_status: PASS
+  bootstrap_load_plan:
+    status: READY
+    load_policy: read_required_refs_only
+```
+
+Preflight atomically rebuilds `.idc/effective-team-config.yaml`, checks the
+source digest, validates Skill registration conflicts, and dry-runs every
+configured Lane step and required Skill through the real Selector. Its
+bootstrap plan contains only Input, Scenario, and Domain Router references.
+
+For diagnosis or CI, the lower-level checks remain available:
 
 ```sh
 ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
   --config team-config.yaml \
   --check
 
-ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
-  --config team-config.yaml \
-  --output .idc/effective-team-config.yaml
-
 python3 tests/test_harness.py
 ```
-
-Resolver rejects command keys, missing skill refs, invalid Domain definitions,
-unsafe self-optimization settings, and malformed adapter extensions.
 
 Portable Skill references:
 
 - `'team://skills/example/SKILL.md'`: relative to `team.repo_path`.
 - `'harness://.claude/skills/idc-example/SKILL.md'`: relative to IDC Core.
-- plain relative path: team repo first, IDC Core second.
+- plain relative path: team repository first, IDC Core second.
 - absolute path or URI: retained as supplied.
 
-## Step 9: Run One Vertical Slice
+## Step 8: Run IDC Workflow
 
-Start with:
+Use the Skill entry in Claude Code, not a `.claude/commands` alias:
 
 ```text
-1 execution unit or D3A Layer
-1 test/DT domain
-1 verification mapping
-1 repo context provider
-Capability Selection result
-RED evidence when TDD is required
-GREEN evidence
-required build PASS
-Completion Summary
+$idc-workflow <TASK_OR_TR3>
 ```
 
-Inspect both selected and skipped capability reasons. A configured GC skill that
-never becomes eligible should be fixed in its capability mapping, not forced to
-run globally.
+Natural-language matching is also supported. User questions, approval, and
+re-alignment choices are emitted through `AskUserTool`.
+
+The framework runs this chain automatically:
+
+```text
+Preflight
+  -> Input / Intent Maturity
+  -> Discovery or Clarification when needed
+  -> Domain and Lane applicability
+  -> Contract Gate
+  -> Human Alignment approval
+  -> Planning and execution-unit split
+  -> Capability Selector
+  -> stage-specific Context Load Plan
+  -> Delegation Contract
+  -> Execution Authorization
+  -> Subagent / Agent Team execution
+  -> Execution Receipt
+  -> Completion Gate
+```
+
+Do not manually invoke every internal script during normal use. In particular,
+the Execution Context Load Plan requires a READY Capability Selector result and
+loads only the Domain execution protocol, shared gates, and selected Skill refs.
+
+## Step 9: Verify One Vertical Slice
+
+For General Fast/Lite/Complex, verify:
+
+```text
+selected Lane matches task evidence
+selected and skipped capability reasons are present
+team allow / deny / required / ordered policy took effect
+Context Load Plan excludes unselected Skills
+Execution Authorization = AUTHORIZED
+Execution Receipt contains dispatch and executor refs
+Lane Completion requirements have real test/build evidence
+```
+
+For D3A, verify:
+
+```text
+lane_applicability = not_applicable
+selected_lane = null
+execution_profile = d3a_fixed_workflow
+1 initial Layer Context Packet
+1 initial DT Domain and verification mapping
+DT RED before implementation
+all required DT GREEN
+tran_build PASS
+Execution Receipt and Completion Summary
+```
+
+A configured GC or DT Skill that never becomes eligible should be fixed in its
+capability mapping or Lane/profile policy, not forced to run globally.

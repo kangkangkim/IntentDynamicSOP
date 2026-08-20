@@ -16,6 +16,7 @@ IDC 的核心优势是把动态智能分流和企业固定 SOP 分开：外层�
 - **Evidence-first 完成标准**：API Contract 先于 implementation；RED evidence 先于 GREEN evidence；D3A DONE 必须满足 required DT GREEN 和 `tran_build PASS`。
 - **多团队单配置接入**：其他团队复用 IDC Core，只维护 `team-config.yaml`；Custom Domain 和新 GC atoms 也由 Resolver 动态注册。
 - **运行时自动生效**：`idc-workflow` 每次入口自动执行 preflight，原子重建 effective config 并校验源 YAML digest；团队不维护生成文件，也不会误用旧配置。
+- **上下文按阶段收敛**：preflight 只加载三个 Router；Decision、Planning、Execution、Completion、Resume 分别生成 Context Load Plan。Execution 只加载 Domain protocol、共享 gate 和 Selector 实际选中的 Skill。
 - **执行不可绕过**：所有 repository mutation 都必须经过 Execution Authorization 并真实派发 executor。General Coding 是外层执行协议，GC Adapter 只是 executor 内按需调用的原子能力；main agent 不能直接实现后再补证据。
 - **Skill 注册冲突可检测**：Preflight 检查 capability、stage、Lane/profile 与 trigger 的重叠；未声明的冲突直接阻断，有意组合或替换必须显式使用 `composes_with` / `supersedes`。
 
@@ -36,6 +37,7 @@ V0 已经固定：
 - Skill Adapter Router 作为 GC SOP、Superpowers、DT skill、build skill 的唯一接入门。
 - `team-config.yaml.template` 是唯一团队配置入口；`idc-team-config` 校验并生成只读有效配置。
 - Fast / Lite / Complex 使用各自的 capability profile。团队既可让 Selector 自主补齐最小充分集合，也可用 ordered steps 固定过程；无匹配步骤时明确阻断，不静默回退。
+- Capability Selector、Context Load Plan、Delegation Contract、Execution Authorization 和 Execution Receipt 构成不可绕过的执行链。
 - Mock D3A / General E2E examples 和 harness tests。
 
 V0 不做：不复制企业内部 D3A 知识；不编造 Coding Layer 到 DT Domain 的真实 mapping；不内置真实 repo path、构建命令、日志、API 或企业 skill 名；不把 GC SOP 十几个能力全部默认打开；不让模型重新设计 D3A 主流程。
@@ -68,6 +70,8 @@ Team Config
 
 Generated Runtime
   框架生成：.idc/effective-team-config.yaml
+  单元选择：.idc/capability-selection.yaml
+  阶段加载：context_load_plan.required_refs
   只读，不是第二配置入口
 ```
 
@@ -82,16 +86,41 @@ Generated Runtime
 
 - **Dynamic Scenario Coding**：不绑定固定领域模块，按复杂度、不确定性、风险和可测试性动态编排。
 - **Domain Module Coding**：通过可插拔 Domain Module 进入领域工作流。D3A 是当前第一个自定义 active module。
-- **General Coding Fallback**：保留给简单普通 coding 任务。
+- **General Coding Fallback**：承接未命中固定 Domain Module 的普通开发任务，并根据证据动态进入 Fast、Lite 或 Complex。
 
-Domain Module 决定领域差异和 required contracts；Lane（`fast / lite / complex`）只决定流程跑多重。整体执行哲学：前置对齐、后置自动闭环、异常再回人。
+Domain Module 决定领域差异、required contracts 和 Lane applicability。General 使用 `fast / lite / complex` 调节执行强度；D3A 固定为 Lane N/A；Custom Domain 可选择 dynamic、fixed 或 not_applicable。整体执行哲学：前置对齐、后置自动闭环、异常再回人。
+
+## 当前运行架构
+
+```text
+用户输入 / TR3
+  -> $idc-workflow
+  -> Team Config Preflight + Registration Audit
+  -> Intent Maturity + Discovery / Clarification
+  -> Scenario / Domain Router
+  -> General Lane Resolver | D3A Fixed Workflow | Custom Domain Policy
+  -> Contract Gate + Human Alignment
+  -> Planner + Knowledge + Execution Unit Split
+  -> Capability Selector
+  -> Context Load Plan
+  -> Delegation Contract + Execution Authorization
+  -> Domain executor + selected atomic Skills
+  -> Execution Receipt + Completion Gate
+  -> DONE | Targeted Fix | Re-plan | Escalation
+```
 
 ## 快速开始
 
 ```sh
 cp team-config.yaml.template team-config.yaml   # 保密区内填写
-ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb --config team-config.yaml --check
+ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb
 python3 tests/test_harness.py
+```
+
+Preflight 返回 `READY` 后，在 Claude Code 中运行：
+
+```text
+$idc-workflow <TASK_OR_TR3>
 ```
 
 九步操作见 `QUICKSTART.md`；企业接入全流程见 `docs/confidential-migration-checklist.md`。
@@ -138,9 +167,10 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module（`references/d
   -> Alignment Pack -> Automated Closure Loop -> D3A Specification
   -> API Contract Freeze -> Planner (Layer / DT / DAG / Knowledge Requirements)
   -> Knowledge Gate -> Knowledge Preparation
-  -> Layer Context Packet per Layer -> Execution Unit <= 500 LOC
+  -> Layer Context Packet per Layer -> Capability Selector -> Context Load Plan
+  -> Delegation Contract -> Execution Authorization -> Execution Unit <= 500 LOC
   -> Per-Layer TDD (DT RED -> Layer Coding -> DT GREEN)
-  -> tran_build -> Done
+  -> tran_build -> Execution Receipt -> Completion Gate -> Done
 ```
 
 完整分层与图示见 `docs/architecture.md` 的 D3A Module 与架构图章节。
@@ -151,7 +181,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module（`references/d
 - `.claude/skills/`：少量可独立调用的 `idc-*` skills（清单见 `docs/atomic-skills.md`）；router、gate、lane、provider、completion、resume、evidence 等流程节点沉淀在 `references/`。
 - `.claude/skills/idc-workflow/assets/README.md`：asset / reference 边界说明。
 - `.claude/skills/idc-workflow/references/registries/`：固定 D3A Layer、DT Domain、General placeholder taxonomy、Skill Adapter registry；企业接入方只读，通过 team-config 非空列表整体覆盖。
-- `.claude/skills/idc-team-config/`：单配置校验、有效配置生成和 Capability Selector 可执行实现。
+- `.claude/skills/idc-team-config/`：单配置校验、preflight、有效配置生成、Capability Selector 和分阶段 Context Load Plan 的可执行实现。
 - `team-config.yaml.template`：唯一团队入口，收敛 Domain、registries、skill bindings、adapter extensions、knowledge、Lane capability profile 和自优化策略。
 - `.claude/agents/`：`d3a-layer-coder`、`dt-test-writer`、`build-error-analyzer`、`general-coder` subagent 定义。
 - `examples/`：mock D3A、E2E TR3 D3A、E2E General 三个非敏感 walkthrough。
@@ -164,7 +194,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module（`references/d
 python3 tests/test_harness.py
 ```
 
-测试覆盖：registry 固定性（D3A Layer / DT Domain 不漂移）、planner 不越界、contract / lane / provider / context 约束、RED→GREEN→`tran_build` 状态门、Runtime State / Resume Policy、placeholder hygiene、team-config 覆盖规则与填写校验。
+测试覆盖：registry 固定性（D3A Layer / DT Domain 不漂移）、planner 不越界、contract / lane / provider / context 约束、RED→GREEN→`tran_build` 状态门、Runtime State / Resume Policy、placeholder hygiene、team-config 覆盖规则，以及 D3A、Fast、Lite、Complex 的 Selector → Context Plan → Execution Authorization 运行矩阵。
 
 ## 保密区迁移
 
