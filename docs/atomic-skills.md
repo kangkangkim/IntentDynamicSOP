@@ -1,5 +1,15 @@
 # Atomic Skills
 
+## `idc-team-config`
+
+Validates the single team-authored configuration, materializes the read-only
+effective runtime config, and executes Lane/profile-aware Capability Selection.
+
+## `idc-self-optimization`
+
+Records bounded enterprise-adaptation events and generates replay-tested,
+Human-Alignment-gated team-overlay proposals without modifying IDC Core.
+
 Atomic Skill 是可以被其他团队单独复用的小能力。
 
 它必须满足：
@@ -50,6 +60,7 @@ automated-closure-loop
 execution-unit-policy
 progressive-constraint-loading
 delegation-router
+execution-authorization-gate
 knowledge-gate
 provider-selection-matrix
 repo-context-providers

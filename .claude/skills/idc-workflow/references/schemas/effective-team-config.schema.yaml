@@ -1,0 +1,36 @@
+schema: effective_team_config
+version: 1
+
+effective_team_config:
+  generated: true
+  source_ref: team-config.yaml
+  source_sha256: sha256
+  config_version: 1
+  team: {}
+  domain:
+    id: string
+    source: builtin | team-config-inline
+    lane_applicability: applicable | not_applicable | null
+    execution_profile: lane_driven | d3a_fixed_workflow | null
+  bindings: {}
+  adapter_extensions: []
+  available_capabilities: []
+  registration_audit:
+    status: PASS | FAIL
+    conflicts: []
+    declared_overrides: []
+  knowledge: {}
+  lane:
+    default: fast | lite | complex
+    profiles: {}
+  capability_selection: {}
+  self_optimization: {}
+  readiness:
+    status: READY | INVALID
+    errors: []
+    warnings: []
+
+rules:
+  - This file is generated and must never be edited manually.
+  - Runtime routing reads this file after team-config validation.
+  - This file is checkpoint state, not completion evidence.

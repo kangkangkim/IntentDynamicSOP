@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import re
+import subprocess
 import sys
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ".claude/skills/idc-workflow/references"
@@ -45,7 +47,19 @@ FAST_REQUIRED_CONDITIONS = {
     "no_core_logic_change",
     "no_cross_module_impact",
     "no_new_test_required",
+    "existing_verification_available",
     "simple_verification",
+    "localized_change",
+    "fast_scope_evidence_present",
+}
+LITE_FLOOR_TRIGGERS = {
+    "new_capability",
+    "behavior_contract_change",
+    "new_or_changed_test_required",
+    "multi_file_or_multi_component_change",
+    "focused_design_required",
+    "broad_repo_exploration_required",
+    "affected_scope_unknown",
 }
 
 
@@ -238,10 +252,12 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     adapter_schema = read_text(".claude/skills/idc-workflow/references/schemas/skill-adapter.schema.yaml")
     adapter_registry = read_text(".claude/skills/idc-workflow/references/registries/skill-adapters.yaml")
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
+    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.rb")
     architecture = read_text("docs/architecture.md")
     README = read_text("README.md")
     team_config = read_text("team-config.yaml.template")
     quickstart = read_text("QUICKSTART.md")
+    team_config_generator = read_text("docs/team-config-generator.html")
     gitignore = read_text(".gitignore")
 
     for fragment in [
@@ -313,11 +329,10 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "id: idc-gc-third-skill-placeholder",
         "capability_keys:",
         "allowed_stages:",
-        "confidential_gc_mapping_ref",
+        "capability_selection_ref",
         "confidential_original_repo_skill_ref",
-        "team_adapter_binding_ref",
-        "team_adapter_binding_ref_optional",
-        "binding_ref: <TEAM_ADAPTER_BINDING_REF>",
+        "effective_team_config_ref",
+        "binding_ref: team-config.yaml.bindings.dt_design.skill_ref",
         "Team-owned brainstorming should bind to idc-brainstorming",
         "Grill Me is provided by idc-intent-grilling",
         "executable: false",
@@ -326,48 +341,31 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     ]:
         assert_true(fragment in adapter_registry, f"Skill Adapter registry 缺少：{fragment}")
 
-    team_binding_template = read_text(".claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml")
-    for fragment in [
-        "team_adapter_bindings:",
-        "multi-team reuse model",
-        "IDC Core is shared by multiple teams",
-        "Each adopting team owns its Team Binding",
-        "adapter_id: idc-brainstorming",
-        "internal_skill_ref: <ENTERPRISE_BRAINSTORMING_SKILL_REF>",
-        "required_shape: discovery_provider.draft_spec",
-        "If a team already has brainstorming",
-        "If a team does not have Grill Me",
-        "adapter_id: idc-dt-design",
-        "adapter_id: idc-dt-writer",
-        "adapter_id: idc-dt-build",
-        "adapter_id: idc-tran-build",
-        "team_id: <TEAM_ID>",
-        "working_directory: <ENTERPRISE_REPO_PATH>",
-        "build_command: <ENTERPRISE_DT_BUILD_COMMAND>",
-        "run_command: <ENTERPRISE_DT_RUN_COMMAND>",
-        "command: <ENTERPRISE_TRAN_BUILD_COMMAND>",
-        "Missing binding must return NEEDS_ADAPTER_MAPPING",
-    ]:
-        assert_true(fragment in team_binding_template, f"Team adapter binding template 缺少：{fragment}")
+    assert_true(not (ROOT / ".claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml").exists(), "旧 Team Binding 第二入口必须删除。")
 
-    assert_true("references/workflows/skill-adapter-router.md" in id_workflow, "idc-workflow 必须加载 Skill Adapter Router。")
-    assert_true("references/schemas/skill-adapter.schema.yaml" in id_workflow, "idc-workflow 必须加载 Skill Adapter schema。")
-    assert_true("references/registries/skill-adapters.yaml" in id_workflow, "idc-workflow 必须加载 Skill Adapter registry。")
+    assert_true(".claude/skills/idc-skill-adapter-router/SKILL.md" in context_planner, "Execution Context Plan 必须加载 Skill Adapter Router。")
+    assert_true((ROOT / ".claude/skills/idc-workflow/references/schemas/skill-adapter.schema.yaml").exists(), "Skill Adapter schema 必须保留为 Resolver 契约。")
+    assert_true((ROOT / ".claude/skills/idc-workflow/references/registries/skill-adapters.yaml").exists(), "Skill Adapter registry 必须保留为被动配置。")
+    assert_true("ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb" in id_workflow, "idc-workflow 每次入口必须自动执行 Team Config preflight。")
+    assert_true("Run this on every `idc-workflow` invocation" in id_workflow, "运行时不得复用陈旧 effective config。")
+    assert_true("the template is never executed" in id_workflow, "生产运行不得把 template 当作配置 fallback。")
     assert_true("Dynamic Scenario Coding" in README, "README 必须把 Dynamic Scenario 作为顶层路径。")
     assert_true("## 多团队复用模型" in README, "README 必须明确多团队复用模型。")
     assert_true("IDC Core" in README and "Domain Module" in README and "Team Binding" in README, "README 必须声明 Core / Domain Module / Team Binding 三层。")
     assert_true("多团队共享 `IDC Core`" in README, "README 必须声明 Core 可被多团队共享。")
     assert_true("Skill Adapter registry" in README, "README 必须记录 Skill Adapter registry。")
-    assert_true("team-adapter-bindings.template.yaml" in README, "README 必须记录多团队 adapter binding 模板。")
+    assert_true("idc-team-config" in README, "README 必须记录单配置 Resolver。")
     assert_true("team-config.yaml.template" in README, "README 必须记录统一 team config 入口。")
     assert_true("team-config.yaml" in gitignore, "真实 team-config.yaml 必须被 git ignore。")
     for fragment in [
+        "config_version: 1",
         "team:",
         "repo_path: <REPO_PATH>",
-        "skill_base_path: <SKILL_BASE_PATH>",
         "domain:",
-        "use_d3a: true",
-        "d3a_dt_domains: []",
+        "mode: d3a",
+        "dt_domains: []",
+        "custom:",
+        "workflow_skill_ref: null",
         "general:",
         "components: []",
         "test_domains: []",
@@ -379,25 +377,51 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "tran_build:",
         "knowledge:",
         "layer_docs: {}",
+        "adapter_extensions: []",
         "lane:",
         "default: lite",
+        "profiles:",
+        "skills: {allow: [], deny: [], required: []}",
+        "mode: autonomous # autonomous | ordered",
+        "capability_selection:",
+        "autonomous_minimal_sufficient",
+        "self_optimization:",
     ]:
         assert_true(fragment in team_config, f"team-config.yaml.template 缺少字段：{fragment}")
     for key in ["build_command", "run_command", "pass_condition", "command:"]:
         assert_true(key not in team_config, f"team-config 绑定槽不允许出现命令键（严格 skill_ref 模型）：{key}")
-    bindings_block = team_config.split("bindings:")[1].split("knowledge:")[0]
+    bindings_block = team_config.split("bindings:")[1].split("adapter_extensions:")[0]
     slot_names = re.findall(r"^  ([a-z_]+):$", bindings_block, flags=re.M)
     assert_true(len(slot_names) == 20, f"绑定槽必须是 20 个 skill 槽（实际 {len(slot_names)}）。")
     assert_true("skill_ref: null" in bindings_block, "绑定槽必须用 skill_ref 绑定。")
     for fragment in [
+        "domain.custom.lane_policy.mode",
+        "domain.custom.lane_policy.selected_lane",
+        "laneProfileArea",
+        "lane.\" + lane + \".allow",
+        "lane.\" + lane + \".steps",
+        "lane.\" + lane + \".max_optional_skills",
+        "adapter.extensions",
+        "adapter_extensions:",
+        "execution_role:",
+        "composes_with:",
+        "supersedes:",
+        "capability_selection:",
+        "self_optimization:",
+        "ext.split(/\\r?\\n/)",
+    ]:
+        assert_true(fragment in team_config_generator, f"team-config generator 缺少 V1 字段或多扩展能力支持：{fragment}")
+    for legacy_field in ["skill_base_path", "use_d3a", "fast_skip_steps", "lite_skip_steps", "complex_skip_steps"]:
+        assert_true(legacy_field not in team_config_generator, f"team-config generator 仍含旧字段：{legacy_field}")
+    for fragment in [
         "Step 1: Copy The Harness",
         "Step 2: Create Team Config",
         "cp team-config.yaml.template team-config.yaml",
-        "Step 4: Select Domain",
+        "Step 4: Select Or Define Domain",
         "Step 5: Fill Skill Bindings",
         "Step 6: Fill Knowledge Indexes",
-        "Step 7: Bind Build Skills",
-        "Step 8: Validate Harness",
+        "Step 7: Configure Capability Selection",
+        "Step 8: Validate And Resolve",
         "Step 9: Run One Vertical Slice",
     ]:
         assert_true(fragment in quickstart, f"QUICKSTART 缺少步骤：{fragment}")
@@ -406,9 +430,13 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     assert_true("## V0 定位" in README, "README 必须明确 V0 定位。")
     assert_true("V0 不是完整企业 D3A 实现" in README, "README 必须声明 V0 不是完整企业实现。")
     assert_true("Human Alignment 管检测" in README, "README 必须声明 Human Alignment 管检测。")
-    assert_true("GC SOP 按需调用" in README, "README 必须声明 GC SOP 不是默认全家桶。")
+    assert_true("GC SOP 可配置且真正生效" in README, "README 必须声明 Lane 配置由 Capability Selector 实际执行。")
     assert_true("真实 D3A 知识地址" in README, "README 必须声明保密区绑定 D3A 知识索引地址。")
     assert_true("第一阶段目标是跑通一条最小 D3A vertical slice" in README, "README 必须声明 V0 入区后的最小 vertical slice。")
+    assert_true("运行时自动生效" in README, "README 必须声明 team-config 自动 preflight。")
+    rollout = read_text("docs/team-rollout-playbook.md")
+    for fragment in ["最小接入", "team://", "团队验收", "多团队复制边界", "source_sha256"]:
+        assert_true(fragment in rollout, f"多团队推广手册缺少：{fragment}")
     assert_true("动态分流的 Intent-Driven Coding 框架" in architecture, "architecture 必须声明动态分流框架定位。")
     assert_true("Dynamic Scenario Mode" in architecture, "architecture 必须包含 Dynamic Scenario Mode。")
     assert_true("Skill Adapter Router 不靠名字猜测" in architecture, "architecture 必须声明 adapter registry-driven。")
@@ -417,10 +445,10 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     for fragment in [
         "## Multi-Team Reuse Model",
         "IDC Core",
-        "Domain Module",
         "Team Binding",
+        "Generated Runtime",
         "reuse IDC Core unchanged",
-        "team_adapter_binding_ref",
+        "adapter_extensions",
         "already has a Brainstorming capability",
         "does not have Grill Me",
     ]:
@@ -437,6 +465,25 @@ def test_active_domain_module_declares_required_contract():
     assert_true("required_contracts:" in text, "d3a module 必须声明 required_contracts。")
     assert_true("- api_contract" in text, "d3a module 必须要求 api_contract。")
     assert_true("- verification_contract" in text, "d3a module 必须要求 verification_contract。")
+    assert_true("lane_policy:" in text, "d3a module 必须声明 Lane applicability policy。")
+    assert_true("mode: not_applicable" in text, "D3A 的 Lane 必须标记为不适用。")
+    assert_true("selected_lane: null" in text, "D3A 不得选择 fast/lite/complex Lane。")
+    assert_true("execution_profile: d3a_fixed_workflow" in text, "D3A 必须使用用户设计的固定 workflow。")
+    assert_true("bypass_lane_resolver: true" in text, "d3a module 必须跳过通用 Lane Resolver。")
+
+
+def test_d3a_uses_shared_execution_skeleton_with_enterprise_constraints():
+    module = read_text(".claude/skills/idc-workflow/references/domains/d3a/module.yaml")
+    workflow = read_text(".claude/skills/idc-workflow/references/workflows/d3a-workflow.md")
+    plan_schema = read_text(".claude/skills/idc-workflow/references/schemas/d3a-plan.schema.yaml")
+    skill = read_text(".claude/skills/idc-d3a-coding/SKILL.md")
+
+    assert_true("\n  lane_policy:" in module, "D3A lane_policy 必须属于 domain_module contract。")
+    for stage in ["Planner", "Knowledge Preparation", "Execution Unit Split", "TDD Execution", "Verification / Completion"]:
+        assert_true(stage in workflow, f"D3A 必须包含共享执行骨架阶段：{stage}")
+    for fragment in ["knowledge_requirements:", "layer_context_packets:", "每个 Layer Context Packet 只能包含一个 coding_layer", "独立 RED/GREEN evidence"]:
+        assert_true(fragment in plan_schema, f"D3A plan contract 缺少逐 Layer 规划约束：{fragment}")
+    assert_true("Planner -> Knowledge Preparation -> Execution Unit Split -> TDD -> Completion" in skill, "D3A skill 必须明确与 General 共用执行骨架。")
 
 
 def test_active_domain_module_asset_paths_exist():
@@ -458,6 +505,8 @@ def test_general_domain_module_is_active_and_self_closing():
     assert_true("registries/general-components.yaml" in module, "general module 必须使用 general component registry。")
     assert_true("registries/general-test-domains.yaml" in module, "general module 必须使用 general test registry。")
     assert_true("required_tests_or_builds_pass" in module, "general completion gate 必须基于测试或 build evidence。")
+    assert_true("lane_policy:" in module and "mode: dynamic" in module, "General module 必须显式使用 dynamic Lane policy。")
+    assert_true("resolver: workflows/lane-resolver.md" in module, "General module 必须把 Lane 交给通用 Resolver。")
     assert_true("- task_contract" in module, "general module 必须要求 task_contract。")
     assert_true("- verification_contract" in module, "general module 必须要求 verification_contract。")
     assert_true("API Contract 不是所有 General Coding 都必须要" in workflow, "general workflow 必须说明 API Contract 非全局强制。")
@@ -475,6 +524,7 @@ def test_lane_registry_files_exist():
     assert_true("allowed_lane_ids: [fast, lite, complex]" in registry, "Lane registry 必须显式声明只允许 fast/lite/complex。")
     assert_true("no_implicit_lane_ids: true" in registry, "Lane registry 必须禁止隐式 lane。")
     assert_true("default_lane: lite" in registry, "Lane registry 必须声明默认 lane 是 lite。")
+    assert_true("default_is_fallback_only: true" in registry, "Lane 默认值只能作为无法分类时的 fallback。")
     for lane_file in extract_lane_files():
         assert_true((ROOT / runtime_path(lane_file)).exists(), f"Lane 文件不存在：{lane_file}")
 
@@ -495,6 +545,16 @@ def lane_resolver_decision(signals):
             "selected_lane": "complex",
             "decision_rule": "hard_trigger",
             "hard_triggers": hard_triggers,
+            "fast_disqualified_by": sorted(FAST_REQUIRED_CONDITIONS - {key for key, value in signals.items() if value}),
+        }
+
+    lite_floor_triggers = sorted(trigger for trigger in LITE_FLOOR_TRIGGERS if signals.get(trigger))
+    if lite_floor_triggers:
+        return {
+            "selected_lane": "lite",
+            "decision_rule": "lite_floor",
+            "hard_triggers": [],
+            "lite_floor_triggers": lite_floor_triggers,
             "fast_disqualified_by": sorted(FAST_REQUIRED_CONDITIONS - {key for key, value in signals.items() if value}),
         }
 
@@ -533,6 +593,19 @@ def test_lane_resolver_fixtures_are_stable():
         assert_true(decision["decision_rule"] == expected_rule, f"{fixture_id} decision_rule 判断漂移。")
         assert_true("hard_triggers" in decision, f"{fixture_id} 缺少 hard_triggers。")
         assert_true("fast_disqualified_by" in decision, f"{fixture_id} 缺少 fast_disqualified_by。")
+
+    for text, name in [
+        (resolver, "Lane Resolver workflow"),
+        (schema, "Lane schema"),
+    ]:
+        assert_true("Lite floor" in text, f"{name} 必须声明 Lite floor。")
+        assert_true("production code" in text, f"{name} 必须明确小型 production code 的 Lane 边界。")
+        assert_true("unknown" in text, f"{name} 必须声明未知信号不能帮助进入 Fast。")
+
+    id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
+    assert_true("Treat Fast as an evidence-backed small-change path" in id_workflow, "idc-workflow 必须声明 Fast 小改路径。")
+    assert_true("tiny localized production-code change may be Fast" in id_workflow, "极小 production code 修改必须允许进入 Fast。")
+    assert_true("no new test code is needed" in id_workflow and "existing verification can close it" in id_workflow, "Fast 必须同时满足无需新增测试代码且已有验证可闭环。")
 
 
 def test_tr3_fixtures_preserve_classification_signals():
@@ -671,8 +744,8 @@ def test_repo_rules_are_canonical_in_claude_md():
     for fragment in [
         "# Intent-Driven Coding Harness",
         "仓库内不得包含企业 secret",
-        "用户侧统一入口是 `.claude/commands/id-workflow.md`",
-        "这个 command 只是薄入口 alias",
+        "用户侧统一入口是 `idc-workflow` skill",
+        "不维护 `.claude/commands`",
         "所有可执行 IDC 能力都必须沉淀为 `.claude/skills/idc-*/SKILL.md`",
         "名字必须以 `idc-` 开头",
         "先经过 `idc-workflow` skill",
@@ -680,6 +753,9 @@ def test_repo_rules_are_canonical_in_claude_md():
         "D3A Layer Registry",
         "DT Domain Registry",
         "角色边界",
+        "planning_and_delegation_only",
+        "Execution Authorization",
+        "BLOCKED_DELEGATION_REQUIRED",
         "python3 tests/test_harness.py",
     ]:
         assert_true(fragment in claude, f"CLAUDE.md 缺少 canonical repo rule：{fragment}")
@@ -700,6 +776,11 @@ def test_delegation_contract_keeps_main_agent_as_planner():
     loop = read_text(".claude/skills/idc-workflow/references/workflows/automated-closure-loop.md")
     doc = read_text("docs/agent-team-architecture.md")
     html = read_text("docs/context-runtime-view.html")
+    authorization_gate = read_text(".claude/skills/idc-workflow/references/workflows/execution-authorization-gate.md")
+    authorization_schema = read_text(".claude/skills/idc-workflow/references/schemas/execution-authorization.schema.yaml")
+    general_skill = read_text(".claude/skills/idc-general-coding/SKILL.md")
+    gc_adapter = read_text(".claude/skills/idc-gc-sop-adapter/SKILL.md")
+    authorizer = ROOT / ".claude/skills/idc-workflow/scripts/authorize_execution.rb"
 
     for text, name in [
         (router, "delegation router"),
@@ -757,14 +838,57 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         "handoff_edges:",
         "completion_authority: main_agent_only",
         "run_state_ref",
+        "domain_execution_skill_ref",
+        "capability_selection_ref",
+        "selected_atomic_skill_refs",
+        "execution_authorization_request_ref",
+        "execution_receipt:",
+        "dispatch_tool_call_ref",
+        "executor_session_ref",
     ]:
         assert_true(fragment in schema, f"Delegation schema 缺少上下文边界：{fragment}")
 
-    assert_true("Main agent must not directly execute complex implementation" in skill, "idc-workflow 必须禁止 main 直接执行复杂实现。")
+    assert_true("Main agent must not mutate repository code" in skill, "idc-workflow 必须禁止 main 在任何 Lane 直接修改仓库。")
+    assert_true("BLOCKED_DELEGATION_REQUIRED" in skill, "delegation tool 不可用时必须阻断，不能 main agent 兜底。")
     assert_true("IDC workflow route -> official dynamic workflow if needed -> agent team -> subagent" in skill, "idc-workflow 必须声明 delegation 选择顺序。")
     assert_true("official dynamic workflow is only for scripted, repeatable, large-scale fan-out orchestration" in skill, "idc-workflow 必须声明 official dynamic workflow 的使用条件。")
     assert_true("multiple subagents need communication" in skill, "idc-workflow 必须声明 agent team 的核心触发条件。")
     assert_true("Delegation Contract" in html, "运行视角 HTML 必须展示 Delegation Contract。")
+    for fragment in ["Skill precedence", "outer protocol: idc-general-coding", "main_agent is never a valid executor", "Execution Receipt", "BLOCKED_DELEGATION_REQUIRED"]:
+        assert_true(fragment in authorization_gate or fragment in authorization_schema, f"Execution Authorization 设计缺少：{fragment}")
+    assert_true("outer Domain execution protocol" in general_skill, "General Coding 必须声明自己是外层执行协议。")
+    assert_true("Do not use GC SOP Adapter as the outer General Coding executor" in gc_adapter, "GC Adapter 不得与 General Coding 竞争外层执行权。")
+    assert_true(authorizer.exists(), "缺少可执行 Execution Authorization Gate。")
+
+    valid_request = """execution_authorization_request:
+  task_id: auth-test
+  workflow_id: general_execution
+  selected_domain: general
+  selected_lane: lite
+  human_alignment_status: approved
+  approved_alignment_ref: alignment-pack
+  execution_unit_ref: unit-1
+  context_packet_ref: context-1
+  capability_selection_ref: selection-1
+  capability_selection_status: READY
+  domain_execution_skill_ref: .claude/skills/idc-general-coding/SKILL.md
+  selected_atomic_skill_refs: [.claude/skills/idc-gc-sop-adapter/SKILL.md]
+  delegation_contract_ref: delegation-1
+  main_agent_role: planning_and_delegation_only
+  executor: {kind: subagent, agent_id: general-coder}
+  allowed_paths: [src/example.rb]
+  expected_outputs: [changed_paths, evidence_refs, execution_receipt]
+"""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        valid_path = Path(temp_dir) / "valid-auth.yaml"
+        valid_path.write_text(valid_request, encoding="utf-8")
+        valid = subprocess.run(["ruby", str(authorizer), "--request", str(valid_path)], cwd=ROOT, capture_output=True, text=True)
+        assert_true(valid.returncode == 0 and "status: AUTHORIZED" in valid.stdout and "authorization_id:" in valid.stdout, "合法 subagent execution 必须获得授权。")
+
+        invalid_path = Path(temp_dir) / "invalid-main-auth.yaml"
+        invalid_path.write_text(valid_request.replace("agent_id: general-coder", "agent_id: main_agent"), encoding="utf-8")
+        invalid = subprocess.run(["ruby", str(authorizer), "--request", str(invalid_path)], cwd=ROOT, capture_output=True, text=True)
+        assert_true(invalid.returncode == 3 and "BLOCKED_DELEGATION_REQUIRED" in invalid.stdout and "main_agent cannot be execution owner" in invalid.stdout, "Main agent 作为 executor 必须被机器 Gate 拒绝。")
 
 
 def test_resume_policy_supports_interruption_recovery():
@@ -776,6 +900,7 @@ def test_resume_policy_supports_interruption_recovery():
     policy = resume_policy_path.read_text()
     schema = runtime_schema_path.read_text()
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
+    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.rb")
     delegation = read_text(".claude/skills/idc-workflow/references/workflows/delegation-router.md")
     README = read_text("README.md")
 
@@ -805,8 +930,8 @@ def test_resume_policy_supports_interruption_recovery():
     ]:
         assert_true(fragment in schema, f"Runtime State schema 缺少字段：{fragment}")
 
-    assert_true("resume-policy.md" in id_workflow, "idc-workflow 必须加载 resume policy。")
-    assert_true("runtime-state.schema.yaml" in id_workflow, "idc-workflow 必须加载 runtime state schema。")
+    assert_true("resume-policy.md" in context_planner, "Resume Context Plan 必须加载 resume policy。")
+    assert_true("runtime-state.schema.yaml" in context_planner, "Resume Context Plan 必须加载 runtime state schema。")
     assert_true("Interruption resume must use `runtime_state` checkpoint refs" in id_workflow, "idc-workflow 必须要求 checkpoint 恢复。")
     assert_true("run_state_ref" in delegation, "Delegation Router 必须要求 run_state_ref。")
     assert_true("禁止从 main agent 记忆中推断 subagent 是否完成" in delegation, "Delegation Router 必须禁止靠记忆判断 subagent 完成。")
@@ -818,11 +943,15 @@ def test_confidential_vertical_slice_readiness_gate_exists():
     workflow = read_text(".claude/skills/idc-workflow/references/workflows/vertical-slice-readiness-gate.md")
     checklist = read_text("docs/confidential-migration-checklist.md")
     skill = read_text(".claude/skills/idc-workflow/SKILL.md")
+    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.rb")
     example = read_text("examples/confidential-vertical-slice-readiness.yaml")
 
     for fragment in [
         "schema: vertical_slice_readiness",
         "selected_domain: d3a",
+        "lane_applicability: not_applicable",
+        "selected_lane: null",
+        "execution_profile: d3a_fixed_workflow",
         "max_layers: 2",
         "max_dt_domains: 1",
         "max_change_loc_per_execution_unit: 500",
@@ -832,6 +961,7 @@ def test_confidential_vertical_slice_readiness_gate_exists():
         "evidence_ref_required: true",
         "placeholder_hygiene_preserved",
         "Do not mark READY_FOR_EXECUTION while any required readiness check is FAIL.",
+        "Do not run Lane Resolver or select any Lane for a D3A slice.",
         "Do not treat TR3 DT design as RED or GREEN evidence.",
         "Do not treat OKL or docs as test/build evidence.",
         "DONE still requires D3A RED evidence",
@@ -850,12 +980,14 @@ def test_confidential_vertical_slice_readiness_gate_exists():
     ]:
         assert_true(fragment in workflow, f"Vertical Slice Readiness workflow 缺少：{fragment}")
 
-    assert_true("references/workflows/vertical-slice-readiness-gate.md" in skill, "idc-workflow 必须加载 Vertical Slice Readiness Gate。")
-    assert_true("references/schemas/vertical-slice-readiness.schema.yaml" in skill, "idc-workflow 必须加载 Vertical Slice Readiness schema。")
+    assert_true("vertical-slice-readiness-gate.md" in context_planner, "带 readiness signal 的 Context Plan 必须加载 Vertical Slice Readiness Gate。")
+    assert_true("vertical-slice-readiness.schema.yaml" in context_planner, "带 readiness signal 的 Context Plan 必须加载 Vertical Slice Readiness schema。")
     assert_true("Before first confidential-zone D3A execution" in skill, "idc-workflow 必须要求首条保密区 D3A 执行前跑 readiness gate。")
     assert_true("Vertical Slice Readiness Gate" in checklist, "保密区 checklist 必须引用 readiness gate。")
     assert_true("不能替代" in checklist and "`tran_build` PASS evidence" in checklist, "保密区 checklist 必须声明 readiness 不能替代完成证据。")
     assert_true("status: NOT_READY" in example, "readiness example 必须默认 NOT_READY。")
+    assert_true("lane_applicability: not_applicable" in example, "D3A readiness example 必须声明 Lane 不适用。")
+    assert_true("selected_lane: null" in example, "D3A readiness example 不得选择 Lane。")
     assert_true("<ENTERPRISE_REPO_PATH>" in example, "readiness example 必须保留 repo placeholder。")
 
 
@@ -902,7 +1034,12 @@ def test_e2e_tr3_d3a_demo_is_complete():
 
     assert_true("input_type: tr3_design_doc" in normalized, "E2E demo 必须从 TR3 输入开始。")
     assert_true("selected_domain: d3a" in decision, "E2E demo 必须选择 d3a domain。")
-    assert_true("selected_lane: complex" in decision, "E2E demo 必须选择 complex lane。")
+    assert_true("applicability: not_applicable" in decision, "E2E D3A 必须声明 Lane 不适用。")
+    assert_true("selected_lane: null" in decision, "E2E D3A 不得选择 Lane。")
+    assert_true("execution_profile: d3a_fixed_workflow" in decision, "E2E D3A 必须进入固定 workflow。")
+    assert_true("policy_mode: not_applicable" in decision, "E2E D3A 必须来自 module applicability policy。")
+    assert_true("lane_resolver_bypassed: true" in decision, "E2E D3A 必须跳过 Lane Resolver。")
+    assert_true("decision_rule: domain_workflow_owns_execution" in decision, "E2E D3A 必须由 domain workflow 接管执行。")
     assert_true("max_change_loc: 500" in plan, "E2E demo execution unit 必须声明 500 LOC。")
     assert_true("tran-build-pass" in evidence, "E2E demo 必须包含 tran_build evidence。")
     assert_true("DONE" in completion, "E2E demo 必须包含 completion summary。")
@@ -1083,60 +1220,37 @@ def test_adoption_and_deep_dive_docs_exist():
 
 def test_id_workflow_skill_exists_and_has_triggers():
     skill_path = ROOT / ".claude/skills/idc-workflow/SKILL.md"
-    command_path = ROOT / ".claude/commands/id-workflow.md"
     assert_true(skill_path.exists(), "缺少 ID workflow skill。")
-    assert_true(command_path.exists(), "缺少 /id-workflow slash command。")
     text = skill_path.read_text()
-    command = command_path.read_text()
-    command_files = sorted(path.name for path in (ROOT / ".claude/commands").glob("*.md"))
-    assert_true(command_files == ["id-workflow.md"], f"只允许保留 /id-workflow 薄入口 command：{command_files}。")
+    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.rb")
+    routed_resources = text + context_planner
+    commands_dir = ROOT / ".claude/commands"
+    command_files = sorted(commands_dir.glob("**/*")) if commands_dir.exists() else []
+    assert_true(not command_files, f"不应保留 .claude/commands 文件：{command_files}。")
     assert_true("name: idc-workflow" in text, "ID workflow skill 缺少 name。")
     assert_true("description:" in text, "ID workflow skill 缺少 description。")
     assert_true("This is the orchestration skill" in text, "ID workflow 必须声明自己是编排 skill。")
     assert_true("Alignment Pack" in text, "ID workflow skill 必须支持 Alignment Pack。")
     assert_true("TR3" in text, "ID workflow skill 必须支持 TR3。")
     assert_true("Domain = general" in text, "ID workflow skill 必须支持 general domain。")
-    assert_true("references/domains/general/module.yaml" in text, "ID workflow skill 必须加载 general module。")
+    assert_true("references/domains/general/module.yaml" in routed_resources, "Decision Context Plan 必须加载 general module。")
     assert_true("500 LOC" in text, "ID workflow skill 必须声明 500 LOC 限制。")
     assert_true("Human Alignment approval" in text, "ID workflow skill 必须要求 Human Alignment approval。")
     assert_true("Human View" in text, "ID workflow skill 必须声明用户可读视图。")
-    assert_true(".claude/commands/id-workflow.md" in text, "ID workflow skill 必须声明 slash command 入口。")
-    assert_true("/id-workflow <task>" in text, "ID workflow skill trigger 必须包含 /id-workflow。")
+    assert_true("$idc-workflow <task>" in text, "ID workflow skill trigger 必须包含显式 skill 调用示例。")
+    assert_true("natural language" in text, "ID workflow skill 必须支持自然语言自动匹配。")
+    assert_true("Do not add `.claude/commands` aliases" in text, "ID workflow skill 必须禁止 command alias 层。")
     assert_true("references/human-views/alignment-view.md" in text, "ID workflow skill 必须加载 Alignment View。")
-    assert_true("references/human-views/clarification-view.md" in text, "ID workflow skill 必须加载 Clarification View。")
+    assert_true("references/human-views/clarification-view.md" in routed_resources, "Clarification signal 必须加载 Clarification View。")
     assert_true("grill-me-method" in text, "ID workflow skill 必须声明 Grill Me method。")
     assert_true("upstream-superpowers-brainstorming" in text, "ID workflow skill 必须声明 upstream Superpowers brainstorming。")
     assert_true("idc-brainstorming-overlay" in text, "ID workflow skill 必须声明 IDC idc-brainstorming overlay。")
-    assert_true("references/human-views/brainstorming-view.md" in text, "ID workflow skill 必须加载 Brainstorming View。")
+    assert_true("references/human-views/brainstorming-view.md" in routed_resources, "Raw idea signal 必须加载 Brainstorming View。")
     assert_true("rough" in text and "Domain = general" in text and "run `idc-intent-discovery` first" in text, "ID workflow skill 必须在 skill 层声明 rough general 先进入 discovery。")
     for skill_name in ["idc-brainstorming", "idc-intent-discovery", "idc-intent-grilling", "idc-intent-alignment"]:
-        assert_true(f".claude/skills/{skill_name}/SKILL.md" in text, f"ID workflow 必须编排 {skill_name}。")
-    assert_true(".claude/skills/idc-intent-grilling-with-docs/SKILL.md" in text, "ID workflow 必须编排 idc-intent-grilling-with-docs。")
-    assert_true("grill-with-docs-method.md" in text, "ID workflow 必须加载 Grill With Docs method。")
-
-    for fragment in [
-        "# /id-workflow",
-        "$ARGUMENTS",
-        ".claude/skills/idc-workflow/SKILL.md",
-        "Thin user-facing alias",
-        "This command intentionally contains no workflow logic.",
-        "All executable behavior",
-        "idc-*",
-        "`/id-workflow` is the only user-facing command alias.",
-        "Command files must stay thin",
-        "All IDC capabilities must live under `.claude/skills/idc-*/SKILL.md`.",
-        "All IDC skill names must start with `idc-`.",
-    ]:
-        assert_true(fragment in command, f"/id-workflow command 缺少：{fragment}")
-    for forbidden in [
-        "Then route through:",
-        "After Human Alignment approval, continue through:",
-        "references/workflows/scenario-router.md",
-        "references/workflows/lane-resolver.md",
-        "references/workflows/tdd-state-machine.md",
-    ]:
-        assert_true(forbidden not in command, f"/id-workflow command 必须保持薄入口，不能包含流程逻辑：{forbidden}")
-
+        assert_true(f".claude/skills/{skill_name}/SKILL.md" in routed_resources, f"Context Plan 必须按需编排 {skill_name}。")
+    assert_true(".claude/skills/idc-intent-grilling-with-docs/SKILL.md" in routed_resources, "Context Plan 必须按需编排 idc-intent-grilling-with-docs。")
+    assert_true("grill-with-docs-method.md" in routed_resources, "Docs clarification signal 必须加载 Grill With Docs method。")
 
 def test_framework_behaviors_are_skillized_with_boundaries():
     for skill_dir in (ROOT / ".claude/skills").iterdir():
@@ -1157,8 +1271,10 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         "idc-intent-discovery",
         "idc-intent-grilling",
         "idc-intent-grilling-with-docs",
+        "idc-self-optimization",
         "idc-skill-adapter-router",
         "idc-superpowers-adapter",
+        "idc-team-config",
         "idc-tran-build",
     ]
     degraded_reference_nodes = {
@@ -1173,6 +1289,7 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         "idc-execution-unit-planner": "references/workflows/execution-unit-policy.md",
         "idc-progressive-constraint-loader": "references/workflows/progressive-constraint-loading.md",
         "idc-delegation-router": "references/workflows/delegation-router.md",
+        "idc-execution-authorization": "references/workflows/execution-authorization-gate.md",
         "idc-knowledge-gate": "references/workflows/knowledge-gate.md",
         "idc-provider-selection": "references/workflows/provider-selection-matrix.md",
         "idc-repo-context-provider": "references/workflows/repo-context-providers.md",
@@ -1183,7 +1300,6 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         "idc-resume-run": "references/workflows/resume-policy.md",
     }
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
-    command = read_text(".claude/commands/id-workflow.md")
     atomic_doc = read_text("docs/atomic-skills.md")
     boundary_doc = read_text("docs/skillization-boundary.md")
     assets_doc = read_text(".claude/skills/idc-workflow/assets/README.md")
@@ -1206,15 +1322,10 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         assert_true("## When To Use" in skill, f"{skill_name} 必须声明 When To Use。")
         assert_true("## Output" in skill, f"{skill_name} 必须声明 Output。")
         assert_true("## Hard Rules" in skill, f"{skill_name} 必须声明 Hard Rules。")
-        if skill_name == "idc-workflow":
-            assert_true(".claude/commands/id-workflow.md" in id_workflow, "idc-workflow 必须声明 slash command 入口。")
-        else:
-            assert_true(path in id_workflow, f"idc-workflow 必须编排 {skill_name}。")
         assert_true(skill_name in atomic_doc, f"atomic-skills 文档必须列出 {skill_name}。")
 
     for skill_name, reference_path in degraded_reference_nodes.items():
         assert_true(not (ROOT / ".claude/skills" / skill_name / "SKILL.md").exists(), f"{skill_name} 应降级为 references，不应继续作为 skill。")
-        assert_true(reference_path in id_workflow, f"idc-workflow 必须加载 {skill_name} 对应 reference：{reference_path}。")
         if not reference_path.endswith("/"):
             assert_true((ROOT / ".claude/skills/idc-workflow" / reference_path).exists(), f"{skill_name} 对应 reference 不存在：{reference_path}。")
 
@@ -1250,7 +1361,7 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         "references/workflows/input-adapter.md",
         "references/workflows/scenario-router.md",
         "references/workflows/domain-module-router.md if DOMAIN_MODULE",
-        ".claude/skills/idc-skill-adapter-router/SKILL.md if lower-level adapters are needed",
+        ".claude/skills/idc-skill-adapter-router/SKILL.md for selected lower-level adapters",
         "references/workflows/automated-closure-loop.md",
         "references/workflows/execution-unit-policy.md",
         "references/workflows/progressive-constraint-loading.md",
@@ -1263,7 +1374,7 @@ def test_framework_behaviors_are_skillized_with_boundaries():
     ]:
         assert_true(fragment in id_workflow, f"idc-workflow skill 必须使用 consolidated flow：{fragment}")
 
-    assert_true("薄入口" in README and "command 只保留薄入口别名" in README, "README 必须声明 commands 已转为 idc-* skills 的薄入口模型。")
+    assert_true("idc-workflow` skill" in README and "不维护 `.claude/commands`" in README, "README 必须声明 idc-workflow 是统一 skill 入口且不保留 commands。")
 
     for fragment in [
         "Should Be Skills",
@@ -1273,7 +1384,7 @@ def test_framework_behaviors_are_skillized_with_boundaries():
         "human-view templates",
         "knowledge templates",
         "References vs Assets",
-        "/id-workflow",
+        "$idc-workflow",
         "adapter skills",
     ]:
         assert_true(fragment in boundary_doc, f"skillization boundary 缺少：{fragment}")
@@ -1309,8 +1420,15 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
             "Use only when",
             "Do not use this skill merely because the request is short",
             "upstream Superpowers brainstorming",
+            "references/superpowers-brainstorming-method.md",
+            "Spike / Bounded / Architectural",
+            "never downgrade mid-run",
+            "one material discovery question at a time",
+            "self-review placeholders, consistency, scope, and ambiguity",
             "team brainstorming binding if available",
             "Company-owned brainstorming should be reused through Team Binding",
+            "AskUserTool",
+            "BLOCKED_NEEDS_ASK_USER_TOOL",
             "../idc-workflow/references/workflows/discovery-provider.md",
             "../idc-workflow/references/human-views/brainstorming-view.md",
             "Do not write implementation code.",
@@ -1323,6 +1441,8 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
             "Do not use idc-brainstorming merely because the request is short",
             "rough / vague / sketchy general coding request",
             "`general + rough` still uses this skill",
+            "AskUserTool",
+            "BLOCKED_NEEDS_ASK_USER_TOOL",
             "../idc-workflow/references/workflows/discovery-provider.md",
             "../idc-workflow/references/human-views/brainstorming-view.md",
             "Do not write implementation code.",
@@ -1334,6 +1454,8 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
             "Do not require a team binding for Grill Me",
             "../idc-workflow/references/workflows/clarification-provider.md",
             "../idc-workflow/references/human-views/clarification-view.md",
+            "AskUserTool",
+            "BLOCKED_NEEDS_ASK_USER_TOOL",
             "Do not decide Domain or Lane.",
         ],
         "idc-intent-grilling-with-docs": [
@@ -1342,6 +1464,8 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
             "references/grill-with-docs-method.md",
             "updated_doc_refs",
             "Do not edit source files",
+            "AskUserTool",
+            "BLOCKED_NEEDS_ASK_USER_TOOL",
             "Documentation created here is not RED evidence",
         ],
         "idc-intent-alignment": [
@@ -1349,6 +1473,8 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
             "Alignment View",
             "../idc-workflow/references/workflows/human-alignment.md",
             "../idc-workflow/references/schemas/alignment-pack.schema.yaml",
+            "AskUserTool",
+            "BLOCKED_NEEDS_ASK_USER_TOOL",
             "Do not show raw YAML as the primary user interface.",
         ],
     }
@@ -1357,6 +1483,26 @@ def test_atomic_pre_alignment_skills_exist_and_are_reusable():
         text = read_text(path)
         assert_true("description:" in text, f"{skill_name} 缺少 description。")
         assert_true("reusable outside D3A" in text, f"{skill_name} 必须声明可在 D3A 外复用。")
+
+    upstream_method_path = ROOT / ".claude/skills/idc-brainstorming/references/superpowers-brainstorming-method.md"
+    assert_true(upstream_method_path.exists(), "idc-brainstorming 必须实际携带 Superpowers brainstorming method。")
+    upstream_method = upstream_method_path.read_text()
+    for fragment in [
+        "https://github.com/obra/superpowers",
+        "Spike",
+        "Bounded",
+        "Architectural",
+        "One-Way Complexity Ratchet",
+        "Ask one decision at a time",
+        "Explore Approaches",
+        "Present The Design",
+        "Draft Spec Self-Review",
+        "IDC Terminal Mapping",
+        "Relationship To IDC Lane",
+        "Never map them directly",
+        "idc-intent-alignment for implementation approval",
+    ]:
+        assert_true(fragment in upstream_method, f"Superpowers brainstorming local method 缺少：{fragment}")
         for fragment in required_fragments:
             assert_true(fragment in text, f"{skill_name} 缺少关键片段：{fragment}")
 
@@ -1396,7 +1542,9 @@ def test_superpowers_adapter_skill_is_integrated_under_skills():
     for override in [
         "IDC rules override this adapter whenever they conflict.",
         "IDC Domain Module Router owns Domain selection.",
-        "IDC Lane Resolver owns execution intensity.",
+        "IDC module policy owns Lane applicability",
+        "D3A uses its fixed workflow with Lane marked `not_applicable`",
+        "Lane Resolver dynamically",
         "IDC Contract Gate owns required contracts.",
         "D3A Layer and DT Domain registries cannot be changed here.",
         "API Contract must be frozen before implementation.",
@@ -1405,7 +1553,7 @@ def test_superpowers_adapter_skill_is_integrated_under_skills():
     ]:
         assert_true(override in adapter, f"idc-superpowers-adapter 缺少 IDC override：{override}")
 
-    assert_true(".claude/skills/idc-superpowers-adapter/SKILL.md" in id_workflow, "idc-workflow 必须加载 idc-superpowers-adapter。")
+    assert_true("idc-superpowers-adapter" in read_text(".claude/skills/idc-workflow/references/registries/skill-adapters.yaml"), "Skill registry 必须允许 Selector 选择 idc-superpowers-adapter。")
     assert_true("Superpowers Adapter may provide the inner engineering loop" in id_workflow, "idc-workflow 必须声明 Superpowers Adapter 的边界。")
     assert_true("idc-superpowers-adapter" in atomic_doc, "atomic-skills 文档必须记录 idc-superpowers-adapter。")
     assert_true(".claude/skills/idc-superpowers-adapter/SKILL.md" in attribution, "source attribution 必须记录 adapter 落点。")
@@ -1419,7 +1567,7 @@ def test_gc_sop_and_original_repo_skill_adapters_exist():
     third = read_text(".claude/skills/idc-gc-third-skill-placeholder/SKILL.md")
     atomic_doc = read_text("docs/atomic-skills.md")
     checklist = read_text("docs/confidential-migration-checklist.md")
-    id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
+    adapter_registry = read_text(".claude/skills/idc-workflow/references/registries/skill-adapters.yaml")
 
     for path, text in [
         (".claude/skills/idc-gc-sop-adapter/SKILL.md", gc),
@@ -1474,7 +1622,7 @@ def test_gc_sop_and_original_repo_skill_adapters_exist():
 
     for fragment in ["idc-gc-sop-adapter", "idc-dt-design", "idc-dt-writer", "idc-gc-third-skill-placeholder"]:
         assert_true(fragment in atomic_doc, f"atomic-skills 文档缺少 {fragment}。")
-        assert_true(f".claude/skills/{fragment}/SKILL.md" in id_workflow, f"idc-workflow 未加载 {fragment}。")
+        assert_true(fragment in adapter_registry, f"Skill registry 未注册 {fragment}。")
 
     assert_true("真实 GC 全家桶 SOP atomic ability mapping" in checklist, "保密区 checklist 必须包含 GC SOP mapping。")
     assert_true("`idc-dt-design`、`idc-dt-writer`、`<ENTERPRISE_GC_THIRD_SKILL_NAME>`" in checklist, "保密区 checklist 必须列出三个原仓 skill。")
@@ -1559,6 +1707,39 @@ def test_human_views_exist_and_hide_raw_yaml():
     assert_true("不把技术日志全文塞给用户" in escalation, "Escalation View 必须避免展示完整日志。")
 
 
+def test_user_questions_must_use_ask_user_tool():
+    policy = read_text(".claude/skills/idc-workflow/references/workflows/ask-user-tool-policy.md")
+    id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
+    claude = read_text("CLAUDE.md")
+    files = [
+        ".claude/skills/idc-workflow/references/workflows/discovery-provider.md",
+        ".claude/skills/idc-workflow/references/workflows/clarification-provider.md",
+        ".claude/skills/idc-workflow/references/workflows/human-alignment.md",
+        ".claude/skills/idc-workflow/references/workflows/resume-policy.md",
+        ".claude/skills/idc-workflow/references/workflows/automated-closure-loop.md",
+        ".claude/skills/idc-workflow/references/human-views/brainstorming-view.md",
+        ".claude/skills/idc-workflow/references/human-views/clarification-view.md",
+        ".claude/skills/idc-workflow/references/human-views/alignment-view.md",
+        ".claude/skills/idc-workflow/references/human-views/escalation-view.md",
+        ".claude/skills/idc-brainstorming/SKILL.md",
+        ".claude/skills/idc-intent-discovery/SKILL.md",
+        ".claude/skills/idc-intent-grilling/SKILL.md",
+        ".claude/skills/idc-intent-grilling-with-docs/SKILL.md",
+        ".claude/skills/idc-intent-alignment/SKILL.md",
+    ]
+
+    assert_true("所有问用户的问题" in claude and "AskUserTool" in claude, "CLAUDE.md 必须声明 AskUserTool 统一提问约束。")
+    assert_true("AskUserTool Policy" in policy, "必须存在 AskUserTool policy。")
+    assert_true("BLOCKED_NEEDS_ASK_USER_TOOL" in policy, "AskUserTool 不可用时必须阻塞。")
+    assert_true("references/workflows/ask-user-tool-policy.md" in id_workflow, "idc-workflow 必须加载 AskUserTool policy。")
+    assert_true("do not ask the user by plain text" in id_workflow, "idc-workflow 必须禁止普通文本追问。")
+
+    for file_name in files:
+        text = read_text(file_name)
+        assert_true("AskUserTool" in text, f"{file_name} 必须声明用户问题走 AskUserTool。")
+        assert_true("BLOCKED_NEEDS_ASK_USER_TOOL" in text, f"{file_name} 必须声明 AskUserTool 不可用时阻塞。")
+
+
 def test_clarification_provider_uses_grill_me_method_with_fallback():
     workflow = read_text(".claude/skills/idc-workflow/references/workflows/clarification-provider.md")
     schema = read_text(".claude/skills/idc-workflow/references/schemas/clarification-provider.schema.yaml")
@@ -1571,6 +1752,7 @@ def test_clarification_provider_uses_grill_me_method_with_fallback():
     docs_method = read_text(".claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md")
     template = read_text(".claude/skills/idc-intent-grilling/assets/question-card-template.md")
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
+    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.rb")
 
     assert_true("mattpocock/skills" in workflow, "Clarification Provider 必须标注 Grill Me 方法论来源。")
     assert_true("grill-me-method" in workflow, "Clarification Provider 必须声明 grill-me-method。")
@@ -1588,7 +1770,6 @@ def test_clarification_provider_uses_grill_me_method_with_fallback():
     assert_true("decision_tree:" in schema, "Clarification Provider schema 必须包含 decision tree。")
     assert_true("commitment_check:" in schema, "Clarification Provider schema 必须包含 commitment check。")
     assert_true("Provider cannot override Domain, Lane, contract, or completion gate." in schema, "Clarification Provider 不能覆盖核心决策。")
-    assert_true("MIT License" in attribution, "Source attribution 必须记录 MIT License。")
     assert_true("https://github.com/mattpocock/skills" in attribution, "Source attribution 必须记录来源 URL。")
     assert_true("workflows/clarification-provider.md" in human_alignment, "Human Alignment 必须引用 Clarification Provider。")
     assert_true("禁止把 Clarification 折叠进 Alignment View" in human_alignment, "Human Alignment 必须禁止澄清短路进 Alignment。")
@@ -1627,10 +1808,10 @@ def test_clarification_provider_uses_grill_me_method_with_fallback():
         "Do not show raw YAML to the user.",
     ]:
         assert_true(fragment in template, f"Grill Me question card asset 缺少：{fragment}")
-    assert_true(".claude/skills/idc-intent-grilling/references/grill-me-method.md" in id_workflow, "idc-workflow 必须加载 idc-intent-grilling method reference。")
-    assert_true(".claude/skills/idc-intent-grilling/assets/question-card-template.md" in id_workflow, "idc-workflow 必须加载 idc-intent-grilling question card asset。")
-    assert_true(".claude/skills/idc-intent-grilling-with-docs/SKILL.md" in id_workflow, "idc-workflow 必须加载 idc-intent-grilling-with-docs。")
-    assert_true(".claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md" in id_workflow, "idc-workflow 必须加载 Grill With Docs method reference。")
+    assert_true(".claude/skills/idc-intent-grilling/references/grill-me-method.md" in context_planner, "Clarification Context Plan 必须加载 idc-intent-grilling method reference。")
+    assert_true("question-card-template.md" in read_text(".claude/skills/idc-intent-grilling/SKILL.md"), "idc-intent-grilling 必须按需引用 question card asset。")
+    assert_true(".claude/skills/idc-intent-grilling-with-docs/SKILL.md" in context_planner, "Docs clarification Context Plan 必须加载 idc-intent-grilling-with-docs。")
+    assert_true(".claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md" in context_planner, "Docs clarification Context Plan 必须加载 Grill With Docs method reference。")
 
 
 def test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea():
@@ -1657,8 +1838,9 @@ def test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea():
     assert_true("next_pre_alignment_step: Discovery Provider" in input_adapter, "raw_idea 必须进入 Discovery Provider。")
     assert_true("tr3_design_doc 默认跳过 Discovery Provider" in normalized_schema, "Normalized schema 必须声明 TR3 跳过 Discovery。")
     assert_true("https://github.com/obra/superpowers" in attribution, "Source attribution 必须记录 Superpowers 来源 URL。")
-    assert_true("Copyright (c) 2025 Jesse Vincent" in attribution, "Source attribution 必须记录 Superpowers copyright。")
     assert_true("upstream baseline" in attribution, "Source attribution 必须声明 upstream baseline。")
+    assert_true("lane_decision_deferred: true" in schema, "Discovery 必须把 Lane 决策延迟给 Lane Resolver。")
+    assert_true("must not map directly to IDC Lane" in schema, "Superpowers path 不能直接映射 IDC Lane。")
 
 
 def test_planner_cannot_produce_registry_external_layers():
@@ -1773,7 +1955,6 @@ def test_no_red_evidence_cannot_enter_green():
 
 def test_tdd_extensions_are_team_config_driven():
     tdd = read_text(".claude/skills/idc-workflow/references/workflows/tdd-state-machine.md")
-    id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
     expected_workflows = {
         "impl-review.md": "team-config.yaml.bindings.impl_review.skill_ref",
         "scan-and-fix-loop.md": "team-config.yaml.bindings.static_scan.skill_ref",
@@ -1786,7 +1967,6 @@ def test_tdd_extensions_are_team_config_driven():
         text = read_text(path)
         assert_true(binding_ref in text, f"{file_name} 必须通过 team-config 引用 skill。")
         assert_true("Do not hard-code" in text or "does not hard-code" in text, f"{file_name} 必须禁止硬编码企业路径或命令。")
-        assert_true(f"references/workflows/{file_name}" in id_workflow, f"idc-workflow 必须加载 {file_name}。")
     for state in [
         "IMPL_REVIEW",
         "SCAN_RUNNING",
@@ -1802,9 +1982,9 @@ def test_tdd_extensions_are_team_config_driven():
 
 def test_registries_are_team_config_overridable():
     template = read_text("team-config.yaml.template")
-    assert_true("d3a_dt_domains: []" in template, "team-config 模板必须保留 domain.d3a_dt_domains 覆盖键。")
+    assert_true("dt_domains: []" in template, "team-config 模板必须保留 domain.d3a.dt_domains 覆盖键。")
     assert_true("components: []" in template and "test_domains: []" in template, "team-config 模板必须有 general.components / general.test_domains 覆盖键。")
-    assert_true("dt_docs" not in template, "knowledge.dt_docs 已并入 domain.d3a_dt_domains 条目，不得复活。")
+    assert_true("dt_docs" not in template, "knowledge.dt_docs 已并入 domain.d3a.dt_domains 条目，不得复活。")
     assert_true("d3a_layers" not in template, "D3A Layer 架构固定，不提供配置覆盖键。")
     chain_files = [
         ".claude/skills/idc-workflow/references/workflows/domain-module-router.md",
@@ -1829,28 +2009,21 @@ def test_filled_team_config_when_present():
     if not config_file.exists():
         return
     text = config_file.read_text(encoding="utf-8")
-    for leftover in ["<TEAM_ID>", "<REPO_PATH>", "<SKILL_BASE_PATH>", "<DT_ID>", "<ENTERPRISE_"]:
+    for leftover in ["<TEAM_ID>", "<REPO_PATH>", "<DT_ID>", "<ENTERPRISE_"]:
         assert_true(leftover not in text, f"team-config.yaml 仍有未填占位符：{leftover}")
     team_block = text.split("domain:")[0]
-    for key in ["id:", "repo_path:", "skill_base_path:"]:
+    for key in ["id:", "repo_path:"]:
         line = next((l for l in team_block.splitlines() if l.strip().startswith(key)), "")
         value = line.split(":", 1)[1].strip() if line else ""
         assert_true(value and value != "null", f"team.{key[:-1]} 必须填写真实值。")
-    base = re.search(r"skill_base_path:\s*(\S+)", text)
-    if base:
-        base_path = Path(base.group(1)) if base.group(1).startswith("/") else ROOT / base.group(1)
-        assert_true(base_path.exists(), "team.skill_base_path 指向的目录不存在。")
     for match in re.finditer(r"skill_ref:\s*(\S+)", text):
         ref = match.group(1)
         if ref == "null":
             continue
         resolved = Path(ref) if ref.startswith("/") else ROOT / ref
         assert_true(resolved.exists(), f"skill_ref 指向的文件不存在：{ref}")
-    assert_true(
-        ("use_d3a: true" in text and "custom_domain_id: null" in text)
-        or ("use_d3a: false" in text and re.search(r"custom_domain_id:\s*\S+", text) and "custom_domain_id: null" not in text),
-        "domain 设置必须二选一：use_d3a=true 且 custom_domain_id=null，或 use_d3a=false 且填写 custom_domain_id。",
-    )
+    mode = re.search(r"^\s+mode:\s*(d3a|general|custom)\s*$", text, flags=re.MULTILINE)
+    assert_true(mode is not None, "domain.mode 必须是 d3a/general/custom。")
     for match in re.finditer(r"-\s+id:\s*(\S+)\s*\n\s+knowledge_ref:\s*(\S+)", text):
         domain_id, knowledge_ref = match.group(1), match.group(2)
         assert_true(not knowledge_ref.startswith("<"), f"{domain_id} 的 knowledge_ref 未填写真实值。")
@@ -1858,8 +2031,508 @@ def test_filled_team_config_when_present():
         assert_true(key not in text, f"填好的 team-config.yaml 不允许出现命令键（严格 skill_ref 模型）：{key}")
 
 
+def test_team_config_resolver_and_lane_capability_selection_execute():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    config = ROOT / "examples/team-config.full-bindings.yaml"
+    assert_true(resolver.exists() and selector.exists() and preflight.exists() and context_planner.exists(), "单配置 Preflight / Resolver / Capability Selector / Context Planner 脚本缺失。")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        effective = Path(temp_dir) / "effective.yaml"
+        resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(resolved.returncode == 0, f"team-config Resolver 执行失败：{resolved.stderr}")
+        effective_text = effective.read_text(encoding="utf-8")
+        assert_true("source_sha256:" in effective_text, "有效配置必须记录源 YAML digest，避免陈旧运行态。")
+        assert_true("available_capabilities:" in effective_text, "有效配置必须物化已绑定 capabilities。")
+        assert_true(effective_text.count("source: fixed-binding") == 20, "20 个绑定必须全部进入 available capabilities。")
+        assert_true("source: adapter-extension" in effective_text and "idc-team-api-review" in effective_text, "团队 adapter extension 必须进入有效候选池。")
+        assert_true("registration_audit:" in effective_text and "status: PASS" in effective_text, "有效配置必须通过 Skill Registration Audit。")
+        assert_true("fast-implement" in effective_text and "complex-plan" in effective_text, "每个 Lane 的 Skill 编排必须物化进有效配置。")
+
+        expected = {
+            "fast": (1, ["coding_standard"]),
+            "lite": (4, ["tech_design", "phase_plan"]),
+            "complex": (5, ["tech_design", "phase_plan", "scene_challenge"]),
+            "d3a": (2, ["dt_design", "ut_design"]),
+        }
+        for name, (count, ids) in expected.items():
+            result = subprocess.run(
+                ["ruby", str(selector), "--effective", str(effective), "--demand", str(ROOT / f"examples/capability-demands/{name}.yaml")],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            assert_true(result.returncode == 0, f"{name} Capability Selection 失败：{result.stderr}")
+            assert_true(result.stdout.count("capability_id:") >= count, f"{name} 没有输出足够的 selection/skip decision。")
+            selected_block = result.stdout.split("skipped:", 1)[0]
+            assert_true(selected_block.count("capability_id:") == count, f"{name} 选择数量错误，期望 {count}。")
+            for capability_id in ids:
+                assert_true(f"capability_id: {capability_id}" in selected_block, f"{name} 应选择 {capability_id}。")
+            assert_true("status: READY" in result.stdout, f"{name} selection 必须 READY。")
+
+        fast_result = subprocess.run(
+            ["ruby", str(selector), "--effective", str(effective), "--demand", str(ROOT / "examples/capability-demands/fast.yaml")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true("mode: ordered" in fast_result.stdout and "fast-implement" in fast_result.stdout, "Fast 必须执行团队 ordered orchestration。")
+        assert_true("requirement: configured" in fast_result.stdout and "execution_order: 1" in fast_result.stdout, "配置步骤必须成为有顺序的实际选择。")
+
+        missing_stage_demand = Path(temp_dir) / "fast-review.yaml"
+        missing_stage_demand.write_text(
+            """capability_demand:
+  selected_stage: review
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: fast
+  execution_profile: lane_driven
+  required_capability_keys: []
+  optional_capability_keys: []
+  observed_signals: []
+  contract_refs: []
+""",
+            encoding="utf-8",
+        )
+        missing_stage = subprocess.run(
+            ["ruby", str(selector), "--effective", str(effective), "--demand", str(missing_stage_demand)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(missing_stage.returncode == 3 and "NEEDS_ORCHESTRATION_MAPPING" in missing_stage.stdout, "ordered Lane 缺少当前 stage 时必须阻断，不能静默回退。")
+
+        denied_demand = Path(temp_dir) / "complex-finishing.yaml"
+        denied_demand.write_text(
+            """capability_demand:
+  selected_stage: finishing
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: complex
+  execution_profile: lane_driven
+  required_capability_keys: [atomic_commit]
+  optional_capability_keys: []
+  observed_signals: [atomic_commit_required]
+  contract_refs: []
+""",
+            encoding="utf-8",
+        )
+        denied = subprocess.run(
+            ["ruby", str(selector), "--effective", str(effective), "--demand", str(denied_demand)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(denied.returncode == 2 and "team_lane_denied" in denied.stdout, "Lane deny 配置必须真正排除 Skill。")
+        assert_true("status: NEEDS_ADAPTER_MAPPING" in denied.stdout, "被 deny 的必需能力不得从默认 registry 偷偷补回。")
+
+        invalid = Path(temp_dir) / "invalid.yaml"
+        invalid.write_text(config.read_text(encoding="utf-8") + "\ncommand: forbidden\n", encoding="utf-8")
+        rejected = subprocess.run(
+            ["ruby", str(resolver), "--config", str(invalid), "--check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(rejected.returncode != 0 and "is forbidden" in rejected.stderr, "Resolver 必须拒绝命令键。")
+
+        unknown_lane_skill = Path(temp_dir) / "unknown-lane-skill.yaml"
+        unknown_lane_skill.write_text(config.read_text(encoding="utf-8").replace("allow: [coding_standard, static_scan, defect_fix]", "allow: [coding_standard, idc-not-bound]", 1), encoding="utf-8")
+        unknown_rejected = subprocess.run(
+            ["ruby", str(resolver), "--config", str(unknown_lane_skill), "--check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(unknown_rejected.returncode != 0 and "references unavailable skill ID: idc-not-bound" in unknown_rejected.stderr, "Lane 引用未绑定 Skill 时 Resolver 必须拒绝。")
+
+        protected_binding = Path(temp_dir) / "protected-domain-skill-binding.yaml"
+        protected_binding.write_text(
+            config.read_text(encoding="utf-8").replace(
+                "coding_standard: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}",
+                "coding_standard: {skill_ref: .claude/skills/idc-general-coding/SKILL.md}",
+                1,
+            ),
+            encoding="utf-8",
+        )
+        protected_rejected = subprocess.run(
+            ["ruby", str(resolver), "--config", str(protected_binding), "--check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(protected_rejected.returncode != 0 and "binds an orchestration/domain Skill as an atomic capability" in protected_rejected.stderr, "General Coding 等外层 Skill 不得注册进原子 binding。")
+
+        overlap_row = """  - id: idc-overlap-coding
+    execution_role: atomic_capability
+    capability_keys: [coding_standard]
+    allowed_stages: [implementation]
+    eligible_lanes: [complex]
+    execution_profiles: []
+    trigger_signals: [implementation_required]
+    skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md
+    evidence_required: true
+    composes_with: []
+    supersedes: []
+"""
+        ambiguous_config = Path(temp_dir) / "ambiguous-registration.yaml"
+        ambiguous_config.write_text(config.read_text(encoding="utf-8").replace("adapter_extensions:\n", "adapter_extensions:\n" + overlap_row, 1), encoding="utf-8")
+        ambiguous = subprocess.run(
+            ["ruby", str(resolver), "--config", str(ambiguous_config), "--check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(ambiguous.returncode != 0 and "ambiguous capability registration" in ambiguous.stderr, "未声明策略的 capability/stage/scope/trigger 重叠必须被拒绝。")
+
+        pre_alignment_overlap = overlap_row.replace("idc-overlap-coding", "idc-overlap-brainstorming")
+        pre_alignment_overlap = pre_alignment_overlap.replace("execution_role: atomic_capability", "execution_role: pre_alignment_capability")
+        pre_alignment_overlap = pre_alignment_overlap.replace("[coding_standard]", "[brainstorming]")
+        pre_alignment_overlap = pre_alignment_overlap.replace("[implementation]", "[discovery]")
+        pre_alignment_overlap = pre_alignment_overlap.replace("[complex]", "[]")
+        pre_alignment_overlap = pre_alignment_overlap.replace("[implementation_required]", "[input_maturity_raw_idea]")
+        pre_alignment_config = Path(temp_dir) / "ambiguous-pre-alignment.yaml"
+        pre_alignment_config.write_text(config.read_text(encoding="utf-8").replace("adapter_extensions:\n", "adapter_extensions:\n" + pre_alignment_overlap, 1), encoding="utf-8")
+        pre_alignment_rejected = subprocess.run(
+            ["ruby", str(resolver), "--config", str(pre_alignment_config), "--check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(pre_alignment_rejected.returncode != 0 and "ambiguous capability registration" in pre_alignment_rejected.stderr, "无 Lane 的 Pre-alignment capability 重叠也必须被检测。")
+
+        composed_config = Path(temp_dir) / "composed-registration.yaml"
+        composed_config.write_text(ambiguous_config.read_text(encoding="utf-8").replace("composes_with: []", "composes_with: [coding_standard]", 1), encoding="utf-8")
+        composed_effective = Path(temp_dir) / "composed-effective.yaml"
+        composed = subprocess.run(
+            ["ruby", str(resolver), "--config", str(composed_config), "--output", str(composed_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(composed.returncode == 0 and "resolution: compose" in composed_effective.read_text(encoding="utf-8"), "显式 composes_with 必须允许有意组合。")
+
+        superseding_config = Path(temp_dir) / "superseding-registration.yaml"
+        superseding_config.write_text(ambiguous_config.read_text(encoding="utf-8").replace("supersedes: []", "supersedes: [coding_standard]", 1), encoding="utf-8")
+        superseding_effective = Path(temp_dir) / "superseding-effective.yaml"
+        superseding = subprocess.run(
+            ["ruby", str(resolver), "--config", str(superseding_config), "--output", str(superseding_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(superseding.returncode == 0, "显式 supersedes 必须通过 Registration Audit。")
+        complex_impl_demand = Path(temp_dir) / "complex-implementation.yaml"
+        complex_impl_demand.write_text(
+            """capability_demand:
+  selected_stage: implementation
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: complex
+  execution_profile: lane_driven
+  required_capability_keys: [coding_standard]
+  optional_capability_keys: []
+  observed_signals: [implementation_required]
+  contract_refs: []
+""",
+            encoding="utf-8",
+        )
+        superseded_selection = subprocess.run(
+            ["ruby", str(selector), "--effective", str(superseding_effective), "--demand", str(complex_impl_demand)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(superseded_selection.returncode == 0 and "capability_id: idc-overlap-coding" in superseded_selection.stdout, "superseding Skill 必须进入真实选择结果。")
+        assert_true("capability_id: coding_standard" in superseded_selection.stdout and "reason: superseded" in superseded_selection.stdout, "被替代 Skill 必须明确记录 superseded。")
+
+        zero_budget_config = Path(temp_dir) / "zero-lite-budget.yaml"
+        zero_budget_config.write_text(config.read_text(encoding="utf-8").replace("lite: {max_optional_skills: 3}", "lite: {max_optional_skills: 0}"), encoding="utf-8")
+        zero_budget_effective = Path(temp_dir) / "zero-lite-budget-effective.yaml"
+        zero_budget_resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(zero_budget_config), "--output", str(zero_budget_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(zero_budget_resolved.returncode == 0, "团队必须能够调整任意 Lane 的 optional Skill budget。")
+        zero_budget_selected = subprocess.run(
+            ["ruby", str(selector), "--effective", str(zero_budget_effective), "--demand", str(ROOT / "examples/capability-demands/lite.yaml")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        zero_selected_block = zero_budget_selected.stdout.split("skipped:", 1)[0]
+        assert_true(zero_selected_block.count("capability_id:") == 2, "Lite budget=0 时只能保留团队编排的两个 Skill。")
+        assert_true("optional_budget_exhausted" in zero_budget_selected.stdout, "调整后的 Lane budget 必须在运行时生效。")
+
+        legacy_config = Path(temp_dir) / "legacy-v1.yaml"
+        legacy_text = re.sub(r"lane:\n  default: lite\n  profiles:.*?\ncapability_selection:", "lane:\n  default: lite\ncapability_selection:", config.read_text(encoding="utf-8"), flags=re.S)
+        legacy_config.write_text(legacy_text, encoding="utf-8")
+        legacy_effective = Path(temp_dir) / "legacy-effective.yaml"
+        legacy_resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(legacy_config), "--output", str(legacy_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(legacy_resolved.returncode == 0, "缺少 lane.profiles 的旧 V1 配置必须保持兼容。")
+        assert_true("profiles:" in legacy_effective.read_text(encoding="utf-8"), "Resolver 必须为旧配置物化 autonomous Lane profiles。")
+
+        team_repo = Path(temp_dir) / "second-team-repo"
+        team_skill = team_repo / "skills/team-coding/SKILL.md"
+        team_skill.parent.mkdir(parents=True)
+        team_skill.write_text("---\nname: team-coding\ndescription: portable test skill\n---\n", encoding="utf-8")
+        portable_config = Path(temp_dir) / "team-config.yaml"
+        portable_text = config.read_text(encoding="utf-8")
+        portable_text = portable_text.replace("repo_path: .", f"repo_path: {team_repo}", 1)
+        portable_text = portable_text.replace(
+            "coding_standard: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}",
+            "coding_standard: {skill_ref: 'team://skills/team-coding/SKILL.md'}",
+            1,
+        )
+        portable_config.write_text(portable_text, encoding="utf-8")
+        portable_effective = Path(temp_dir) / "portable-effective.yaml"
+        portable_preflight = subprocess.run(
+            ["ruby", str(preflight), "--config", str(portable_config), "--output", str(portable_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            portable_preflight.returncode == 0 and "status: READY" in portable_preflight.stdout,
+            f"第二团队只填 YAML 后，自动 preflight 必须 READY：{portable_preflight.stdout}\n{portable_preflight.stderr}",
+        )
+        assert_true("registration_audit_status: PASS" in portable_preflight.stdout, "第二团队配置必须通过 Skill Registration Audit。")
+        assert_true("lane_policy_check_count: 6" in portable_preflight.stdout, "Preflight 必须用真实 Selector 验证三个 Lane 的 steps 与 required Skills。")
+        bootstrap_block = portable_preflight.stdout.split("bootstrap_load_plan:", 1)[1].split("lane_policy_check_count:", 1)[0]
+        assert_true("load_policy: read_required_refs_only" in bootstrap_block, "Preflight 必须输出机器化 bootstrap Context Load Plan。")
+        assert_true(bootstrap_block.count("    - ") == 3, "Bootstrap 只能加载 Input / Scenario / Domain Router 三个最小引用。")
+        assert_true("skill-adapters.yaml" not in bootstrap_block and "idc-general-coding/SKILL.md" not in bootstrap_block, "Bootstrap 不得预加载 registry 或 Domain execution Skill。")
+        portable_effective_text = portable_effective.read_text(encoding="utf-8")
+        assert_true(str(team_skill) in portable_effective_text, "team:// Skill 必须按第二团队 repo_path 解析为绝对路径。")
+        assert_true(not list(portable_effective.parent.glob(".*effective*.tmp-*")), "Resolver 原子写入后不得残留临时配置。")
+        portable_selection = subprocess.run(
+            ["ruby", str(selector), "--effective", str(portable_effective), "--demand", str(ROOT / "examples/capability-demands/fast.yaml")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(portable_selection.returncode == 0 and str(team_skill) in portable_selection.stdout, "跨团队 Skill 绝对路径必须进入真实选择结果。")
+
+        missing_preflight = subprocess.run(
+            ["ruby", str(preflight), "--config", str(Path(temp_dir) / "missing.yaml"), "--output", str(Path(temp_dir) / "missing-effective.yaml")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(missing_preflight.returncode == 2 and "NEEDS_TEAM_CONFIG" in missing_preflight.stdout, "缺少 team-config.yaml 时必须阻断，不能使用 template 或旧 runtime fallback。")
+
+        missing_knowledge_config = Path(temp_dir) / "missing-knowledge.yaml"
+        missing_knowledge_config.write_text(
+            portable_text.replace("architecture_doc_ref: null", "architecture_doc_ref: 'team://docs/missing-architecture.md'", 1),
+            encoding="utf-8",
+        )
+        missing_knowledge = subprocess.run(
+            ["ruby", str(preflight), "--config", str(missing_knowledge_config), "--output", str(Path(temp_dir) / "missing-knowledge-effective.yaml")],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(missing_knowledge.returncode != 0 and "knowledge.architecture_doc_ref does not exist" in missing_knowledge.stdout, "错误的本地 knowledge ref 必须在 preflight 阶段暴露。")
+
+        minimal_effective = Path(temp_dir) / "minimal-effective.yaml"
+        minimal_preflight = subprocess.run(
+            ["ruby", str(preflight), "--config", str(ROOT / "examples/team-config.minimal.yaml"), "--output", str(minimal_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(minimal_preflight.returncode == 0 and "status: READY" in minimal_preflight.stdout, "最小 General team-config 必须无需额外配置即可 preflight READY。")
+        minimal_text = minimal_effective.read_text(encoding="utf-8")
+        for fragment in ["default: lite", "mode: autonomous", "mode: disabled", "max_optional_skills: 1"]:
+            assert_true(fragment in minimal_text, f"最小配置必须物化安全默认值：{fragment}")
+
+        custom_effective = Path(temp_dir) / "custom-effective.yaml"
+        custom = subprocess.run(
+            ["ruby", str(resolver), "--config", str(ROOT / "examples/team-config.custom-domain.yaml"), "--output", str(custom_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(custom.returncode == 0, f"Custom Domain 单配置解析失败：{custom.stderr}")
+        custom_text = custom_effective.read_text(encoding="utf-8")
+        assert_true("source: team-config-inline" in custom_text and "id: demo-payment" in custom_text, "Custom Domain 必须从 team-config 内联物化。")
+
+        decision_plan = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "general", "--lane", "fast"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(decision_plan.returncode == 0 and "status: READY" in decision_plan.stdout, f"General Decision Context Plan 失败：{decision_plan.stdout}\n{decision_plan.stderr}")
+        assert_true("domains/general/module.yaml" in decision_plan.stdout and "lanes/fast.yaml" in decision_plan.stdout, "Decision 阶段必须加载命中的 Domain 与 Lane。")
+        assert_true("domains/d3a/module.yaml" not in decision_plan.stdout and "idc-gc-sop-adapter/SKILL.md" not in decision_plan.stdout, "Decision 阶段不得预加载 D3A 或执行 adapter。")
+
+        d3a_plan = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "planning", "--domain", "d3a"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(d3a_plan.returncode == 0 and "d3a-planning-constraints.yaml" in d3a_plan.stdout, "D3A Planning 必须在无 Lane 参数时生成固定流程上下文。")
+        assert_true("lanes/fast.yaml" not in d3a_plan.stdout and "lane-resolver.md" not in d3a_plan.stdout, "D3A 不得加载动态 Lane 上下文。")
+
+        selection_file = Path(temp_dir) / "fast-selection.yaml"
+        selected = subprocess.run(
+            ["ruby", str(selector), "--effective", str(effective), "--demand", str(ROOT / "examples/capability-demands/fast.yaml"), "--output", str(selection_file)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(selected.returncode == 0, f"Context Planner 测试准备 selection 失败：{selected.stderr}")
+        execution_plan = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--selection", str(selection_file)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(execution_plan.returncode == 0 and "status: READY" in execution_plan.stdout, f"Execution Context Plan 失败：{execution_plan.stdout}\n{execution_plan.stderr}")
+        assert_true("capability_id: coding_standard" in execution_plan.stdout and "idc-general-coding/SKILL.md" in execution_plan.stdout, "Execution 必须加载 Domain protocol 与真实选中能力。")
+        assert_true("capability_id: dt_build" not in execution_plan.stdout and "idc-d3a-coding/SKILL.md" not in execution_plan.stdout, "Fast General execution 不得加载未选中的 DT/D3A Skill。")
+
+        missing_selection = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "execution", "--domain", "general", "--lane", "fast"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(missing_selection.returncode != 0 and "--selection is required for execution" in missing_selection.stdout, "Execution 不得绕过 Capability Selector 直接生成加载计划。")
+
+        custom_plan = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(custom_effective), "--phase", "planning", "--domain", "custom", "--lane", "lite"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(custom_plan.returncode == 0 and ".claude/skills/idc-general-coding/SKILL.md" in custom_plan.stdout, "Custom Domain 必须按阶段加载 team-config 绑定的 planner Skill。")
+
+        workflow_text = read_text(".claude/skills/idc-workflow/SKILL.md")
+        assert_true("Read these files first" not in workflow_text, "idc-workflow 不得保留全量首读清单。")
+        assert_true(len(workflow_text.splitlines()) <= 320, "idc-workflow 入口说明重新膨胀，破坏 progressive disclosure。")
+
+
 def can_enter_all_layers_green(required_domains, green_domains):
     return set(required_domains) <= set(green_domains)
+
+
+def test_d3a_and_general_lane_runtime_matrix_execute():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    authorizer = ROOT / ".claude/skills/idc-workflow/scripts/authorize_execution.rb"
+    matrix = {
+        "fast": {"domain": "general", "lane": "fast", "selected": 1, "domain_skill": ".claude/skills/idc-general-coding/SKILL.md"},
+        "lite": {"domain": "general", "lane": "lite", "selected": 4, "domain_skill": ".claude/skills/idc-general-coding/SKILL.md"},
+        "complex": {"domain": "general", "lane": "complex", "selected": 5, "domain_skill": ".claude/skills/idc-general-coding/SKILL.md"},
+        "d3a": {"domain": "d3a", "lane": None, "selected": 2, "domain_skill": ".claude/skills/idc-d3a-coding/SKILL.md"},
+    }
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        effective = Path(temp_dir) / "effective.yaml"
+        resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(ROOT / "examples/team-config.full-bindings.yaml"), "--output", str(effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(resolved.returncode == 0, f"Runtime matrix Resolver 失败：{resolved.stderr}")
+
+        for scenario, expected in matrix.items():
+            selection = Path(temp_dir) / f"{scenario}-selection.yaml"
+            selected = subprocess.run(
+                ["ruby", str(selector), "--effective", str(effective), "--demand", str(ROOT / f"examples/capability-demands/{scenario}.yaml"), "--output", str(selection)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            assert_true(selected.returncode == 0, f"{scenario} Selector 失败：{selected.stdout}\n{selected.stderr}")
+            selection_text = selection.read_text(encoding="utf-8")
+            selected_block = selection_text.split("skipped:", 1)[0]
+            assert_true("status: READY" in selection_text, f"{scenario} Selector 未 READY。")
+            assert_true(selected_block.count("capability_id:") == expected["selected"], f"{scenario} 选择数量错误。")
+
+            phase_outputs = {}
+            for phase in ["decision", "planning", "execution", "completion"]:
+                command = [
+                    "ruby", str(context_planner),
+                    "--effective", str(effective),
+                    "--phase", phase,
+                    "--domain", expected["domain"],
+                ]
+                if expected["lane"]:
+                    command.extend(["--lane", expected["lane"]])
+                if phase == "execution":
+                    command.extend(["--selection", str(selection)])
+                planned = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+                assert_true(planned.returncode == 0 and "status: READY" in planned.stdout, f"{scenario}/{phase} Context Plan 失败：{planned.stdout}\n{planned.stderr}")
+                phase_outputs[phase] = planned.stdout
+
+            execution_output = phase_outputs["execution"]
+            assert_true(expected["domain_skill"] in execution_output, f"{scenario} 未加载正确的 Domain execution Skill。")
+            assert_true(execution_output.count("capability_id:") == expected["selected"], f"{scenario} Context Plan 没有保留全部选中能力。")
+            if expected["domain"] == "d3a":
+                all_output = "\n".join(phase_outputs.values())
+                assert_true("lane: " in all_output and "lane: fast" not in all_output and "lane: lite" not in all_output and "lane: complex" not in all_output, "D3A 必须保持 Lane not_applicable。")
+                assert_true("references/lanes/" not in all_output and "lane-resolver.md" not in all_output, "D3A Context Plan 不得加载动态 Lane 资源。")
+                assert_true("d3a-planning-constraints.yaml" in phase_outputs["planning"] and "d3a-execution-constraints.yaml" in execution_output, "D3A 必须加载固定 Planning/Execution 约束。")
+            else:
+                assert_true(f"references/lanes/{expected['lane']}.yaml" in "\n".join(phase_outputs.values()), f"{scenario} 必须加载自己的 Lane policy。")
+                assert_true("idc-d3a-coding/SKILL.md" not in execution_output, f"{scenario} General 路径不得加载 D3A execution Skill。")
+
+            authorization = Path(temp_dir) / f"{scenario}-authorization.yaml"
+            lane_value = expected["lane"] if expected["lane"] else "null"
+            authorization.write_text(
+                f"""execution_authorization_request:
+  task_id: matrix-{scenario}
+  workflow_id: {expected['domain']}_execution
+  selected_domain: {expected['domain']}
+  selected_lane: {lane_value}
+  human_alignment_status: approved
+  approved_alignment_ref: alignment-{scenario}
+  execution_unit_ref: unit-{scenario}
+  context_packet_ref: context-{scenario}
+  capability_selection_ref: {selection}
+  capability_selection_status: READY
+  domain_execution_skill_ref: {expected['domain_skill']}
+  selected_atomic_skill_refs: [selected-by-capability-selector]
+  delegation_contract_ref: delegation-{scenario}
+  main_agent_role: planning_and_delegation_only
+  executor: {{kind: subagent, agent_id: {expected['domain']}-coder}}
+  allowed_paths: [src/example]
+  expected_outputs: [changed_paths, evidence_refs, execution_receipt]
+""",
+                encoding="utf-8",
+            )
+            authorized = subprocess.run(
+                ["ruby", str(authorizer), "--request", str(authorization)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            assert_true(authorized.returncode == 0 and "status: AUTHORIZED" in authorized.stdout, f"{scenario} Execution Authorization 失败：{authorized.stdout}\n{authorized.stderr}")
+
+    d3a_workflow = read_text(".claude/skills/idc-workflow/references/workflows/d3a-workflow.md")
+    d3a_skill = read_text(".claude/skills/idc-d3a-coding/SKILL.md")
+    assert_true("DT RED" in d3a_workflow and "Required DT GREEN" in d3a_workflow, "D3A 固定流程必须保留 DT RED/GREEN。")
+    assert_true("DONE 必须同时满足 required DT GREEN 和 `tran_build PASS`" in d3a_skill, "D3A 固定完成 Gate 必须要求 DT GREEN 与 tran_build PASS。")
 
 
 def can_enter_done(required_domains, green_domains, tran_build_status):
@@ -1877,7 +2550,11 @@ def test_tran_build_must_pass_before_done():
 
 
 def test_placeholder_hygiene():
-    text = "\n".join(path.read_text(errors="ignore") for path in ROOT.rglob("*") if path.is_file() and ".git" not in path.parts)
+    text = "\n".join(
+        path.read_text(errors="ignore")
+        for path in ROOT.rglob("*")
+        if path.is_file() and ".git" not in path.parts and "__pycache__" not in path.parts
+    )
     assert_true(any(pattern in text for pattern in PLACEHOLDER_PATTERNS), "没有发现 enterprise placeholder。")
 
     forbidden_guesses = [
@@ -1897,6 +2574,7 @@ def run():
         test_domain_module_registry_files_exist,
         test_framework_supports_dynamic_scenarios_and_skill_adapters,
         test_active_domain_module_declares_required_contract,
+        test_d3a_uses_shared_execution_skeleton_with_enterprise_constraints,
         test_active_domain_module_asset_paths_exist,
         test_general_domain_module_is_active_and_self_closing,
         test_lane_registry_files_exist,
@@ -1925,6 +2603,7 @@ def run():
         test_domain_and_build_skills_define_entry_rules_at_skill_layer,
         test_claude_project_entries_expose_skills_and_agents,
         test_human_views_exist_and_hide_raw_yaml,
+        test_user_questions_must_use_ask_user_tool,
         test_clarification_provider_uses_grill_me_method_with_fallback,
         test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea,
         test_planner_cannot_produce_registry_external_layers,
@@ -1933,6 +2612,8 @@ def run():
         test_no_red_evidence_cannot_enter_green,
         test_tdd_extensions_are_team_config_driven,
         test_registries_are_team_config_overridable,
+        test_team_config_resolver_and_lane_capability_selection_execute,
+        test_d3a_and_general_lane_runtime_matrix_execute,
         test_filled_team_config_when_present,
         test_unpassed_dt_blocks_all_layers_green,
         test_tran_build_must_pass_before_done,

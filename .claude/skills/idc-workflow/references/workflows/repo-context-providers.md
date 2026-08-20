@@ -22,6 +22,10 @@ Knowledge Gate
 
 Provider 顺序由 `workflows/provider-selection-matrix.md` 决定。
 
+若有效配置提供 `knowledge.repo_context.provider_skill_ref`，通过该 Skill 调用
+企业 Repo Context Provider；为空时仅使用允许的内置 fallback。真实命令和查询
+实现留在绑定 Skill 内。
+
 ## Provider 分工
 
 | Provider | 职责 | 典型问题 |

@@ -13,7 +13,8 @@ Intent Dynamic Code 把稳定的工作流机制和保密的企业 domain binding
 ```text
 Scenario Router
   -> Domain Module Router
-  -> Lane Resolver
+  -> Module Lane applicability policy
+  -> Lane Resolver when applicable
   -> Contract Gate
   -> Dynamic Scenario Workflow
   -> D3A Module
@@ -50,7 +51,7 @@ Execution Runtime
   -> 场景识别
   -> readiness / critical gap / approval validity 检测
   -> 选择 Dynamic Scenario / Domain Module / General Coding fallback
-  -> 选择执行强度 Lane
+  -> 应用 Domain Module 固定 Lane，或动态选择执行强度 Lane
   -> 根据 Domain + Lane 决定 contract set
   -> 前置 Human Alignment
   -> 动态工作流 / domain planning
@@ -72,8 +73,8 @@ IDC Core 不直接绑定 D3A。它只认识 Domain Module Contract。
 
 ```text
 IDC Core
-  -> .claude/skills/idc-workflow/references/domains/registry.yaml
-  -> domains/<domain>/module.yaml
+  -> .idc/effective-team-config.yaml
+  -> built-in domain module or team-config-inline custom module
   -> module.workflow.entrypoint
 ```
 
@@ -88,6 +89,7 @@ IDC Core
 - knowledge root。
 - agents / skills。
 - completion gate。
+- Lane applicability policy（dynamic、fixed 或 not_applicable）。
 
 D3A 是当前第一个 active module：
 
@@ -95,13 +97,16 @@ D3A 是当前第一个 active module：
 .claude/skills/idc-workflow/references/domains/d3a/module.yaml
 ```
 
-其他团队接入时新增：
+D3A module 的 `lane_policy` 为 `not_applicable`，因此路由命中 D3A 后不再
+调用通用 Lane Resolver，而由 `d3a_fixed_workflow` 接管。
+
+其他团队接入时填写：
 
 ```text
-.claude/skills/idc-workflow/references/domains/<team-domain>/module.yaml
+team-config.yaml.domain.custom
 ```
 
-并在 `.claude/skills/idc-workflow/references/domains/registry.yaml` 注册。
+Resolver 自动注册为有效 Domain Module，不编辑共享 registry。
 
 ## Input Adapter
 
@@ -131,6 +136,12 @@ TR3 可以帮助判断新增需求、霰弹式修改和 D3A 需求，但 TR3 不
 
 Lane 只表示执行强度，不表示领域。
 
+Lane applicability 有三种策略：
+
+- Dynamic Scenario、General Coding 和 `dynamic` Domain Module 使用 Lane Resolver。
+- `fixed` 为确实需要固定 Lane 的团队 Domain Module 保留。
+- `not_applicable` 不输出 Lane，由 Domain workflow 接管；D3A 使用此策略。
+
 V0 只有三种 Lane，且只允许这三种输出：
 
 ```text
@@ -147,6 +158,12 @@ complex
 - 命中 Complex hard trigger，直接进入 `complex`。
 - 只有 Fast required conditions 全部满足，才允许 `fast`。
 - 其他情况默认 `lite`。
+
+Lane 被选中后，团队可通过 `team-config.yaml.lane.profiles.<lane>` 定义不同的
+Skill allow/deny/required 集合与 stage 编排。`autonomous` 允许 Selector 在团队
+步骤之外补齐最小充分集合；`ordered` 只执行当前 stage 的配置步骤，缺少映射时
+返回 `NEEDS_ORCHESTRATION_MAPPING`。这些字段由 Resolver 校验并进入 effective
+config，不是描述性偏好。
 
 这样可以避免只靠模型主观判断复杂度。
 
@@ -167,17 +184,40 @@ API Contract 不是全局强制项。
 
 Skill Adapter Router 不靠名字猜测是否使用 GC / DT / Superpowers。
 
-它读取：
+Capability Selector 先读取：
 
 ```text
-.claude/skills/idc-workflow/references/registries/skill-adapters.yaml
+.idc/effective-team-config.yaml.available_capabilities
+registries/team-capabilities.yaml
+Lane capability profile or D3A execution profile
+team-config lane Skill policy and orchestration steps
 ```
 
-然后根据 `requested_capability_keys`、`selected_stage`、已有 contract refs、
-confidential mapping refs 和阻断条件匹配 adapter。
+它先应用 Lane 的 allow/deny/required 与编排步骤，再根据 capability demand、
+stage、signals 和 contracts 补齐最小充分集合，并输出 execution order 以及
+selected / skipped reasons。Skill Adapter Router 随后只执行已选中的绑定。
 
 如果没有 registry row 匹配，返回 `NEEDS_ADAPTER_MAPPING`，不能临时把某个
 `idc-gc-*` 或 `idc-dt-*` skill 当作万能入口。
+
+## Execution Authorization
+
+Capability Selection 只决定“哪些能力应当执行”，不直接授予 main agent 修改仓库
+的权限。Planner 必须先创建 Delegation Contract，再通过 Execution Authorization
+Gate 并真实派发 subagent / agent team / dynamic workflow。
+
+General Domain 的层级固定为：
+
+```text
+idc-general-coding             = 外层 Domain execution protocol
+idc-gc-sop-adapter / GC atoms = executor 内部按需使用的原子能力
+general-coder / coding team    = repository mutation owner
+main agent                     = planner / delegator / evidence summarizer
+```
+
+任何 Lane 的 repository mutation 都必须返回 Execution Receipt，包含 authorization
+ID、dispatch tool-call ref、executor session ref 和 loaded Domain execution Skill。
+缺少 provenance 时，即使测试通过也不能 DONE。
 
 ## Human Alignment
 
@@ -222,12 +262,17 @@ Human Alignment approve 后，后续默认自动闭环：
 
 ```text
 Planner
-  -> Knowledge Gate
-  -> Execution
+  -> Knowledge Preparation
+  -> Execution Unit Split
+  -> TDD Execution
   -> Verification
   -> Error Analyzer / Targeted Fix / Re-plan
   -> DONE
 ```
+
+General Coding 与 D3A 都使用这条骨架。General 由 Lane 动态调节执行强度；
+D3A 不使用 Lane，而由企业固定 SOP 约束 Planner 可选 Layer、逐 Layer knowledge、
+DT mapping、TDD 状态机和 completion gate。
 
 后续不再默认人工卡点。
 
@@ -389,19 +434,24 @@ V0 只定义接口和模板，不接真实企业 CodeGraph / Wiki。
 
 ```mermaid
 flowchart TD
+    T["team-config.yaml"] --> T1["Team Config Resolver"]
+    T1 --> T2[".idc/effective-team-config.yaml"]
     A["用户任务 / Intent"] --> B["IDC Core"]
+    T2 --> B
 
     B --> C["Scenario Router<br/>判断进入 Domain Module 还是 General Coding"]
-    C --> D["Domain Module Router<br/>读取 .claude/skills/idc-workflow/references/domains/registry.yaml"]
+    C --> D["Domain Module Router<br/>读取 Effective Domain Registry"]
     C --> G["General Coding<br/>未来动态编排"]
 
     D --> E["D3A Module<br/>.claude/skills/idc-workflow/references/domains/d3a/module.yaml"]
-    D --> F["其他团队 Module<br/>domains/&lt;team-domain&gt;/module.yaml"]
+    D --> F["Custom Team Module<br/>team-config-inline"]
 
-    E --> H["Lane Resolver<br/>fast / lite / complex"]
+    E --> H0["D3A Fixed Workflow<br/>Lane not applicable"]
+    H0 --> C0
     F --> H
     G --> H
 
+    H["Lane Resolver<br/>fast / lite / complex"]
     H --> C0["Contract Gate<br/>根据 Domain + Lane 决定 contract set"]
     C0 --> I["Requirement Assessor"]
     I --> A0["Alignment Pack"]
@@ -411,7 +461,8 @@ flowchart TD
     K --> L["Domain Planner<br/>Layer / Test Domain / DAG / Mapping"]
     L --> M["Knowledge Gate"]
     M --> N["Layer Context Packet"]
-    N --> O["Agents / Skills / Scripts"]
+    N --> S["Capability Selector<br/>Lane/profile-aware minimal set"]
+    S --> O["Selected Agents / Skills / Scripts"]
     O --> P["RED / GREEN Evidence"]
     P --> Q["Final Build Gate"]
     Q --> R["DONE / Fix / Re-plan"]
@@ -429,6 +480,7 @@ flowchart TD
     A --> E["Knowledge"]
     A --> F["Execution"]
     A --> G["Examples"]
+    A --> H["Lane Policy<br/>not applicable / bypass resolver"]
 
     C --> C1[".claude/skills/idc-workflow/references/registries/d3a-layers.yaml<br/>TRAN_CFG / DO / VISP_ADP / TFC_TFI / TFE / ADP / DRV"]
     C --> C2[".claude/skills/idc-workflow/references/registries/dt-domains.yaml<br/>TPRINT / FW / DPF"]

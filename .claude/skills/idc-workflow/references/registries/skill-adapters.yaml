@@ -3,7 +3,7 @@ skill_adapters:
     class: team_pre_alignment_adapter
     status: team_bindable
     skill_ref: .claude/skills/idc-brainstorming/SKILL.md
-    binding_ref: <TEAM_ADAPTER_BINDING_REF>
+    binding_ref: team-config.yaml.bindings.brainstorming.skill_ref
     capability_keys:
       - brainstorming
       - raw_idea_discovery
@@ -12,7 +12,7 @@ skill_adapters:
     allowed_stages: [discovery, pre_alignment]
     requires:
       - input_maturity_raw_idea
-      - team_adapter_binding_ref_optional
+      - team_binding_optional
     blocks_when:
       - structured_requirement_ready
       - tr3_contract_sufficient
@@ -40,7 +40,7 @@ skill_adapters:
     requires:
       - human_alignment_approved
       - selected_domain
-      - selected_lane
+      - lane_applicability_resolved
       - required_contracts_present
       - bounded_execution_unit
     blocks_when:
@@ -70,13 +70,14 @@ skill_adapters:
     requires:
       - human_alignment_approved
       - selected_domain
-      - selected_lane
+      - lane_applicability_resolved
       - task_contract_ref
       - expected_outputs
-      - confidential_gc_mapping_ref
+      - capability_selection_ref
+      - effective_team_config_ref
     blocks_when:
       - outside_confidential_zone
-      - missing_gc_atom_mapping
+      - missing_capability_selection
       - critical_clarification_missing
     evidence_ref_required: true
     executable: true
@@ -90,7 +91,7 @@ skill_adapters:
     class: original_enterprise_repo_skill_adapter
     status: confidential_only
     skill_ref: .claude/skills/idc-dt-design/SKILL.md
-    binding_ref: <TEAM_ADAPTER_BINDING_REF>
+    binding_ref: team-config.yaml.bindings.dt_design.skill_ref
     capability_keys:
       - dt_design
       - test_design
@@ -100,7 +101,7 @@ skill_adapters:
       - verification_contract_ref
       - selected_dt_domain
       - confidential_original_repo_skill_ref
-      - team_adapter_binding_ref
+      - effective_team_binding
     blocks_when:
       - outside_confidential_zone
       - selected_dt_domain_missing
@@ -117,10 +118,10 @@ skill_adapters:
     class: original_enterprise_repo_skill_adapter
     status: confidential_only
     skill_ref: .claude/skills/idc-dt-writer/SKILL.md
-    binding_ref: <TEAM_ADAPTER_BINDING_REF>
+    binding_ref: team-config.yaml.bindings.dt_writer.skill_ref
     capability_keys:
       - dt_writing
-      - dt_red_green_evidence
+      - dt_red_evidence
     allowed_stages: [dt_writing, verification]
     requires:
       - human_alignment_approved
@@ -128,7 +129,7 @@ skill_adapters:
       - allowed_paths
       - selected_dt_domain
       - confidential_original_repo_skill_ref
-      - team_adapter_binding_ref
+      - effective_team_binding
     blocks_when:
       - outside_confidential_zone
       - dt_design_ref_missing
@@ -143,25 +144,25 @@ skill_adapters:
       completion_gate: false
 
   - id: idc-dt-build
-    class: domain_module_execution_skill
+    class: verification_adapter
     status: confidential_only
     skill_ref: .claude/skills/idc-dt-build/SKILL.md
-    binding_ref: <TEAM_ADAPTER_BINDING_REF>
+    binding_ref: team-config.yaml.bindings.dt_build.skill_ref
     capability_keys:
       - dt_build
       - dt_run
-      - dt_red_green_evidence
+      - dt_green_evidence
     allowed_stages: [dt_build, verification]
     requires:
       - human_alignment_approved
       - selected_domain
       - selected_dt_domain
       - verification_contract_ref
-      - team_adapter_binding_ref
+      - effective_team_binding
     blocks_when:
       - outside_confidential_zone
       - selected_dt_domain_missing
-      - missing_team_adapter_binding
+      - missing_effective_team_binding
       - missing_verification_contract
     evidence_ref_required: true
     executable: true
@@ -172,10 +173,10 @@ skill_adapters:
       completion_gate: false
 
   - id: idc-tran-build
-    class: domain_module_execution_skill
+    class: verification_adapter
     status: confidential_only
     skill_ref: .claude/skills/idc-tran-build/SKILL.md
-    binding_ref: <TEAM_ADAPTER_BINDING_REF>
+    binding_ref: team-config.yaml.bindings.tran_build.skill_ref
     capability_keys:
       - tran_build
       - d3a_final_build
@@ -186,10 +187,10 @@ skill_adapters:
       - selected_domain
       - all_required_dt_domains_green
       - verification_contract_ref
-      - team_adapter_binding_ref
+      - effective_team_binding
     blocks_when:
       - outside_confidential_zone
-      - missing_team_adapter_binding
+      - missing_effective_team_binding
       - required_dt_domain_not_green
       - missing_verification_contract
     evidence_ref_required: true
@@ -225,8 +226,9 @@ rules:
   - Match by capability_keys, allowed_stages, requires, and blocks_when.
   - If no registry row matches, return NEEDS_ADAPTER_MAPPING.
   - Placeholder adapters must return executable: false.
-  - Confidential-only adapters require an explicit team adapter binding ref before execution.
-  - Team adapter bindings live outside the shared harness or use placeholder refs in this repository.
+  - Confidential-only adapters require a non-null binding in effective team config before execution.
+  - Validated team adapter_extensions are appended at resolution time; shared registry files stay unchanged.
+  - Capability Selector chooses the minimal sufficient bound skill set for the current stage.
   - Team-owned brainstorming should bind to idc-brainstorming when available; otherwise use the shared IDC fallback.
   - Grill Me is provided by idc-intent-grilling from the shared GitHub harness unless a team later adds its own binding.
   - Adapter registry rows cannot grant Domain, Lane, Contract Gate, or Completion Gate ownership.

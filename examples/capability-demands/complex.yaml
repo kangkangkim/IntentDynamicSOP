@@ -1,0 +1,11 @@
+capability_demand:
+  execution_unit_ref: complex-unit
+  selected_stage: planning
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: complex
+  execution_profile: lane_driven
+  required_capability_keys: [technical_design, dependency_planning]
+  optional_capability_keys: [as_is_analysis, scenario_challenge, unit_test_design]
+  observed_signals: [cross_module_or_layer_impact, needs_dependency_dag, high_failure_impact]
+  contract_refs: [task_contract, verification_contract, api_contract]

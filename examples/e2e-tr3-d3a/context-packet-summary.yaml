@@ -1,7 +1,9 @@
 context_packet:
   execution_unit_id: do-unit-1
   selected_domain: d3a
-  selected_lane: complex
+  lane_applicability: not_applicable
+  selected_lane: null
+  execution_profile: d3a_fixed_workflow
   static_knowledge:
     - knowledge/d3a/layers/DO.md
     - knowledge/d3a/dt/TPRINT.md

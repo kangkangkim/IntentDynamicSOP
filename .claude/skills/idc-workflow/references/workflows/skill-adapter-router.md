@@ -23,11 +23,14 @@ in `team-config.yaml`.
 Input Adapter
   -> Scenario Router
   -> Domain Module Router if matched
-  -> Lane Resolver
+  -> module Lane applicability, then Lane Resolver when applicable
   -> Contract Gate
   -> Human Alignment
-  -> Skill Adapter Router
-  -> selected GC / original-repo skill adapter
+  -> Capability Selector
+  -> Skill Adapter Router selects inner atomic adapters
+  -> Delegation Contract + Execution Authorization
+  -> dispatched Domain executor loads outer execution Skill
+  -> executor invokes selected GC / original-repo atomic adapter
   -> Evidence Gate
 ```
 
@@ -43,9 +46,9 @@ domain_module_execution_skill
 ## Selection Algorithm
 
 ```text
-requested_capability_keys + selected_stage + approved contracts
+capability_selection_result + selected_stage + approved contracts
   -> load adapter registry
-  -> load team-config.yaml
+  -> load .idc/effective-team-config.yaml
   -> filter rows by capability_keys
   -> filter rows by allowed_stages
   -> verify required inputs / mapping refs / team-config bindings
@@ -80,7 +83,13 @@ provides the real skill name and contract.
 ## Rules
 
 - Adapter selection must come from `references/registries/skill-adapters.yaml`.
-- Concrete skill refs, commands, repo paths, knowledge refs, and evidence parsers must come from `team-config.yaml`.
+- Concrete skill refs, repo paths, and knowledge refs must come from `team-config.yaml`; commands and pass/fail logic stay inside bound skills.
+- A configured binding is only available. Execute it only when Capability Selector selected it for the current unit and stage.
+- Adapter routing before delegation is selection only. Repository-mutating
+  adapter invocation occurs inside the authorized executor, never in main agent.
+- In General Domain, `idc-general-coding` remains the outer execution protocol;
+  selected GC adapters are inner abilities and cannot replace it.
+- Team-specific capability rows come from validated `adapter_extensions`; do not edit the shared registry during adoption.
 - If no registry row matches, return `NEEDS_ADAPTER_MAPPING`.
 - Do not use `gc` / `dt` / `superpowers` naming as a trigger by itself.
 - Dynamic scenarios may use GC atoms only after Human Alignment approval.
@@ -98,6 +107,7 @@ skill_adapter_route:
   selected_adapter: idc-gc-sop-adapter | idc-dt-design | idc-dt-writer | idc-gc-third-skill-placeholder
   selected_stage: planning | dt_design | dt_writing | implementation | debugging | review | verification
   requested_capability_keys: []
+  capability_selection_ref: string
   registry_match_ref: references/registries/skill-adapters.yaml
   route_reason: string
   input_contract_ref: string

@@ -19,6 +19,11 @@ Route back to:
 
 General Coding starts only after the rough idea becomes a draft spec and passes Human Alignment.
 
+This is the outer Domain execution protocol for every `general_execution` unit.
+The dispatched general-coder subagent or coding agent team must load it. GC SOP
+adapters are optional inner atomic abilities selected by Capability Selector;
+they do not compete with or replace this Skill.
+
 ## Flow
 
 ```text
@@ -59,6 +64,11 @@ general_coding_result:
 ## Hard Rules
 
 - Do not write code before Human Alignment approval.
+- Main agent must never execute this Skill as the repository mutation owner.
+  Require Execution Authorization and a real general-coder subagent / coding
+  agent-team dispatch, including Fast and Lite.
+- Return an Execution Receipt with authorization ID, dispatch tool-call ref,
+  executor session ref, changed paths, and evidence refs.
 - Do not use D3A Layer or DT Domain registries.
 - Choose general components only from the effective registry: repo default `../idc-workflow/references/registries/general-components.yaml`, or replaced wholesale by `team-config.yaml.general.components` when non-empty (never merge).
 - Choose test domains only from the effective registry: repo default `../idc-workflow/references/registries/general-test-domains.yaml`, or replaced wholesale by `team-config.yaml.general.test_domains` when non-empty (never merge).

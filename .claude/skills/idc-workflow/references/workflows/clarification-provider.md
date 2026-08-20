@@ -2,6 +2,8 @@
 
 Clarification Provider 负责在 Human Alignment 之前生成关键澄清问题。
 
+所有需要用户回答的问题必须通过 `AskUserTool` 发出。Clarification View 只负责展示问题卡结构，真正的交互出口遵守 `workflows/ask-user-tool-policy.md`。
+
 它只解决一个问题：
 
 ```text
@@ -15,7 +17,7 @@ Requirement Assessor
   -> NEED_CLARIFICATION
   -> Clarification Provider
   -> Clarification View
-  -> 用户回答
+  -> AskUserTool 用户回答
   -> 更新 normalized_request / contracts
   -> Requirement Assessor
 ```
@@ -100,7 +102,7 @@ Clarification Provider 只能输出澄清问题、阻塞原因和回答后的更
 ```text
 Build decision tree
   -> Select current frontier
-  -> Ask multiple-choice question cards
+  -> AskUserTool multiple-choice question cards
   -> User answers
   -> Update assumptions and blockers
   -> Commitment check
@@ -174,3 +176,4 @@ clarification_provider:
 - 每轮必须说明这些问题为什么阻塞 contract、scope 或 completion gate。
 - 用户用中文输入时，澄清问题必须用中文。
 - docs mode 只能写非敏感 placeholder 文档。
+- 不允许用普通文本直接追问用户；如果 `AskUserTool` 不可用，返回 `BLOCKED_NEEDS_ASK_USER_TOOL`。

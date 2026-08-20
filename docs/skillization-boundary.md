@@ -42,6 +42,7 @@ These are passive assets and references:
 - provider selection policy.
 - repository context policy.
 - delegation policy.
+- execution authorization policy and validator contract.
 - execution unit planning policy.
 - automated closure policy.
 - TDD state machine policy.
@@ -106,9 +107,10 @@ harness tests.
 The user-facing entry remains:
 
 ```text
-/id-workflow
+$idc-workflow
 ```
 
+The entry is the `idc-workflow` skill itself; there is no command alias layer.
 Lower-level skills are internal building blocks. Users should not need to call
 them directly.
 

@@ -19,12 +19,11 @@
 
 ## 进入保密区后需要填写的内容
 
-多团队复用时，默认不要 fork IDC Core。每个团队只填写自己的 Domain
-Module 和 Team Config：
+多团队复用时，默认不要 fork IDC Core。每个团队只填写 `team-config.yaml`：
 
-- IDC Core：共享 `/id-workflow`、router、lane、gate、schema、human views、adapter eligibility registry。
-- Domain Module：团队维护自己的 `<team-domain>/module.yaml`、领域 registry、领域 workflow / knowledge references。
-- Team Config：团队在保密区维护 `team-config.yaml`，填写真实 repo path、内部 skill ref（含 DT 设计 / 编写 / 构建能力）、knowledge index、evidence parser 和 pass/fail 规则；DT domain / GC component / test domain 通过非空列表整体替换仓库默认注册表（不合并）。
+- IDC Core：共享 `idc-workflow` skill、router、lane、gate、schema、human views、adapter eligibility registry。
+- Team Config：填写内置或 Custom Domain、真实 repo path、内部 skill ref、adapter extensions 和 knowledge index；命令、evidence parser 与 pass/fail 逻辑封装在绑定 Skill 内。
+- Generated Runtime：Resolver 生成 `.idc/effective-team-config.yaml`，只读且不可手改。
 
 仓库内注册表（`dt-domains.yaml`、`general-components.yaml`、`general-test-domains.yaml`）对企业接入方只读。
 
@@ -49,8 +48,8 @@ Module 和 Team Config：
 公共 `.claude/skills/idc-workflow/references/registries/skill-adapters.yaml`
 只作为 adapter eligibility registry，不放任何团队真实路径、命令或内部 skill 名。
 
-`.claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml`
-保留为兼容参考；新团队优先使用根目录 `team-config.yaml.template`。
+不再使用第二套 Team Binding 文件。所有团队绑定均来自根目录
+`team-config.yaml`，共享 registry 在接入过程中保持只读。
 
 ## 入区前检查
 
@@ -66,7 +65,7 @@ python3 tests/test_harness.py
 - Placeholder hygiene 通过。
 - 仓库里没有企业 secret。
 - D3A Layer registry 仍然匹配固定架构。
-- DT Domain registry 仍然只包含 V0 placeholder domain；真实 DT domain 只通过 `team-config.yaml.domain.d3a_dt_domains` 覆盖，不直接改注册表。
+- DT Domain registry 仍然只包含 V0 placeholder domain；真实 DT domain 只通过 `team-config.yaml.domain.d3a.dt_domains` 覆盖，不直接改注册表。
 - 没有 `.DS_Store` 等无关元数据文件。
 
 ## 入区后的第一条 Vertical Slice
@@ -80,7 +79,7 @@ python3 tests/test_harness.py
 .claude/skills/idc-workflow/references/schemas/vertical-slice-readiness.schema.yaml
 ```
 
-完整前端流程：通过 `/id-workflow` 输入真实需求或 TR3，走 Discovery →
+完整前端流程：通过 `$idc-workflow` 输入真实需求或 TR3，走 Discovery →
 Human Alignment（有 critical gap 先走 Grill Me）→ 用户 approve → freeze
 API Contract → Layer Context Packet → RED → GREEN → `tran_build` →
 Completion Summary。绑定哪些任务走 `dt-design`、哪些走 `dt-writer`、哪些
@@ -89,7 +88,7 @@ Completion Summary。绑定哪些任务走 `dt-design`、哪些走 `dt-writer`�
 第一轮建议只做一条最小闭环：
 
 1. 在 `team-config.yaml.knowledge.layer_docs` 绑一个 Layer knowledge ref（正文留在企业本地）。
-2. 在 `team-config.yaml.domain.d3a_dt_domains` 填一个 DT domain 条目（含 `knowledge_ref`）。
+2. 在 `team-config.yaml.domain.d3a.dt_domains` 填一个 DT domain 条目（含 `knowledge_ref`）。
 3. 替换一个 mock context provider 为真实 repo search。
 4. 如果需要 DT 设计，先通过 `idc-gc-sop-adapter -> idc-dt-design` 产出 DT design ref。
 5. 如果需要 DT 编写，再通过 `idc-gc-sop-adapter -> idc-dt-writer` 产出 DT change 和 RED/GREEN evidence refs。

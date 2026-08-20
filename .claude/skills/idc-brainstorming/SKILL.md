@@ -9,10 +9,13 @@ Use this atomic skill only when the user has a vague early idea that does not ye
 
 It is reusable outside D3A and outside the full ID workflow.
 
-This skill uses upstream Superpowers brainstorming as the baseline, then keeps IDC-specific handoff fields small and explicit.
+This skill carries a local, executable port of upstream Superpowers
+brainstorming. It does not merely refer to the upstream name. Read
+`references/superpowers-brainstorming-method.md` before running the skill, then
+apply the IDC-specific handoff and approval constraints in this file.
 
 In a confidential company environment, prefer the team's existing
-brainstorming implementation when `team_adapter_binding_ref` provides
+brainstorming implementation when effective team config provides
 `idc-brainstorming`. This skill remains the shared IDC wrapper and fallback
 contract so every team returns the same draft-spec shape.
 
@@ -38,6 +41,7 @@ Do not use by default for:
 ## Required Inputs
 
 ```text
+references/superpowers-brainstorming-method.md
 ../idc-workflow/references/workflows/discovery-provider.md
 ../idc-workflow/references/schemas/discovery-provider.schema.yaml
 ../idc-workflow/references/human-views/brainstorming-view.md
@@ -49,14 +53,42 @@ Do not use by default for:
 ```text
 raw_idea
   -> team brainstorming binding if available
-  -> otherwise upstream-superpowers-brainstorming baseline
-  -> Explore lightweight project context if it helps the discussion
-  -> Ask focused discovery questions when the idea is too ambiguous
-  -> Offer 2-3 approaches if there are real design branches
-  -> Produce draft spec
+  -> otherwise load local Superpowers brainstorming method
+  -> classify Spike / Bounded / Architectural before the first question
+  -> announce the selected path and reason
+  -> explore project context before proposing a design
+  -> AskUserTool one material discovery question at a time
+  -> upgrade path if hidden complexity appears; never downgrade mid-run
+  -> offer 2-3 approaches with trade-offs and a recommendation when a real branch exists
+  -> present a path-sized design
+  -> self-review placeholders, consistency, scope, and ambiguity
+  -> AskUserTool confirm draft direction
+  -> produce draft spec
   -> Render Brainstorming View
   -> Hand off to idc-intent-grilling / idc-intent-alignment when ready
 ```
+
+The upstream paths are preserved:
+
+- `Spike`: approved feasibility probe, then recommendation only.
+- `Bounded`: existing repo flow, focused questions, short in-chat design.
+- `Architectural`: context, questions, 2-3 approaches, sectioned design, draft spec, self-review.
+
+The IDC overlay changes the terminal transition only: upstream draft approval
+does not start implementation. It returns to IDC Clarification / Human
+Alignment, where Domain, Lane, contracts, and implementation approval are
+decided.
+
+Superpowers path is not IDC Lane:
+
+```text
+Spike / Bounded / Architectural = Discovery depth
+fast / lite / complex = execution intensity after approval
+```
+
+Do not create a direct mapping. This skill may discover and return lane signals.
+After Domain routing, a fixed module lane policy takes precedence (D3A fixes
+`complex`); Lane Resolver selects the Lane only for dynamic-lane routes.
 
 ## Output
 
@@ -64,11 +96,18 @@ Return a user-readable Brainstorming View and an internal `discovery_provider` c
 
 The draft spec must include:
 
+- superpowers_path
+- path_reason
 - goal
 - users_or_callers
 - core_behavior
 - out_of_scope
 - acceptance_signals
+- alternatives_and_tradeoffs
+- unresolved_decisions
+- self_review_result
+- observed_lane_signals
+- lane_decision_deferred
 - recommended_next_step
 
 ## Handoff
@@ -86,6 +125,15 @@ When this skill is used inside IDC, hand off to:
 - Do not write implementation code.
 - Do not mark draft spec as approved contract.
 - Do not treat upstream design approval as implementation approval.
+- Do not skip `references/superpowers-brainstorming-method.md`; the local method is the actual fallback implementation.
+- Classify `Spike | Bounded | Architectural` before the first user question.
+- Hidden complexity may only upgrade the path; never downgrade it mid-run.
+- Never map Spike / Bounded / Architectural directly to fast / lite / complex.
+- Emit observed lane signals as facts and defer lane selection to fixed module policy or Lane Resolver.
+- Ask one material discovery question at a time.
+- Explore relevant files, docs, and recent commits before proposing a design when repo context exists.
+- Architectural work must compare 2-3 approaches and self-review the draft spec before handoff.
+- Do not commit a design document from this skill. Route durable documentation through `idc-intent-grilling-with-docs` when required.
 - Do not use this skill merely because the request is short; short structured requests go to Grill Me / Alignment, not Brainstorming.
 - Use Chinese if the user used Chinese.
 - TR3 skips this skill unless the TR3 is too incomplete to identify behavior.
@@ -93,3 +141,5 @@ When this skill is used inside IDC, hand off to:
 - Keep enterprise details as placeholders outside the confidential environment.
 - Company-owned brainstorming should be reused through Team Binding, not copied
   into the shared harness.
+- All questions or direction choices shown to the user must be emitted through
+  `AskUserTool`; if it is unavailable, return `BLOCKED_NEEDS_ASK_USER_TOOL`.

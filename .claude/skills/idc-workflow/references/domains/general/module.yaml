@@ -9,6 +9,9 @@ domain_module:
       - 用户明确要求普通 coding / general coding。
       - 输入包含通用 feature、bugfix、refactor、documentation 需求。
     fallback: GENERAL_CODING
+  lane_policy:
+    mode: dynamic
+    resolver: workflows/lane-resolver.md
   registries:
     # Both are repo defaults; non-empty team-config.yaml general.components /
     # general.test_domains replace them wholesale (never merge).

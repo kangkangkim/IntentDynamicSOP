@@ -1,5 +1,5 @@
 schema: runtime_state
-version: 0
+version: 1
 
 description: >
   Machine-readable checkpoint for resuming an IDC workflow after confidential-zone
@@ -21,11 +21,16 @@ runtime_state:
 workflow_snapshot:
   input_maturity: raw_idea | structured_requirement | tr3_design_doc | approved_alignment
   selected_domain: unknown | general | d3a
-  selected_lane: unknown | fast | lite | complex
+  lane_applicability: unknown | applicable | not_applicable
+  selected_lane: null | fast | lite | complex
+  execution_profile: unknown | lane_driven | d3a_fixed_workflow
   workflow_id: raw_idea_alignment | tr3_alignment | general_execution | d3a_execution | verification_fix | build_fix | escalation_required
   human_alignment_status: missing | pending | approved
   approved_alignment_ref: string
   delegation_contract_ref: string
+  execution_authorization_ref: string
+  dispatch_tool_call_ref: string
+  executor_session_ref: string
   context_packet_ref: string
   execution_unit_refs: []
 
@@ -38,6 +43,7 @@ progress:
   in_progress_step:
     step_id: string
     owner: main_agent | agent_team | subagent | official_dynamic_workflow
+    repository_mutation: boolean
     started_at: string
     expected_outputs: []
   pending_steps:
@@ -63,3 +69,4 @@ resume_rules:
   - If scope or contract changed during resume, return to Alignment View.
   - If checkpoint refs are missing or inconsistent, escalate instead of guessing.
   - Do not use main agent conversation memory as the source of truth.
+  - If repository_mutation is true, owner cannot be main_agent and execution_authorization_ref, dispatch_tool_call_ref, and executor_session_ref are required.

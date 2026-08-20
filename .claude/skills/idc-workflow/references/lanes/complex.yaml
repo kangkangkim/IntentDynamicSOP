@@ -22,6 +22,11 @@ lane:
     - evidence_plan
     - audit_or_review
   verification_level: full
+  capability_selection:
+    strategy: autonomous_minimal_sufficient
+    max_optional_skills: null
+    selection_scope: execution_dag
+    require_selected_and_skipped_reasons: true
   completion_requirements:
     - full_task_contract_exists
     - detailed_plan_or_dag_executed

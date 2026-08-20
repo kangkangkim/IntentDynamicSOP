@@ -48,7 +48,7 @@ raw_idea
   -> idc-brainstorming
   -> idc-brainstorming-overlay
   -> Explore lightweight project context
-  -> Ask focused discovery questions
+  -> AskUserTool focused discovery questions
   -> Offer 2-3 approaches if there are real design branches
   -> Produce draft spec
   -> Render Brainstorming View
@@ -77,3 +77,5 @@ The draft spec must include:
 - TR3 skips this skill unless the TR3 is too incomplete to identify behavior.
 - Domain hint must not suppress discovery: `general + rough` still uses this skill.
 - Keep enterprise details as placeholders outside the confidential environment.
+- All questions or direction choices shown to the user must be emitted through
+  `AskUserTool`; if it is unavailable, return `BLOCKED_NEEDS_ASK_USER_TOOL`.

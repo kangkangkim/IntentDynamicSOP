@@ -25,6 +25,10 @@ delegation_contract:
   selected_agent_team: intent_alignment | knowledge | planning | coding | verification
   selected_agents: []
   main_agent_role: planning_and_delegation_only
+  domain_execution_skill_ref: skill_ref
+  capability_selection_ref: ref
+  selected_atomic_skill_refs: []
+  execution_authorization_request_ref: ref
   delegation_reason: string
   selection_reason:
     workflow_reason: string
@@ -75,6 +79,13 @@ agent_result:
   context_to_keep: []
   context_to_drop: []
   next_recommendation: none | replan | escalate | delegate_followup
+  execution_receipt:
+    authorization_id: sha256
+    dispatch_tool_call_ref: ref
+    executor_session_ref: ref
+    executor_kind: subagent | agent_team | official_dynamic_workflow
+    loaded_domain_execution_skill_ref: skill_ref
+    executed_atomic_skill_refs: []
 
 rules:
   - Main agent role 必须是 planning_and_delegation_only。
@@ -84,7 +95,9 @@ rules:
   - Workflow Router 必须记录 trigger_event 和 entry_condition_matched。
   - Agent Team 只在多个 subagent 需要交流、交接或共享中间结果时使用。
   - Subagent 用于隔离执行一个 execution unit / Layer Context Packet / failure analysis。
-  - Main agent 不能直接执行复杂实现。
+  - Main agent 不能直接执行任何 repository mutation，包括 Fast、Lite、Complex 的代码、测试、构建文件、验证产物和 targeted fix。
+  - General execution 的 domain_execution_skill_ref 必须是 idc-general-coding；GC adapters 只能出现在 selected_atomic_skill_refs。
+  - Agent Result 必须携带 execution_receipt，并绑定 authorization、真实 dispatch tool call 和 executor session。
   - Main agent 不能把完整 subagent session 合并回 main session。
   - Delegation Contract 必须记录 run_state_ref，便于中断后恢复。
   - Resume 必须通过 runtime_state checkpoint 恢复，不能依赖 main agent 记忆。

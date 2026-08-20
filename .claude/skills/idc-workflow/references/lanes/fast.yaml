@@ -10,15 +10,24 @@ lane:
     - no_core_logic_change
     - no_cross_module_impact
     - no_new_test_required
+    - existing_verification_available
     - simple_verification
+    - localized_change
+    - fast_scope_evidence_present
   required_outputs:
     - task_summary
     - acceptance_criteria
     - basic_verification
   verification_level: basic
+  capability_selection:
+    strategy: autonomous_minimal_sufficient
+    max_optional_skills: 1
+    selection_scope: current_execution_unit
+    require_selected_and_skipped_reasons: true
   completion_requirements:
     - task_summary_exists
     - acceptance_criteria_checked
     - changed_files_reviewed
+    - existing_verification_executed
     - basic_verification_evidence_exists
     - completion_summary_exists

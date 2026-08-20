@@ -11,7 +11,9 @@ vertical_slice:
   slice_id: string
   status: NOT_READY | READY_FOR_ALIGNMENT | READY_FOR_EXECUTION | BLOCKED
   selected_domain: d3a
-  selected_lane: lite | complex
+  lane_applicability: not_applicable
+  selected_lane: null
+  execution_profile: d3a_fixed_workflow
   scope:
     user_request_ref: string
     approved_alignment_ref: string
@@ -70,6 +72,7 @@ vertical_slice:
       status: PASS | FAIL
       evidence_ref: string
   forbidden:
+    - Do not run Lane Resolver or select any Lane for a D3A slice.
     - Do not mark READY_FOR_EXECUTION while any required readiness check is FAIL.
     - Do not replace external placeholders with guessed enterprise facts.
     - Do not treat TR3 DT design as RED or GREEN evidence.

@@ -25,7 +25,9 @@ Use only when all are true:
 - Human Alignment is approved.
 - Required contracts are present.
 - The target enterprise repository is available in the confidential zone.
-- The requested GC atomic capability is explicitly mapped in the adapter registry.
+- Capability Selector selected the requested GC atom from the effective registry.
+- A dispatched executor already loaded the active Domain execution Skill
+  (`idc-general-coding`, `idc-d3a-coding`, or Custom Domain equivalent).
 
 Do not use when:
 
@@ -86,7 +88,12 @@ Every GC atom must receive a bounded handoff:
 ```yaml
 gc_atomic_handoff:
   selected_domain: d3a | general | <ENTERPRISE_PLACEHOLDER>
-  selected_lane: fast | lite | complex
+  lane_applicability: applicable | not_applicable
+  selected_lane: fast | lite | complex | null
+  execution_profile: lane_driven | d3a_fixed_workflow | string
+  capability_selection_ref: string
+  selected_capability_id: string
+  selection_reason: string
   approved_alignment_ref: string
   task_contract_ref: string
   verification_contract_ref: string
@@ -115,7 +122,11 @@ gc_atomic_result:
 ## Hard Rules
 
 - Do not let GC choose IDC Domain, Lane, Contract Gate, or Completion Gate.
+- Do not use GC SOP Adapter as the outer General Coding executor or as a
+  substitute for `idc-general-coding`.
+- Do not let main agent invoke GC atoms to perform repository mutations.
 - Do not execute unmapped GC atoms.
+- Do not execute every configured GC atom; only run the minimal sufficient set selected for the current stage.
 - Do not expose real GC SOP content in this external harness.
 - Keep all enterprise paths, commands, logs, test names, and APIs as placeholders outside the confidential zone.
 

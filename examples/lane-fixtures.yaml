@@ -8,9 +8,58 @@ fixtures:
       no_core_logic_change: true
       no_cross_module_impact: true
       no_new_test_required: true
+      existing_verification_available: true
       simple_verification: true
+      localized_change: true
+      fast_scope_evidence_present: true
     expected_lane: fast
     expected_rule: fast_all_conditions_met
+
+  - id: small_production_change_can_be_fast
+    input:
+      goal_clear: true
+      tiny_scope: true
+      low_risk: true
+      no_behavior_contract_change: true
+      no_core_logic_change: true
+      no_cross_module_impact: true
+      no_new_test_required: true
+      existing_verification_available: true
+      simple_verification: true
+      localized_change: true
+      fast_scope_evidence_present: true
+      production_code_change: true
+      bugfix_or_refactor: true
+    expected_lane: fast
+    expected_rule: fast_all_conditions_met
+
+  - id: small_bugfix_needs_new_test_is_lite
+    input:
+      goal_clear: true
+      tiny_scope: true
+      low_risk: true
+      no_behavior_contract_change: true
+      no_core_logic_change: true
+      no_cross_module_impact: true
+      no_new_test_required: false
+      existing_verification_available: true
+      simple_verification: true
+      localized_change: true
+      fast_scope_evidence_present: true
+      production_code_change: true
+      bugfix_or_refactor: true
+      new_or_changed_test_required: true
+    expected_lane: lite
+    expected_rule: lite_floor
+
+  - id: short_request_with_unknown_scope_defaults_lite
+    input:
+      goal_clear: true
+      tiny_scope: true
+      low_risk: true
+      affected_scope_unknown: true
+    expected_lane: lite
+    expected_rule: lite_floor
 
   - id: single_module_bugfix
     input:

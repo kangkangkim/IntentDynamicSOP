@@ -29,6 +29,31 @@ Adapter 提取：
 - 文件 / 模块 / 接口线索。
 - 明显缺失信息。
 
+同时必须为 Lane Resolver 产出可追溯信号。信号值使用
+`true | false | unknown`；只有输入、repo anchor、contract 或工具结果能够
+证明时才写 `true` / `false`，未提及或尚未检查一律写 `unknown`。
+
+普通开发任务还要识别 Lite floor：
+
+```yaml
+lane_signals:
+  production_code_change: true
+  behavior_contract_change: false
+  new_capability: false
+  bugfix_or_refactor: true
+  new_or_changed_test_required: false
+  multi_file_or_multi_component_change: false
+  focused_design_required: false
+  broad_repo_exploration_required: false
+  affected_scope_unknown: false
+```
+
+极小且局部的 production code 修改也可以声明 `localized_change: true`，但
+Fast 还必须同时满足 `no_new_test_required: true`、
+`existing_verification_available: true`，并通过 `fast_scope_evidence_present`
+指向明确文件、diff anchor 或等价范围证据。不要因为用户输入很短、没有
+要求测试或预计改动行数少，就自行声明不需要新增测试。
+
 如果输入只有目标或愿望，没有行为语义、边界和验收标准，标记为：
 
 ```yaml
@@ -82,6 +107,9 @@ classification:
     cross_module_or_layer_impact: true
     multiple_test_domains: true
     needs_dependency_dag: true
+    production_code_change: true
+    new_capability: true
+    new_or_changed_test_required: true
 ```
 
 ## TR3 能识别什么

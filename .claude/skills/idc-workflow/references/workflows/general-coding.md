@@ -22,6 +22,11 @@ Input Adapter
   -> General Plan
   -> Knowledge Gate
   -> Execution Unit <= 500 LOC
+  -> Capability Selector
+  -> Delegation Contract
+  -> Execution Authorization Gate
+  -> general-coder loads idc-general-coding
+  -> selected GC atoms run inside that executor when needed
   -> TDD / Verification
   -> Completion Gate
 ```
@@ -89,4 +94,7 @@ API Contract 不是所有 General Coding 都必须要。
 - 每个 execution unit 代码变更 `<= 500 LOC`。
 - 如果 verification contract 要求测试，必须先 RED 再 GREEN。
 - Completion 必须基于工具 evidence。
+- `idc-general-coding` 是外层 Domain execution Skill；`idc-gc-sop-adapter` 只能作为 Capability Selector 选中的内层原子能力，二者不是竞争路由。
+- Main agent 不得修改代码、测试、构建文件或 targeted fix。任何 General repository mutation 都必须授权并派发给 general-coder / coding agent team。
+- Completion 必须校验 Execution Receipt；测试通过但没有 authorization、dispatch tool-call ref 或 executor session ref 时仍然不能 DONE。
 - 外部环境只能使用 placeholder 命令和路径。

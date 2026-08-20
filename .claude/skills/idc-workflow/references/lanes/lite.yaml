@@ -10,6 +10,11 @@ lane:
     - relevant_context
     - test_or_build_evidence
   verification_level: focused
+  capability_selection:
+    strategy: autonomous_minimal_sufficient
+    max_optional_skills: 3
+    selection_scope: current_stage
+    require_selected_and_skipped_reasons: true
   completion_requirements:
     - task_contract_exists
     - acceptance_criteria_checked

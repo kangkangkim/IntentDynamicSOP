@@ -37,7 +37,15 @@ workflows/provider-selection-matrix.md
 
 禁止一次性加载全部 D3A 知识。
 
-知识条目来源：生效 registry（仓库默认，或 team-config.yaml 非空时整体替换）条目的 `knowledge_ref`，加上 `team-config.yaml.knowledge.layer_docs` 的 Layer 知识 ref。禁止从两个来源各取一部分合并。
+知识条目从 `.idc/effective-team-config.yaml` 读取。Planner / Knowledge Gate 使用
+`knowledge.architecture_doc_ref`、`knowledge.feature_docs_root_ref` 和
+`knowledge.verification_mapping_ref`；Context Packet builder 使用
+`knowledge.layer_docs`。DT、General 或 Custom registry 的 `knowledge_ref` 来自
+Resolver 选定的单一有效来源，禁止把默认与团队覆盖混合。
+
+Repo Context Provider 使用 `knowledge.repo_context.provider_skill_ref`；Provider
+Selection Matrix 读取 `knowledge.repo_context.policy_ref`。缺少已配置消费者时返回
+`NEEDS_TEAM_CONFIG`，不得静默忽略字段。
 
 ## Provider Interface
 

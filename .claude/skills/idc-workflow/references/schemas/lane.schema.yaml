@@ -10,9 +10,18 @@ lane:
 lane_decision:
   selected_lane: fast | lite | complex
   hard_triggers: []
+  lite_floor_triggers: []
   fast_disqualified_by: []
-  decision_rule: hard_trigger | fast_all_conditions_met | default_lite
+  signal_evidence: {}
+  decision_rule: hard_trigger | lite_floor | fast_all_conditions_met | default_lite
   confidence: high | medium | low
+  reasons: []
+
+lane_applicability_decision:
+  applicability: applicable | not_applicable
+  selected_lane: fast | lite | complex | null
+  execution_profile: lane_driven | d3a_fixed_workflow | string
+  bypass_lane_resolver: boolean
   reasons: []
 
 rules:
@@ -21,8 +30,16 @@ rules:
   - Domain Resolver 决定是否使用 D3A 或其他 Domain Module。
   - 不允许输出 known-domain、d3a、gc、dynamic、unknown 或任何 registry 外 lane。
   - Lane Resolver 不读取 module 内部知识。
+  - 先应用 Domain Module 的 Lane applicability policy；只有 applicable route 才运行 Lane Resolver。
+  - D3A module 标记 not_applicable、selected_lane=null，并由 d3a_fixed_workflow 接管。
   - 命中 Complex hard trigger 时必须选择 complex。
-  - 只有 Fast required conditions 全部满足时才能选择 fast。
+  - 未命中 Complex hard trigger但命中 Lite floor signal 时，至少选择 lite。
+  - new capability、behavior contract change、需要新增/修改测试、多个相关文件/组件、focused design、broad repo exploration 或 scope unknown 都属于 Lite floor。
+  - production code change 或 bugfix/refactor 本身不构成 Lite floor；极小局部修改可以在满足全部 Fast 条件时进入 fast。
+  - 只有 Fast required conditions 全部显式为 true 且有 signal_evidence 时才能选择 fast。
+  - 缺失、false 或 unknown 的 Fast condition 都会取消 Fast 资格；禁止把用户未提及当成否定事实。
+  - Fast 必须同时满足 no_new_test_required、existing_verification_available、localized_change 和 fast_scope_evidence_present。
+  - no_new_test_required 不代表不验证；Fast 仍必须执行已有测试、build、lint、静态检查或等价 basic verification。
   - 既不满足 fast，也没有 complex hard trigger 时，默认选择 lite。
   - 输出必须包含 reasons，不能只输出 selected_lane。
   - 每个 Lane 都必须自闭环。

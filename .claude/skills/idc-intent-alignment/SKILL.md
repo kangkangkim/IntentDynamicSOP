@@ -53,7 +53,7 @@ Machine Contract
   -> Human Alignment Check
   -> Brainstorming / Grill Me / Grill With Docs if needed
   -> Alignment View
-  -> User approve / request clarification / request reclassify / reject
+  -> AskUserTool approve / request clarification / request reclassify / reject
   -> approved Alignment Pack or return to earlier stage
 ```
 
@@ -102,3 +102,6 @@ If any contract, scope, completion gate, API semantics, test evidence, or file-p
 - Do not resume execution from a stale approval ref.
 - If the user requests clarification, return to `idc-intent-grilling`.
 - If the user approves, hand off to the automated closure loop.
+- All approval, re-alignment, reclassification, or rejection requests must be
+  emitted through `AskUserTool`; if it is unavailable, return
+  `BLOCKED_NEEDS_ASK_USER_TOOL`.

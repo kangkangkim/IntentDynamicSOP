@@ -1,76 +1,77 @@
 # QUICKSTART
 
-This guide is the shortest path from the shared IDC harness to a confidential
-team setup. The goal is "fill parameters, then run one vertical slice."
+This is the shortest path from the shared IDC harness to a confidential team
+setup. A team authors one file: `team-config.yaml`.
+
+For a General Coding team, the smallest valid file is:
+
+```yaml
+config_version: 1
+team: {id: my-team, repo_path: /repos/my-team}
+domain: {mode: general}
+bindings: {}
+```
+
+Lane defaults, autonomous profiles, capability budgets, and disabled
+self-optimization are materialized safely. Add only the Skill and knowledge
+bindings the team can really execute.
 
 ## Step 1: Copy The Harness
 
-Copy this repository into your confidential environment.
-
-Do not add real enterprise paths, commands, logs, APIs, or internal skill names
-to the shared public harness.
+Copy this repository into the confidential environment. Do not add enterprise
+paths, commands, logs, APIs, or internal skill names to the public harness.
 
 ## Step 2: Create Team Config
-
-Copy:
 
 ```sh
 cp team-config.yaml.template team-config.yaml
 ```
 
-`team-config.yaml` is ignored by git and is the only place a team should put
-real local parameters.
+`team-config.yaml` is ignored by git. Files generated under `.idc/` are
+read-only runtime state and are not a second configuration entry.
 
 ## Step 3: Fill Team Basics
 
-Fill:
-
 ```yaml
+config_version: 1
 team:
   id: <TEAM_ID>
   repo_path: <REPO_PATH>
-  skill_base_path: <SKILL_BASE_PATH>
 ```
 
-## Step 4: Select Domain
+## Step 4: Select Or Define Domain
 
-For D3A:
+Use a built-in Domain:
 
 ```yaml
 domain:
-  use_d3a: true
-  custom_domain_id: null
+  mode: d3a # or general
 ```
 
-For another team domain, set `use_d3a: false` and fill `custom_domain_id`.
-
-Real DT domains replace the repo placeholder registry wholesale:
+D3A DT domains may replace the public defaults wholesale:
 
 ```yaml
 domain:
-  d3a_dt_domains:
-    - id: <DT_ID>
-      knowledge_ref: <ENTERPRISE_DT_KNOWLEDGE_REF>
+  mode: d3a
+  d3a:
+    dt_domains:
+      - id: <DT_ID>
+        knowledge_ref: <ENTERPRISE_DT_KNOWLEDGE_REF>
 ```
 
-Non-empty replaces `registries/dt-domains.yaml` (no merge); empty falls back to
-the repo defaults. General Coding teams do the same via `general.components`
-and `general.test_domains` (they replace `general-components.yaml` /
-`general-test-domains.yaml` wholesale).
-
-D3A keeps the fixed user-designed workflow. The config only binds knowledge,
-skills, commands, and evidence sources into that workflow.
+For a Custom Domain, fill `domain.custom` in the same file. Include trigger
+rules, Lane policy, coding/test registries, required contracts, and workflow,
+planner, and completion skill refs. Do not edit the shared Domain registry.
 
 ## Step 5: Fill Skill Bindings
 
-Every slot binds an enterprise skill by `skill_ref` — including the DT and
-build slots. Fill only skills your team already has. Leave missing skills as
-`null`.
+Bindings declare which enterprise capabilities are available. They do not cause
+every skill to execute.
 
 ```yaml
 bindings:
-  brainstorming:
-    skill_ref: <ENTERPRISE_BRAINSTORMING_SKILL_REF>
+  tech_design:
+    skill_ref: <ENTERPRISE_TECH_DESIGN_SKILL_REF>
   dt_design:
     skill_ref: <ENTERPRISE_DT_DESIGN_SKILL_REF>
   dt_writer:
@@ -81,70 +82,115 @@ bindings:
     skill_ref: <ENTERPRISE_TRAN_BUILD_SKILL_REF>
 ```
 
-Unfilled GC SOP atoms are skipped unless the Skill Adapter Router sees a
-matching capability, stage, contract, and binding.
+Add capabilities outside the fixed slots through `adapter_extensions`. Each
+extension declares capability keys, stages, Lane/profile eligibility, signals,
+and a skill ref. Shared registries remain unchanged.
 
 ## Step 6: Fill Knowledge Indexes
 
-Bind existing enterprise knowledge by path or reference. Do not copy the full
-knowledge body into the shared harness.
-
 ```yaml
 knowledge:
-  architecture_doc: <ENTERPRISE_ARCHITECTURE_DOC_REF>
-  feature_docs_root: <ENTERPRISE_FEATURE_DOCS_ROOT>
+  architecture_doc_ref: <ENTERPRISE_ARCHITECTURE_DOC_REF>
+  feature_docs_root_ref: <ENTERPRISE_FEATURE_DOCS_ROOT>
   layer_docs:
     DO: <ENTERPRISE_D3A_DO_KNOWLEDGE_REF>
   verification_mapping_ref: <ENTERPRISE_LAYER_TO_DT_MAPPING_REF>
+  repo_context:
+    provider_skill_ref: <ENTERPRISE_REPO_CONTEXT_SKILL_REF>
+    policy_ref: <ENTERPRISE_PROVIDER_POLICY_REF>
+    fallback: bounded_grep
 ```
 
-DT knowledge refs ride on the `domain.d3a_dt_domains` entries shown in Step 4;
-`knowledge.dt_docs` no longer exists.
+Only refs belong here. Knowledge bodies remain in enterprise storage.
 
-## Step 7: Bind Build Skills
-
-`dt_build` and `tran_build` are skills, not commands. Bind the enterprise
-build skill in each slot:
+## Step 7: Configure Capability Selection
 
 ```yaml
-bindings:
-  dt_build:
-    skill_ref: <ENTERPRISE_DT_BUILD_SKILL_REF>
-  tran_build:
-    skill_ref: <ENTERPRISE_TRAN_BUILD_SKILL_REF>
+capability_selection:
+  mode: autonomous_minimal_sufficient
+  lane_profiles:
+    fast: {max_optional_skills: 1}
+    lite: {max_optional_skills: 3}
+    complex: {max_optional_skills: null}
+  d3a_profile: {max_optional_skills: null}
+  require_selected_and_skipped_reasons: true
 ```
 
-If the team has no packaged build skill yet, wrap the real command in a
-minimal skill first (run the command, return logs / exit code as evidence),
-then bind that skill. The command itself stays inside the skill file in the
-confidential zone — it never appears in `team-config.yaml`.
+Then configure each Lane's executable Skill policy under `lane.profiles`:
 
-## Step 8: Validate Harness
+```yaml
+lane:
+  default: lite
+  profiles:
+    lite:
+      skills:
+        allow: [tech_design, phase_plan, ut_design]
+        deny: []
+        required: [tech_design]
+      orchestration:
+        mode: autonomous
+        steps:
+          - id: lite-plan
+            stage: planning
+            skill_ids: [tech_design, phase_plan]
+            trigger_signals: []
+```
 
-Run:
+`autonomous` runs configured step Skills first and may add the smallest useful
+set. `ordered` runs only the matching step in configured order; a missing stage
+mapping blocks with `NEEDS_ORCHESTRATION_MAPPING`. Resolver rejects a Skill ID
+that is unbound, unknown, Lane-ineligible, or assigned to an unsupported stage.
+The three `max_optional_skills` values are defaults, not constants; set any of
+them to a non-negative integer or `null` to match the team's SOP.
+
+Fast, Lite, and Complex independently choose the smallest sufficient set from
+the bound skills. D3A uses its workflow stage and Layer Context Packet instead
+of a Lane.
+
+## Step 8: Validate And Resolve
+
+Normal `idc-workflow` usage runs preflight automatically and atomically rebuilds
+effective config. The team still edits only `team-config.yaml`. The commands
+below are optional diagnostics and CI checks:
 
 ```sh
+ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+  --config team-config.yaml \
+  --check
+
+ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+  --config team-config.yaml \
+  --output .idc/effective-team-config.yaml
+
 python3 tests/test_harness.py
 ```
 
-All tests should pass before the first confidential run. In the confidential
-copy the same command also validates the filled `team-config.yaml`: unfilled
-placeholders, non-existent `skill_ref` targets, inconsistent `domain` settings,
-and leftover placeholder commands are reported before the first run.
+Resolver rejects command keys, missing skill refs, invalid Domain definitions,
+unsafe self-optimization settings, and malformed adapter extensions.
+
+Portable Skill references:
+
+- `'team://skills/example/SKILL.md'`: relative to `team.repo_path`.
+- `'harness://.claude/skills/idc-example/SKILL.md'`: relative to IDC Core.
+- plain relative path: team repo first, IDC Core second.
+- absolute path or URI: retained as supplied.
 
 ## Step 9: Run One Vertical Slice
 
-Start with the smallest D3A slice:
+Start with:
 
 ```text
-1 Layer
-1 DT Domain
+1 execution unit or D3A Layer
+1 test/DT domain
 1 verification mapping
 1 repo context provider
-RED evidence
+Capability Selection result
+RED evidence when TDD is required
 GREEN evidence
-tran_build PASS
+required build PASS
 Completion Summary
 ```
 
-Do not model every GC SOP atom or every D3A knowledge source on day one.
+Inspect both selected and skipped capability reasons. A configured GC skill that
+never becomes eligible should be fixed in its capability mapping, not forced to
+run globally.

@@ -2,6 +2,8 @@
 
 这是给用户看的关键澄清卡片。
 
+这些问题卡必须通过 `AskUserTool` 发出；本文件只定义用户可读展示，不是直接追问通道。
+
 背后的机器契约是：
 
 ```text
@@ -63,3 +65,4 @@ schemas/clarification-provider.schema.yaml
 - 使用 Grill Me 方法时，必须按 decision tree / frontier round 组织问题。
 - 如果 Grill Me 方法不可用，必须说明已 fallback 到 builtin-critical-questions。
 - 用户回答后不能直接写代码，必须先回到 Alignment View。
+- 真正收集用户回答时必须调用 `AskUserTool`；如果不可用，返回 `BLOCKED_NEEDS_ASK_USER_TOOL`。

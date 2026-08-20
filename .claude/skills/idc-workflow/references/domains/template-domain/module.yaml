@@ -7,6 +7,11 @@ domain_module:
     trigger_rules:
       - <ENTERPRISE_PLACEHOLDER>
     fallback: GENERAL_CODING
+  lane_policy:
+    # Use dynamic for normal team domains. Use fixed + selected_lane only when
+    # the team's domain SOP itself mandates one execution intensity.
+    mode: dynamic
+    resolver: workflows/lane-resolver.md
   registries:
     coding_layers: domains/template-domain/layers.yaml
     test_domains: domains/template-domain/test-domains.yaml

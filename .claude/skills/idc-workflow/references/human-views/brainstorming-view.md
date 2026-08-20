@@ -2,6 +2,8 @@
 
 这是只给 `raw_idea` / 模糊想法看的发散设计卡片。
 
+任何 discovery 问题或方向确认都必须通过 `AskUserTool` 发出；本文件只定义用户可读展示，不是直接追问通道。
+
 背后的机器契约是：
 
 ```text
@@ -61,3 +63,4 @@ schemas/discovery-provider.schema.yaml
 - 如果存在多个合理设计方向，展示 2-3 个方案和推荐。
 - 用户确认设计方向前，不能写实现代码。
 - Brainstorming 生成的是 draft spec，不是 approved contract。
+- 真正收集用户回答或方向确认时必须调用 `AskUserTool`；如果不可用，返回 `BLOCKED_NEEDS_ASK_USER_TOOL`。

@@ -2,6 +2,10 @@
 
 约束不是一次性全塞进上下文，而是分阶段加载。
 
+`prepare_runtime.rb` 输出 bootstrap plan。其余阶段必须调用
+`idc-team-config/scripts/plan_context.rb`，并只读取
+`context_load_plan.required_refs`。自然语言中的文件示例不是额外的默认加载清单。
+
 ```text
 Decision Constraints
   -> Alignment 前
@@ -13,6 +17,10 @@ Execution Constraints
   -> Execution 前
 ```
 
+执行阶段必须传入 READY Capability Selector 结果；未选中的 Skill 不进入加载
+计划。Domain、Lane、signals 或 phase 变化后重新生成计划，不继承上一阶段的完整
+上下文。
+
 ## Decision Constraints
 
 加载点：
@@ -20,7 +28,7 @@ Execution Constraints
 ```text
 Input Adapter
   -> Domain Resolver
-  -> Lane Resolver
+  -> Fixed module lane policy, otherwise Lane Resolver
   -> Contract Gate
   -> Alignment Pack
 ```

@@ -70,15 +70,15 @@ Load runtime_state
 
 | current_state | 恢复动作 |
 |---|---|
-| `discovery` | 重放 Brainstorming View 摘要，继续 `intent-grilling` 或重新问用户。 |
-| `clarification` | 重新展示未回答的 Clarification View 选择题卡。 |
-| `alignment` | 重新展示 Alignment View，等待 approve。 |
+| `discovery` | 重放 Brainstorming View 摘要，继续 `intent-grilling` 或通过 `AskUserTool` 重新问用户。 |
+| `clarification` | 重新展示未回答的 Clarification View 选择题卡，并通过 `AskUserTool` 收集回答。 |
+| `alignment` | 重新展示 Alignment View，通过 `AskUserTool` 等待 approve。 |
 | `planning` | 重新生成或校验 plan；不直接执行。 |
 | `execution` | 读取 delegation/context packet；如果无法证明 subagent 完成，重新派发或进入 verification。 |
 | `verification` | 重新运行 verification；不复用模型记忆判断 GREEN。 |
 | `fix` | 读取 last_failure_ref 和 retry_count，进入 targeted fix 或 escalation。 |
 | `done` | 只展示 completion summary 和 evidence refs，不重复执行。 |
-| `escalated` | 展示 Escalation View，等待人工处理。 |
+| `escalated` | 展示 Escalation View，通过 `AskUserTool` 等待人工处理。 |
 
 ## Official Dynamic Workflow
 
@@ -96,6 +96,7 @@ Load runtime_state
 - 不允许跳过 Human Alignment approval。
 - 不允许在 execution 中断后直接标 DONE。
 - 不允许 checkpoint 缺失时猜测执行结果。
+- 不允许用普通文本询问恢复、approval 或 escalation 决策；必须使用 `AskUserTool`，不可用时返回 `BLOCKED_NEEDS_ASK_USER_TOOL`。
 
 ## 恢复输出
 

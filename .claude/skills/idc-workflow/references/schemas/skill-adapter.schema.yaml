@@ -9,7 +9,7 @@ description: >
 skill_adapter:
   id: string
   status: active | placeholder | confidential_only | team_bindable
-  class: public_methodology_adapter | team_pre_alignment_adapter | enterprise_gc_sop_adapter | original_enterprise_repo_skill_adapter | domain_module_execution_skill
+  class: public_methodology_adapter | team_pre_alignment_adapter | enterprise_gc_sop_adapter | original_enterprise_repo_skill_adapter | verification_adapter
   source:
     kind: external_public | enterprise_gc_sop | original_enterprise_repo_skill
     ref: string
@@ -39,21 +39,25 @@ adapter_registry:
     - selected_stage
     - requested_capability_keys
     - selected_domain
-    - selected_lane
+    - lane_applicability
+    - selected_lane_or_execution_profile
     - required_contract_refs
     - confidential_mapping_refs
-    - team_adapter_binding_ref
+    - effective_team_config_ref
+    - capability_selection_ref
   no_match_result: NEEDS_ADAPTER_MAPPING
-  team_binding_template: .claude/skills/idc-workflow/references/registries/team-adapter-bindings.template.yaml
+  team_binding_source: team-config.yaml
+  effective_binding_source: .idc/effective-team-config.yaml
 
 rules:
   - Skill adapters live under `.claude/skills/`.
   - Skill Adapter Router must select adapters from the adapter_registry, not by name guessing.
   - Adapter matching uses capability_keys, allowed_stages, requires, and blocks_when.
   - If no registry row matches, return NEEDS_ADAPTER_MAPPING.
-  - Shared registry rows decide adapter eligibility; team adapter bindings decide concrete execution.
+  - Shared registry rows and validated adapter_extensions decide eligibility; team-config bindings decide availability.
+  - Capability Selector decides which available skill runs for the current stage and execution unit.
   - Team-bindable adapters may use a company binding when present and must keep a shared fallback contract.
-  - Confidential-only adapters must provide a team_adapter_binding_ref before execution.
+  - Confidential-only adapters must resolve a non-null skill_ref from effective team config before execution.
   - Skill adapters must not contain real enterprise paths, APIs, commands, logs, tests, or implementation facts in the external harness.
   - Skill adapters are called only after IDC routing has selected the workflow stage.
   - Skill adapters cannot choose Domain, Lane, Contract Gate, or Completion Gate.
@@ -66,7 +70,7 @@ example:
     source:
       kind: original_enterprise_repo_skill
       ref: <ENTERPRISE_ORIGINAL_REPO_SKILL_REF>
-    binding_ref: <TEAM_ADAPTER_BINDING_REF>
+    binding_ref: team-config.yaml.bindings.dt_design.skill_ref
     capability_keys:
       - dt_design
       - test_design

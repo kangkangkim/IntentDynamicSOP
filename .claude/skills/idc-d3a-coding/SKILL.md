@@ -7,13 +7,22 @@ description: Use only after the IDC workflow selects Domain = d3a and Human Alig
 
 当 IDC workflow 选择 `Domain = d3a` 且 Human Alignment 已批准后，使用这个 skill。
 
-D3A 场景使用用户设计的固定 D3A workflow。这个 skill 只能在固定流程内做 layer planning、DT mapping、execution unit 拆分、adapter 绑定和 evidence 收集，不能重排或重新设计 D3A 主流程。
+D3A 场景使用用户设计的固定 D3A workflow。它与 General Coding 共享
+`Planner -> Knowledge Preparation -> Execution Unit Split -> TDD -> Completion`
+骨架；这个 skill 只能在固定流程内做 layer planning、DT mapping、knowledge
+准备、execution unit 拆分、adapter 绑定和 evidence 收集，不能重排或重新设计
+D3A 主流程。
+
+D3A 不参与 `fast / lite / complex` Lane 分类。Domain Module Router 选中 D3A
+后跳过通用 Lane Resolver，由用户设计的固定 D3A workflow 自己定义 planning、
+delegation 和 evidence 深度。
 
 ## When To Use
 
 Use when all are true:
 
 - Domain Module Router selects `d3a` / `D3A_CODING`。
+- D3A module 声明 `lane_applicability: not_applicable`。
 - Human Alignment 已 approved。
 - D3A contract set 已明确。
 - Planner 能在固定 D3A Layer registry 内拆 Layer Context Packet。
@@ -45,13 +54,14 @@ If D3A contract / scope / completion gate 不清楚，route to:
 3. 产出 D3A Specification。
 4. 在 implementation 前 freeze API Contract。
 5. Planner 只能在固定 D3A Layer registry 内规划。
-6. DT Domain 只能从生效 registry 选择：仓库默认 `dt-domains.yaml`，或 `team-config.yaml.domain.d3a_dt_domains` 非空时整体替换；禁止合并两个来源、禁止 registry 外编造。
-7. 构造 dependency DAG。
-8. 为每个选中 Coding Layer 创建一个 Layer Context Packet。
-9. Implementation 完成前必须确认 RED evidence。
-10. 每个 required DT Domain 都必须有 GREEN evidence。
-11. 运行 `tran_build`。
-12. 只有 `tran_build` PASS 后才能标记 Done。
+6. DT Domain 只能从生效 registry 选择：仓库默认 `dt-domains.yaml`，或 `team-config.yaml.domain.d3a.dt_domains` 非空时整体替换；禁止合并两个来源、禁止 registry 外编造。
+7. Planner 构造 dependency DAG、verification mapping 和逐 Layer knowledge requirements。
+8. Knowledge Gate 按选中 Layer 准备最小必要 knowledge。
+9. 为每个选中 Coding Layer 创建一个 Layer Context Packet。
+10. 每个 Layer 按 TDD 状态机执行，Implementation 前必须确认 RED evidence。
+11. 每个 required DT Domain 都必须有 GREEN evidence。
+12. 运行 `tran_build`。
+13. 只有 `tran_build` PASS 后才能标记 Done。
 
 ## Output
 
@@ -71,6 +81,7 @@ d3a_execution_result:
 
 - 不允许绕过 Human Alignment approval。
 - 不允许重排或重新设计用户定义的固定 D3A workflow。
+- 不允许为 D3A 识别 `fast` / `lite` / `complex`；Lane 对 D3A 不适用。
 - 不允许使用 General component registry。
 - 不允许猜 Coding Layer 到 DT Domain mapping。
 - 不允许把 TR3 DT design 当作 RED / GREEN evidence。

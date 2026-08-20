@@ -58,6 +58,9 @@ completion_summary_exists
 ## 通用规则
 
 - 任何 Lane 都不能无 evidence 标记 DONE。
+- 任何 repository mutation 都必须有 Execution Receipt：authorization ID、
+  dispatch tool-call ref、executor session ref 和 loaded Domain execution Skill。
+- 缺少 Delegation provenance 时，即使测试通过也不能标记 DONE。
 - 任何 Lane 都必须输出 completion summary。
 - 如果 Lane 的 minimum requirements 无法满足，必须升级 Lane 或返回 targeted fix / re-plan。
 - Domain Module 可以在 Lane requirements 之上追加自己的 completion gate。

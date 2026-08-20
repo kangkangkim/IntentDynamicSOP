@@ -57,7 +57,7 @@ Requirement Assessor
   -> Read bounded project docs / existing decision records
   -> Build decision tree
   -> Select current frontier
-  -> Ask <= 5 multiple-choice question cards
+  -> AskUserTool <= 5 multiple-choice question cards
   -> User answers
   -> Update non-sensitive docs only when decisions crystallize
   -> Commitment check
@@ -95,3 +95,5 @@ grill_with_docs_output:
 - Documentation created here is not RED evidence, GREEN evidence, or DONE
   evidence.
 - Human Alignment must happen after clarification.
+- All clarification questions must be emitted through `AskUserTool`; if it is
+  unavailable, return `BLOCKED_NEEDS_ASK_USER_TOOL`.

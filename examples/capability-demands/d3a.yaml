@@ -1,0 +1,11 @@
+capability_demand:
+  execution_unit_ref: d3a-do-unit
+  selected_stage: dt_design
+  selected_domain: d3a
+  lane_applicability: not_applicable
+  selected_lane: null
+  execution_profile: d3a_fixed_workflow
+  required_capability_keys: [dt_design]
+  optional_capability_keys: [unit_test_design]
+  observed_signals: [dt_design_required, tdd_required]
+  contract_refs: [task_contract, verification_contract, api_contract]

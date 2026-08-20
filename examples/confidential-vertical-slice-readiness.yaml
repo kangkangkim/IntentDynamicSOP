@@ -2,7 +2,9 @@ vertical_slice:
   slice_id: mock-confidential-d3a-slice
   status: NOT_READY
   selected_domain: d3a
-  selected_lane: lite
+  lane_applicability: not_applicable
+  selected_lane: null
+  execution_profile: d3a_fixed_workflow
   scope:
     user_request_ref: examples/e2e-tr3-d3a/input-tr3.md
     approved_alignment_ref: examples/e2e-tr3-d3a/alignment-pack.yaml

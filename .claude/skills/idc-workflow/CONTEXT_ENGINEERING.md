@@ -6,6 +6,8 @@ Context Engineering 定义 Claude Code 运行 `id-workflow` 时如何渐进式�
 
 ## 总原则
 
+- `prepare_runtime.rb` 生成最小 bootstrap plan；后续阶段由
+  `plan_context.rb` 生成 `required_refs`，该清单是加载依据。
 - 不默认加载整个 `references/`。
 - 不默认读取全部 `docs/`、`examples/`、`tests/`。
 - 不把 OKL / docs / CodeGraph / grep finding 当作 DONE evidence。
@@ -16,17 +18,17 @@ Context Engineering 定义 Claude Code 运行 `id-workflow` 时如何渐进式�
 - 每个 execution unit 的代码变更控制在 `<= 500 LOC`。
 - D3A 多 Layer 必须拆成多个 Layer Context Packet，每个 packet 只服务一个 Layer。
 - Main agent 只做 planning / delegation / evidence summarization。
+- Main agent 不执行任何 repository mutation；Fast、Lite、Complex 都必须通过 Execution Authorization 后派发 executor。
 - Subagent / agent team 的完整 session 不能回灌 main session。
 
 ## Stage 1: 输入理解
 
-默认加载：
+运行 bootstrap plan，只加载：
 
 ```text
-SKILL.md
-CONTEXT_ENGINEERING.md
 references/workflows/input-adapter.md
-references/schemas/normalized-request.schema.yaml
+references/workflows/scenario-router.md
+references/workflows/domain-module-router.md
 ```
 
 只判断：
@@ -43,23 +45,9 @@ references/schemas/normalized-request.schema.yaml
 
 ## Stage 2: 澄清 / Discovery
 
-如果 `input_maturity = raw_idea`，加载：
-
-```text
-.claude/skills/idc-intent-discovery/SKILL.md
-references/workflows/discovery-provider.md
-references/schemas/discovery-provider.schema.yaml
-references/human-views/brainstorming-view.md
-```
-
-如果关键 contract、scope、completion gate 缺失，加载：
-
-```text
-.claude/skills/idc-intent-grilling/SKILL.md
-references/workflows/clarification-provider.md
-references/schemas/clarification-provider.schema.yaml
-references/human-views/clarification-view.md
-```
+`input_maturity = raw_idea` 时给 decision plan 添加 `raw_idea` signal；关键
+contract、scope、completion gate 缺失时添加 `clarification_required`。
+只有需要向用户提问时才添加 `user_question_required`。
 
 知识加载规则：
 
@@ -76,27 +64,8 @@ references/human-views/clarification-view.md
 
 ## Stage 3: Domain / Lane / Contract
 
-默认加载：
-
-```text
-references/domains/registry.yaml
-references/workflows/lane-resolver.md
-references/workflows/contract-gate.md
-references/workflows/human-alignment.md
-references/schemas/alignment-pack.schema.yaml
-references/human-views/alignment-view.md
-```
-
-按需加载：
-
-```text
-references/domains/d3a/module.yaml
-references/domains/general/module.yaml
-references/workflows/d3a-workflow.md
-references/workflows/general-coding.md
-references/schemas/d3a-plan.schema.yaml
-references/schemas/general-plan.schema.yaml
-```
+运行 decision plan。General / lane-applicable Custom 传入实际 Lane；D3A 不传
+Lane。只读取 plan 返回的当前 Domain、Lane、Contract 与 Human Alignment 引用。
 
 Lane 策略：
 
@@ -112,23 +81,16 @@ Lane 策略：
 
 ## Stage 4: 执行
 
-用户批准 Alignment Pack 后加载：
-
-```text
-references/workflows/automated-closure-loop.md
-references/workflows/delegation-router.md
-references/workflows/progressive-constraint-loading.md
-references/workflows/execution-unit-policy.md
-references/workflows/lane-completion.md
-references/schemas/delegation-contract.schema.yaml
-references/schemas/escalation-policy.schema.yaml
-references/schemas/verification-contract.schema.yaml
-```
+用户批准 Alignment Pack 后先运行 planning plan。每个 execution unit 先运行
+Capability Selector，再把 READY selection 传给 execution plan。执行阶段只加载
+Domain execution protocol、共享 gate 和本单元选中的 Skill refs。
 
 执行上下文必须包含：
 
 - 已批准的 Alignment Pack 摘要。
 - Delegation Contract。
+- Execution Authorization Result。
+- 真实 dispatch tool-call ref 和 executor session ref。
 - 当前 execution unit 的目标、边界和 verification contract。
 - 当前 domain module。
 - 当前 lane completion rule。
@@ -147,6 +109,7 @@ Subagent / agent team 返回给 main 的内容只能包含：
 - summary。
 - changed_paths。
 - evidence_refs。
+- execution_receipt。
 - blockers。
 - context_to_keep。
 - context_to_drop。
@@ -155,22 +118,8 @@ Subagent / agent team 返回给 main 的内容只能包含：
 
 ## Stage 5: 验证 / 闭环
 
-默认加载：
-
-```text
-references/workflows/lane-completion.md
-references/workflows/tdd-state-machine.md
-references/schemas/verification-contract.schema.yaml
-references/human-views/completion-view.md
-```
-
-只在失败时追加：
-
-```text
-references/human-views/escalation-view.md
-references/workflows/provider-selection-matrix.md
-references/workflows/repo-context-providers.md
-```
+运行 completion plan。只有当前单元实际要求 TDD 时添加 `tdd_required`；需要
+重新定位仓库上下文时添加 `repo_context_required`，不得把这些引用提前加载。
 
 验证判断只看：
 

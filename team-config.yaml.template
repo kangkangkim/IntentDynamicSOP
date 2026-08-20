@@ -1,29 +1,45 @@
 # team-config.yaml.template
 #
-# Copy this file to team-config.yaml in the confidential environment.
-# Fill only the parameters your team needs. Leave null / {} / [] to use IDC
-# defaults, built-in fallback behavior, or skip optional capabilities.
-# Registry lists (domain.d3a_dt_domains, general.components, general.test_domains)
-# replace the repo registries WHOLESALE when non-empty; they never merge sources.
-# Do not commit the filled team-config.yaml back to the shared harness.
+# Copy to team-config.yaml inside the confidential environment. This is the only
+# team-authored configuration file. Generated files under .idc/ are read-only.
+# Real commands stay inside bound enterprise skills and never appear here.
+
+config_version: 1
 
 team:
   id: <TEAM_ID>
   repo_path: <REPO_PATH>
-  skill_base_path: <SKILL_BASE_PATH>
 
 domain:
-  use_d3a: true
-  custom_domain_id: null
-  # Non-empty replaces registries/dt-domains.yaml wholesale (no merge).
-  # Entries: {id: <DT_ID>, knowledge_ref: <ENTERPRISE_DT_KNOWLEDGE_REF>}
-  d3a_dt_domains: []
+  # d3a: built-in enterprise-defined D3A workflow
+  # general: dynamic General Coding workflow
+  # custom: inline team-owned Domain Module defined below
+  mode: d3a
+
+  d3a:
+    # Non-empty replaces registries/dt-domains.yaml wholesale; never merge.
+    # Entries: {id: <DT_ID>, knowledge_ref: <ENTERPRISE_DT_KNOWLEDGE_REF>}
+    dt_domains: []
+
+  custom:
+    id: null
+    trigger_rules: []
+    lane_policy:
+      mode: dynamic # dynamic | fixed | not_applicable
+      selected_lane: null # required only when mode=fixed
+    # Inline registries make custom-domain adoption possible without editing the
+    # shared domains/registry.yaml or creating another hand-authored config file.
+    coding_layers: [] # entries: {id, knowledge_ref}
+    test_domains: []  # entries: {id, knowledge_ref}
+    required_contracts: [task_contract, verification_contract]
+    workflow_skill_ref: null
+    planner_skill_ref: null
+    completion_skill_ref: null
 
 general:
-  # Non-empty lists replace the repo registries wholesale (no merge).
-  # Entries: {id: <ID>, knowledge_ref: <ENTERPRISE_KNOWLEDGE_REF>}
-  components: []    # replaces registries/general-components.yaml
-  test_domains: []  # replaces registries/general-test-domains.yaml
+  # Non-empty lists replace repo registries wholesale; never merge.
+  components: []    # entries: {id, knowledge_ref}
+  test_domains: []  # entries: {id, knowledge_ref}
 
 bindings:
   coding_standard:
@@ -58,9 +74,6 @@ bindings:
     skill_ref: null
   system_test:
     skill_ref: null
-  # DT / build slots are ordinary skill slots. Every slot binds an enterprise
-  # skill by ref; real commands live inside the skill, never in this config.
-  # A team without a build skill wraps its command in a minimal skill first.
   dt_design:
     skill_ref: null
   dt_writer:
@@ -70,15 +83,88 @@ bindings:
   tran_build:
     skill_ref: null
 
+# Add team-specific GC atoms or repository skills here without editing the
+# shared adapter registry. Resolver appends validated rows to the effective
+# registry; extensions cannot override Domain, Lane, Contract, or Completion.
+adapter_extensions: []
+#  - id: idc-<team-capability>
+#    execution_role: atomic_capability # atomic_capability | verification_capability | pre_alignment_capability
+#    capability_keys: []
+#    allowed_stages: []
+#    eligible_lanes: [fast, lite, complex]
+#    execution_profiles: []
+#    trigger_signals: []
+#    skill_ref: <ENTERPRISE_SKILL_REF>
+#    input_contract_ref: null
+#    output_contract_ref: null
+#    evidence_required: true
+#    requires: []
+#    blocks_when: []
+#    composes_with: [] # declare intentional overlap; both may run
+#    supersedes: []    # declare replacement; listed skills are removed when eligible
+
+# Portable Skill refs:
+# - 'team://skills/example/SKILL.md' resolves from team.repo_path.
+# - 'harness://.claude/skills/idc-example/SKILL.md' resolves from IDC Core.
+# - Plain relative refs try team.repo_path first, then IDC Core.
+
 knowledge:
-  architecture_doc: null
-  feature_docs_root: null
+  architecture_doc_ref: null
+  feature_docs_root_ref: null
   layer_docs: {}
   verification_mapping_ref: null
-  repo_context_provider_ref: null
+  repo_context:
+    provider_skill_ref: null
+    policy_ref: null
+    fallback: bounded_grep
 
 lane:
+  # Fallback only for lane-applicable dynamic routes. D3A ignores this value.
   default: lite
-  fast_skip_steps: []
-  lite_skip_steps: []
-  complex_skip_steps: []
+  # Each Lane can expose a different skill set and team-owned process. Skill IDs
+  # are binding names above or adapter_extension IDs. Empty allow means all
+  # registry-eligible bound skills; deny always wins; required runs whenever its
+  # declared stage is active.
+  profiles:
+    fast:
+      skills: {allow: [], deny: [], required: []}
+      orchestration:
+        mode: autonomous # autonomous | ordered
+        steps: []
+        # - id: implement
+        #   stage: implementation
+        #   skill_ids: [coding_standard]
+        #   trigger_signals: []
+    lite:
+      skills: {allow: [], deny: [], required: []}
+      orchestration:
+        mode: autonomous
+        steps: []
+    complex:
+      skills: {allow: [], deny: [], required: []}
+      orchestration:
+        mode: autonomous
+        steps: []
+
+capability_selection:
+  mode: autonomous_minimal_sufficient
+  lane_profiles:
+    fast:
+      max_optional_skills: 1
+    lite:
+      max_optional_skills: 3
+    complex:
+      max_optional_skills: null
+  d3a_profile:
+    # D3A uses workflow stages instead of Lane, but still selects only abilities
+    # justified by the current Layer Context Packet.
+    max_optional_skills: null
+  require_selected_and_skipped_reasons: true
+
+self_optimization:
+  mode: disabled # disabled | observe | propose_only
+  event_store_ref: null
+  replay_cases_ref: null
+  team_overlay_ref: null
+  promotion_requires_human_alignment: true
+  auto_modify_core: false

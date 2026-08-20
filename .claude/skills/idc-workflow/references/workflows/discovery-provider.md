@@ -2,7 +2,13 @@
 
 Discovery Provider 负责把 `raw_idea` 输入展开成可以被 Grill Me 收敛的设计草案。
 
+Discovery 阶段所有需要用户回答的问题或方向选择都必须通过 `AskUserTool` 发出，遵守 `workflows/ask-user-tool-policy.md`。
+
 它发生在 Clarification Provider 之前。
+
+若存在有效团队配置，Discovery 可按需读取
+`knowledge.feature_docs_root_ref` 和 `knowledge.architecture_doc_ref` 的有界摘要；
+这些 refs 只提供背景，不能替代用户决策或批准。
 
 ```text
 Input Adapter
@@ -16,7 +22,13 @@ Input Adapter
 
 ## Upstream Baseline
 
-本 workflow 以 `obra/superpowers` 项目中的 `idc-brainstorming` skill 为 upstream baseline。
+本 workflow 以 `obra/superpowers` 项目中的 `brainstorming` skill 为 upstream baseline。
+
+本仓库已经把方法主体内置在：
+
+```text
+.claude/skills/idc-brainstorming/references/superpowers-brainstorming-method.md
+```
 
 详见：
 
@@ -44,10 +56,12 @@ builtin-discovery-questions
 
 保留 upstream 的核心流程：
 
+- 先分 `Spike / Bounded / Architectural` 三条路径。
+- 隐藏复杂度只能升级路径，不能中途降级。
 - 先理解项目上下文，再追问。
-- 根据问题复杂度成组追问，不因上下文裁剪牺牲需求探索质量。
+- 使用 focused discovery questions，一次只问一个真正影响设计的 frontier question；不因上下文裁剪牺牲需求探索质量。
 - 必要时给 2-3 个方案，并说明 trade-off 和推荐。
-- 先形成 design / draft spec，再交给用户确认。
+- 先形成 path-sized design / draft spec，完成 placeholder、consistency、scope、ambiguity 自检，再交给用户确认。
 - 在 design 被确认前，不进入实现。
 
 ### idc-brainstorming-overlay
@@ -60,6 +74,8 @@ IDC overlay 只做接线和边界微调：
 - draft spec 不等于 approved contract。
 - 最终人工 gate 仍然是 `intent-alignment` 的 Alignment View。
 - 外部环境只能生成非敏感 draft spec。
+- `Spike / Bounded / Architectural` 只表示 Discovery 深度，不是 Lane。
+- Discovery 可以补充 `lane_signals`，但不能把 path 直接映射为 `fast / lite / complex`；Domain Module Lane applicability 优先，只有 applicable dynamic-lane route 才由 Lane Resolver 判断。D3A 的 Lane 为 `not_applicable`。
 
 ### builtin-discovery-questions
 
@@ -99,10 +115,12 @@ tr3_design_doc:
 
 ```text
 Explore lightweight project context
-  -> Ask focused discovery questions
+  -> Classify Spike / Bounded / Architectural
+  -> AskUserTool one material discovery question at a time
   -> Update idea model
   -> Offer 2-3 approaches if design branch exists
-  -> Draft spec
+  -> Present path-sized design
+  -> Draft spec self-review
   -> User confirms draft direction
   -> Clarification Provider
 ```
@@ -114,8 +132,13 @@ discovery_provider:
   selected_provider: upstream-superpowers-brainstorming | idc-brainstorming-overlay | builtin-discovery-questions
   fallback_used: false
   upstream_baseline: obra/superpowers/skills/brainstorming
+  local_method_ref: .claude/skills/idc-brainstorming/references/superpowers-brainstorming-method.md
   overlay: idc-brainstorming-overlay
   input_maturity: raw_idea
+  superpowers_path: spike | bounded | architectural
+  path_reason: "<reason>"
+  observed_lane_signals: []
+  lane_decision_deferred: true
   context_refs:
     - "<repo/docs evidence ref>"
   questions_asked:
@@ -135,6 +158,9 @@ discovery_provider:
       - "<boundary>"
     acceptance_signals:
       - "<signal>"
+    alternatives_and_tradeoffs: []
+    unresolved_decisions: []
+    self_review_result: pass | needs_revision
   next: Clarification Provider
 ```
 
@@ -142,8 +168,10 @@ discovery_provider:
 
 - 只在 `raw_idea` 场景默认启用。
 - TR3 输入默认跳过 Discovery。
-- upstream idc-brainstorming 是 baseline，IDC overlay 只做接线和边界微调。
+- upstream brainstorming 是 baseline，IDC overlay 只做接线和边界微调。
+- Superpowers path 不得直接决定 IDC Lane；Discovery 只输出观察到的 lane signals，随后交给固定 module policy 或 Lane Resolver。
 - 不在 Discovery 阶段写实现代码。
 - 不把 draft spec 当作 approved contract。
 - 用户用中文输入时，Discovery 问题和方案必须用中文。
 - 外部环境只能生成非敏感 draft spec。
+- 不允许用普通文本直接追问用户；如果 `AskUserTool` 不可用，返回 `BLOCKED_NEEDS_ASK_USER_TOOL`。

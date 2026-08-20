@@ -14,7 +14,7 @@ open prototypes/idc-skill-pack-studio/index.html
 - Top-down Harness Board：中间主看板按从上到下的 IDC Harness 核心层展示，每一层都是可点击、可替换、可拖入原子能力的大框。
 - Harness Layers：左侧作为层级导航和能力过滤，包括 Input、Routing、Contract、Domain、Knowledge、Execution、Evidence。
 - Layer Swap：每层可以选择默认 IDC 实现、团队 adapter 或 placeholder 实现，并沉淀到 `layer_stack`。
-- Routing Strategy：可视化 Scenario、Domain、Lane 决策，支持切换 D3A / Custom Team Domain / General Coding，以及 fast / lite / complex lane。
+- Routing Strategy：可视化 Scenario、Domain 和 Lane applicability；General Coding 动态选择 fast / lite / complex，D3A 使用固定 workflow 且 Lane 不适用。
 - Capability Catalog：当前层下的团队 skill、agent、gate、router、handoff 原子能力货架。
 - Drag Grid Canvas：canvas 是表格型拖拽网格，行是 Harness Layer，列是 Implementation / Atomic Capabilities / Gates。
 - Canvas Drag Editing：在网格中拖动 layer 行改上下顺序，拖动能力卡跨 layer 移动，左侧能力拖入 layer 新增。

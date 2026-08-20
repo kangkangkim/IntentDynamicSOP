@@ -2,6 +2,8 @@
 
 这是自动闭环无法继续时给用户看的异常回流卡片。
 
+异常回流需要用户决策时必须通过 `AskUserTool` 发出；本文件只定义用户可读展示，不是直接决策通道。
+
 背后的机器契约是：
 
 ```text
@@ -54,3 +56,4 @@ Escalation trigger：
 - 不把技术日志全文塞给用户。
 - 必须说明为什么不能继续自动闭环。
 - 用户确认后，回到 Human Alignment 或 Planner。
+- scope / contract / re-plan / stop 的选择必须通过 `AskUserTool` 收集；如果不可用，返回 `BLOCKED_NEEDS_ASK_USER_TOOL`。

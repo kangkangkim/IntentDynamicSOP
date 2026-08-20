@@ -7,7 +7,9 @@ alignment_pack:
     open_questions: []
   classification:
     selected_domain: string
-    selected_lane: fast | lite | complex
+    lane_applicability: applicable | not_applicable
+    selected_lane: fast | lite | complex | null
+    execution_profile: lane_driven | d3a_fixed_workflow | string
     change_type: string
     change_shape: string
     reasons: []
@@ -33,6 +35,8 @@ human_alignment:
   notes: []
 
 rules:
+  - D3A 使用 lane_applicability=not_applicable、selected_lane=null 和 execution_profile=d3a_fixed_workflow。
+  - General Coding 与其他 dynamic-lane route 使用 lane_applicability=applicable，并由 Lane Resolver 选择 Lane。
   - Human Alignment 发生在 Planner 之前。
   - Human Alignment 只确认方向、边界、contract set 和 completion gate。
   - Human Alignment 通过后，默认进入 Automated Closure Loop。

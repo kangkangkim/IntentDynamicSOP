@@ -1,12 +1,22 @@
 stage: decision
 constraints:
+  - id: module_lane_applicability_first
+    rule: 先读取 Domain Module 的 Lane applicability；D3A 标记 not_applicable 并由固定 workflow 接管，dynamic route 才进入 Lane Resolver。
   - id: complex_hard_trigger_first
     rule: 命中 Complex hard trigger 时必须选择 complex。
   - id: fast_requires_all_conditions
-    rule: 只有 Fast required conditions 全部满足时才能选择 fast。
+    rule: 只有 Fast required conditions 全部显式为 true、具有事实来源且没有 Lite floor signal 时才能选择 fast。
+  - id: lite_floor_for_ordinary_development
+    rule: new capability、behavior contract change、需要新增/修改测试、多个相关文件/组件、focused design、broad repo exploration 或 scope unknown 时，至少选择 lite。
+  - id: small_production_change_can_be_fast
+    rule: 极小、局部、低风险、无需新增测试代码且已有验证可闭环的 production code 修改可以选择 fast。
   - id: default_lite
     rule: 既不满足 fast，也没有 complex hard trigger 时，默认 lite。
 forbidden_actions:
   - 用模型感觉替代 hard trigger。
+  - 把用户未提及风险、测试或跨模块误当成否定事实。
+  - 因为用户没有要求测试，就自行断言 no_new_test_required。
+  - 把无需新增测试代码误解成无需执行任何验证。
   - 输出 lane 但不输出 reasons。
-  - 把 D3A 直接等同于 complex。
+  - 在 D3A module 已声明 Lane not_applicable 后再次运行 Lane Resolver。
+  - 脱离 module lane policy，仅根据任意 domain 名称猜测 Lane。

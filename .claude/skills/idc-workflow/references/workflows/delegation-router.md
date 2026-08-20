@@ -2,7 +2,7 @@
 
 Delegation Router 约束 main agent 只做 planning 和 delegation。
 
-main agent 不直接承担重型执行任务。它只负责：
+main agent 不直接承担 repository mutation。它只负责：
 
 ```text
 understand input
@@ -43,7 +43,7 @@ main agent 禁止做：
 - 直接消化全量 grep / CodeGraph 输出。
 - 直接消化完整 build / test log。
 - 在 approved Alignment Pack 前写实现代码。
-- 直接执行复杂实现。
+- 直接修改任何 Lane 的代码、测试、构建文件、验证产物或 targeted fix。
 - 把 subagent session 全量合并回 main session。
 - 用 provider finding 替代 tool evidence。
 
@@ -248,16 +248,16 @@ Agent Team 的核心不是“能力很多”，而是“subagent 之间必须交
 
 | Lane | IDC Workflow Router / Official Dynamic Workflow | Agent Team | Subagent |
 |---|---|---|---|
-| fast | 通常单阶段 execution workflow | 通常不用 agent team，除非验证和修复之间必须交接 | 默认 0 或 1 个；小改可由 main 生成 delegation 后单 subagent 执行 |
+| fast | 通常单阶段 execution workflow | 通常不用 agent team，除非验证和修复之间必须交接 | 有 repo mutation 时必须 1 个 subagent；纯 planning/read-only 可为 0 |
 | lite | focused execution workflow | 有 coding -> verification 或 analyzer -> fixer 交接时使用 | 通常 1 个 coding subagent，失败时再加 analyzer |
-| complex | staged workflow / DAG workflow | 多 subagent 存在 DAG、review、handoff、merge 时使用 | 多个 subagent；D3A 按 Layer Context Packet 拆 |
+| complex | staged workflow / DAG workflow | 多 subagent 存在 DAG、review、handoff、merge 时使用 | 多个 subagent |
 
 ## Domain Influence
 
 | Domain | Agent Team | Subagent 策略 |
 |---|---|---|
 | general | 只有多个 general-coder / verifier 需要交接时升级 team | `general-coder` per execution unit |
-| d3a | Layer coder、DT writer、tran build verifier 需要交接时升级 team | `d3a-layer-coder` per Layer Context Packet，`dt-test-writer` per required DT domain |
+| d3a | 固定 D3A workflow 按 DAG 和交接需要决定；不读取 Lane | `d3a-layer-coder` per Layer Context Packet，`dt-test-writer` per required DT domain |
 | failure_fix | analyzer 结果需要交给 fixer / verifier 时升级 team | `build-error-analyzer` first，再 targeted fix subagent |
 
 ```text
@@ -413,6 +413,8 @@ main agent
   -> selects IDC workflow route
   -> decides whether official dynamic workflow is needed
   -> creates Delegation Contract
+  -> obtains Execution Authorization
+  -> performs real dispatch and records dispatch tool-call ref
   -> sends bounded Context Packet
   -> subagent / agent team works in isolated session
   -> returns Agent Result
@@ -428,6 +430,7 @@ status
 summary
 changed_paths
 evidence_refs
+execution_receipt
 blockers
 context_to_keep
 context_to_drop
@@ -451,3 +454,20 @@ main agent
   -> does not continue coding directly
   -> creates new Delegation Contract or escalates
 ```
+
+## Execution Authorization Boundary
+
+Every code-changing, test-changing, build-changing, verification, or fix unit
+must pass `workflows/execution-authorization-gate.md`. The contract must bind:
+
+```text
+domain_execution_skill_ref
+capability_selection_ref
+selected_atomic_skill_refs
+execution_authorization_request_ref
+```
+
+For General Domain, `domain_execution_skill_ref` is `idc-general-coding`.
+`idc-gc-sop-adapter` may appear only in selected atomic skills. If no delegation
+tool is available, return `BLOCKED_DELEGATION_REQUIRED`; main agent cannot become
+the fallback executor.

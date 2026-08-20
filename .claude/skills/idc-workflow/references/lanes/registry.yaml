@@ -10,4 +10,5 @@ invariants:
   allowed_lane_ids: [fast, lite, complex]
   no_implicit_lane_ids: true
   default_lane: lite
+  default_is_fallback_only: true
   meaning: Lane only represents execution intensity; domain familiarity belongs to Domain Module routing.

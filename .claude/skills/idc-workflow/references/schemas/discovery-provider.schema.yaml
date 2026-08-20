@@ -8,8 +8,14 @@ provider:
   selected_provider: upstream-superpowers-brainstorming | idc-brainstorming-overlay | builtin-discovery-questions
   fallback_used: boolean
   upstream_baseline: obra/superpowers/skills/brainstorming
+  local_method_ref: .claude/skills/idc-brainstorming/references/superpowers-brainstorming-method.md
   overlay: idc-brainstorming-overlay
   input_maturity: raw_idea
+  superpowers_path: spike | bounded | architectural
+  path_reason: string
+  observed_lane_signals:
+    - string
+  lane_decision_deferred: true
 
 context_refs:
   - string
@@ -33,6 +39,11 @@ draft_spec:
     - string
   acceptance_signals:
     - string
+  alternatives_and_tradeoffs:
+    - string
+  unresolved_decisions:
+    - string
+  self_review_result: pass | needs_revision
 
 next: Clarification Provider
 
@@ -40,6 +51,13 @@ rules:
   - Discovery is for raw_idea input only by default.
   - TR3 design docs skip Discovery.
   - Upstream Superpowers brainstorming is the baseline.
+  - The local Superpowers method reference is the executable fallback implementation.
+  - Classify Spike, Bounded, or Architectural before the first question.
+  - Hidden complexity can upgrade but never downgrade the path during a run.
+  - Ask one material discovery question at a time through AskUserTool.
+  - Superpowers path represents discovery depth and must not map directly to IDC Lane.
+  - Discovery may emit observed lane signals; Domain Module Lane applicability takes precedence, and Lane Resolver owns only applicable dynamic-lane selection.
+  - D3A marks Lane not applicable and uses its fixed workflow regardless of Superpowers path.
   - IDC overlay only adapts handoff, safety boundary, human view, and machine contract.
   - Draft spec is not an approved contract.
   - Discovery must not write implementation code.

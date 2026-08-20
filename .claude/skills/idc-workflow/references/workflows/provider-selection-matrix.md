@@ -2,13 +2,18 @@
 
 Provider Selection Matrix 决定 Knowledge Gate 什么时候用 `grep`、`CodeGraph`、`OKL`。
 
+团队 provider policy 从有效配置的 `knowledge.repo_context.policy_ref` 加载；
+它只能收窄查询或绑定企业 provider，不能放宽 Context Packet 边界。
+
 目标是让 Agent 按阶段拿到足够、可引用、可验证的上下文，而不是把全文知识库或长搜索结果塞进执行上下文。
 
 ## 输入信号
 
 ```yaml
 provider_selection_input:
-  selected_lane: fast | lite | complex
+  lane_applicability: applicable | not_applicable
+  selected_lane: fast | lite | complex | null
+  execution_profile: lane_driven | d3a_fixed_workflow | string
   anchor_known: true | false
   domain_known: true | false
   query_intent: find_symbols | find_callers | find_callees | find_similar_impl | find_tests | find_docs | find_build_errors
@@ -55,6 +60,9 @@ intent-discovery / intent-grilling
 | fast | 0 by default, max 1 query if no anchor and domain_known | max 2 queries, max 5 results/query, snippet 0 by default | off by default |
 | lite | max 1 query if no anchor or rule/history unclear | max 5 queries, max 8 results/query, snippet <= 3 lines | only if impact_unclear |
 | complex | per execution unit / layer packet | per execution unit / layer packet | per execution unit / layer packet |
+
+D3A 不使用 Lane 行。它按 `d3a_fixed_workflow` 和当前 Layer Context Packet
+选择 provider，查询边界不得跨 Layer。
 
 ## OKL Adapter Rules
 

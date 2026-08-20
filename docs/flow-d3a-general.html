@@ -481,26 +481,33 @@
                 <div class="mini-step">
                   <span class="num">1</span>
                   <div>
+                    <strong>固定 D3A Workflow</strong>
+                    <p>D3A 命中 module 后将 Lane 标记为不适用，并跳过 Lane Resolver。</p>
+                  </div>
+                </div>
+                <div class="mini-step">
+                  <span class="num">2</span>
+                  <div>
                     <strong>固定 D3A Coding Layer</strong>
                     <p><code>TRAN_CFG</code> / <code>DO</code> / <code>VISP_ADP</code> / <code>TFC_TFI</code> / <code>TFE</code> / <code>ADP</code> / <code>DRV</code></p>
                   </div>
                 </div>
                 <div class="mini-step">
-                  <span class="num">2</span>
+                  <span class="num">3</span>
                   <div>
                     <strong>DT domain 是 placeholder</strong>
                     <p><code>TPRINT</code> / <code>FW</code> / <code>DPF</code>，真实映射进保密区后填写。</p>
                   </div>
                 </div>
                 <div class="mini-step">
-                  <span class="num">3</span>
+                  <span class="num">4</span>
                   <div>
                     <strong>API Contract 先于实现</strong>
                     <p>D3A spec、API contract、task contract、verification contract 必须先齐。</p>
                   </div>
                 </div>
                 <div class="mini-step">
-                  <span class="num">4</span>
+                  <span class="num">5</span>
                   <div>
                     <strong>D3A done</strong>
                     <p>required DT domain 全 GREEN，并且 <code>tran_build</code> PASS。</p>
@@ -557,7 +564,7 @@
           <div class="cards four">
             <article class="card human-card">
               <h3>Lane Resolver</h3>
-              <p>只判断执行强度，不判断领域。先看 complex hard trigger，再看 fast 准入条件，其他默认 lite。</p>
+              <p>只服务 Dynamic、General 和 Lane 适用的 Team Domain。D3A 由固定 workflow 接管，不进入这里。</p>
             </article>
             <article class="card auto-card">
               <h3>fast 小闭环</h3>
@@ -589,20 +596,20 @@
         <div class="content">
           <div class="cards four">
             <article class="card auto-card">
-              <h3>Plan Packet</h3>
-              <p>把任务拆成阶段，每个阶段尽量控制在 500 行左右。</p>
+              <h3>Planner</h3>
+              <p>General 规划 component；D3A 从企业 registry 选择 Layer、DT，生成 DAG、verification mapping 和 knowledge requirements。</p>
             </article>
             <article class="card auto-card">
-              <h3>Constraint Loading</h3>
-              <p>只加载当前 packet 需要的规则、contract 和 domain module。</p>
+              <h3>Knowledge Preparation</h3>
+              <p>Knowledge Gate 按计划准备当前 component 或 Layer 所需的规则、contract、代码 anchor 与测试知识。</p>
             </article>
             <article class="card auto-card">
-              <h3>Implementation</h3>
-              <p>小步修改，保持代码、contract、验证目标一致。</p>
+              <h3>Execution Unit Split</h3>
+              <p>General 拆 execution unit；D3A 每个 Layer 单独生成 Layer Context Packet，代码变更不超过 500 LOC。</p>
             </article>
-            <article class="card danger-card">
-              <h3>Escalation View</h3>
-              <p>范围变化、证据不可得、contract 冲突时回到人工确认。</p>
+            <article class="card auto-card">
+              <h3>Per-Unit TDD</h3>
+              <p>每个需要测试的 execution unit 依次取得 RED、实现和 GREEN；D3A 对每个 Layer 强制执行。</p>
             </article>
           </div>
           <article class="card knowledge-card">

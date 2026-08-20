@@ -2,6 +2,8 @@
 
 这是给用户看的前置确认卡片。
 
+Approval 请求必须通过 `AskUserTool` 发出；本文件只定义用户可读展示，不是直接 approval 通道。
+
 背后的机器契约是：
 
 ```text
@@ -81,3 +83,4 @@ schemas/alignment-pack.schema.yaml
 - 不允许把 Clarification View 合并进 Alignment View。
 - 如果还有 contract / scope / completion gate gap，必须先返回 Clarification View 选择题问题卡。
 - 用户 approve 后，底层 Alignment Pack 才视为 approved。
+- approve / request clarification / request reclassify / reject 必须通过 `AskUserTool` 收集；如果不可用，返回 `BLOCKED_NEEDS_ASK_USER_TOOL`。

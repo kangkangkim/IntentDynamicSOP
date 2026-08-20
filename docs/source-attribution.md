@@ -14,13 +14,6 @@ https://github.com/mattpocock/skills/tree/main/skills/productivity/grill-me
 https://github.com/mattpocock/skills/tree/main/skills/engineering/grill-with-docs
 ```
 
-License:
-
-```text
-MIT License
-Copyright (c) 2026 Matt Pocock
-```
-
 本仓库吸收的是方法论，不是逐字复制原始 skill prompt。
 
 公司内如果还没有 Grill Me，可直接复用本 GitHub 仓库携带的
@@ -50,7 +43,7 @@ Copyright (c) 2026 Matt Pocock
 
 ## Superpowers Brainstorming Inspiration
 
-本仓库的 Discovery Provider 以 `obra/superpowers` 项目中 `idc-brainstorming` skill 的公开设计为 upstream baseline，并在其上添加 IDC overlay。
+本仓库的 Discovery Provider 以 `obra/superpowers` 项目中 `brainstorming` skill 的公开设计为 upstream baseline，并在其上添加 IDC overlay。
 
 Source:
 
@@ -59,14 +52,10 @@ https://github.com/obra/superpowers
 https://github.com/obra/superpowers/tree/main/skills/brainstorming
 ```
 
-License:
-
-```text
-MIT License
-Copyright (c) 2025 Jesse Vincent
-```
-
-本仓库保留 upstream baseline 的核心流程，并用 IDC overlay 适配 handoff、Human View 和 machine contract。
+本仓库把 upstream baseline 的核心方法实际移植到
+`.claude/skills/idc-brainstorming/references/superpowers-brainstorming-method.md`，
+并用 IDC overlay 适配 AskUserTool、handoff、Human View 和 machine contract；
+不是只保留一个 upstream 名称。
 
 公司内如果已经有 Brainstorming 能力，应通过 Team Binding 复用内部实现，
 并把输出归一化到 IDC draft spec；不要把公司 prompt 复制到共享仓库。
@@ -74,10 +63,12 @@ Copyright (c) 2025 Jesse Vincent
 Baseline 保留点：
 
 - project context first：先理解项目上下文，再展开想法。
-- focused discovery questions：根据问题复杂度成组追问，不因上下文裁剪牺牲需求探索质量。
+- three-path classification：先判断 Spike / Bounded / Architectural。
+- one-way ratchet：发现隐藏复杂度时只能升级路径，不能中途降级。
+- focused discovery questions：一次只问一个真正影响设计的问题。
 - alternatives with trade-offs：给出 2-3 个方案、取舍和推荐。
 - design before implementation：设计确认前不进入实现。
-- written draft spec：把发散结果沉淀成 draft spec，再进入收敛。
+- written draft spec：把发散结果沉淀成 draft spec，并做 placeholder / consistency / scope / ambiguity 自检后再进入收敛。
 
 在 Intent Dynamic Code 中，这些思想被落到：
 
@@ -85,6 +76,7 @@ Baseline 保留点：
 .claude/skills/idc-workflow/references/workflows/discovery-provider.md
 .claude/skills/idc-workflow/references/human-views/brainstorming-view.md
 .claude/skills/idc-workflow/references/schemas/discovery-provider.schema.yaml
+.claude/skills/idc-brainstorming/references/superpowers-brainstorming-method.md
 ```
 
 ## Superpowers Adapter Inspiration
@@ -96,13 +88,6 @@ Source:
 ```text
 https://github.com/obra/superpowers
 https://github.com/obra/superpowers/tree/main/skills
-```
-
-License:
-
-```text
-MIT License
-Copyright (c) 2025 Jesse Vincent
 ```
 
 本仓库吸收的是 workflow shape，不逐字复制 upstream skill prompt。

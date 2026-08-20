@@ -20,7 +20,7 @@ Domain Module = enterprise domain constraints
 Use only when all are true:
 
 - Human Alignment is approved.
-- Domain and Lane are already selected by IDC.
+- Domain is selected, and Lane is either selected or explicitly marked not applicable.
 - Required IDC contracts exist.
 - Execution units or Layer Context Packets are bounded.
 - Completion gate is owned by IDC.
@@ -30,7 +30,7 @@ Do not use when:
 - the request is still a raw idea.
 - Clarification questions remain.
 - Human Alignment is not approved.
-- Domain / Lane / Contract Gate has not run.
+- Domain / Lane applicability / Contract Gate has not run.
 - the task requires guessing enterprise API, path, command, log, or architecture facts.
 
 ## Adapted Superpowers Flow
@@ -61,7 +61,7 @@ writing-plans
 IDC rules override this adapter whenever they conflict.
 
 - IDC Domain Module Router owns Domain selection.
-- IDC Lane Resolver owns execution intensity.
+- IDC module policy owns Lane applicability: D3A uses its fixed workflow with Lane marked `not_applicable`; lane-applicable routes use Lane Resolver dynamically.
 - IDC Contract Gate owns required contracts.
 - D3A Layer and DT Domain registries cannot be changed here.
 - API Contract must be frozen before implementation.
@@ -85,7 +85,7 @@ task_contract
 verification_contract
 api_contract if required
 domain module constraints
-lane constraints
+lane constraints when applicable, otherwise the domain execution profile
 ```
 
 Output:

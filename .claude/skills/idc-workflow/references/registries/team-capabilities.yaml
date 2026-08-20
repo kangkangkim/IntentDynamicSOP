@@ -1,0 +1,151 @@
+team_capabilities:
+  - id: coding_standard
+    binding_path: bindings.coding_standard.skill_ref
+    capability_keys: [coding_standard, implementation_constraints]
+    allowed_stages: [planning, implementation, review]
+    eligible_lanes: [fast, lite, complex]
+    trigger_signals: [production_code_change, implementation_required, review_required]
+
+  - id: brainstorming
+    binding_path: bindings.brainstorming.skill_ref
+    capability_keys: [brainstorming, raw_idea_discovery]
+    allowed_stages: [discovery, pre_alignment]
+    eligible_lanes: []
+    trigger_signals: [input_maturity_raw_idea, alternatives_needed]
+
+  - id: asis_miner
+    binding_path: bindings.asis_miner.skill_ref
+    capability_keys: [as_is_analysis, existing_system_discovery]
+    allowed_stages: [discovery, planning]
+    eligible_lanes: [lite, complex]
+    trigger_signals: [existing_behavior_unknown, broad_repo_exploration_required]
+
+  - id: scene_challenge
+    binding_path: bindings.scene_challenge.skill_ref
+    capability_keys: [scenario_challenge, risk_discovery]
+    allowed_stages: [discovery, planning]
+    eligible_lanes: [lite, complex]
+    trigger_signals: [alternatives_needed, high_failure_impact, critical_ambiguity]
+
+  - id: req_check
+    binding_path: bindings.req_check.skill_ref
+    capability_keys: [requirement_check, contract_gap_detection]
+    allowed_stages: [pre_alignment, planning]
+    eligible_lanes: [fast, lite, complex]
+    trigger_signals: [requirement_gap, contract_gap, acceptance_criteria_unknown]
+
+  - id: tech_design
+    binding_path: bindings.tech_design.skill_ref
+    capability_keys: [technical_design, interface_design]
+    allowed_stages: [planning]
+    eligible_lanes: [lite, complex]
+    trigger_signals: [focused_design_required, api_semantic_change, cross_module_or_layer_impact]
+
+  - id: phase_plan
+    binding_path: bindings.phase_plan.skill_ref
+    capability_keys: [phase_planning, dependency_planning]
+    allowed_stages: [planning]
+    eligible_lanes: [lite, complex]
+    trigger_signals: [multi_file_or_multi_component_change, needs_dependency_dag, needs_multiple_subagents]
+
+  - id: ut_design
+    binding_path: bindings.ut_design.skill_ref
+    capability_keys: [unit_test_design, red_evidence_plan]
+    allowed_stages: [planning, dt_design]
+    eligible_lanes: [lite, complex]
+    trigger_signals: [new_or_changed_test_required, tdd_required]
+
+  - id: ut_generate
+    binding_path: bindings.ut_generate.skill_ref
+    capability_keys: [unit_test_generation]
+    allowed_stages: [implementation, dt_writing, verification]
+    eligible_lanes: [lite, complex]
+    trigger_signals: [new_or_changed_test_required, tdd_required]
+
+  - id: impl_review
+    binding_path: bindings.impl_review.skill_ref
+    capability_keys: [implementation_review, code_review]
+    allowed_stages: [review]
+    eligible_lanes: [lite, complex]
+    trigger_signals: [review_required, api_semantic_change, high_risk]
+
+  - id: tdd_workflow
+    binding_path: bindings.tdd_workflow.skill_ref
+    capability_keys: [tdd, red_green_execution]
+    allowed_stages: [implementation, verification]
+    eligible_lanes: [lite, complex]
+    trigger_signals: [tdd_required, new_or_changed_test_required]
+
+  - id: static_scan
+    binding_path: bindings.static_scan.skill_ref
+    capability_keys: [static_scan, coding_standard_verification]
+    allowed_stages: [verification]
+    eligible_lanes: [fast, lite, complex]
+    trigger_signals: [static_scan_required, security_or_quality_risk]
+
+  - id: defect_fix
+    binding_path: bindings.defect_fix.skill_ref
+    capability_keys: [defect_fix, targeted_fix]
+    allowed_stages: [debugging, fix]
+    eligible_lanes: [fast, lite, complex]
+    trigger_signals: [test_failed, build_failed, scan_failed]
+
+  - id: git_commit
+    binding_path: bindings.git_commit.skill_ref
+    capability_keys: [atomic_commit, change_packaging]
+    allowed_stages: [finishing]
+    eligible_lanes: [fast, lite, complex]
+    trigger_signals: [atomic_commit_required]
+
+  - id: knowledge_archive
+    binding_path: bindings.knowledge_archive.skill_ref
+    capability_keys: [knowledge_archive, decision_archive]
+    allowed_stages: [completion]
+    eligible_lanes: [lite, complex]
+    trigger_signals: [knowledge_archive_required, durable_decision_created]
+
+  - id: system_test
+    binding_path: bindings.system_test.skill_ref
+    capability_keys: [system_test, transfer_to_test]
+    allowed_stages: [verification, completion]
+    eligible_lanes: [lite, complex]
+    trigger_signals: [system_test_required, transfer_to_test_required, high_failure_impact]
+
+  - id: dt_design
+    binding_path: bindings.dt_design.skill_ref
+    capability_keys: [dt_design, test_design]
+    allowed_stages: [planning, dt_design]
+    eligible_lanes: [lite, complex]
+    execution_profiles: [d3a_fixed_workflow]
+    trigger_signals: [dt_design_required]
+
+  - id: dt_writer
+    binding_path: bindings.dt_writer.skill_ref
+    capability_keys: [dt_writing, dt_red_evidence]
+    allowed_stages: [dt_writing, verification]
+    eligible_lanes: [lite, complex]
+    execution_profiles: [d3a_fixed_workflow]
+    trigger_signals: [dt_writing_required]
+
+  - id: dt_build
+    binding_path: bindings.dt_build.skill_ref
+    capability_keys: [dt_build, dt_run, dt_green_evidence]
+    allowed_stages: [dt_build, verification]
+    eligible_lanes: [lite, complex]
+    execution_profiles: [d3a_fixed_workflow]
+    trigger_signals: [dt_evidence_required]
+
+  - id: tran_build
+    binding_path: bindings.tran_build.skill_ref
+    capability_keys: [tran_build, final_verification]
+    allowed_stages: [tran_build, verification]
+    eligible_lanes: [complex]
+    execution_profiles: [d3a_fixed_workflow]
+    trigger_signals: [tran_build_required]
+
+rules:
+  - A non-null binding makes a capability available; it does not make it selected.
+  - Selection requires stage, demand signal, contract, domain policy, and Lane or execution-profile eligibility.
+  - Choose the minimal sufficient set and record selected and skipped reasons.
+  - Required capabilities are not counted against the optional-skill budget.
+  - D3A matches execution_profiles instead of a Lane.

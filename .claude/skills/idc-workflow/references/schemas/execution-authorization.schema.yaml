@@ -1,0 +1,48 @@
+schema: execution_authorization
+version: 1
+
+execution_authorization_request:
+  task_id: string
+  workflow_id: general_execution | d3a_execution | verification_fix | build_fix
+  selected_domain: general | d3a | string
+  selected_lane: fast | lite | complex | null
+  human_alignment_status: approved
+  approved_alignment_ref: ref
+  execution_unit_ref: ref
+  context_packet_ref: ref
+  capability_selection_ref: ref
+  capability_selection_status: READY
+  domain_execution_skill_ref: skill_ref
+  selected_atomic_skill_refs: []
+  delegation_contract_ref: ref
+  main_agent_role: planning_and_delegation_only
+  executor:
+    kind: subagent | agent_team | official_dynamic_workflow
+    agent_id: string
+  allowed_paths: []
+  expected_outputs: []
+
+execution_authorization_result:
+  status: AUTHORIZED | BLOCKED_DELEGATION_REQUIRED | BLOCKED_INVALID_EXECUTOR
+  authorization_id: sha256 | null
+  executor_kind: subagent | agent_team | official_dynamic_workflow | null
+  domain_execution_skill_ref: skill_ref | null
+  selected_atomic_skill_refs: []
+  errors: []
+
+execution_receipt:
+  authorization_id: sha256
+  dispatch_tool_call_ref: ref
+  executor_session_ref: ref
+  executor_kind: subagent | agent_team | official_dynamic_workflow
+  loaded_domain_execution_skill_ref: skill_ref
+  executed_atomic_skill_refs: []
+  changed_paths: []
+  evidence_refs: []
+
+rules:
+  - Every repository mutation in IDC execution, verification, or fix states requires AUTHORIZED.
+  - main_agent is never a valid executor, including Fast and Lite.
+  - General execution loads idc-general-coding as the outer execution protocol.
+  - GC SOP adapters are inner selected atomic abilities and cannot replace the Domain execution skill.
+  - Completion requires an execution receipt tied to the authorization and dispatch tool call.

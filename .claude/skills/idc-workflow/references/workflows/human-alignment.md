@@ -2,6 +2,8 @@
 
 Human Alignment 是前置人工对齐点，也是 readiness / gap / approval 的统一检测 gate。
 
+所有需要用户确认、批准、重新分类、补充澄清或处理异常回流的交互，都必须通过 `AskUserTool` 发出。具体出口契约见 `workflows/ask-user-tool-policy.md`。
+
 设计哲学：
 
 ```text
@@ -15,7 +17,7 @@ Human Alignment 是前置人工对齐点，也是 readiness / gap / approval 的
 ```text
 Input Adapter
   -> Domain Resolver
-  -> Lane Resolver
+  -> Module Lane applicability, then Lane Resolver only when applicable
   -> Contract Gate
   -> Human Alignment Check
   -> Clarification Provider / Discovery Provider if needed
@@ -55,7 +57,7 @@ Discovery 可以产出 `maturity_signal`，但不能替代 Human Alignment Check
 只确认这些内容：
 
 - 输入理解是否正确。
-- Domain / Lane 判断是否正确。
+- Domain / Lane applicability 是否正确；D3A 应为 `not_applicable` 并采用固定 D3A workflow。
 - change type / change shape 是否正确。
 - contract set 是否正确。
 - scope / boundary 是否正确。
@@ -90,7 +92,7 @@ NEEDS_CLARIFICATION
 ```text
 NEEDS_CLARIFICATION
   -> Clarification View
-  -> 用户回答
+  -> AskUserTool 用户回答
   -> Human Alignment Check
   -> Alignment View only after READY_FOR_ALIGNMENT
 ```
@@ -105,6 +107,8 @@ Alignment View 不能包含：
 - 要用户一边 approve 一边补充关键 contract 的请求。
 
 这些内容必须先通过 `intent-grilling` 的 Clarification View 处理，并且问题必须使用选择题问题卡。
+
+Alignment approval 也必须通过 `AskUserTool`，不能在普通文本里请求用户回复 approve。
 
 ## 输出
 
@@ -125,3 +129,5 @@ human_alignment:
   notes:
     - 需要重新定义 scope boundary。
 ```
+
+如果 `AskUserTool` 不可用，Human Alignment 必须返回 `BLOCKED_NEEDS_ASK_USER_TOOL`，不能把 approval 或 re-alignment 当作已完成。

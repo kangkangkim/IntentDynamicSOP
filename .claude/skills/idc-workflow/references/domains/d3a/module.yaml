@@ -8,10 +8,16 @@ domain_module:
       - 用户明确选择 D3A。
       - 任务明确属于固定 D3A architecture space。
     fallback: GENERAL_CODING
+  lane_policy:
+    mode: not_applicable
+    selected_lane: null
+    bypass_lane_resolver: true
+    execution_profile: d3a_fixed_workflow
+    reason: D3A uses the user-designed fixed workflow instead of Lane classification.
   registries:
     coding_layers: registries/d3a-layers.yaml
     # test_domains is the repo default; a non-empty team-config.yaml
-    # domain.d3a_dt_domains replaces it wholesale (never merge).
+    # domain.d3a.dt_domains replaces it wholesale (never merge).
     test_domains: registries/dt-domains.yaml
   workflow:
     entrypoint: workflows/d3a-workflow.md

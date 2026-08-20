@@ -54,7 +54,7 @@ Requirement Assessor
   -> NEED_CLARIFICATION
   -> Build decision tree
   -> Select current frontier
-  -> Ask <= 5 multiple-choice question cards
+  -> AskUserTool <= 5 multiple-choice question cards
   -> User answers
   -> Commitment check
   -> READY_FOR_ALIGNMENT / NEXT_FRONTIER / ESCALATE
@@ -89,3 +89,5 @@ Use free-form questions only when the answer cannot be represented as choices. I
 - Fallback to `builtin-critical-questions` if Grill Me method is unavailable or too expensive.
 - Do not require a team binding for Grill Me unless a team later creates a
   better internal implementation.
+- All clarification questions must be emitted through `AskUserTool`; if it is
+  unavailable, return `BLOCKED_NEEDS_ASK_USER_TOOL`.

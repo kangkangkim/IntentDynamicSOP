@@ -260,16 +260,16 @@
         </div>
         <div class="cell">
           <span class="stage stage-violet">team:</span>
-          <strong>id / repo_path / skill_base_path</strong>
+          <strong>config_version / id / repo_path</strong>
           <ul>
             <li>id: &lt;TEAM_ID&gt;</li>
             <li>repo_path: &lt;REPO_PATH&gt;</li>
-            <li>skill_base_path: &lt;SKILL_BASE_PATH&gt;</li>
+            <li>config_version: 1</li>
           </ul>
           <pre class="example">team:
   id: demo-team
   repo_path: /repos/demo-vehicle
-  skill_base_path: /repos/demo-skills</pre>
+  repo_path: /repos/demo-code</pre>
           </ul>
         </div>
         <div class="cell">
@@ -277,7 +277,7 @@
           <strong>workflow 启动时先读 team-config.yaml</strong>
           <ul>
             <li>repo_path 驱动 repo context provider 定位</li>
-            <li>skill_base_path 解析 bindings 里每个 skill_ref</li>
+            <li>Resolver 从 harness root 解析每个 skill_ref</li>
             <li>填写校验：路径不存在或残留占位符 -> 测试红</li>
           </ul>
         </div>
@@ -288,14 +288,15 @@
         </div>
         <div class="cell">
           <span class="stage stage-violet">domain: / general:</span>
-          <strong>d3a_dt_domains / components / test_domains</strong>
+          <strong>d3a.dt_domains / components / test_domains</strong>
           <ul>
             <li>条目形如 {id, knowledge_ref}</li>
             <li>非空列表整体替换仓库注册表</li>
             <li>留 [] 用仓库 V0 placeholder</li>
           </ul>
           <pre class="example">domain:
-  d3a_dt_domains:
+  d3a:
+    dt_domains:
     - id: DT_DEMO
       knowledge_ref: docs/dt/DT_DEMO.md
 # 填了这 1 条，TPRINT/FW/DPF 整个被替换</pre>
@@ -328,7 +329,7 @@
     skill_ref: /repos/demo-skills/impl-review.md
   brainstorming:
     skill_ref: .claude/skills/idc-brainstorming/SKILL.md
-# skill_ref 是独立路径，不会自动拼在 skill_base_path 后</pre>
+# skill_ref 可为 harness 相对路径或绝对路径</pre>
           </ul>
         </div>
         <div class="cell">
@@ -378,9 +379,9 @@
           <span class="stage stage-violet">knowledge:</span>
           <strong>只填 ref，不搬正文</strong>
           <ul>
-            <li>architecture_doc / feature_docs_root</li>
+            <li>architecture_doc_ref / feature_docs_root_ref</li>
             <li>layer_docs: {LAYER: ref}</li>
-            <li>verification_mapping_ref / repo_context_provider_ref</li>
+            <li>verification_mapping_ref / repo_context.provider_skill_ref</li>
           </ul>
           <pre class="example">knowledge:
   layer_docs:
@@ -404,20 +405,21 @@
         </div>
         <div class="cell">
           <span class="stage stage-violet">lane:</span>
-          <strong>default + 各 lane 的 skip_steps</strong>
+          <strong>Lane default + Capability Selection</strong>
           <ul>
-            <li>default: fast / lite / complex</li>
-            <li>fast_skip_steps / lite_skip_steps / complex_skip_steps</li>
+            <li>default: fast / lite / complex（仅 dynamic-lane route）</li>
+            <li>Fast 1 / Lite 3 / Complex dynamic optional skill budget</li>
           </ul>
           <pre class="example">lane:
-  default: complex          # D3A 重流程团队
-  lite_skip_steps: [static_scan]</pre>
+  default: lite             # D3A 忽略此值，采用固定 workflow
+  default: lite</pre>
           </ul>
         </div>
         <div class="cell">
           <span class="stage stage-blue">Lane Resolver</span>
           <strong>Lane 只决定流程跑多重</strong>
           <ul>
+            <li>D3A module 标记 Lane 不适用并跳过 Resolver</li>
             <li>Complex hard trigger 仍直接进 complex</li>
             <li>跳步不能绕过 API Contract 和 RED / GREEN</li>
           </ul>
@@ -442,7 +444,7 @@
           <li>按上表左列资产对号填中列插槽</li>
           <li>再跑 harness：填错的就地校验变红</li>
         </ol>
-        <div class="trigger"><b>例：</b>最小可用 = team 三行 + use_d3a + 一个 dt_build skill_ref。可用 <a href="team-config-generator.html">交互式生成器</a>填表生成。</div>
+        <div class="trigger"><b>例：</b>最小可用 = config_version + team 两项 + domain.mode + 必需 skill_ref。可用 <a href="team-config-generator.html">交互式生成器</a>填表生成。</div>
       </article>
       <article class="phase">
         <h2>2 过 Readiness Gate</h2>

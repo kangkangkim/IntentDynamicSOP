@@ -7,7 +7,9 @@ alignment_pack:
     open_questions: []
   classification:
     selected_domain: d3a
-    selected_lane: complex
+    lane_applicability: not_applicable
+    selected_lane: null
+    execution_profile: d3a_fixed_workflow
     change_type: new_capability
     change_shape: shotgun_change
     reasons:
@@ -23,7 +25,7 @@ alignment_pack:
     optional_contracts: []
     reasons:
       - D3A module 要求 API Contract。
-      - Complex lane 要求详细 verification。
+      - D3A fixed workflow 要求完整 verification。
   scope_boundary:
     in_scope:
       - Mock DO / TFE / DRV。
@@ -34,12 +36,7 @@ alignment_pack:
       - 不引入真实企业 API 名称。
       - 不修改未授权 Layer。
   completion_gate:
-    lane_completion_requirements:
-      - full_task_contract_exists
-      - detailed_plan_or_dag_executed
-      - evidence_plan_satisfied
-      - required_tests_or_builds_passed
-      - completion_summary_exists
+    lane_completion_requirements: []
     domain_completion_requirements:
       - RED evidence required
       - all required DT GREEN

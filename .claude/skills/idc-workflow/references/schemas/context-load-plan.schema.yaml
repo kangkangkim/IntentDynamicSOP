@@ -1,0 +1,47 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: IDC Context Load Plan
+type: object
+required: [context_load_plan]
+properties:
+  context_load_plan:
+    type: object
+    additionalProperties: false
+    required: [status, source_sha256, phase, signals, required_refs, selected_capabilities, load_policy]
+    properties:
+      status:
+        const: READY
+      source_sha256:
+        type: string
+        minLength: 1
+      phase:
+        enum: [bootstrap, decision, planning, execution, completion, resume]
+      domain:
+        type: [string, "null"]
+        enum: [general, d3a, custom, null]
+      lane:
+        type: [string, "null"]
+        enum: [fast, lite, complex, null]
+      signals:
+        type: array
+        uniqueItems: true
+        items:
+          type: string
+      required_refs:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          type: string
+          minLength: 1
+      selected_capabilities:
+        type: array
+        items:
+          type: object
+          additionalProperties: false
+          required: [capability_id, skill_ref, execution_order]
+          properties:
+            capability_id: {type: string, minLength: 1}
+            skill_ref: {type: string, minLength: 1}
+            execution_order: {type: integer, minimum: 1}
+      load_policy:
+        const: read_required_refs_only

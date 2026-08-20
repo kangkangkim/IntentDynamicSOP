@@ -23,17 +23,21 @@
 
 ## 运行原则
 
-1. 用户侧统一入口是 `.claude/commands/id-workflow.md`，也就是 `/id-workflow`；这个 command 只是薄入口 alias。
+1. 用户侧统一入口是 `idc-workflow` skill；可显式使用 `$idc-workflow`，也可由自然语言自动匹配，不维护 `.claude/commands`。
 2. 所有可执行 IDC 能力都必须沉淀为 `.claude/skills/idc-*/SKILL.md`，名字必须以 `idc-` 开头。
 3. 编辑代码前，所有 IDC-run 任务都必须先经过 `idc-workflow` skill。
 4. Scenario Router 先动态分流：Domain Module、Dynamic Scenario、General Coding fallback 或 NEED_TRIAGE。
 5. 只有任务属于 D3A domain module 时，才使用 D3A workflow。
-6. D3A architecture 是固定的，不能创建或删除 D3A Layer。
+6. D3A architecture 和主 workflow 是固定的：不能创建或删除 D3A Layer；Lane 对 D3A 不适用，并跳过通用 Lane Resolver。
 7. D3A knowledge 必须渐进加载，只加载受影响的 coding layer 和 DT domain。
 8. 企业特定细节在进入保密区前都必须保持 placeholder。
 9. API Contract 和 task contract 形成前，不要实现 production code。
 10. 没有 RED / GREEN evidence，不要标记 implementation complete。
 11. required DT domain 全部 GREEN 且 `tran_build` PASS 后，才能标记 D3A task done。
+12. 所有问用户的问题、确认、approval、re-alignment 和 escalation 决策，都必须通过 `AskUserTool` 发出；不要用普通文本直接追问用户。
+13. Main agent 是 `planning_and_delegation_only`。任何 Lane 的 repository mutation（代码、测试、构建文件、验证产物、targeted fix）都必须经过 Execution Authorization，并真实派发给 subagent / agent team / official dynamic workflow。
+14. General Domain 必须由 executor 加载 `idc-general-coding` 作为外层执行协议；`idc-gc-sop-adapter` 只能作为 Capability Selector 选中的内层原子能力。
+15. delegation tool 不可用时返回 `BLOCKED_DELEGATION_REQUIRED`，不得由 main agent 直接实现；Completion 必须检查 authorization ID、dispatch tool-call ref 和 executor session ref。
 
 ## D3A Layer Registry
 
@@ -53,7 +57,7 @@
 
 ## 角色边界
 
-- Main agent 负责编排 workflow 和 evidence。
+- Main agent 负责编排 workflow、delegation 和 evidence，不直接修改仓库。
 - `d3a-layer-coder` 一次只负责一个 coding layer。
 - `dt-test-writer` 负责 DT test preparation 和 RED evidence。
 - `build-error-analyzer` 把 build failure 转成 targeted fix task。
