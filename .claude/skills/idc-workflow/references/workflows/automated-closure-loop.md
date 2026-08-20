@@ -7,10 +7,12 @@ Automated Closure Loop 是 Human Alignment 通过后的默认执行模式。
 ```text
 Planner
   -> Knowledge Gate
+  -> Knowledge Load Plan
   -> Capability Selector
   -> Delegation Router
   -> Execution Authorization Gate
   -> Agent Team / Subagent Execution
+  -> Knowledge Consumption Verification
   -> Verification
   -> Error Analyzer / Targeted Fix / Re-plan
   -> DONE
@@ -34,6 +36,8 @@ Human Alignment approve 后，后续步骤默认自动执行和验证。
 - Planner 必须把代码变更拆成不超过 500 行的 execution unit。
 - Delegation Router 必须生成 Delegation Contract。
 - Execution Authorization Gate 必须在任何 repo mutation 前返回 `AUTHORIZED`。
+- Execution Authorization 必须绑定同一 execution unit 的 READY Knowledge Load Plan。
+- Completion 前必须验证 Knowledge Consumption Receipt；计划外知识或缺失 provider result 会阻断。
 - Main agent 只做 planning_and_delegation_only；任何 Lane 都不得直接修改代码、测试、构建文件或 targeted fix。
 - General executor 必须加载 `idc-general-coding`；GC Adapter 只能作为已选择的内层原子能力。
 - 如果无法真实派发 subagent / agent team，返回 `BLOCKED_DELEGATION_REQUIRED`，不能由 main agent 兜底实现。

@@ -2,6 +2,18 @@
 
 Knowledge Gate 的职责是：只加载当前 execution unit 需要的知识。
 
+该约束由可执行链强制：
+
+```text
+Knowledge Demand
+  -> plan_knowledge.rb
+  -> Knowledge Load Plan READY
+  -> Execution Authorization 绑定 knowledge_plan_id
+  -> executor 产出 Knowledge Consumption Receipt
+  -> verify_knowledge_consumption.rb
+  -> VERIFIED 才能进入 Completion Gate
+```
+
 ## 知识分类
 
 静态 domain knowledge：
@@ -46,6 +58,16 @@ Resolver 选定的单一有效来源，禁止把默认与团队覆盖混合。
 Repo Context Provider 使用 `knowledge.repo_context.provider_skill_ref`；Provider
 Selection Matrix 读取 `knowledge.repo_context.policy_ref`。缺少已配置消费者时返回
 `NEEDS_TEAM_CONFIG`，不得静默忽略字段。
+
+Knowledge Load Plan 必须绑定一个 `execution_unit_ref`。D3A 选择一个 Layer 和
+本单元 required DT Domains；General 选择本单元 component/test domains；Custom
+Domain 选择一个 coding layer 和 test domains。未知 ID 或缺少 required ref 返回
+`NEEDS_KNOWLEDGE_MAPPING`。
+
+静态知识、搜索范围和动态 repo context 分开记录：目录 root 只能作为 search
+scope，不能当作已加载正文；Provider/grep 必须返回 result ref。消费回执若遗漏
+required ref，或包含计划外 Layer/component/test-domain ref，返回
+`BLOCKED_KNOWLEDGE_CONSUMPTION`。
 
 ## Provider Interface
 

@@ -15,6 +15,16 @@ effective_team_config:
   bindings: {}
   adapter_extensions: []
   available_capabilities: []
+  knowledge_catalog:
+    d3a:
+      layers: []
+      test_domains: []
+    general:
+      components: []
+      test_domains: []
+    custom:
+      layers: []
+      test_domains: []
   registration_audit:
     status: PASS | FAIL
     conflicts: []

@@ -878,6 +878,9 @@ def test_delegation_contract_keeps_main_agent_as_planner():
   context_packet_ref: context-1
   capability_selection_ref: selection-1
   capability_selection_status: READY
+  knowledge_load_plan_ref: <KNOWLEDGE_PLAN_REF>
+  knowledge_load_plan_status: READY
+  knowledge_plan_id: <KNOWLEDGE_PLAN_ID>
   domain_execution_skill_ref: .claude/skills/idc-general-coding/SKILL.md
   selected_atomic_skill_refs: [.claude/skills/idc-gc-sop-adapter/SKILL.md]
   delegation_contract_ref: delegation-1
@@ -887,13 +890,33 @@ def test_delegation_contract_keeps_main_agent_as_planner():
   expected_outputs: [changed_paths, evidence_refs, execution_receipt]
 """
     with tempfile.TemporaryDirectory() as temp_dir:
+        auth_effective = Path(temp_dir) / "auth-effective.yaml"
+        auth_resolved = subprocess.run(
+            ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"), "--config", str(ROOT / "examples/team-config.full-bindings.yaml"), "--output", str(auth_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(auth_resolved.returncode == 0, f"Authorization 测试 Resolver 失败：{auth_resolved.stderr}")
+        auth_demand = Path(temp_dir) / "auth-knowledge-demand.yaml"
+        auth_demand.write_text((ROOT / "examples/knowledge-demands/fast.yaml").read_text(encoding="utf-8").replace("fast-unit", "unit-1"), encoding="utf-8")
+        knowledge_plan_path = Path(temp_dir) / "knowledge-plan.yaml"
+        auth_knowledge = subprocess.run(
+            ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"), "--effective", str(auth_effective), "--demand", str(auth_demand), "--output", str(knowledge_plan_path)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(auth_knowledge.returncode == 0, f"Authorization 测试 Knowledge Plan 失败：{auth_knowledge.stderr}")
+        knowledge_plan_id = re.search(r"knowledge_plan_id:\s+(\w+)", knowledge_plan_path.read_text(encoding="utf-8")).group(1)
+        rendered_request = valid_request.replace("<KNOWLEDGE_PLAN_REF>", str(knowledge_plan_path)).replace("<KNOWLEDGE_PLAN_ID>", knowledge_plan_id)
         valid_path = Path(temp_dir) / "valid-auth.yaml"
-        valid_path.write_text(valid_request, encoding="utf-8")
+        valid_path.write_text(rendered_request, encoding="utf-8")
         valid = subprocess.run(["ruby", str(authorizer), "--request", str(valid_path)], cwd=ROOT, capture_output=True, text=True)
         assert_true(valid.returncode == 0 and "status: AUTHORIZED" in valid.stdout and "authorization_id:" in valid.stdout, "合法 subagent execution 必须获得授权。")
 
         invalid_path = Path(temp_dir) / "invalid-main-auth.yaml"
-        invalid_path.write_text(valid_request.replace("agent_id: general-coder", "agent_id: main_agent"), encoding="utf-8")
+        invalid_path.write_text(rendered_request.replace("agent_id: general-coder", "agent_id: main_agent"), encoding="utf-8")
         invalid = subprocess.run(["ruby", str(authorizer), "--request", str(invalid_path)], cwd=ROOT, capture_output=True, text=True)
         assert_true(invalid.returncode == 3 and "BLOCKED_DELEGATION_REQUIRED" in invalid.stdout and "main_agent cannot be execution owner" in invalid.stdout, "Main agent 作为 executor 必须被机器 Gate 拒绝。")
 
@@ -2043,8 +2066,9 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
     selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
     preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
     context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"
     config = ROOT / "examples/team-config.full-bindings.yaml"
-    assert_true(resolver.exists() and selector.exists() and preflight.exists() and context_planner.exists(), "单配置 Preflight / Resolver / Capability Selector / Context Planner 脚本缺失。")
+    assert_true(resolver.exists() and selector.exists() and preflight.exists() and context_planner.exists() and knowledge_planner.exists(), "单配置 Preflight / Resolver / Capability Selector / Knowledge / Context Planner 脚本缺失。")
 
     with tempfile.TemporaryDirectory() as temp_dir:
         effective = Path(temp_dir) / "effective.yaml"
@@ -2344,7 +2368,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
 
         missing_knowledge_config = Path(temp_dir) / "missing-knowledge.yaml"
         missing_knowledge_config.write_text(
-            portable_text.replace("architecture_doc_ref: null", "architecture_doc_ref: 'team://docs/missing-architecture.md'", 1),
+            portable_text.replace("architecture_doc_ref: docs/architecture.md", "architecture_doc_ref: 'team://docs/missing-architecture.md'", 1),
             encoding="utf-8",
         )
         missing_knowledge = subprocess.run(
@@ -2405,23 +2429,40 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
             text=True,
         )
         assert_true(selected.returncode == 0, f"Context Planner 测试准备 selection 失败：{selected.stderr}")
+        knowledge_plan_file = Path(temp_dir) / "fast-knowledge-plan.yaml"
+        knowledge_planned = subprocess.run(
+            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(ROOT / "examples/knowledge-demands/fast.yaml"), "--output", str(knowledge_plan_file)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(knowledge_planned.returncode == 0, f"Context Planner 测试准备 Knowledge Plan 失败：{knowledge_planned.stderr}")
         execution_plan = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--selection", str(selection_file)],
+            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--selection", str(selection_file), "--knowledge-plan", str(knowledge_plan_file)],
             cwd=ROOT,
             capture_output=True,
             text=True,
         )
         assert_true(execution_plan.returncode == 0 and "status: READY" in execution_plan.stdout, f"Execution Context Plan 失败：{execution_plan.stdout}\n{execution_plan.stderr}")
         assert_true("capability_id: coding_standard" in execution_plan.stdout and "idc-general-coding/SKILL.md" in execution_plan.stdout, "Execution 必须加载 Domain protocol 与真实选中能力。")
+        assert_true("knowledge_plan_id:" in execution_plan.stdout and "kind: component" in execution_plan.stdout and "kind: test_domain" in execution_plan.stdout, "Execution Context Plan 必须绑定当前单元的 Knowledge Plan。")
         assert_true("capability_id: dt_build" not in execution_plan.stdout and "idc-d3a-coding/SKILL.md" not in execution_plan.stdout, "Fast General execution 不得加载未选中的 DT/D3A Skill。")
 
         missing_selection = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "execution", "--domain", "general", "--lane", "fast"],
+            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--knowledge-plan", str(knowledge_plan_file)],
             cwd=ROOT,
             capture_output=True,
             text=True,
         )
         assert_true(missing_selection.returncode != 0 and "--selection is required for execution" in missing_selection.stdout, "Execution 不得绕过 Capability Selector 直接生成加载计划。")
+
+        missing_knowledge_plan = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--selection", str(selection_file)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(missing_knowledge_plan.returncode != 0 and "--knowledge-plan is required for execution" in missing_knowledge_plan.stdout, "Execution 不得绕过 Knowledge Planner 直接生成加载计划。")
 
         custom_plan = subprocess.run(
             ["ruby", str(context_planner), "--effective", str(custom_effective), "--phase", "planning", "--domain", "custom", "--lane", "lite"],
@@ -2430,6 +2471,29 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
             text=True,
         )
         assert_true(custom_plan.returncode == 0 and ".claude/skills/idc-general-coding/SKILL.md" in custom_plan.stdout, "Custom Domain 必须按阶段加载 team-config 绑定的 planner Skill。")
+        custom_knowledge_demand = Path(temp_dir) / "custom-knowledge-demand.yaml"
+        custom_knowledge_demand.write_text(
+            """knowledge_demand:
+  execution_unit_ref: custom-payment-unit
+  selected_domain: custom
+  selected_layer: PAYMENT_API
+  selected_components: []
+  selected_test_domains: [PAYMENT_TEST]
+  include_architecture: true
+  include_feature_docs_scope: false
+  include_verification_mapping: false
+  repo_context_required: false
+""",
+            encoding="utf-8",
+        )
+        custom_knowledge_plan = subprocess.run(
+            ["ruby", str(knowledge_planner), "--effective", str(custom_effective), "--demand", str(custom_knowledge_demand)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(custom_knowledge_plan.returncode == 0 and "status: READY" in custom_knowledge_plan.stdout, f"Custom Domain Knowledge Plan 失败：{custom_knowledge_plan.stdout}\n{custom_knowledge_plan.stderr}")
+        assert_true("id: PAYMENT_API" in custom_knowledge_plan.stdout and "id: PAYMENT_TEST" in custom_knowledge_plan.stdout, "Custom Domain Knowledge Plan 必须选择当前 layer/test-domain knowledge。")
 
         workflow_text = read_text(".claude/skills/idc-workflow/SKILL.md")
         assert_true("Read these files first" not in workflow_text, "idc-workflow 不得保留全量首读清单。")
@@ -2443,13 +2507,15 @@ def can_enter_all_layers_green(required_domains, green_domains):
 def test_d3a_and_general_lane_runtime_matrix_execute():
     resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
     selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"
+    knowledge_verifier = ROOT / ".claude/skills/idc-team-config/scripts/verify_knowledge_consumption.rb"
     context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
     authorizer = ROOT / ".claude/skills/idc-workflow/scripts/authorize_execution.rb"
     matrix = {
-        "fast": {"domain": "general", "lane": "fast", "selected": 1, "domain_skill": ".claude/skills/idc-general-coding/SKILL.md"},
-        "lite": {"domain": "general", "lane": "lite", "selected": 4, "domain_skill": ".claude/skills/idc-general-coding/SKILL.md"},
-        "complex": {"domain": "general", "lane": "complex", "selected": 5, "domain_skill": ".claude/skills/idc-general-coding/SKILL.md"},
-        "d3a": {"domain": "d3a", "lane": None, "selected": 2, "domain_skill": ".claude/skills/idc-d3a-coding/SKILL.md"},
+        "fast": {"domain": "general", "lane": "fast", "unit": "fast-unit", "selected": 1, "domain_skill": ".claude/skills/idc-general-coding/SKILL.md"},
+        "lite": {"domain": "general", "lane": "lite", "unit": "lite-unit", "selected": 4, "domain_skill": ".claude/skills/idc-general-coding/SKILL.md"},
+        "complex": {"domain": "general", "lane": "complex", "unit": "complex-unit", "selected": 5, "domain_skill": ".claude/skills/idc-general-coding/SKILL.md"},
+        "d3a": {"domain": "d3a", "lane": None, "unit": "d3a-do-unit", "selected": 2, "domain_skill": ".claude/skills/idc-d3a-coding/SKILL.md"},
     }
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -2476,6 +2542,21 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
             assert_true("status: READY" in selection_text, f"{scenario} Selector 未 READY。")
             assert_true(selected_block.count("capability_id:") == expected["selected"], f"{scenario} 选择数量错误。")
 
+            knowledge_plan = Path(temp_dir) / f"{scenario}-knowledge-plan.yaml"
+            knowledge_planned = subprocess.run(
+                ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(ROOT / f"examples/knowledge-demands/{scenario}.yaml"), "--output", str(knowledge_plan)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            assert_true(knowledge_planned.returncode == 0, f"{scenario} Knowledge Plan 失败：{knowledge_planned.stdout}\n{knowledge_planned.stderr}")
+            knowledge_text = knowledge_plan.read_text(encoding="utf-8")
+            assert_true("status: READY" in knowledge_text and f"execution_unit_ref: {expected['unit']}" in knowledge_text, f"{scenario} Knowledge Plan 未绑定正确 execution unit。")
+            knowledge_plan_id = re.search(r"knowledge_plan_id:\s+(\w+)", knowledge_text).group(1)
+            required_block = knowledge_text.split("required_static_knowledge:", 1)[1].split("search_scopes:", 1)[0]
+            required_refs = re.findall(r'^\s+ref: "([^"]+)"', required_block, flags=re.MULTILINE)
+            assert_true(required_refs, f"{scenario} Knowledge Plan 没有选择任何静态知识。")
+
             phase_outputs = {}
             for phase in ["decision", "planning", "execution", "completion"]:
                 command = [
@@ -2487,7 +2568,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
                 if expected["lane"]:
                     command.extend(["--lane", expected["lane"]])
                 if phase == "execution":
-                    command.extend(["--selection", str(selection)])
+                    command.extend(["--selection", str(selection), "--knowledge-plan", str(knowledge_plan)])
                 planned = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
                 assert_true(planned.returncode == 0 and "status: READY" in planned.stdout, f"{scenario}/{phase} Context Plan 失败：{planned.stdout}\n{planned.stderr}")
                 phase_outputs[phase] = planned.stdout
@@ -2495,11 +2576,14 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
             execution_output = phase_outputs["execution"]
             assert_true(expected["domain_skill"] in execution_output, f"{scenario} 未加载正确的 Domain execution Skill。")
             assert_true(execution_output.count("capability_id:") == expected["selected"], f"{scenario} Context Plan 没有保留全部选中能力。")
+            assert_true(f"knowledge_plan_id: {knowledge_plan_id}" in execution_output, f"{scenario} Execution Context 未绑定 Knowledge Plan。")
             if expected["domain"] == "d3a":
                 all_output = "\n".join(phase_outputs.values())
                 assert_true("lane: " in all_output and "lane: fast" not in all_output and "lane: lite" not in all_output and "lane: complex" not in all_output, "D3A 必须保持 Lane not_applicable。")
                 assert_true("references/lanes/" not in all_output and "lane-resolver.md" not in all_output, "D3A Context Plan 不得加载动态 Lane 资源。")
                 assert_true("d3a-planning-constraints.yaml" in phase_outputs["planning"] and "d3a-execution-constraints.yaml" in execution_output, "D3A 必须加载固定 Planning/Execution 约束。")
+                for kind in ["layer", "test_domain", "architecture", "verification_mapping"]:
+                    assert_true(f"kind: {kind}" in knowledge_text, f"D3A Knowledge Plan 缺少 {kind}。")
             else:
                 assert_true(f"references/lanes/{expected['lane']}.yaml" in "\n".join(phase_outputs.values()), f"{scenario} 必须加载自己的 Lane policy。")
                 assert_true("idc-d3a-coding/SKILL.md" not in execution_output, f"{scenario} General 路径不得加载 D3A execution Skill。")
@@ -2514,10 +2598,13 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
   selected_lane: {lane_value}
   human_alignment_status: approved
   approved_alignment_ref: alignment-{scenario}
-  execution_unit_ref: unit-{scenario}
+  execution_unit_ref: {expected['unit']}
   context_packet_ref: context-{scenario}
   capability_selection_ref: {selection}
   capability_selection_status: READY
+  knowledge_load_plan_ref: {knowledge_plan}
+  knowledge_load_plan_status: READY
+  knowledge_plan_id: {knowledge_plan_id}
   domain_execution_skill_ref: {expected['domain_skill']}
   selected_atomic_skill_refs: [selected-by-capability-selector]
   delegation_contract_ref: delegation-{scenario}
@@ -2535,6 +2622,91 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
                 text=True,
             )
             assert_true(authorized.returncode == 0 and "status: AUTHORIZED" in authorized.stdout, f"{scenario} Execution Authorization 失败：{authorized.stdout}\n{authorized.stderr}")
+
+            receipt = Path(temp_dir) / f"{scenario}-knowledge-receipt.yaml"
+            loaded_yaml = "\n".join(f'    - "{ref}"' for ref in required_refs)
+            provider_refs = "[provider-result]" if scenario in ["complex", "d3a"] else "[]"
+            scope_refs = "[feature-doc-result]" if scenario == "complex" else "[]"
+            receipt.write_text(
+                f"""knowledge_consumption_receipt:
+  knowledge_plan_id: {knowledge_plan_id}
+  execution_unit_ref: {expected['unit']}
+  loaded_static_refs:
+{loaded_yaml}
+  search_scope_result_refs: {scope_refs}
+  provider_result_refs: {provider_refs}
+  knowledge_summary_refs: [knowledge-summary]
+""",
+                encoding="utf-8",
+            )
+            verified = subprocess.run(
+                ["ruby", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(receipt)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            assert_true(verified.returncode == 0 and "status: VERIFIED" in verified.stdout, f"{scenario} Knowledge Consumption 未闭环：{verified.stdout}\n{verified.stderr}")
+
+            if scenario == "d3a":
+                cross_layer_receipt = Path(temp_dir) / "d3a-cross-layer-receipt.yaml"
+                cross_layer_receipt.write_text(
+                    receipt.read_text(encoding="utf-8").replace(
+                        "  search_scope_result_refs:",
+                        f'    - "{ROOT / ".claude/skills/idc-workflow/references/knowledge/d3a/layers/DRV.md"}"\n  search_scope_result_refs:',
+                        1,
+                    ),
+                    encoding="utf-8",
+                )
+                cross_layer = subprocess.run(
+                    ["ruby", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(cross_layer_receipt)],
+                    cwd=ROOT,
+                    capture_output=True,
+                    text=True,
+                )
+                assert_true(cross_layer.returncode == 3 and "unplanned knowledge refs were loaded" in cross_layer.stdout, "D3A 跨 Layer 知识注入必须被机器 Gate 阻断。")
+
+                missing_static_receipt = Path(temp_dir) / "d3a-missing-static-receipt.yaml"
+                missing_static_receipt.write_text(receipt.read_text(encoding="utf-8").replace(f'    - "{required_refs[0]}"\n', "", 1), encoding="utf-8")
+                missing_static = subprocess.run(
+                    ["ruby", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(missing_static_receipt)],
+                    cwd=ROOT,
+                    capture_output=True,
+                    text=True,
+                )
+                assert_true(missing_static.returncode == 3 and "required knowledge refs were not loaded" in missing_static.stdout, "遗漏 required Layer knowledge 必须阻断 Completion。")
+
+                tampered_plan = Path(temp_dir) / "d3a-tampered-knowledge-plan.yaml"
+                tampered_plan.write_text(knowledge_text.replace("selected_layer: DO", "selected_layer: DRV", 1), encoding="utf-8")
+                tampered_authorization = Path(temp_dir) / "d3a-tampered-authorization.yaml"
+                tampered_authorization.write_text(authorization.read_text(encoding="utf-8").replace(str(knowledge_plan), str(tampered_plan), 1), encoding="utf-8")
+                tampered = subprocess.run(
+                    ["ruby", str(authorizer), "--request", str(tampered_authorization)],
+                    cwd=ROOT,
+                    capture_output=True,
+                    text=True,
+                )
+                assert_true(tampered.returncode == 3 and "knowledge plan integrity check failed" in tampered.stdout, "Knowledge Plan 被修改后必须由 Authorization Gate 阻断。")
+
+            if scenario in ["complex", "d3a"]:
+                missing_provider_receipt = Path(temp_dir) / f"{scenario}-missing-provider-receipt.yaml"
+                missing_provider_receipt.write_text(receipt.read_text(encoding="utf-8").replace("provider_result_refs: [provider-result]", "provider_result_refs: []"), encoding="utf-8")
+                missing_provider = subprocess.run(
+                    ["ruby", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(missing_provider_receipt)],
+                    cwd=ROOT,
+                    capture_output=True,
+                    text=True,
+                )
+                assert_true(missing_provider.returncode == 3 and "provider_result_refs are required" in missing_provider.stdout, f"{scenario} 缺少 Repo Context receipt 时必须阻断。")
+
+        invalid_demand = Path(temp_dir) / "invalid-d3a-knowledge-demand.yaml"
+        invalid_demand.write_text((ROOT / "examples/knowledge-demands/d3a.yaml").read_text(encoding="utf-8").replace("selected_layer: DO", "selected_layer: UNKNOWN_LAYER"), encoding="utf-8")
+        missing_mapping = subprocess.run(
+            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(invalid_demand)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(missing_mapping.returncode == 2 and "NEEDS_KNOWLEDGE_MAPPING" in missing_mapping.stdout, "未知 D3A Layer 必须返回 NEEDS_KNOWLEDGE_MAPPING。")
 
     d3a_workflow = read_text(".claude/skills/idc-workflow/references/workflows/d3a-workflow.md")
     d3a_skill = read_text(".claude/skills/idc-d3a-coding/SKILL.md")

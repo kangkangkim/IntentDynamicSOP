@@ -163,6 +163,9 @@ end
 
 result = {
   "capability_selection_result" => {
+    "execution_unit_ref" => demand["execution_unit_ref"],
+    "selected_domain" => demand["selected_domain"],
+    "selected_stage" => stage,
     "strategy" => "autonomous_minimal_sufficient",
     "orchestration" => {
       "mode" => orchestration_mode,

@@ -1,0 +1,10 @@
+knowledge_demand:
+  execution_unit_ref: complex-unit
+  selected_domain: general
+  selected_layer: null
+  selected_components: [GENERAL_COMPONENT_PLACEHOLDER]
+  selected_test_domains: [GENERAL_TEST_PLACEHOLDER]
+  include_architecture: true
+  include_feature_docs_scope: true
+  include_verification_mapping: false
+  repo_context_required: true

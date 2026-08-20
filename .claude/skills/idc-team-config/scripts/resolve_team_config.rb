@@ -102,6 +102,29 @@ def validate_registry(entries, path, errors)
   end
 end
 
+def load_builtin_knowledge_registry(harness_root, relative_path, root_key, errors)
+  path = harness_root.join(relative_path)
+  unless path.file?
+    errors << "builtin knowledge registry is missing: #{path}"
+    return []
+  end
+
+  begin
+    document = YAML.safe_load(path.read, permitted_classes: [], aliases: false) || {}
+  rescue Psych::Exception => e
+    errors << "builtin knowledge registry is invalid: #{path}: #{e.message}"
+    return []
+  end
+
+  Array(document[root_key]).map do |entry|
+    next entry unless entry.is_a?(Hash)
+    ref = entry["knowledge_ref"] || entry["knowledge_file"]
+    resolved_ref = resolve_file_ref(ref, harness_root, harness_root)
+    errors << "builtin knowledge ref does not exist: #{ref}" unless Pathname.new(resolved_ref).file?
+    entry.reject { |key, _value| key == "knowledge_file" }.merge("knowledge_ref" => resolved_ref)
+  end
+end
+
 forbidden_keys = %w[command build_command run_command pass_condition]
 walk_keys(config) do |path, key|
   errors << "#{path.join('.')} is forbidden; bind a skill_ref instead" if forbidden_keys.include?(key)
@@ -415,17 +438,64 @@ end
 errors << "self_optimization.auto_modify_core must remain false" unless self_optimization["auto_modify_core"] == false
 errors << "self_optimization.promotion_requires_human_alignment must remain true" unless self_optimization["promotion_requires_human_alignment"] == true
 
+builtin_d3a_layers = load_builtin_knowledge_registry(
+  harness_root,
+  ".claude/skills/idc-workflow/references/registries/d3a-layers.yaml",
+  "layers",
+  errors
+)
+builtin_dt_domains = load_builtin_knowledge_registry(
+  harness_root,
+  ".claude/skills/idc-workflow/references/registries/dt-domains.yaml",
+  "domains",
+  errors
+)
+builtin_general_components = load_builtin_knowledge_registry(
+  harness_root,
+  ".claude/skills/idc-workflow/references/registries/general-components.yaml",
+  "components",
+  errors
+)
+builtin_general_test_domains = load_builtin_knowledge_registry(
+  harness_root,
+  ".claude/skills/idc-workflow/references/registries/general-test-domains.yaml",
+  "test_domains",
+  errors
+)
+
+d3a_overrides = value_at(config, "domain", "d3a", "dt_domains") || []
+general_component_overrides = value_at(config, "general", "components") || []
+general_test_overrides = value_at(config, "general", "test_domains") || []
+d3a_test_domains = d3a_overrides.empty? ? builtin_dt_domains : d3a_overrides
+general_components = general_component_overrides.empty? ? builtin_general_components : general_component_overrides
+general_test_domains = general_test_overrides.empty? ? builtin_general_test_domains : general_test_overrides
+
+knowledge_catalog = {
+  "d3a" => {
+    "layers" => builtin_d3a_layers,
+    "test_domains" => d3a_test_domains
+  },
+  "general" => {
+    "components" => general_components,
+    "test_domains" => general_test_domains
+  },
+  "custom" => {
+    "layers" => Array(custom["coding_layers"]),
+    "test_domains" => Array(custom["test_domains"])
+  }
+}
+
 domain_effective = case mode
                    when "d3a"
-                     overrides = value_at(config, "domain", "d3a", "dt_domains") || []
                      {
                        "id" => "d3a",
                        "source" => "builtin",
                        "lane_applicability" => "not_applicable",
                        "execution_profile" => "d3a_fixed_workflow",
                        "coding_layers_source" => "registries/d3a-layers.yaml",
-                       "test_domains_source" => overrides.empty? ? "registries/dt-domains.yaml" : "team-config.yaml",
-                       "test_domains" => overrides
+                       "test_domains_source" => d3a_overrides.empty? ? "registries/dt-domains.yaml" : "team-config.yaml",
+                       "coding_layers" => builtin_d3a_layers,
+                       "test_domains" => d3a_test_domains
                      }
                    when "general"
                      {
@@ -433,8 +503,8 @@ domain_effective = case mode
                        "source" => "builtin",
                        "lane_applicability" => "applicable",
                        "execution_profile" => "lane_driven",
-                       "components" => value_at(config, "general", "components") || [],
-                       "test_domains" => value_at(config, "general", "test_domains") || []
+                       "components" => general_components,
+                       "test_domains" => general_test_domains
                      }
                    when "custom"
                      {
@@ -579,6 +649,7 @@ effective = {
     "declared_overrides" => registration_overrides
   },
   "knowledge" => config["knowledge"],
+  "knowledge_catalog" => knowledge_catalog,
   "lane" => { "default" => lane_default, "profiles" => lane_profiles },
   "capability_selection" => capability_selection,
   "self_optimization" => self_optimization,

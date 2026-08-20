@@ -5,6 +5,9 @@ layer_context:
   responsibility: string
   architecture_constraints: []
   coding_patterns: []
+  knowledge_plan_id: sha256
+  required_static_knowledge_refs: []
+  knowledge_search_scopes: []
   repo_context:
     files: []
     notes: []
@@ -26,6 +29,11 @@ example:
       - 未经 planner 授权，不修改其他 Layer。
     coding_patterns:
       - <ENTERPRISE_PLACEHOLDER>
+    knowledge_plan_id: <KNOWLEDGE_PLAN_SHA256>
+    required_static_knowledge_refs:
+      - .claude/skills/idc-workflow/references/knowledge/d3a/layers/DO.md
+      - .claude/skills/idc-workflow/references/knowledge/d3a/dt/TPRINT.md
+    knowledge_search_scopes: []
     repo_context:
       files:
         - <ENTERPRISE_REPO_PATH>

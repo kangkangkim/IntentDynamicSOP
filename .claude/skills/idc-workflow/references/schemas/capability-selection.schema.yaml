@@ -14,6 +14,9 @@ capability_demand:
   contract_refs: []
 
 capability_selection_result:
+  execution_unit_ref: string
+  selected_domain: string
+  selected_stage: string
   strategy: autonomous_minimal_sufficient
   selected:
     - capability_id: string

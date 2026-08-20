@@ -61,6 +61,9 @@ completion_summary_exists
 - 任何 repository mutation 都必须有 Execution Receipt：authorization ID、
   dispatch tool-call ref、executor session ref 和 loaded Domain execution Skill。
 - 缺少 Delegation provenance 时，即使测试通过也不能标记 DONE。
+- 每个 execution unit 必须有与 Authorization 相同 `knowledge_plan_id` 的
+  `Knowledge Consumption Result: VERIFIED`；缺失 required knowledge、缺少
+  provider/search result，或加载计划外知识时不能 DONE。
 - 任何 Lane 都必须输出 completion summary。
 - 如果 Lane 的 minimum requirements 无法满足，必须升级 Lane 或返回 targeted fix / re-plan。
 - Domain Module 可以在 Lane requirements 之上追加自己的 completion gate。

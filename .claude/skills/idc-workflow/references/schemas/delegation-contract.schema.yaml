@@ -28,6 +28,8 @@ delegation_contract:
   domain_execution_skill_ref: skill_ref
   capability_selection_ref: ref
   selected_atomic_skill_refs: []
+  knowledge_load_plan_ref: ref
+  knowledge_plan_id: sha256
   execution_authorization_request_ref: ref
   delegation_reason: string
   selection_reason:
@@ -60,6 +62,7 @@ delegation_contract:
     - summary
     - changed_paths
     - evidence_refs
+    - knowledge_consumption_receipt
     - blockers
     - context_to_keep
     - context_to_drop
@@ -86,6 +89,8 @@ agent_result:
     executor_kind: subagent | agent_team | official_dynamic_workflow
     loaded_domain_execution_skill_ref: skill_ref
     executed_atomic_skill_refs: []
+    knowledge_plan_id: sha256
+    knowledge_consumption_result_ref: ref
 
 rules:
   - Main agent role 必须是 planning_and_delegation_only。
@@ -98,6 +103,8 @@ rules:
   - Main agent 不能直接执行任何 repository mutation，包括 Fast、Lite、Complex 的代码、测试、构建文件、验证产物和 targeted fix。
   - General execution 的 domain_execution_skill_ref 必须是 idc-general-coding；GC adapters 只能出现在 selected_atomic_skill_refs。
   - Agent Result 必须携带 execution_receipt，并绑定 authorization、真实 dispatch tool call 和 executor session。
+  - Delegation、Authorization、Context Packet 和 Execution Receipt 必须绑定同一个 knowledge_plan_id。
+  - Completion 前 Knowledge Consumption Result 必须 VERIFIED。
   - Main agent 不能把完整 subagent session 合并回 main session。
   - Delegation Contract 必须记录 run_state_ref，便于中断后恢复。
   - Resume 必须通过 runtime_state checkpoint 恢复，不能依赖 main agent 记忆。

@@ -6,7 +6,7 @@ properties:
   context_load_plan:
     type: object
     additionalProperties: false
-    required: [status, source_sha256, phase, signals, required_refs, selected_capabilities, load_policy]
+    required: [status, source_sha256, phase, signals, required_refs, selected_capabilities, knowledge_load_plan_ref, knowledge_plan_id, required_static_knowledge, knowledge_search_scopes, repo_context_plan, load_policy]
     properties:
       status:
         const: READY
@@ -43,5 +43,17 @@ properties:
             capability_id: {type: string, minLength: 1}
             skill_ref: {type: string, minLength: 1}
             execution_order: {type: integer, minimum: 1}
+      knowledge_load_plan_ref:
+        type: [string, "null"]
+      knowledge_plan_id:
+        type: [string, "null"]
+      required_static_knowledge:
+        type: array
+        items: {type: object}
+      knowledge_search_scopes:
+        type: array
+        items: {type: object}
+      repo_context_plan:
+        type: [object, "null"]
       load_policy:
         const: read_required_refs_only

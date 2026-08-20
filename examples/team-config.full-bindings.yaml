@@ -59,10 +59,11 @@ adapter_extensions:
     composes_with: []
     supersedes: []
 knowledge:
-  architecture_doc_ref: null
-  feature_docs_root_ref: null
-  layer_docs: {}
-  verification_mapping_ref: null
+  architecture_doc_ref: docs/architecture.md
+  feature_docs_root_ref: docs
+  layer_docs:
+    DO: .claude/skills/idc-workflow/references/knowledge/d3a/layers/DO.md
+  verification_mapping_ref: examples/e2e-tr3-d3a/execution-plan.yaml
   repo_context:
     provider_skill_ref: null
     policy_ref: null

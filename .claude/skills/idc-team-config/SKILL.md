@@ -68,8 +68,23 @@ ruby .claude/skills/idc-team-config/scripts/select_capabilities.rb \
   --output .idc/capability-selection.yaml
 ```
 
-Execution context planning requires that READY selection as `--selection` and
-loads only its selected Skill refs.
+Build a Knowledge Load Plan for the same execution unit:
+
+```sh
+ruby .claude/skills/idc-team-config/scripts/plan_knowledge.rb \
+  --effective .idc/effective-team-config.yaml \
+  --demand <KNOWLEDGE_DEMAND_YAML> \
+  --output .idc/knowledge-load-plan.yaml
+```
+
+Execution context planning requires both READY plans. After execution, verify
+the executor's knowledge receipt before Completion:
+
+```sh
+ruby .claude/skills/idc-team-config/scripts/verify_knowledge_consumption.rb \
+  --plan .idc/knowledge-load-plan.yaml \
+  --receipt <KNOWLEDGE_CONSUMPTION_RECEIPT>
+```
 
 ## Output
 
@@ -107,6 +122,9 @@ team_config_result:
   differs from the YAML policy.
 - Context Load Plan is the runtime loading authority. Read only
   `required_refs`; do not preload all available capabilities or schemas.
+- Knowledge Load Plan is bound to one execution unit. Authorization requires
+  it READY; Completion requires a VERIFIED consumption receipt with no
+  unplanned Layer, component, or test-domain refs.
 - Self-optimization may observe or propose; it must never mutate IDC Core or
   promote an overlay without Human Alignment.
 

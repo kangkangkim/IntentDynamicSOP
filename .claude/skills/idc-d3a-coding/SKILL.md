@@ -88,6 +88,9 @@ d3a_execution_result:
 - 每个 execution unit 代码变更必须 `<= 500 LOC`。
 - 每个 D3A Layer 必须单独 Layer Context Packet。
 - DONE 必须同时满足 required DT GREEN 和 `tran_build PASS`。
+- 每个 Layer execution unit 必须绑定只含当前 Layer、required DT 和共享约束的
+  Knowledge Load Plan；Knowledge Consumption 未 VERIFIED 或出现跨 Layer ref
+  时不得进入 DONE。
 
 ## 保密区绑定
 

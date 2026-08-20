@@ -82,8 +82,11 @@ Lane 策略：
 ## Stage 4: 执行
 
 用户批准 Alignment Pack 后先运行 planning plan。每个 execution unit 先运行
-Capability Selector，再把 READY selection 传给 execution plan。执行阶段只加载
-Domain execution protocol、共享 gate 和本单元选中的 Skill refs。
+Capability Selector，并把 Planner 产出的 Knowledge Demand 交给 Knowledge
+Planner。只有 READY Capability Selection 和 READY Knowledge Load Plan 绑定同一个
+`execution_unit_ref` 时，才能生成 execution plan。执行阶段分别加载指令 refs、
+本单元选中的 Skill refs，以及 Knowledge Load Plan 明确列出的知识；不得把
+search scope 当作已加载正文。
 
 执行上下文必须包含：
 
@@ -95,6 +98,7 @@ Domain execution protocol、共享 gate 和本单元选中的 Skill refs。
 - 当前 domain module。
 - 当前 lane completion rule。
 - 当前相关 repo-native rules。
+- Knowledge Load Plan ID、实际加载的 static refs 和 search/provider result refs。
 - provider findings summary，不是 provider 原始长输出。
 
 D3A 执行额外要求：
@@ -120,6 +124,10 @@ Subagent / agent team 返回给 main 的内容只能包含：
 
 运行 completion plan。只有当前单元实际要求 TDD 时添加 `tdd_required`；需要
 重新定位仓库上下文时添加 `repo_context_required`，不得把这些引用提前加载。
+executor 必须提交 Knowledge Consumption Receipt；
+`verify_knowledge_consumption.rb` 返回 `VERIFIED` 后，当前 execution unit 才能进入
+Completion Gate。遗漏 required static ref、缺少 search/provider result ref、加载
+计划外 domain knowledge，或 Knowledge Plan 被修改，均阻断闭环。
 
 验证判断只看：
 
@@ -145,8 +153,11 @@ context_packet:
   selected_domain: d3a | general | placeholder
   selected_lane: fast | lite | complex
   execution_unit_id: string
+  knowledge_plan_id: string
   allowed_paths: []
   loaded_files: []
+  loaded_static_knowledge_refs: []
+  knowledge_search_result_refs: []
   provider_findings:
     - provider: grep | codegraph | okl | repo_search
       summary: string

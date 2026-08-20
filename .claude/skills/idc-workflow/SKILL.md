@@ -192,8 +192,8 @@ Continue only when `context_load_plan.status: READY`, then read exactly its
 `required_refs`. Do not preload refs for later phases. Schema:
 `references/schemas/context-load-plan.schema.yaml`.
 
-For execution, first persist the READY Capability Selector result, then bind it
-to the load plan:
+For execution, persist READY Capability and Knowledge plans for the same
+execution unit, then bind both to the Context Load Plan:
 
 ```sh
 ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
@@ -201,14 +201,14 @@ ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
   --phase execution \
   --domain general \
   --lane lite \
-  --selection .idc/capability-selection.yaml
+  --selection .idc/capability-selection.yaml \
+  --knowledge-plan .idc/knowledge-load-plan.yaml
 ```
 
-Execution planning rejects a missing or non-READY selection. Only the Domain
-execution protocol, shared execution gates, and selected `skill_ref` values are
-loaded. Unselected GC, DT, Superpowers, and team extension Skills remain out of
-context. Custom Domains load their configured planner, workflow, or completion
-Skill only in the matching phase.
+Execution planning rejects a missing, non-READY, or execution-unit-mismatched
+plan. Instruction refs, exact static knowledge refs, search scopes, and repo
+context requirements remain separate. Completion requires a VERIFIED Knowledge
+Consumption Receipt for the authorized `knowledge_plan_id`.
 
 ## Hard Rules
 
@@ -249,6 +249,9 @@ Skill only in the matching phase.
 - D3A module marks Lane `not_applicable`, uses `d3a_fixed_workflow`, and bypasses Lane Resolver; do not classify D3A as `fast`, `lite`, or `complex`.
 - D3A requires RED evidence, all required DT GREEN, and `tran_build PASS`.
 - OKL / docs / CodeGraph / grep findings are context, not DONE evidence.
+- Every execution unit requires a READY Knowledge Load Plan. Loading an
+  unplanned Layer/component/test-domain ref blocks completion; required static
+  refs and provider/search results require a VERIFIED consumption receipt.
 - Keep enterprise details as placeholders outside the confidential environment.
 - All user-facing questions, approvals, re-alignment choices, and escalation decisions must be emitted through `AskUserTool` according to `references/workflows/ask-user-tool-policy.md`; do not ask the user by plain text.
 

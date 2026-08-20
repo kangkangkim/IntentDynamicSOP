@@ -245,17 +245,20 @@ Preflight
   -> Human Alignment approval
   -> Planning and execution-unit split
   -> Capability Selector
+  -> Knowledge Demand and Knowledge Load Plan
   -> stage-specific Context Load Plan
   -> Delegation Contract
   -> Execution Authorization
   -> Subagent / Agent Team execution
+  -> Knowledge Consumption Receipt verification
   -> Execution Receipt
   -> Completion Gate
 ```
 
 Do not manually invoke every internal script during normal use. In particular,
-the Execution Context Load Plan requires a READY Capability Selector result and
-loads only the Domain execution protocol, shared gates, and selected Skill refs.
+the Execution Context Load Plan requires READY Capability and Knowledge plans
+for the same execution unit. It keeps instruction refs, exact static knowledge,
+search scopes, and repo context requirements separate.
 
 ## Step 9: Verify One Vertical Slice
 
@@ -266,6 +269,8 @@ selected Lane matches task evidence
 selected and skipped capability reasons are present
 team allow / deny / required / ordered policy took effect
 Context Load Plan excludes unselected Skills
+Knowledge Load Plan contains only selected component/test-domain knowledge
+Knowledge Consumption Result = VERIFIED
 Execution Authorization = AUTHORIZED
 Execution Receipt contains dispatch and executor refs
 Lane Completion requirements have real test/build evidence
@@ -279,9 +284,11 @@ selected_lane = null
 execution_profile = d3a_fixed_workflow
 1 initial Layer Context Packet
 1 initial DT Domain and verification mapping
+Knowledge Load Plan contains only the current Layer and required DT knowledge
 DT RED before implementation
 all required DT GREEN
 tran_build PASS
+Knowledge Consumption Result = VERIFIED with provider/search result refs
 Execution Receipt and Completion Summary
 ```
 

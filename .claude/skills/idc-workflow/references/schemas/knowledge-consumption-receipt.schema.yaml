@@ -1,0 +1,24 @@
+knowledge_consumption_receipt:
+  knowledge_plan_id: sha256
+  execution_unit_ref: string
+  loaded_static_refs: []
+  search_scope_result_refs: []
+  provider_result_refs: []
+  knowledge_summary_refs: []
+
+knowledge_consumption_result:
+  status: VERIFIED | BLOCKED_KNOWLEDGE_CONSUMPTION
+  knowledge_plan_id: sha256
+  execution_unit_ref: string
+  loaded_static_refs: []
+  provider_result_refs: []
+  search_scope_result_refs: []
+  knowledge_summary_refs: []
+  errors: []
+
+rules:
+  - Every required static ref must be listed in loaded_static_refs.
+  - A loaded static ref not present in the plan blocks consumption.
+  - Requested search scopes require result refs, not a full-directory load.
+  - Required repo context requires provider_result_refs.
+  - Completion requires VERIFIED for the authorized knowledge_plan_id.

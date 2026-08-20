@@ -125,12 +125,13 @@ SIGNAL_REFS = {
 
 options = { signals: [] }
 OptionParser.new do |parser|
-  parser.banner = "Usage: plan_context.rb --effective PATH --phase PHASE [--domain DOMAIN] [--lane LANE] [--selection PATH] [--signal SIGNAL]"
+  parser.banner = "Usage: plan_context.rb --effective PATH --phase PHASE [--domain DOMAIN] [--lane LANE] [--selection PATH] [--knowledge-plan PATH] [--signal SIGNAL]"
   parser.on("--effective PATH") { |value| options[:effective] = value }
   parser.on("--phase PHASE") { |value| options[:phase] = value }
   parser.on("--domain DOMAIN") { |value| options[:domain] = value }
   parser.on("--lane LANE") { |value| options[:lane] = value }
   parser.on("--selection PATH") { |value| options[:selection] = value }
+  parser.on("--knowledge-plan PATH") { |value| options[:knowledge_plan] = value }
   parser.on("--signal SIGNAL") { |value| options[:signals] << value }
 end.parse!
 
@@ -151,6 +152,7 @@ fail_plan("unknown domain: #{options[:domain]}") if options[:domain] && !DOMAINS
 fail_plan("unknown lane: #{options[:lane]}") if options[:lane] && !LANES.include?(options[:lane])
 fail_plan("--domain is required after bootstrap") if options[:phase] != "bootstrap" && !options[:domain]
 fail_plan("--selection is required for execution") if options[:phase] == "execution" && !options[:selection]
+fail_plan("--knowledge-plan is required for execution") if options[:phase] == "execution" && !options[:knowledge_plan]
 
 effective = load_yaml(options[:effective])
 fail_plan("effective config is not generated runtime state") unless effective["generated"] == true
@@ -189,6 +191,7 @@ fail_plan("unknown signal(s): #{unknown_signals.join(', ')}") if unknown_signals
 options[:signals].each { |signal| refs.concat(SIGNAL_REFS.fetch(signal)) }
 
 selected_capabilities = []
+selection = nil
 if options[:selection]
   selection = load_yaml(options[:selection]).fetch("capability_selection_result", {})
   fail_plan("capability selection is not READY") unless selection["status"] == "READY"
@@ -200,6 +203,22 @@ if options[:selection]
     }
   end
   refs.concat(selected_capabilities.map { |item| item["skill_ref"] })
+end
+
+knowledge_plan = nil
+if options[:knowledge_plan]
+  knowledge_plan = load_yaml(options[:knowledge_plan]).fetch("knowledge_load_plan", {})
+  fail_plan("knowledge load plan is not READY") unless knowledge_plan["status"] == "READY"
+  fail_plan("knowledge load plan source does not match effective config") unless knowledge_plan["source_sha256"] == effective["source_sha256"]
+  fail_plan("knowledge load plan domain does not match context domain") unless knowledge_plan["selected_domain"] == options[:domain]
+  if selection && knowledge_plan["execution_unit_ref"] != selection["execution_unit_ref"]
+    fail_plan("knowledge load plan execution unit does not match capability selection")
+  end
+  provider_skill_ref = knowledge_plan.dig("repo_context", "provider_skill_ref")
+  if knowledge_plan.dig("repo_context", "required") == true && knowledge_plan.dig("repo_context", "mode") == "bound_skill"
+    fail_plan("bound repo context mode is missing provider_skill_ref") if provider_skill_ref.to_s.empty?
+    refs << provider_skill_ref
+  end
 end
 
 refs = refs.compact.map(&:to_s).reject(&:empty?).uniq
@@ -220,6 +239,11 @@ puts YAML.dump(
     "signals" => options[:signals],
     "required_refs" => refs,
     "selected_capabilities" => selected_capabilities,
+    "knowledge_load_plan_ref" => options[:knowledge_plan] && Pathname.new(options[:knowledge_plan]).expand_path.to_s,
+    "knowledge_plan_id" => knowledge_plan && knowledge_plan["knowledge_plan_id"],
+    "required_static_knowledge" => knowledge_plan ? Array(knowledge_plan["required_static_knowledge"]) : [],
+    "knowledge_search_scopes" => knowledge_plan ? Array(knowledge_plan["search_scopes"]) : [],
+    "repo_context_plan" => knowledge_plan ? knowledge_plan["repo_context"] : nil,
     "load_policy" => "read_required_refs_only"
   }
 )
