@@ -163,7 +163,8 @@ $idc-workflow <TASK_OR_TR3>
 D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module（`references/domains/d3a/module.yaml`）。它与 General Coding 共享 `Planner -> Knowledge Preparation -> Execution Unit Split -> TDD -> Completion` 骨架，但 D3A 的 Layer、DT mapping、knowledge requirements 和 completion gate 由企业固定 SOP 约束：
 
 ```text
-用户任务 -> Scenario Router -> Discovery / Grill Me -> Domain Module Router
+用户任务 -> Input Maturity Gate -> D3A raw idea 时 Brainstorming / 有关键缺口时 Grill Me
+  -> Human Alignment Check -> AskUserTool approval -> Domain Module Router
   -> d3a module -> D3A Fixed Workflow (Lane N/A) -> Contract Gate -> Human Alignment
   -> Alignment Pack -> Automated Closure Loop -> D3A Specification
   -> API Contract Freeze -> Planner (Layer / DT / DAG / Knowledge Requirements)

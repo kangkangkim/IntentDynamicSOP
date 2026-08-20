@@ -62,4 +62,5 @@ rules:
   - new capability、behavior contract change、需要新增/修改测试、多个相关文件/组件、focused design 或 broad repo exploration 的任务至少为 lite。
   - no_new_test_required 必须有事实依据，不能从用户未要求测试推断；Fast 仍需执行已有验证。
   - Domain Resolver 根据 domain_candidates 和 module trigger_rules 选择 module。
+  - Domain hint 不改变 maturity route；D3A raw_idea 仍须 Discovery/Brainstorming，D3A critical gaps 仍须 Clarification Provider。
   - Lane Resolver 根据 lane_signals 选择 fast/lite/complex。

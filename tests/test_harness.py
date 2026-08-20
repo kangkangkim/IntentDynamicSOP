@@ -1873,6 +1873,51 @@ def test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea():
     assert_true("must not map directly to IDC Lane" in schema, "Superpowers path 不能直接映射 IDC Lane。")
 
 
+def test_d3a_unclear_input_cannot_bypass_brainstorming_or_grill_me():
+    module = read_text(".claude/skills/idc-workflow/references/domains/d3a/module.yaml")
+    workflow = read_text(".claude/skills/idc-workflow/references/workflows/d3a-workflow.md")
+    d3a_skill = read_text(".claude/skills/idc-d3a-coding/SKILL.md")
+    normalized_schema = read_text(".claude/skills/idc-workflow/references/schemas/normalized-request.schema.yaml")
+    idc_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
+
+    for fragment in [
+        "pre_alignment:",
+        "domain_hint_does_not_imply_readiness: true",
+        "raw_idea_route:",
+        "skills/idc-intent-discovery/SKILL.md",
+        "skills/idc-brainstorming/SKILL.md",
+        "skills/idc-intent-grilling/SKILL.md",
+        "questions_via: AskUserTool",
+        "execution_requires_human_alignment: approved",
+    ]:
+        assert_true(fragment in module, f"D3A module 缺少前置澄清契约：{fragment}")
+
+    for fragment in [
+        "D3A hint / D3A task",
+        "Input Maturity Gate",
+        "raw_idea",
+        "idc-brainstorming",
+        "structured requirement / TR3 with critical gaps",
+        "idc-intent-grilling",
+        "Human Alignment Check",
+        "AskUserTool approval",
+        "D3A domain hint 不代表 readiness",
+    ]:
+        assert_true(fragment in workflow or fragment in d3a_skill, f"D3A 不清晰输入路由缺少：{fragment}")
+
+    pre_alignment_flow = workflow.split("## 固定流程的起点", 1)[1].split("## 固定 Architecture Space", 1)[0]
+    fixed_execution_index = pre_alignment_flow.rfind("-> D3A Fixed Workflow")
+    assert_true(fixed_execution_index > 0, "D3A 前置流程必须声明 approved 后才进入固定执行。")
+    for prerequisite in ["Input Maturity Gate", "idc-brainstorming", "idc-intent-grilling", "Human Alignment Check", "AskUserTool approval"]:
+        assert_true(pre_alignment_flow.find(prerequisite) < fixed_execution_index, f"{prerequisite} 必须发生在 D3A Fixed Workflow 之前。")
+    main_flow = workflow.split("## 主流程", 1)[1].split("动态部分只允许", 1)[0]
+    assert_true(main_flow.find("Requirement Assessor + Human Alignment Check") < main_flow.find("D3A Fixed Workflow"), "D3A Requirement Assessor 必须在固定执行前发现关键缺口。")
+
+    assert_true("D3A raw_idea 仍须 Discovery/Brainstorming" in normalized_schema, "Normalized Request 必须保持 D3A 的 maturity route。")
+    assert_true("D3A selection does not imply readiness" in idc_workflow, "IDC 入口必须禁止把 D3A 选择当作 readiness。")
+    assert_true("不允许绕过 Human Alignment approval" in d3a_skill, "D3A executor 必须拒绝未批准输入。")
+
+
 def test_planner_cannot_produce_registry_external_layers():
     plan_path = "examples/mock-d3a-task/d3a-plan.yaml"
     layers = set(extract_inline_list_after_key(plan_path, "coding_layers"))
@@ -2785,6 +2830,7 @@ def run():
         test_user_questions_must_use_ask_user_tool,
         test_clarification_provider_uses_grill_me_method_with_fallback,
         test_discovery_provider_uses_superpowers_brainstorming_for_raw_idea,
+        test_d3a_unclear_input_cannot_bypass_brainstorming_or_grill_me,
         test_planner_cannot_produce_registry_external_layers,
         test_requirement_assessor_detects_missing_critical_fields,
         test_layer_context_packet_only_contains_selected_layer,

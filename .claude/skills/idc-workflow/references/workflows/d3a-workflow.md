@@ -33,6 +33,34 @@ lane_policy:
 不再调用通用 Lane Resolver。任务大小、Layer 数量和风险信号仍会影响流程内部的
 planning、DAG、execution unit、agent delegation 和 evidence plan，但不产生 Lane。
 
+## 固定流程的起点
+
+命中 D3A 只确认 Domain 和 `lane_applicability: not_applicable`，不代表输入已经
+成熟。D3A 固定执行流程只能在 Human Alignment approved 后启动；其前置发现与
+澄清规则和 IDC Core 一致：
+
+```text
+D3A hint / D3A task
+  -> Input Maturity Gate
+  -> raw_idea
+       -> idc-intent-discovery
+       -> idc-brainstorming
+       -> idc-intent-grilling
+  -> structured requirement / TR3 with critical gaps
+       -> idc-intent-grilling
+  -> Human Alignment Check
+  -> AskUserTool approval
+  -> approved
+  -> D3A Fixed Workflow
+```
+
+关键缺口包括无法在不猜测的情况下确定 goal、core behavior、API semantics、
+scope、Layer boundary、DT requirement、verification mapping 或 completion gate。
+所有澄清、方向选择和 approval 必须通过 `AskUserTool`。Requirement Assessor
+可以作为 Human Alignment Check 的被动检查器在批准前运行；未完成
+Brainstorming / Grill Me 或仍有 open questions 时，不得进入 D3A Specification、
+Planner 或 execution。
+
 ## 固定 Architecture Space
 
 Coding Layer：
@@ -62,9 +90,13 @@ DPF
 ```text
 用户任务
   -> Scenario Router
-  -> Domain Module Router selects d3a
+  -> Domain Module Router selects d3a candidate and Lane N/A policy
+  -> Input Maturity Gate
+  -> Discovery / Brainstorming if raw_idea
+  -> Requirement Assessor + Human Alignment Check
+  -> Grill Me if critical gaps remain
+  -> AskUserTool approval
   -> D3A Fixed Workflow (Lane not applicable)
-  -> Requirement Assessor
   -> D3A Specification
   -> API Contract
   -> Planner

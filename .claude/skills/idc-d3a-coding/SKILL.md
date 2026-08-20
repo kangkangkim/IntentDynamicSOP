@@ -39,6 +39,8 @@ If the D3A request is rough, route to:
 
 ```text
 .claude/skills/idc-intent-discovery/SKILL.md
+  -> .claude/skills/idc-brainstorming/SKILL.md
+  -> .claude/skills/idc-intent-grilling/SKILL.md
 ```
 
 If D3A contract / scope / completion gate 不清楚，route to:
@@ -80,6 +82,8 @@ d3a_execution_result:
 ## Hard Rules
 
 - 不允许绕过 Human Alignment approval。
+- D3A domain hint 不代表 readiness；raw idea 必须先 Brainstorming，关键缺口必须
+  先 Grill Me，所有问题与 approval 必须通过 `AskUserTool`。
 - 不允许重排或重新设计用户定义的固定 D3A workflow。
 - 不允许为 D3A 识别 `fast` / `lite` / `complex`；Lane 对 D3A 不适用。
 - 不允许使用 General component registry。

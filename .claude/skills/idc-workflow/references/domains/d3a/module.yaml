@@ -14,6 +14,16 @@ domain_module:
     bypass_lane_resolver: true
     execution_profile: d3a_fixed_workflow
     reason: D3A uses the user-designed fixed workflow instead of Lane classification.
+  pre_alignment:
+    domain_hint_does_not_imply_readiness: true
+    raw_idea_route:
+      - skills/idc-intent-discovery/SKILL.md
+      - skills/idc-brainstorming/SKILL.md
+      - skills/idc-intent-grilling/SKILL.md
+    critical_gap_route:
+      - skills/idc-intent-grilling/SKILL.md
+    questions_via: AskUserTool
+    execution_requires_human_alignment: approved
   registries:
     coding_layers: registries/d3a-layers.yaml
     # test_domains is the repo default; a non-empty team-config.yaml

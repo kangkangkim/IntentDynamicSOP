@@ -247,6 +247,10 @@ Consumption Receipt for the authorized `knowledge_plan_id`.
 - Single execution unit code change must be `<= 500 LOC`.
 - D3A multi-layer work must split one Layer per Context Packet.
 - D3A module marks Lane `not_applicable`, uses `d3a_fixed_workflow`, and bypasses Lane Resolver; do not classify D3A as `fast`, `lite`, or `complex`.
+- D3A selection does not imply readiness. A D3A `raw_idea` must run
+  `idc-intent-discovery` / `idc-brainstorming`; unresolved D3A contract, scope,
+  Layer, DT, verification, or completion gaps must run `idc-intent-grilling`
+  through `AskUserTool` before Human Alignment approval and fixed execution.
 - D3A requires RED evidence, all required DT GREEN, and `tran_build PASS`.
 - OKL / docs / CodeGraph / grep findings are context, not DONE evidence.
 - Every execution unit requires a READY Knowledge Load Plan. Loading an
