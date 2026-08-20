@@ -222,6 +222,8 @@ Portable Skill references:
 - `'harness://.claude/skills/idc-example/SKILL.md'`: relative to IDC Core.
 - plain relative path: team repository first, IDC Core second.
 - absolute path or URI: retained as supplied.
+- URI refs inside flow mappings must remain quoted, for example
+  `{skill_ref: 'team://skills/example/SKILL.md'}`.
 
 ## Step 8: Run IDC Workflow
 

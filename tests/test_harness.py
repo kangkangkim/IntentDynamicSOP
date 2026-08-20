@@ -2041,24 +2041,17 @@ def test_filled_team_config_when_present():
     text = config_file.read_text(encoding="utf-8")
     for leftover in ["<TEAM_ID>", "<REPO_PATH>", "<DT_ID>", "<ENTERPRISE_"]:
         assert_true(leftover not in text, f"team-config.yaml 仍有未填占位符：{leftover}")
-    team_block = text.split("domain:")[0]
-    for key in ["id:", "repo_path:"]:
-        line = next((l for l in team_block.splitlines() if l.strip().startswith(key)), "")
-        value = line.split(":", 1)[1].strip() if line else ""
-        assert_true(value and value != "null", f"team.{key[:-1]} 必须填写真实值。")
-    for match in re.finditer(r"skill_ref:\s*(\S+)", text):
-        ref = match.group(1)
-        if ref == "null":
-            continue
-        resolved = Path(ref) if ref.startswith("/") else ROOT / ref
-        assert_true(resolved.exists(), f"skill_ref 指向的文件不存在：{ref}")
-    mode = re.search(r"^\s+mode:\s*(d3a|general|custom)\s*$", text, flags=re.MULTILINE)
-    assert_true(mode is not None, "domain.mode 必须是 d3a/general/custom。")
-    for match in re.finditer(r"-\s+id:\s*(\S+)\s*\n\s+knowledge_ref:\s*(\S+)", text):
-        domain_id, knowledge_ref = match.group(1), match.group(2)
-        assert_true(not knowledge_ref.startswith("<"), f"{domain_id} 的 knowledge_ref 未填写真实值。")
-    for key in ["build_command", "run_command", "pass_condition", "command:"]:
-        assert_true(key not in text, f"填好的 team-config.yaml 不允许出现命令键（严格 skill_ref 模型）：{key}")
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    checked = subprocess.run(
+        ["ruby", str(resolver), "--config", str(config_file), "--check"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert_true(
+        checked.returncode == 0,
+        f"填好的 team-config.yaml 必须通过正式 Resolver，不得由测试重复解析 YAML：{checked.stderr}",
+    )
 
 
 def test_team_config_resolver_and_lane_capability_selection_execute():
@@ -2329,6 +2322,11 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
             "coding_standard: {skill_ref: 'team://skills/team-coding/SKILL.md'}",
             1,
         )
+        portable_text = portable_text.replace(
+            "static_scan: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}",
+            "static_scan: {skill_ref: 'harness://.claude/skills/idc-gc-sop-adapter/SKILL.md'}",
+            1,
+        )
         portable_config.write_text(portable_text, encoding="utf-8")
         portable_effective = Path(temp_dir) / "portable-effective.yaml"
         portable_preflight = subprocess.run(
@@ -2349,6 +2347,8 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true("skill-adapters.yaml" not in bootstrap_block and "idc-general-coding/SKILL.md" not in bootstrap_block, "Bootstrap 不得预加载 registry 或 Domain execution Skill。")
         portable_effective_text = portable_effective.read_text(encoding="utf-8")
         assert_true(str(team_skill) in portable_effective_text, "team:// Skill 必须按第二团队 repo_path 解析为绝对路径。")
+        harness_skill = ROOT / ".claude/skills/idc-gc-sop-adapter/SKILL.md"
+        assert_true(str(harness_skill) in portable_effective_text, "harness:// Skill 必须按 IDC Core root 解析为绝对路径。")
         assert_true(not list(portable_effective.parent.glob(".*effective*.tmp-*")), "Resolver 原子写入后不得残留临时配置。")
         portable_selection = subprocess.run(
             ["ruby", str(selector), "--effective", str(portable_effective), "--demand", str(ROOT / "examples/capability-demands/fast.yaml")],

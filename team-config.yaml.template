@@ -107,6 +107,7 @@ adapter_extensions: []
 # - 'team://skills/example/SKILL.md' resolves from team.repo_path.
 # - 'harness://.claude/skills/idc-example/SKILL.md' resolves from IDC Core.
 # - Plain relative refs try team.repo_path first, then IDC Core.
+# - Quote URI refs in flow mappings: {skill_ref: 'team://skills/example/SKILL.md'}.
 
 knowledge:
   architecture_doc_ref: null
