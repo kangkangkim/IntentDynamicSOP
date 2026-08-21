@@ -49,6 +49,7 @@ detailed_plan_or_dag_executed
 knowledge_gate_result_exists
 evidence_plan_satisfied
 required_tests_or_builds_passed
+coverage_evidence_or_exemption_exists
 audit_or_review_completed
 completion_summary_exists
 ```
@@ -65,6 +66,10 @@ completion_summary_exists
   `Knowledge Consumption Result: VERIFIED`；缺失 required knowledge、缺少
   provider/search result，或加载计划外知识时不能 DONE。
 - 任何 Lane 都必须输出 completion summary。
+- 当 verification contract 声明 test-based verification 时，completion summary
+  必须包含 coverage evidence（工具报告 ref，或 demo 简化口径数字）或显式
+  exemption 条目（含原因）；两者皆缺时不能标记 DONE。Fast 与无测试任务
+  不受此条约束。
 - 如果 Lane 的 minimum requirements 无法满足，必须升级 Lane 或返回 targeted fix / re-plan。
 - Domain Module 可以在 Lane requirements 之上追加自己的 completion gate。
 

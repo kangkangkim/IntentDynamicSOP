@@ -70,11 +70,16 @@ Team Config
 
 Generated Runtime
   框架生成：.idc/effective-team-config.yaml
-  单元选择：.idc/capability-selection.yaml
-  知识选择：.idc/knowledge-load-plan.yaml
+  单元选择：.idc/capability-selection-<task>-<execution-unit>.yaml
+  知识选择：.idc/knowledge-load-plan-<task>-<execution-unit>.yaml
   阶段加载：context_load_plan.required_refs
   只读，不是第二配置入口
 ```
+
+单元选择与知识选择是 per-execution-unit 产物，必须使用带 task 和
+execution-unit 的文件名，避免下一个执行单元覆写 Delegation Contract 已经
+引用的 ref；`.idc/effective-team-config.yaml` 是唯一例外（全局配置、原子
+再生、带 source_sha256）。
 
 推荐复用方式：
 

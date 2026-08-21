@@ -145,6 +145,9 @@ team_capabilities:
 
 rules:
   - A non-null binding makes a capability available; it does not make it selected.
+  - A binding enables runtime selection only; it never changes adapter
+    admission (class / status / confidentiality) defined in
+    registries/skill-adapters.yaml.
   - Selection requires stage, demand signal, contract, domain policy, and Lane or execution-profile eligibility.
   - Choose the minimal sufficient set and record selected and skipped reasons.
   - Required capabilities are not counted against the optional-skill budget.

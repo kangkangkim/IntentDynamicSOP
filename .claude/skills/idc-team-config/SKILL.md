@@ -49,14 +49,14 @@ ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb
 
 The preflight includes a three-reference `bootstrap_load_plan`. After Domain,
 Lane, or phase changes, generate the next minimal plan instead of reading the
-effective registry directly:
+effective registry directly. The decision phase may omit `--lane` (the lane is
+not resolved yet); from `planning` onward `--lane` is required:
 
 ```sh
 ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
   --effective .idc/effective-team-config.yaml \
   --phase decision \
-  --domain general \
-  --lane lite
+  --domain general
 ```
 
 For each planned execution unit, run Capability Selector with a demand contract:
@@ -65,7 +65,7 @@ For each planned execution unit, run Capability Selector with a demand contract:
 ruby .claude/skills/idc-team-config/scripts/select_capabilities.rb \
   --effective .idc/effective-team-config.yaml \
   --demand <CAPABILITY_DEMAND_YAML> \
-  --output .idc/capability-selection.yaml
+  --output .idc/capability-selection-<task>-<execution-unit>.yaml
 ```
 
 Build a Knowledge Load Plan for the same execution unit:
@@ -74,7 +74,7 @@ Build a Knowledge Load Plan for the same execution unit:
 ruby .claude/skills/idc-team-config/scripts/plan_knowledge.rb \
   --effective .idc/effective-team-config.yaml \
   --demand <KNOWLEDGE_DEMAND_YAML> \
-  --output .idc/knowledge-load-plan.yaml
+  --output .idc/knowledge-load-plan-<task>-<execution-unit>.yaml
 ```
 
 Execution context planning requires both READY plans. After execution, verify
@@ -82,7 +82,7 @@ the executor's knowledge receipt before Completion:
 
 ```sh
 ruby .claude/skills/idc-team-config/scripts/verify_knowledge_consumption.rb \
-  --plan .idc/knowledge-load-plan.yaml \
+  --plan .idc/knowledge-load-plan-<task>-<execution-unit>.yaml \
   --receipt <KNOWLEDGE_CONSUMPTION_RECEIPT>
 ```
 
@@ -125,6 +125,11 @@ team_config_result:
 - Knowledge Load Plan is bound to one execution unit. Authorization requires
   it READY; Completion requires a VERIFIED consumption receipt with no
   unplanned Layer, component, or test-domain refs.
+- Per-execution-unit artifacts must use per-unit filenames such as
+  `.idc/capability-selection-<task>-<execution-unit>.yaml`; a shared
+  single-slot name gets overwritten by the next execution unit and breaks
+  Delegation Contract audits. `.idc/effective-team-config.yaml` is the only
+  exception: it is global, atomically regenerated, and source-sha256 stamped.
 - Self-optimization may observe or propose; it must never mutate IDC Core or
   promote an overlay without Human Alignment.
 

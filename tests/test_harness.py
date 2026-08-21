@@ -357,6 +357,11 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     assert_true("idc-team-config" in README, "README 必须记录单配置 Resolver。")
     assert_true("team-config.yaml.template" in README, "README 必须记录统一 team config 入口。")
     assert_true("team-config.yaml" in gitignore, "真实 team-config.yaml 必须被 git ignore。")
+    assert_true(".cache/" in gitignore, "工具生成的 cache/index 必须被 git ignore。")
+    assert_true("capability-selection-<task>-<execution-unit>.yaml" in id_workflow, "idc-workflow 必须使用 per-EU selection 文件名。")
+    team_config_skill = read_text(".claude/skills/idc-team-config/SKILL.md")
+    assert_true("capability-selection-<task>-<execution-unit>.yaml" in team_config_skill, "idc-team-config 必须声明 per-EU 产物文件名规则。")
+    assert_true("decides adapter admission" in adapter_registry, "Skill Adapter registry 必须声明自己管 admission，运行时可达性由 effective config 决定。")
     for fragment in [
         "config_version: 1",
         "team:",
@@ -512,6 +517,7 @@ def test_general_domain_module_is_active_and_self_closing():
     assert_true("registries/general-components.yaml" in module, "general module 必须使用 general component registry。")
     assert_true("registries/general-test-domains.yaml" in module, "general module 必须使用 general test registry。")
     assert_true("required_tests_or_builds_pass" in module, "general completion gate 必须基于测试或 build evidence。")
+    assert_true("coverage_evidence_or_exemption" in module, "general completion gate 必须包含 coverage 或豁免检查点。")
     assert_true("lane_policy:" in module and "mode: dynamic" in module, "General module 必须显式使用 dynamic Lane policy。")
     assert_true("resolver: workflows/lane-resolver.md" in module, "General module 必须把 Lane 交给通用 Resolver。")
     assert_true("- task_contract" in module, "general module 必须要求 task_contract。")
@@ -543,6 +549,10 @@ def test_every_lane_is_self_closing():
         assert_true("completion_summary_exists" in text, f"{lane_file} 必须要求 completion summary。")
         has_evidence_requirement = "evidence" in text or "tests_or_builds_passed" in text
         assert_true(has_evidence_requirement, f"{lane_file} 必须要求 evidence。")
+
+    lane_completion = read_text(".claude/skills/idc-workflow/references/workflows/lane-completion.md")
+    assert_true("coverage_evidence_or_exemption_exists" in lane_completion, "Complex 闭环必须包含 coverage 或豁免检查点。")
+    assert_true("两者皆缺时不能标记 DONE" in lane_completion, "test-based verification 的 completion 必须要求 coverage evidence 或显式豁免。")
 
 
 def lane_resolver_decision(signals):
@@ -854,6 +864,7 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         "executor_session_ref",
     ]:
         assert_true(fragment in schema, f"Delegation schema 缺少上下文边界：{fragment}")
+    assert_true("必须覆盖 selected_atomic_skill_refs" in schema, "Delegation schema 必须要求 allowed_paths 覆盖原子产物落点。")
 
     assert_true("Main agent must not mutate repository code" in skill, "idc-workflow 必须禁止 main 在任何 Lane 直接修改仓库。")
     assert_true("BLOCKED_DELEGATION_REQUIRED" in skill, "delegation tool 不可用时必须阻断，不能 main agent 兜底。")
@@ -863,6 +874,7 @@ def test_delegation_contract_keeps_main_agent_as_planner():
     assert_true("Delegation Contract" in html, "运行视角 HTML 必须展示 Delegation Contract。")
     for fragment in ["Skill precedence", "outer protocol: idc-general-coding", "main_agent is never a valid executor", "Execution Receipt", "BLOCKED_DELEGATION_REQUIRED"]:
         assert_true(fragment in authorization_gate or fragment in authorization_schema, f"Execution Authorization 设计缺少：{fragment}")
+    assert_true("must cover every artifact destination" in authorization_gate, "Authorization Gate 必须校验 allowed_paths 覆盖原子产物落点。")
     assert_true("outer Domain execution protocol" in general_skill, "General Coding 必须声明自己是外层执行协议。")
     assert_true("Do not use GC SOP Adapter as the outer General Coding executor" in gc_adapter, "GC Adapter 不得与 General Coding 竞争外层执行权。")
     assert_true(authorizer.exists(), "缺少可执行 Execution Authorization Gate。")
@@ -1041,6 +1053,9 @@ def test_progressive_constraint_loading_files_exist():
     assert_true("Planning Constraints" in workflow, "约束加载文档缺少 Planning。")
     assert_true("Execution Constraints" in workflow, "约束加载文档缺少 Execution。")
 
+    execution_constraints = read_text(".claude/skills/idc-workflow/references/constraints/execution/core-execution-constraints.yaml")
+    assert_true("tool_side_effects_are_not_evidence" in execution_constraints, "执行约束必须分类工具副作用：非 mutation、非 evidence、不得提交。")
+
 
 def test_e2e_tr3_d3a_demo_is_complete():
     required_files = [
@@ -1086,6 +1101,7 @@ def test_e2e_general_demo_is_complete():
         "examples/e2e-general-task/evidence/general-test-red.yaml",
         "examples/e2e-general-task/evidence/general-test-green.yaml",
         "examples/e2e-general-task/evidence/general-check-pass.yaml",
+        "examples/e2e-general-task/evidence/general-coverage.yaml",
         "examples/e2e-general-task/completion-summary.md",
     ]
     for file_name in required_files:
@@ -1104,6 +1120,8 @@ def test_e2e_general_demo_is_complete():
     assert_true("max_change_loc: 500" in plan, "General E2E execution unit 必须声明 500 LOC。")
     assert_true("general-test-red" in evidence, "General E2E demo 必须包含 RED evidence。")
     assert_true("general-test-green" in evidence, "General E2E demo 必须包含 GREEN evidence。")
+    assert_true("general-coverage" in evidence, "General E2E demo 必须包含 coverage evidence。")
+    assert_true("coverage_evidence_or_exemption: true" in completion, "General E2E completion 必须闭合 coverage 闸门。")
     assert_true("DONE" in completion, "General E2E demo 必须包含 completion summary。")
 
 
@@ -1618,6 +1636,7 @@ def test_gc_sop_and_original_repo_skill_adapters_exist():
         "The third original-repository skill is intentionally a placeholder",
         "evidence_ref_required: true",
         "<ENTERPRISE_GC_SOP_REF>",
+        "Do not silently relocate a declared artifact destination",
     ]:
         assert_true(fragment in gc, f"idc-gc-sop-adapter 缺少：{fragment}")
 
@@ -1761,6 +1780,7 @@ def test_user_questions_must_use_ask_user_tool():
     assert_true("所有问用户的问题" in claude and "AskUserTool" in claude, "CLAUDE.md 必须声明 AskUserTool 统一提问约束。")
     assert_true("AskUserTool Policy" in policy, "必须存在 AskUserTool policy。")
     assert_true("BLOCKED_NEEDS_ASK_USER_TOOL" in policy, "AskUserTool 不可用时必须阻塞。")
+    assert_true("AskUserQuestion" in policy and "宿主工具名映射" in policy, "AskUserTool policy 必须提供宿主工具名映射，不得按字面名找不到就阻塞。")
     assert_true("references/workflows/ask-user-tool-policy.md" in id_workflow, "idc-workflow 必须加载 AskUserTool policy。")
     assert_true("do not ask the user by plain text" in id_workflow, "idc-workflow 必须禁止普通文本追问。")
 
@@ -2124,6 +2144,22 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true("source: adapter-extension" in effective_text and "idc-team-api-review" in effective_text, "团队 adapter extension 必须进入有效候选池。")
         assert_true("registration_audit:" in effective_text and "status: PASS" in effective_text, "有效配置必须通过 Skill Registration Audit。")
         assert_true("fast-implement" in effective_text and "complex-plan" in effective_text, "每个 Lane 的 Skill 编排必须物化进有效配置。")
+
+        decision_without_lane = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "general"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(decision_without_lane.returncode == 0 and "status: READY" in decision_without_lane.stdout, f"decision 阶段不应强制 --lane：{decision_without_lane.stdout}")
+        assert_true("lane-resolver.md" in decision_without_lane.stdout, "decision 阶段必须加载 Lane Resolver。")
+        planning_without_lane = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "planning", "--domain", "general"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(planning_without_lane.returncode == 2 and "--lane is required" in planning_without_lane.stdout, "planning 起必须强制 --lane。")
 
         expected = {
             "fast": (1, ["coding_standard"]),
@@ -2691,6 +2727,20 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
                 text=True,
             )
             assert_true(verified.returncode == 0 and "status: VERIFIED" in verified.stdout, f"{scenario} Knowledge Consumption 未闭环：{verified.stdout}\n{verified.stderr}")
+
+            relative_receipt = Path(temp_dir) / f"{scenario}-relative-receipt.yaml"
+            relative_lines = "\n".join(f'    - "{ref[len(str(ROOT)) + 1:]}"' for ref in required_refs)
+            relative_receipt.write_text(
+                receipt.read_text(encoding="utf-8").replace(loaded_yaml, relative_lines),
+                encoding="utf-8",
+            )
+            relative_verified = subprocess.run(
+                ["ruby", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(relative_receipt)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            assert_true(relative_verified.returncode == 0 and "status: VERIFIED" in relative_verified.stdout, f"{scenario} 仓库相对路径回执必须与绝对路径计划等价（路径归一化）：{relative_verified.stdout}")
 
             if scenario == "d3a":
                 cross_layer_receipt = Path(temp_dir) / "d3a-cross-layer-receipt.yaml"

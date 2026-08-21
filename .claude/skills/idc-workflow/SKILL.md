@@ -164,14 +164,15 @@ Default user-facing output before approval is Alignment View, not raw `alignment
 ## Progressive context loading
 
 After bootstrap, generate a plan whenever the phase, Domain, Lane, or relevant
-signals change. For lane-applicable routes, pass `--lane`; omit it for D3A.
+signals change. Lane is an output of the decision phase: plan `decision`
+without `--lane` (the plan loads the Lane Resolver), resolve the lane, then
+pass `--lane` from `planning` onward. Omit it for D3A.
 
 ```sh
 ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
   --effective .idc/effective-team-config.yaml \
   --phase decision \
-  --domain general \
-  --lane fast
+  --domain general
 ```
 
 Supported phases are `bootstrap`, `decision`, `planning`, `execution`,
@@ -201,9 +202,13 @@ ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
   --phase execution \
   --domain general \
   --lane lite \
-  --selection .idc/capability-selection.yaml \
-  --knowledge-plan .idc/knowledge-load-plan.yaml
+  --selection .idc/capability-selection-<task>-<execution-unit>.yaml \
+  --knowledge-plan .idc/knowledge-load-plan-<task>-<execution-unit>.yaml
 ```
+
+Selection and knowledge plans are per-execution-unit artifacts: give them
+per-unit filenames so the next unit cannot overwrite the refs a Delegation
+Contract already cites.
 
 Execution planning rejects a missing, non-READY, or execution-unit-mismatched
 plan. Instruction refs, exact static knowledge refs, search scopes, and repo

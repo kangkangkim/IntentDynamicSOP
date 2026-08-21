@@ -54,6 +54,13 @@ Authorization also reads `knowledge_load_plan_ref` and verifies READY status,
 `knowledge_plan_id`, Domain, and execution-unit identity. A path string without
 a readable matching plan is not authorization evidence.
 
+The request's `allowed_paths` must cover every artifact destination declared by
+the selected atomic skills (their `expected_outputs` entries). If a declared
+destination falls outside `allowed_paths`, the gate returns `BLOCKED` with the
+path conflict: the planner either widens the authorization explicitly or
+re-plans the Context Packet. Executors must never silently re-home a declared
+artifact to a different location.
+
 After authorization, the main agent must perform a real dispatch. If dispatch
 tools are unavailable, return `BLOCKED_DELEGATION_REQUIRED`; do not implement
 directly.

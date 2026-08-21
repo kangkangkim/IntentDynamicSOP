@@ -13,8 +13,14 @@ evidence_summary:
     - id: general-check-pass
       status: PASS
       evidence_ref: examples/e2e-general-task/evidence/general-check-pass.yaml
+  coverage_evidence:
+    - id: general-coverage
+      status: COVERED
+      measure: simplified
+      evidence_ref: examples/e2e-general-task/evidence/general-coverage.yaml
   completion_gate:
     task_contract_satisfied: true
     verification_contract_satisfied: true
     required_tests_or_builds_pass: true
+    coverage_evidence_or_exemption: true
     completion_summary_exists: true

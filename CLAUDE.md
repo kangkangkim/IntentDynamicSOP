@@ -34,7 +34,7 @@
 9. API Contract 和 task contract 形成前，不要实现 production code。
 10. 没有 RED / GREEN evidence，不要标记 implementation complete。
 11. required DT domain 全部 GREEN 且 `tran_build` PASS 后，才能标记 D3A task done。
-12. 所有问用户的问题、确认、approval、re-alignment 和 escalation 决策，都必须通过 `AskUserTool` 发出；不要用普通文本直接追问用户。
+12. 所有问用户的问题、确认、approval、re-alignment 和 escalation 决策，都必须通过 `AskUserTool`（Claude Code 宿主中为 `AskUserQuestion`）发出；不要用普通文本直接追问用户。
 13. Main agent 是 `planning_and_delegation_only`。任何 Lane 的 repository mutation（代码、测试、构建文件、验证产物、targeted fix）都必须经过 Execution Authorization，并真实派发给 subagent / agent team / official dynamic workflow。
 14. General Domain 必须由 executor 加载 `idc-general-coding` 作为外层执行协议；`idc-gc-sop-adapter` 只能作为 Capability Selector 选中的内层原子能力。
 15. delegation tool 不可用时返回 `BLOCKED_DELEGATION_REQUIRED`，不得由 main agent 直接实现；Completion 必须检查 authorization ID、dispatch tool-call ref 和 executor session ref。

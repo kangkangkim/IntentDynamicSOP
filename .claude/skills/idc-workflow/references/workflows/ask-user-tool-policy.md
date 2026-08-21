@@ -36,10 +36,23 @@ ask_user_tool:
       why_needed: "<why the workflow cannot continue without this answer>"
 ```
 
+## 宿主工具名映射
+
+`AskUserTool` 是 harness 层的契约名，不要求宿主工具字面同名。宿主绑定示例：
+
+```text
+Claude Code -> AskUserQuestion
+```
+
+按工具契约语义解析宿主工具：凡是「向用户发出带选项 / approval 语义的交互
+提问，并阻塞等待回答」的工具即满足本 policy。只有当宿主确实不存在语义
+等价工具时，才返回 `BLOCKED_NEEDS_ASK_USER_TOOL`；不得因为字面名字找不到
+而阻塞。
+
 ## 规则
 
 - 不允许把问题只写在普通 prose 里等用户自由回复。
 - 不允许在 final prose 里请求 approval；approval 必须是 `AskUserTool` 事件。
 - 不允许把 `AskUserTool` 的问题埋进完整 YAML 给用户看。
 - Human View 的问题卡是展示模板，`AskUserTool` 是交互出口。
-- 如果当前环境没有可用的 `AskUserTool`，返回 `BLOCKED_NEEDS_ASK_USER_TOOL`，不要继续伪造用户确认。
+- 如果当前环境没有可用的 `AskUserTool`（按「宿主工具名映射」语义解析后仍无等价工具），返回 `BLOCKED_NEEDS_ASK_USER_TOOL`，不要继续伪造用户确认。

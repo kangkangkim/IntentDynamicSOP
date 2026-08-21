@@ -2,3 +2,5 @@
 .claude/settings.local.json
 team-config.yaml
 .idc/
+.cache/
+demo-project/

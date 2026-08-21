@@ -223,6 +223,10 @@ skill_adapters:
 
 rules:
   - Adapter selection is registry-driven, not name-driven.
+  - This registry decides adapter admission (class, status, confidentiality
+    boundary). Runtime reachability is decided separately by effective
+    team-config bindings plus the Capability Selector; the two registries are
+    complementary views, not duplicate sources of truth.
   - Match by capability_keys, allowed_stages, requires, and blocks_when.
   - If no registry row matches, return NEEDS_ADAPTER_MAPPING.
   - Placeholder adapters must return executable: false.

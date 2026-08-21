@@ -114,3 +114,6 @@ rules:
   - DONE 判断只能由 main agent 基于 workflow gates 和工具 evidence 完成。
   - Provider finding 不能替代 tool evidence。
   - 单个 execution unit 代码变更必须 <= 500 LOC。
+  - `allowed_paths` 必须覆盖 selected_atomic_skill_refs 声明的 artifact
+    destination（expected_outputs 路径）；冲突时 BLOCKED 并显式 widen 授权或
+    re-plan，不得执行期改写产物落点。

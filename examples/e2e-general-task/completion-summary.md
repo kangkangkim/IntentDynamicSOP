@@ -12,12 +12,14 @@ Status: DONE
 - RED: `examples/e2e-general-task/evidence/general-test-red.yaml`
 - GREEN: `examples/e2e-general-task/evidence/general-test-green.yaml`
 - GENERAL_CHECK_PLACEHOLDER: `examples/e2e-general-task/evidence/general-check-pass.yaml`
+- Coverage (simplified, changed files fully exercised): `examples/e2e-general-task/evidence/general-coverage.yaml`
 
 ## Completion Gate
 
 - task_contract_satisfied: true
 - verification_contract_satisfied: true
 - required_tests_or_builds_pass: true
+- coverage_evidence_or_exemption: true
 - completion_summary_exists: true
 
 This mock example does not contain real enterprise code, paths, commands, or logs.

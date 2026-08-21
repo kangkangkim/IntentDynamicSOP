@@ -101,7 +101,11 @@ gc_atomic_handoff:
   layer_context_packet_ref: string
   allowed_paths: []
   forbidden_paths: []
-  expected_outputs: []
+  # Each entry declares {kind, path}; every declared path must be covered by
+  # allowed_paths. A conflict returns BLOCKED, never silent re-homing.
+  expected_outputs:
+    - kind: string
+      path: string
   evidence_ref_required: true
 ```
 
@@ -126,6 +130,8 @@ gc_atomic_result:
   substitute for `idc-general-coding`.
 - Do not let main agent invoke GC atoms to perform repository mutations.
 - Do not execute unmapped GC atoms.
+- Do not silently relocate a declared artifact destination outside authorized
+  `allowed_paths`; return `BLOCKED` with the path conflict instead.
 - Do not execute every configured GC atom; only run the minimal sufficient set selected for the current stage.
 - Do not expose real GC SOP content in this external harness.
 - Keep all enterprise paths, commands, logs, test names, and APIs as placeholders outside the confidential zone.

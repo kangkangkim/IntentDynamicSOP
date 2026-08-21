@@ -163,7 +163,7 @@ if options[:domain] == "custom"
   lane_applicable = custom_lane_mode != "not_applicable"
   options[:lane] ||= effective.dig("domain", "lane_policy", "selected_lane") if custom_lane_mode == "fixed"
 end
-if lane_applicable && %w[decision planning execution completion].include?(options[:phase]) && !options[:lane]
+if lane_applicable && %w[planning execution completion].include?(options[:phase]) && !options[:lane]
   fail_plan("--lane is required for a lane-applicable domain")
 end
 
@@ -181,9 +181,9 @@ if options[:domain] == "custom"
   refs << custom_ref if custom_ref
 end
 
+refs << ".claude/skills/idc-workflow/references/workflows/lane-resolver.md" if lane_applicable && options[:domain] == "custom" && options[:phase] == "decision"
 if lane_applicable && options[:lane] && %w[decision planning execution completion].include?(options[:phase])
   refs << ".claude/skills/idc-workflow/references/lanes/#{options[:lane]}.yaml"
-  refs << ".claude/skills/idc-workflow/references/workflows/lane-resolver.md" if options[:domain] == "custom" && options[:phase] == "decision"
 end
 
 unknown_signals = options[:signals] - SIGNAL_REFS.keys
