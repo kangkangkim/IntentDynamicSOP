@@ -33,12 +33,30 @@ effective_team_config:
   lane:
     default: fast | lite | complex
     profiles: {}
+  # alignment is materialized with the shape defined by the top-level
+  # alignment section below.
   capability_selection: {}
   self_optimization: {}
   readiness:
     status: READY | INVALID
     errors: []
     warnings: []
+
+# Shape of the materialized pre-alignment pipeline. The Resolver emits it as
+# the alignment section of effective_team_config, including the framework
+# default chain fallback when team-config.yaml has no alignment section.
+alignment:
+  source: configured | framework-default
+  bindings:
+    capability_name:
+      skill_ref: skill_ref
+  orchestration:
+    mode: ordered
+    steps:
+      - id: string
+        stage: discovery | divergence | clarification | alignment_check
+        skill_ids: []
+        trigger_signals: []
 
 rules:
   - This file is generated and must never be edited manually.

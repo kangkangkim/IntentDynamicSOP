@@ -170,3 +170,42 @@ self_optimization:
   team_overlay_ref: null
   promotion_requires_human_alignment: true
   auto_modify_core: false
+
+# Pre-alignment pipeline (optional). Mirrors the lane orchestration shape and
+# configures intent-processing steps only: Scenario Router, Contract Gate,
+# Human Alignment approval, and completion ownership are not configurable
+# through it. A missing section (or missing bindings / orchestration) falls
+# back to the framework default five-step chain below with no other output
+# difference. The alignment_check step (Human Alignment gate) cannot be
+# removed; teams may rebind its skill_ref only. raw_idea and
+# critical_gaps_remain form the framework signal floor.
+alignment:
+  bindings:
+    intent_discovery: {skill_ref: .claude/skills/idc-intent-discovery/SKILL.md}
+    brainstorming: {skill_ref: .claude/skills/idc-brainstorming/SKILL.md}
+    intent_grilling: {skill_ref: .claude/skills/idc-intent-grilling/SKILL.md}
+    intent_grilling_with_docs: {skill_ref: .claude/skills/idc-intent-grilling-with-docs/SKILL.md}
+    intent_alignment: {skill_ref: .claude/skills/idc-intent-alignment/SKILL.md}
+  orchestration:
+    mode: ordered # ordered only; every framework stage requires a step mapping
+    steps:
+      - id: alignment-discovery
+        stage: discovery
+        skill_ids: [intent_discovery]
+        trigger_signals: [raw_idea]
+      - id: alignment-brainstorming
+        stage: divergence
+        skill_ids: [brainstorming]
+        trigger_signals: [alternatives_needed]
+      - id: alignment-grilling
+        stage: clarification
+        skill_ids: [intent_grilling]
+        trigger_signals: [critical_gaps_remain]
+      - id: alignment-grilling-with-docs
+        stage: clarification
+        skill_ids: [intent_grilling_with_docs]
+        trigger_signals: [docs_clarification_required]
+      - id: alignment-check
+        stage: alignment_check
+        skill_ids: [intent_alignment]
+        trigger_signals: [] # always runs; framework-owned Human Alignment gate

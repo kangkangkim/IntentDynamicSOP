@@ -255,6 +255,137 @@ end
   end
 end
 
+alignment_default_bindings = {
+  "intent_discovery" => { "skill_ref" => ".claude/skills/idc-intent-discovery/SKILL.md" },
+  "brainstorming" => { "skill_ref" => ".claude/skills/idc-brainstorming/SKILL.md" },
+  "intent_grilling" => { "skill_ref" => ".claude/skills/idc-intent-grilling/SKILL.md" },
+  "intent_grilling_with_docs" => { "skill_ref" => ".claude/skills/idc-intent-grilling-with-docs/SKILL.md" },
+  "intent_alignment" => { "skill_ref" => ".claude/skills/idc-intent-alignment/SKILL.md" }
+}
+alignment_default_steps = [
+  { "id" => "alignment-discovery", "stage" => "discovery", "skill_ids" => ["intent_discovery"], "trigger_signals" => ["raw_idea"] },
+  { "id" => "alignment-brainstorming", "stage" => "divergence", "skill_ids" => ["brainstorming"], "trigger_signals" => ["alternatives_needed"] },
+  { "id" => "alignment-grilling", "stage" => "clarification", "skill_ids" => ["intent_grilling"], "trigger_signals" => ["critical_gaps_remain"] },
+  { "id" => "alignment-grilling-with-docs", "stage" => "clarification", "skill_ids" => ["intent_grilling_with_docs"], "trigger_signals" => ["docs_clarification_required"] },
+  { "id" => "alignment-check", "stage" => "alignment_check", "skill_ids" => ["intent_alignment"], "trigger_signals" => [] }
+]
+alignment_required_stages = %w[discovery divergence clarification alignment_check]
+alignment_signal_floor = %w[raw_idea critical_gaps_remain]
+
+alignment_section = config["alignment"]
+alignment_bindings_config = nil
+alignment_orchestration_config = nil
+if !alignment_section.nil? && !alignment_section.is_a?(Hash)
+  errors << "alignment must be a mapping"
+elsif alignment_section.is_a?(Hash)
+  alignment_bindings_config = alignment_section["bindings"]
+  alignment_orchestration_config = alignment_section["orchestration"]
+  if !alignment_bindings_config.nil? && !alignment_bindings_config.is_a?(Hash)
+    errors << "alignment.bindings must be a mapping"
+    alignment_bindings_config = nil
+  end
+  if !alignment_orchestration_config.nil? && !alignment_orchestration_config.is_a?(Hash)
+    errors << "alignment.orchestration must be a mapping"
+    alignment_orchestration_config = nil
+  end
+end
+
+if alignment_bindings_config.nil? || alignment_orchestration_config.nil?
+  # Missing alignment section, bindings, or orchestration falls back to the
+  # framework default chain. No warning is recorded so an unconfigured team's
+  # resolve output changes only by the materialized alignment section.
+  alignment_bindings = alignment_default_bindings.transform_values(&:dup)
+  alignment_bindings.each do |key, binding|
+    default_ref = binding["skill_ref"]
+    resolved_ref = resolve_file_ref(default_ref, team_root, harness_root)
+    unless Pathname.new(resolved_ref).file?
+      errors << "alignment.bindings.#{key}.skill_ref does not exist: #{default_ref} (resolved to #{resolved_ref})"
+    end
+    binding["skill_ref"] = resolved_ref
+  end
+  alignment_effective = {
+    "source" => "framework-default",
+    "bindings" => alignment_bindings,
+    "orchestration" => { "mode" => "ordered", "steps" => alignment_default_steps.map(&:dup) }
+  }
+else
+  alignment_bindings = {}
+  alignment_bindings_config.each do |key, binding|
+    path = "alignment.bindings.#{key}"
+    unless binding.is_a?(Hash)
+      errors << "#{path} must be a mapping"
+      next
+    end
+    original_ref = binding["skill_ref"]
+    unless present?(original_ref)
+      errors << "#{path}.skill_ref is required"
+      next
+    end
+    unless original_ref.to_s.match?(%r{^\.claude/skills/idc-[a-z0-9-]+/SKILL\.md$})
+      errors << "#{path}.skill_ref must bind a .claude/skills/idc-*/SKILL.md ref (idc- prefix discipline): #{original_ref}"
+      next
+    end
+    resolved_ref = resolve_file_ref(original_ref, team_root, harness_root)
+    unless Pathname.new(resolved_ref).file?
+      errors << "#{path}.skill_ref does not exist: #{original_ref} (resolved to #{resolved_ref})"
+    end
+    binding["skill_ref"] = resolved_ref
+    alignment_bindings[key] = binding
+  end
+
+  errors << "alignment.orchestration.mode must be ordered" unless alignment_orchestration_config["mode"] == "ordered"
+  alignment_steps = alignment_orchestration_config["steps"]
+  unless alignment_steps.is_a?(Array)
+    errors << "alignment.orchestration.steps must be a list"
+    alignment_steps = []
+  end
+  errors << "alignment.orchestration.steps must not be empty" if alignment_steps.empty?
+  alignment_step_ids = []
+  alignment_steps.each_with_index do |step, index|
+    path = "alignment.orchestration.steps[#{index}]"
+    unless step.is_a?(Hash)
+      errors << "#{path} must be a mapping"
+      next
+    end
+    errors << "#{path}.id is required" unless present?(step["id"])
+    errors << "#{path}.id is duplicated" if present?(step["id"]) && alignment_step_ids.include?(step["id"])
+    alignment_step_ids << step["id"] if present?(step["id"])
+    errors << "#{path}.stage is required" unless present?(step["stage"])
+    errors << "#{path}.skill_ids must not be empty" unless present?(step["skill_ids"])
+    errors << "#{path}.skill_ids must be a list" unless step["skill_ids"].is_a?(Array)
+    errors << "#{path}.trigger_signals must be a list" unless step["trigger_signals"].is_a?(Array)
+    Array(step["skill_ids"]).each do |skill_id|
+      bound = alignment_bindings[skill_id]
+      unless bound.is_a?(Hash) && present?(bound["skill_ref"])
+        errors << "#{path}.skill_ids references #{skill_id} without an alignment.bindings entry: NEEDS_TEAM_CONFIG"
+      end
+    end
+  end
+
+  alignment_covered_stages = alignment_steps.map { |step| step.is_a?(Hash) && present?(step["stage"]) ? step["stage"] : nil }.compact.uniq
+  alignment_required_stages.each do |required_stage|
+    next if alignment_covered_stages.include?(required_stage)
+    if required_stage == "alignment_check"
+      errors << "alignment.orchestration stage alignment_check cannot be removed; rebind alignment.bindings.intent_alignment.skill_ref instead"
+    else
+      errors << "alignment.orchestration NEEDS_ORCHESTRATION_MAPPING: ordered mode has no step for stage #{required_stage}"
+    end
+  end
+
+  alignment_covered_signals = alignment_steps.flat_map { |step| step.is_a?(Hash) && step["trigger_signals"].is_a?(Array) ? step["trigger_signals"] : [] }
+  alignment_signal_floor.each do |required_signal|
+    unless alignment_covered_signals.include?(required_signal)
+      errors << "alignment.orchestration.trigger_signals must cover the framework signal floor: #{required_signal}"
+    end
+  end
+
+  alignment_effective = {
+    "source" => "configured",
+    "bindings" => alignment_bindings,
+    "orchestration" => { "mode" => "ordered", "steps" => alignment_steps }
+  }
+end
+
 capability_selection = config["capability_selection"]
 if capability_selection.nil?
   capability_selection = {
@@ -651,6 +782,7 @@ effective = {
   "knowledge" => config["knowledge"],
   "knowledge_catalog" => knowledge_catalog,
   "lane" => { "default" => lane_default, "profiles" => lane_profiles },
+  "alignment" => alignment_effective,
   "capability_selection" => capability_selection,
   "self_optimization" => self_optimization,
   "readiness" => {

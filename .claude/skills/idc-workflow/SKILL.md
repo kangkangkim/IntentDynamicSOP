@@ -100,19 +100,32 @@ Default mode:
 references/workflows/input-adapter.md
   -> Intent Maturity Router
   -> references/workflows/scenario-router.md
-  -> idc-intent-discovery if raw_idea
   -> references/workflows/domain-module-router.md if DOMAIN_MODULE
   -> apply module lane applicability policy (D3A => not_applicable)
   -> references/workflows/lane-resolver.md only for lane-applicable dynamic modules / scenarios
   -> references/workflows/contract-gate.md
-  -> idc-intent-alignment as Human Alignment Check
-  -> idc-brainstorming if alternatives are needed
-  -> idc-intent-grilling if critical gaps remain
-  -> idc-intent-grilling-with-docs if clarification must update docs
+  -> run pre-alignment from `effective.alignment.orchestration.steps` in `.idc/effective-team-config.yaml`:
+       for each ordered step, invoke the skill bound to its `skill_ids` when its
+       `trigger_signal` fires; the `alignment_check` step's bound skill is the
+       Human Alignment Check. An absent or partial alignment section runs the
+       framework default five-step chain with no other output difference. Never
+       select a pre-alignment skill by a hardcoded signal→skill mapping.
   -> Alignment Pack
-  -> idc-intent-alignment for Human Alignment approval
+  -> Human Alignment approval via AskUserTool; the approving skill is the `alignment_check` step's bound skill (no hardcoded name)
   -> references/human-views/
 ```
+
+The intent-processing steps above are driven by the effective alignment
+pipeline materialized in `.idc/effective-team-config.yaml` from
+`team-config.yaml` (`alignment:` key; shape in
+`references/schemas/team-config.schema.yaml`):
+
+```yaml
+alignment:
+```
+An absent or partial section (missing `bindings`/`orchestration`) falls back
+to the framework default chain above; only intent skills may be rebound or
+reordered. Router, gate, and approval ownership is framework-owned.
 
 After the user approves:
 
@@ -194,7 +207,10 @@ Continue only when `context_load_plan.status: READY`, then read exactly its
 `references/schemas/context-load-plan.schema.yaml`.
 
 For execution, persist READY Capability and Knowledge plans for the same
-execution unit, then bind both to the Context Load Plan:
+execution unit, then bind both to the Context Load Plan. Per-run products
+persist under `.idc/runs/<task-id>/attempt-<n>/`: `attempt-<n>` increments on
+every invocation of the same task and is never silently overwritten;
+`.idc/effective-team-config.yaml` is the only top-level global exception.
 
 ```sh
 ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
@@ -202,13 +218,15 @@ ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
   --phase execution \
   --domain general \
   --lane lite \
-  --selection .idc/capability-selection-<task>-<execution-unit>.yaml \
-  --knowledge-plan .idc/knowledge-load-plan-<task>-<execution-unit>.yaml
+  --selection .idc/runs/<task-id>/attempt-<n>/capability-selection-<execution-unit>.yaml \
+  --knowledge-plan .idc/runs/<task-id>/attempt-<n>/knowledge-load-plan-<execution-unit>.yaml
 ```
 
 Selection and knowledge plans are per-execution-unit artifacts: give them
 per-unit filenames so the next unit cannot overwrite the refs a Delegation
-Contract already cites.
+Contract already cites. All per-run products are collected under
+`.idc/runs/<task-id>/attempt-<n>/`; a re-run increments the attempt
+subdirectory to keep versions and never silently overwrites.
 
 Execution planning rejects a missing, non-READY, or execution-unit-mismatched
 plan. Instruction refs, exact static knowledge refs, search scopes, and repo
@@ -239,13 +257,12 @@ Consumption Receipt for the authorized `knowledge_plan_id`.
 - Team-specific paths, knowledge refs, and internal skill refs (including DT design / writing / build skills) must be supplied through `team-config.yaml`; real build commands live inside the bound skill, never in the config. Use `team-config.yaml.template` as the fill-parameters entrypoint.
 - Registries (`dt-domains.yaml`, `general-components.yaml`, `general-test-domains.yaml`) are repo read-only defaults; a non-empty team-config list (`domain.d3a.dt_domains`, `general.components`, `general.test_domains`) replaces the registry wholesale — never merge sources.
 - Original repository DT skills are represented as adapters: `idc-dt-design` for DT design, `idc-dt-writer` for DT writing, and `idc-gc-third-skill-placeholder` until the third skill is named in the confidential zone.
-- Use `upstream-superpowers-brainstorming` as the `raw_idea` baseline, then apply `idc-brainstorming-overlay` before handoff to `idc-intent-grilling`.
+- Use `upstream-superpowers-brainstorming` as the `raw_idea` baseline, then apply `idc-brainstorming-overlay` before handoff to the configured clarification skill.
 - Skip Discovery Provider for TR3 unless the TR3 is too incomplete to identify behavior.
 - Before first confidential-zone D3A execution, run Vertical Slice Readiness Gate and require all required readiness checks PASS.
 - Clarification Provider only asks for critical missing information needed for contracts, scope, or completion gates.
-- Prefer `grill-me-method` for clarification: decision tree, frontier rounds, commitment check, no implementation.
-- Use `idc-intent-grilling-with-docs` and `grill-with-docs-method` only when clarification should create non-sensitive decision records.
-- Fallback to `builtin-critical-questions` if Grill Me method is unavailable or too expensive.
+- The clarification skill configured in `effective.alignment` may apply `grill-me-method` internally (decision tree, frontier rounds, commitment check, no implementation).
+- If `grill-me-method` is unavailable, fall back to `builtin-critical-questions` as the method **inside the same configured clarification skill**; never skip invoking the configured clarification skill or substitute a non-configured one.
 - All Lanes must self-close with evidence.
 - Treat Fast as an evidence-backed small-change path: absent or unknown signals never satisfy Fast conditions; a tiny localized production-code change may be Fast only when no new test code is needed and existing verification can close it. New capabilities, behavior-contract changes, new/changed tests, multi-file or multi-component work, focused design, broad repo exploration, or unknown scope must be at least Lite unless a Complex hard trigger applies.
 - `fast` does not mean "no verification"; it means small closure.
@@ -263,6 +280,8 @@ Consumption Receipt for the authorized `knowledge_plan_id`.
   refs and provider/search results require a VERIFIED consumption receipt.
 - Keep enterprise details as placeholders outside the confidential environment.
 - All user-facing questions, approvals, re-alignment choices, and escalation decisions must be emitted through `AskUserTool` according to `references/workflows/ask-user-tool-policy.md`; do not ask the user by plain text.
+- The alignment pipeline (`team-config.yaml.alignment`) configures only the intent-processing steps before approval: it may rebind or reorder pre-alignment skills with ordered stage mappings. Scenario Router, Contract Gate, Human Alignment approval, and completion ownership stay framework-owned and are not configurable through it.
+- Run pre-alignment from the effective alignment pipeline in `.idc/effective-team-config.yaml`. An absent or partial alignment section (missing `bindings` or `orchestration`) falls back to the framework default five-step chain with no other output difference; never merge team overrides with the framework default chain ad hoc.
 
 ## Output modes
 

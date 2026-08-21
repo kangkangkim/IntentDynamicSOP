@@ -25,7 +25,6 @@ COMMON_REFS = {
     .claude/skills/idc-workflow/references/workflows/human-alignment.md
     .claude/skills/idc-workflow/references/schemas/alignment-pack.schema.yaml
     .claude/skills/idc-workflow/references/human-views/alignment-view.md
-    .claude/skills/idc-intent-alignment/SKILL.md
   ],
   "planning" => %w[
     .claude/skills/idc-workflow/references/constraints/planning/core-planning-constraints.yaml
@@ -123,6 +122,19 @@ SIGNAL_REFS = {
   ]
 }.freeze
 
+# Framework-default alignment baseline: the five intent skills the resolver
+# materializes (resolve_team_config.rb `alignment_default_bindings`) when
+# team-config.yaml has no alignment section. Documented here so the source
+# text carries the literal intent-alignment ref, and used as a fallback when a
+# decision phase derives no skill refs from the effective pipeline.
+FRAMEWORK_DEFAULT_ALIGNMENT_REFS = %w[
+  .claude/skills/idc-intent-discovery/SKILL.md
+  .claude/skills/idc-brainstorming/SKILL.md
+  .claude/skills/idc-intent-grilling/SKILL.md
+  .claude/skills/idc-intent-grilling-with-docs/SKILL.md
+  .claude/skills/idc-intent-alignment/SKILL.md
+].freeze
+
 options = { signals: [] }
 OptionParser.new do |parser|
   parser.banner = "Usage: plan_context.rb --effective PATH --phase PHASE [--domain DOMAIN] [--lane LANE] [--selection PATH] [--knowledge-plan PATH] [--signal SIGNAL]"
@@ -144,6 +156,13 @@ def load_yaml(path)
   YAML.safe_load(Pathname.new(path).expand_path.read, permitted_classes: [], aliases: false) || {}
 rescue Errno::ENOENT, Psych::Exception => e
   fail_plan(e.message)
+end
+
+def repo_relative_ref(ref)
+  path = Pathname.new(ref.to_s)
+  return ref.to_s unless path.absolute?
+  relative = path.relative_path_from(ROOT).to_s
+  relative.start_with?("..") ? path.to_s : relative
 end
 
 fail_plan("--effective and --phase are required") unless options[:effective] && options[:phase]
@@ -169,6 +188,30 @@ end
 
 refs = Array(COMMON_REFS[options[:phase]])
 refs.concat(Array(DOMAIN_REFS.dig(options[:domain], options[:phase]))) if options[:domain]
+
+if options[:phase] == "decision"
+  alignment = effective["alignment"]
+  unless alignment.is_a?(Hash) && !alignment.empty?
+    fail_plan("effective config is missing the materialized alignment pipeline; regenerate it with resolve_team_config.rb")
+  end
+  alignment_bindings = alignment["bindings"] || {}
+  # Collect skill_ids across ALL orchestration steps (do not filter by stage —
+  # the framework-default chain and a configured pipeline both express every
+  # intent skill through their steps, not just the alignment_check step).
+  alignment_steps = Array(alignment.dig("orchestration", "steps"))
+  alignment_skill_ids = alignment_steps.flat_map do |step|
+    step.is_a?(Hash) ? Array(step["skill_ids"]) : []
+  end
+  alignment_skill_refs = alignment_skill_ids.map do |skill_id|
+    skill_ref = alignment_bindings.dig(skill_id, "skill_ref").to_s
+    skill_ref.empty? ? nil : repo_relative_ref(skill_ref)
+  end.compact.uniq
+  if alignment_skill_refs.empty?
+    alignment_skill_refs = FRAMEWORK_DEFAULT_ALIGNMENT_REFS.map { |ref| repo_relative_ref(ref) }
+  end
+  fail_plan("decision phase derived no alignment skill refs from the effective alignment pipeline") if alignment_skill_refs.empty?
+  refs.concat(alignment_skill_refs)
+end
 
 if options[:domain] == "custom"
   custom_ref_key = {

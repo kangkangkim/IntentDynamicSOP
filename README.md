@@ -70,16 +70,29 @@ Team Config
 
 Generated Runtime
   框架生成：.idc/effective-team-config.yaml
-  单元选择：.idc/capability-selection-<task>-<execution-unit>.yaml
-  知识选择：.idc/knowledge-load-plan-<task>-<execution-unit>.yaml
+  单元选择：.idc/runs/<task-id>/attempt-<n>/capability-selection-<execution-unit>.yaml
+  知识选择：.idc/runs/<task-id>/attempt-<n>/knowledge-load-plan-<execution-unit>.yaml
   阶段加载：context_load_plan.required_refs
   只读，不是第二配置入口
 ```
 
-单元选择与知识选择是 per-execution-unit 产物，必须使用带 task 和
+单元选择与知识选择是 per-execution-unit 产物，必须使用带
 execution-unit 的文件名，避免下一个执行单元覆写 Delegation Contract 已经
-引用的 ref；`.idc/effective-team-config.yaml` 是唯一例外（全局配置、原子
-再生、带 source_sha256）。
+引用的 ref；所有 per-run 产物收进 `.idc/runs/<task-id>/attempt-<n>/`，
+重跑用递增的 attempt 子目录留版本、不静默覆盖；`.idc/effective-team-config.yaml`
+是唯一例外（全局配置、原子再生、带 source_sha256）。
+
+`team-config.yaml` 的可选顶层 `alignment` 段把 pre-alignment 意图加工链做成可配置管线（与 Lane 编排同形状）：
+
+```yaml
+alignment:
+  bindings: # 能力键 -> {skill_ref: .claude/skills/idc-*/SKILL.md}
+  orchestration:
+    mode: ordered
+    steps: # id / stage / skill_ids / trigger_signals
+```
+
+未配置该段（或缺 `bindings` / `orchestration`）时回落框架默认五步链，行为与现状等价；该段只能编排意图加工步骤（可 rebind skill、可要求 ordered stage 全映射），Scenario Router、Contract Gate、Human Alignment approval 与 completion 所有权归框架、不可配置。Resolver 以有界错误校验：step 引用未绑定 skill 返回 `NEEDS_TEAM_CONFIG`，ordered 缺 stage 映射返回 `NEEDS_ORCHESTRATION_MAPPING`，`alignment_check` step 不可删除，`raw_idea` / `critical_gaps_remain` 信号下限必须被覆盖。
 
 推荐复用方式：
 
@@ -189,7 +202,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module（`references/d
 - `.claude/skills/idc-workflow/assets/README.md`：asset / reference 边界说明。
 - `.claude/skills/idc-workflow/references/registries/`：固定 D3A Layer、DT Domain、General placeholder taxonomy、Skill Adapter registry；企业接入方只读，通过 team-config 非空列表整体覆盖。
 - `.claude/skills/idc-team-config/`：单配置校验、preflight、有效配置生成、Capability Selector、Knowledge Planner、Consumption Verifier 和分阶段 Context Load Plan 的可执行实现。
-- `team-config.yaml.template`：唯一团队入口，收敛 Domain、registries、skill bindings、adapter extensions、knowledge、Lane capability profile 和自优化策略。
+- `team-config.yaml.template`：唯一团队入口，收敛 Domain、registries、skill bindings、adapter extensions、knowledge、Lane capability profile、可选 alignment 管线和自优化策略。
 - `.claude/agents/`：`d3a-layer-coder`、`dt-test-writer`、`build-error-analyzer`、`general-coder` subagent 定义。
 - `examples/`：mock D3A、E2E TR3 D3A、E2E General 三个非敏感 walkthrough。
 - `test/`：可复制到 Claude Code 手动体验的场景卡。

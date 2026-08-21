@@ -359,9 +359,11 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     assert_true("team-config.yaml.template" in README, "README 必须记录统一 team config 入口。")
     assert_true("team-config.yaml" in gitignore, "真实 team-config.yaml 必须被 git ignore。")
     assert_true(".cache/" in gitignore, "工具生成的 cache/index 必须被 git ignore。")
-    assert_true("capability-selection-<task>-<execution-unit>.yaml" in id_workflow, "idc-workflow 必须使用 per-EU selection 文件名。")
+    assert_true(".idc/runs/<task-id>/attempt-<n>/" in id_workflow, "idc-workflow 必须把 per-run 产物收进 .idc/runs/<task-id>/attempt-<n>/ 目录。")
+    assert_true("capability-selection-<execution-unit>.yaml" in id_workflow, "idc-workflow 必须使用 per-EU selection 文件名。")
     team_config_skill = read_text(".claude/skills/idc-team-config/SKILL.md")
-    assert_true("capability-selection-<task>-<execution-unit>.yaml" in team_config_skill, "idc-team-config 必须声明 per-EU 产物文件名规则。")
+    assert_true(".idc/runs/<task-id>/attempt-<n>/" in team_config_skill, "idc-team-config 必须把 per-run 产物收进 .idc/runs/<task-id>/attempt-<n>/ 目录。")
+    assert_true("capability-selection-<execution-unit>.yaml" in team_config_skill, "idc-team-config 必须声明 per-EU 产物文件名规则。")
     assert_true("decides adapter admission" in adapter_registry, "Skill Adapter registry 必须声明自己管 admission，运行时可达性由 effective config 决定。")
     for fragment in [
         "config_version: 1",
@@ -2216,6 +2218,296 @@ def test_lane_profiles_use_ordered_mode():
     )
 
 
+ALIGNMENT_PIPELINE_STEPS = [
+    ("alignment-discovery", "discovery", "intent_discovery", "raw_idea"),
+    ("alignment-brainstorming", "divergence", "brainstorming", "alternatives_needed"),
+    ("alignment-grilling", "clarification", "intent_grilling", "critical_gaps_remain"),
+    ("alignment-grilling-with-docs", "clarification", "intent_grilling_with_docs", "docs_clarification_required"),
+    ("alignment-check", "alignment_check", "intent_alignment", None),
+]
+
+ALIGNMENT_SKILL_REFS = {
+    "intent_discovery": ".claude/skills/idc-intent-discovery/SKILL.md",
+    "brainstorming": ".claude/skills/idc-brainstorming/SKILL.md",
+    "intent_grilling": ".claude/skills/idc-intent-grilling/SKILL.md",
+    "intent_grilling_with_docs": ".claude/skills/idc-intent-grilling-with-docs/SKILL.md",
+    "intent_alignment": ".claude/skills/idc-intent-alignment/SKILL.md",
+}
+
+
+def build_alignment_section(bindings=None, steps=None, mode="ordered"):
+    if bindings is None:
+        bindings = ALIGNMENT_SKILL_REFS
+    if steps is None:
+        steps = ALIGNMENT_PIPELINE_STEPS
+    lines = ["", "alignment:", "  bindings:"]
+    for capability, skill_ref in bindings.items():
+        lines.append(f"    {capability}: {{skill_ref: {skill_ref}}}")
+    lines.append("  orchestration:")
+    lines.append(f"    mode: {mode}")
+    lines.append("    steps:")
+    for step_id, stage, skill_id, signal in steps:
+        signals = f"[{signal}]" if signal else "[]"
+        lines.append(f"      - id: {step_id}")
+        lines.append(f"        stage: {stage}")
+        lines.append(f"        skill_ids: [{skill_id}]")
+        lines.append(f"        trigger_signals: {signals}")
+    return "\n".join(lines) + "\n"
+
+
+def write_alignment_config(temp_dir, name, section_text):
+    config_path = Path(temp_dir) / name
+    config_path.write_text(
+        (ROOT / "examples/team-config.full-bindings.yaml").read_text(encoding="utf-8") + section_text,
+        encoding="utf-8",
+    )
+    return config_path
+
+
+def run_alignment_resolver(config_path, output_path=None):
+    command = ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"), "--config", str(config_path)]
+    command += ["--output", str(output_path)] if output_path is not None else ["--check"]
+    return subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+
+
+def has_top_level_alignment(text):
+    return re.search(r"^alignment:$", text, flags=re.MULTILINE) is not None
+
+
+def test_alignment_pipeline_config_shape_mirrors_lane_profiles():
+    template = read_text("team-config.yaml.template")
+    schema = read_text(".claude/skills/idc-workflow/references/schemas/team-config.schema.yaml")
+
+    assert_true(has_top_level_alignment(template), "team-config.yaml.template 必须提供顶层 alignment 段。")
+    remainder = "alignment:\n" + re.split(r"^alignment:$", template, flags=re.MULTILINE)[1]
+    alignment = yaml.safe_load(remainder)["alignment"]
+    assert_true("bindings" in alignment, "alignment 段缺少 bindings。")
+    assert_true("orchestration" in alignment, "alignment 段缺少 orchestration。")
+    bindings = alignment["bindings"]
+    assert_true(set(bindings) == set(ALIGNMENT_SKILL_REFS), f"alignment.bindings 能力键漂移：{sorted(bindings)}。")
+    for capability, skill_ref in ALIGNMENT_SKILL_REFS.items():
+        assert_true(bindings[capability].get("skill_ref") == skill_ref, f"alignment.bindings.{capability} 默认绑定漂移。")
+    for capability, binding in bindings.items():
+        assert_true(
+            re.match(r"^\.claude/skills/idc-[a-z0-9-]+/SKILL\.md$", binding.get("skill_ref") or "") is not None,
+            f"alignment.bindings.{capability} 必须绑定 .claude/skills/idc-*/SKILL.md 形态的 skill ref。",
+        )
+    orchestration = alignment["orchestration"]
+    assert_true(orchestration.get("mode") == "ordered", "alignment.orchestration.mode 默认必须是 ordered。")
+    serialized_steps = [
+        (step.get("id"), step.get("stage"), step.get("skill_ids"), step.get("trigger_signals"))
+        for step in orchestration.get("steps", [])
+    ]
+    expected_steps = [
+        (step_id, stage, [skill_id], [signal] if signal else [])
+        for step_id, stage, skill_id, signal in ALIGNMENT_PIPELINE_STEPS
+    ]
+    assert_true(serialized_steps == expected_steps, f"alignment.orchestration.steps 默认链漂移：{serialized_steps}。")
+    for step_id, _, skill_ids, _ in serialized_steps:
+        for skill_id in skill_ids:
+            assert_true(skill_id in bindings, f"{step_id} 的 skill_ids 必须能在 alignment.bindings 解析：{skill_id}。")
+
+    for fragment in ["alignment:", "skill_ids:", "trigger_signals:"]:
+        assert_true(fragment in schema, f"team-config schema 必须同步定义 alignment 段形状：{fragment}")
+
+
+def test_alignment_pipeline_framework_invariants_are_enforced():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    assert_true(resolver.exists(), "缺少 Team Config Resolver。")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        canonical = write_alignment_config(temp_dir, "alignment-canonical.yaml", build_alignment_section())
+        canonical_effective = Path(temp_dir) / "alignment-canonical-effective.yaml"
+        canonical_resolved = run_alignment_resolver(canonical, canonical_effective)
+        assert_true(canonical_resolved.returncode == 0, f"完整 alignment 配置必须通过 Resolver：{canonical_resolved.stderr}")
+        canonical_text = canonical_effective.read_text(encoding="utf-8")
+        for fragment in ["alignment-discovery", "alignment-brainstorming", "alignment-grilling", "alignment-grilling-with-docs", "alignment-check", "mode: ordered"]:
+            assert_true(fragment in canonical_text, f"有效配置必须物化解析后的 alignment 管线：{fragment}")
+
+        rebound = write_alignment_config(
+            temp_dir,
+            "alignment-rebound.yaml",
+            build_alignment_section(bindings={**ALIGNMENT_SKILL_REFS, "intent_alignment": ".claude/skills/idc-gc-sop-adapter/SKILL.md"}),
+        )
+        rebound_checked = run_alignment_resolver(rebound)
+        assert_true(rebound_checked.returncode == 0, f"alignment_check step 只能 rebind、不能删除，rebind 必须被接受：{rebound_checked.stderr}")
+
+        unbound = write_alignment_config(
+            temp_dir,
+            "alignment-unbound.yaml",
+            build_alignment_section(bindings={key: value for key, value in ALIGNMENT_SKILL_REFS.items() if key != "intent_discovery"}),
+        )
+        unbound_checked = run_alignment_resolver(unbound)
+        assert_true(unbound_checked.returncode != 0, "step 引用未绑定 skill 时不得静默放行。")
+        assert_true(
+            "NEEDS_TEAM_CONFIG" in unbound_checked.stderr and "intent_discovery" in unbound_checked.stderr,
+            f"未解析 skill 必须返回 NEEDS_TEAM_CONFIG 有界错误：{unbound_checked.stderr}",
+        )
+
+        missing_stage = write_alignment_config(
+            temp_dir,
+            "alignment-missing-stage.yaml",
+            build_alignment_section(steps=[step for step in ALIGNMENT_PIPELINE_STEPS if step[1] != "clarification"]),
+        )
+        missing_stage_checked = run_alignment_resolver(missing_stage)
+        assert_true(missing_stage_checked.returncode != 0, "ordered alignment 缺失 stage 映射时不得静默回落。")
+        assert_true(
+            "NEEDS_ORCHESTRATION_MAPPING" in missing_stage_checked.stderr and "clarification" in missing_stage_checked.stderr,
+            f"缺失 stage 映射必须对齐 lane 的 NEEDS_ORCHESTRATION_MAPPING 阻断规则：{missing_stage_checked.stderr}",
+        )
+
+        gate_removed = write_alignment_config(
+            temp_dir,
+            "alignment-gate-removed.yaml",
+            build_alignment_section(steps=ALIGNMENT_PIPELINE_STEPS[:4]),
+        )
+        gate_removed_checked = run_alignment_resolver(gate_removed)
+        assert_true(gate_removed_checked.returncode != 0, "alignment_check step 不可删除。")
+        assert_true(
+            "alignment_check" in gate_removed_checked.stderr and "cannot be removed" in gate_removed_checked.stderr,
+            f"Human Alignment gate step 删除必须被明确拒绝：{gate_removed_checked.stderr}",
+        )
+
+        no_raw_idea = write_alignment_config(
+            temp_dir,
+            "alignment-no-raw-idea.yaml",
+            build_alignment_section(steps=[(*ALIGNMENT_PIPELINE_STEPS[0][:3], None)] + list(ALIGNMENT_PIPELINE_STEPS[1:])),
+        )
+        no_raw_idea_checked = run_alignment_resolver(no_raw_idea)
+        assert_true(no_raw_idea_checked.returncode != 0, "raw_idea 信号下限不得被移除。")
+        assert_true(
+            "raw_idea" in no_raw_idea_checked.stderr and "trigger_signals" in no_raw_idea_checked.stderr,
+            f"raw_idea 必须被至少一个 step 的 trigger_signals 覆盖：{no_raw_idea_checked.stderr}",
+        )
+
+        no_gap_signal = write_alignment_config(
+            temp_dir,
+            "alignment-no-gap-signal.yaml",
+            build_alignment_section(steps=[(step[0], step[1], step[2], None if step[3] == "critical_gaps_remain" else step[3]) for step in ALIGNMENT_PIPELINE_STEPS]),
+        )
+        no_gap_signal_checked = run_alignment_resolver(no_gap_signal)
+        assert_true(
+            no_gap_signal_checked.returncode != 0 and "critical_gaps_remain" in no_gap_signal_checked.stderr,
+            f"critical_gaps_remain 必须被至少一个 step 的 trigger_signals 覆盖：{no_gap_signal_checked.stderr}",
+        )
+
+        non_idc_ref = write_alignment_config(
+            temp_dir,
+            "alignment-non-idc.yaml",
+            build_alignment_section(bindings={**ALIGNMENT_SKILL_REFS, "brainstorming": "docs/architecture.md"}),
+        )
+        non_idc_checked = run_alignment_resolver(non_idc_ref)
+        assert_true(non_idc_checked.returncode != 0, "alignment 绑定不得脱离 idc- skill 形态。")
+        assert_true(
+            "alignment.bindings" in non_idc_checked.stderr and "idc-" in non_idc_checked.stderr,
+            f"alignment 绑定的 skill_ref 必须保持 .claude/skills/idc-*/SKILL.md 形态：{non_idc_checked.stderr}",
+        )
+
+        partial = write_alignment_config(temp_dir, "alignment-partial.yaml", build_alignment_section().split("  orchestration:", 1)[0])
+        partial_effective = Path(temp_dir) / "alignment-partial-effective.yaml"
+        partial_resolved = run_alignment_resolver(partial, partial_effective)
+        assert_true(partial_resolved.returncode == 0, f"缺少 orchestration 的 alignment 段必须回落框架默认链：{partial_resolved.stderr}")
+        partial_text = partial_effective.read_text(encoding="utf-8")
+        assert_true("alignment-discovery" in partial_text and "alignment-check" in partial_text, "回落后必须物化默认 alignment 链。")
+
+
+def test_alignment_pipeline_runtime_consumption_is_materialized():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    config = ROOT / "examples/team-config.full-bindings.yaml"
+    effective_schema = read_text(".claude/skills/idc-workflow/references/schemas/effective-team-config.schema.yaml")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        default_effective = Path(temp_dir) / "alignment-default-effective.yaml"
+        default_resolved = run_alignment_resolver(config, default_effective)
+        assert_true(default_resolved.returncode == 0, f"未配置 alignment 段的解析失败：{default_resolved.stderr}")
+        default_text = default_effective.read_text(encoding="utf-8")
+        assert_true(has_top_level_alignment(default_text), "未配置 alignment 段时 effective-team-config 必须物化框架默认链。")
+        assert_true("alignment-discovery" in default_text and "alignment-check" in default_text, "默认 alignment 链必须包含 discovery 与 alignment_check step。")
+
+        preflight_effective = Path(temp_dir) / "alignment-preflight-effective.yaml"
+        preflight_run = subprocess.run(
+            ["ruby", str(preflight), "--config", str(config), "--output", str(preflight_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(preflight_run.returncode == 0 and "status: READY" in preflight_run.stdout, f"未配置 alignment 段时 preflight 必须保持 READY：{preflight_run.stdout}")
+        assert_true("alignment_policy_check_count: 5" in preflight_run.stdout, "preflight 必须输出 alignment_policy_checks（每 step dry-run）。")
+        alignment_checks = preflight_run.stdout.split("alignment_policy_checks:", 1)[1]
+        assert_true(alignment_checks.count("status: PASS") == 5, "每个 alignment step 的 dry-run（绑定解析、序 emitted、信号下限）必须 PASS。")
+
+        decision_default = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(default_effective), "--phase", "decision", "--domain", "general"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(decision_default.returncode == 0, f"decision Context Plan 失败：{decision_default.stdout}{decision_default.stderr}")
+        assert_true(".claude/skills/idc-intent-alignment/SKILL.md" in decision_default.stdout, "未配置 alignment 段时 decision 意图 refs 必须与当前硬编码列表等价。")
+
+        configured = write_alignment_config(temp_dir, "alignment-configured.yaml", build_alignment_section())
+        configured_effective = Path(temp_dir) / "alignment-configured-effective.yaml"
+        configured_resolved = run_alignment_resolver(configured, configured_effective)
+        assert_true(configured_resolved.returncode == 0, f"显式 alignment 配置解析失败：{configured_resolved.stderr}")
+        decision_configured = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(configured_effective), "--phase", "decision", "--domain", "general"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(decision_configured.returncode == 0, f"配置化 alignment 的 decision Context Plan 失败：{decision_configured.stdout}{decision_configured.stderr}")
+        for skill_ref in ALIGNMENT_SKILL_REFS.values():
+            assert_true(skill_ref in decision_configured.stdout, f"decision 阶段意图类 required_refs 必须从 effective alignment 管线推导：{skill_ref}")
+
+        assert_true(has_top_level_alignment(effective_schema), "effective-team-config schema 必须定义物化后的 alignment 管线。")
+
+
+def test_alignment_pipeline_docs_record_section_and_ownership():
+    docs = {
+        "idc-workflow": read_text(".claude/skills/idc-workflow/SKILL.md"),
+        "idc-team-config": read_text(".claude/skills/idc-team-config/SKILL.md"),
+        "README": read_text("README.md"),
+        "team-config.yaml.template": read_text("team-config.yaml.template"),
+    }
+    for name, text in docs.items():
+        assert_true(has_top_level_alignment(text), f"{name} 必须记录 alignment 配置段。")
+        assert_true(
+            "不可配置" in text or "not configurable" in text or "cannot be configured" in text,
+            f"{name} 必须记录 router / gate 所有权不可配置的边界。",
+        )
+        assert_true(
+            "回落" in text or "default alignment" in text or "framework default" in text,
+            f"{name} 必须记录未配置 alignment 段时的框架默认回落行为。",
+        )
+
+
+def test_alignment_pipeline_execution_defers_to_config_not_hardcoded():
+    workflow_text = read_text(".claude/skills/idc-workflow/SKILL.md")
+
+    bypass_lines = [
+        "idc-intent-grilling if critical gaps remain",
+        "idc-intent-grilling-with-docs if clarification must update docs",
+        "only when clarification should create non-sensitive decision records",
+    ]
+    for bypass in bypass_lines:
+        assert_true(
+            bypass not in workflow_text,
+            f"idc-workflow 路由块不得保留写死的 signal→skill 旁路行：{bypass}",
+        )
+
+    assert_true(
+        "effective.alignment.orchestration.steps" in workflow_text,
+        "idc-workflow 必须以 effective alignment pipeline 的 steps 作为 pre-alignment 唯一源。",
+    )
+
+    assert_true(
+        len(workflow_text.splitlines()) <= 320,
+        "idc-workflow 入口说明重新膨胀，破坏 progressive disclosure。",
+    )
+
+
 def test_team_config_resolver_and_lane_capability_selection_execute():
     resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
     selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
@@ -2988,6 +3280,11 @@ def run():
         test_d3a_and_general_lane_runtime_matrix_execute,
         test_filled_team_config_when_present,
         test_lane_profiles_use_ordered_mode,
+        test_alignment_pipeline_config_shape_mirrors_lane_profiles,
+        test_alignment_pipeline_framework_invariants_are_enforced,
+        test_alignment_pipeline_runtime_consumption_is_materialized,
+        test_alignment_pipeline_docs_record_section_and_ownership,
+        test_alignment_pipeline_execution_defers_to_config_not_hardcoded,
         test_select_capabilities_rejects_unknown_signal,
         test_unpassed_dt_blocks_all_layers_green,
         test_tran_build_must_pass_before_done,

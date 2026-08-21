@@ -59,13 +59,30 @@ ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
   --domain general
 ```
 
+The optional top-level `alignment` section configures the pre-alignment
+intent-processing pipeline and mirrors the lane orchestration shape:
+
+```yaml
+alignment:
+  bindings: # capability key -> {skill_ref: .claude/skills/idc-*/SKILL.md}
+  orchestration:
+    mode: ordered
+    steps: # id / stage / skill_ids / trigger_signals
+```
+
+The Resolver validates it with bounded field-level errors and materializes the
+resolved pipeline into the effective config. A missing section (or missing
+`bindings` / `orchestration`) falls back to the framework default five-step
+chain with no other output difference. Scenario Router, Contract Gate, Human
+Alignment approval, and completion ownership cannot be configured through it.
+
 For each planned execution unit, run Capability Selector with a demand contract:
 
 ```sh
 ruby .claude/skills/idc-team-config/scripts/select_capabilities.rb \
   --effective .idc/effective-team-config.yaml \
   --demand <CAPABILITY_DEMAND_YAML> \
-  --output .idc/capability-selection-<task>-<execution-unit>.yaml
+  --output .idc/runs/<task-id>/attempt-<n>/capability-selection-<execution-unit>.yaml
 ```
 
 Build a Knowledge Load Plan for the same execution unit:
@@ -74,7 +91,7 @@ Build a Knowledge Load Plan for the same execution unit:
 ruby .claude/skills/idc-team-config/scripts/plan_knowledge.rb \
   --effective .idc/effective-team-config.yaml \
   --demand <KNOWLEDGE_DEMAND_YAML> \
-  --output .idc/knowledge-load-plan-<task>-<execution-unit>.yaml
+  --output .idc/runs/<task-id>/attempt-<n>/knowledge-load-plan-<execution-unit>.yaml
 ```
 
 Execution context planning requires both READY plans. After execution, verify
@@ -82,7 +99,7 @@ the executor's knowledge receipt before Completion:
 
 ```sh
 ruby .claude/skills/idc-team-config/scripts/verify_knowledge_consumption.rb \
-  --plan .idc/knowledge-load-plan-<task>-<execution-unit>.yaml \
+  --plan .idc/runs/<task-id>/attempt-<n>/knowledge-load-plan-<execution-unit>.yaml \
   --receipt <KNOWLEDGE_CONSUMPTION_RECEIPT>
 ```
 
@@ -126,11 +143,30 @@ team_config_result:
   it READY; Completion requires a VERIFIED consumption receipt with no
   unplanned Layer, component, or test-domain refs.
 - Per-execution-unit artifacts must use per-unit filenames such as
-  `.idc/capability-selection-<task>-<execution-unit>.yaml`; a shared
-  single-slot name gets overwritten by the next execution unit and breaks
-  Delegation Contract audits. `.idc/effective-team-config.yaml` is the only
-  exception: it is global, atomically regenerated, and source-sha256 stamped.
+  `.idc/runs/<task-id>/attempt-<n>/capability-selection-<execution-unit>.yaml`;
+  a shared single-slot name gets overwritten by the next execution unit and
+  breaks Delegation Contract audits. All per-run products are collected under
+  `.idc/runs/<task-id>/attempt-<n>/`; a re-run increments the attempt
+  subdirectory to keep versions and never silently overwrites.
+  `.idc/effective-team-config.yaml` is the only exception: it is global,
+  atomically regenerated, and source-sha256 stamped.
 - Self-optimization may observe or propose; it must never mutate IDC Core or
   promote an overlay without Human Alignment.
+- Validate `alignment` with bounded field-level errors (`alignment.*` paths),
+  never with a whole-file rejection. A step `skill_id` missing from
+  `alignment.bindings` returns `NEEDS_TEAM_CONFIG`; it must not silently drop
+  the step.
+- `alignment.orchestration.mode` is always `ordered`. A missing stage mapping
+  returns `NEEDS_ORCHESTRATION_MAPPING`, the same bounded rule as Lane
+  orchestration; there is no silent fallback.
+- The `alignment_check` step (Human Alignment gate) cannot be removed; teams
+  may rebind its `skill_ref` only, and the rebound ref must keep the
+  `.claude/skills/idc-*/SKILL.md` shape.
+- `raw_idea` and `critical_gaps_remain` form the framework signal floor: each
+  must stay covered by at least one step's `trigger_signals`.
+- A missing `alignment` section (or missing `bindings` / `orchestration`)
+  falls back to the framework default five-step chain and materializes it in
+  the effective config; the section configures intent-processing steps only
+  and never Domain, Lane, Contract Gate, or Completion ownership.
 
 If validation fails, return `NEEDS_TEAM_CONFIG` with bounded field-level errors.
