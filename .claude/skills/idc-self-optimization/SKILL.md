@@ -32,7 +32,7 @@ bindings, knowledge gaps, planning corrections, or verification failures.
 - Never modify `team-config.yaml`, IDC Core, active registries, contracts, or
   completion gates automatically.
 - Never infer enterprise facts from repeated model guesses.
-- Redact confidential code, logs, paths, and APIs from portable event summaries.
+- Redact private code, logs, paths, and APIs from portable event summaries.
 - Promotion always requires Human Alignment.
 - A proposal that fails replay, widens scope, weakens evidence requirements, or
   changes D3A fixed invariants must be rejected.

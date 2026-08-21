@@ -1,7 +1,7 @@
 # Grill With Docs Method
 
 This reference defines the stateful IDC clarification method for cases where
-questions and decisions should also update non-sensitive project docs.
+questions and decisions should also update public project docs.
 
 It is inspired by the public `mattpocock/skills` Grill With Docs workflow and
 adapted for IDC. It does not copy upstream prompts verbatim.
@@ -29,7 +29,7 @@ Read only docs needed for the current clarification frontier:
 - existing `CONTEXT.md` or project overview.
 - relevant ADRs.
 - glossary or terminology notes.
-- non-sensitive domain notes.
+- public domain notes.
 
 Do not read full logs, full repositories, or unrelated documentation just to ask
 better questions.
@@ -44,7 +44,7 @@ Allowed outputs:
 - clarification notes that will be referenced by Alignment Pack.
 
 Do not write implementation code, tests, build scripts, generated artifacts, or
-confidential enterprise facts into shared docs.
+private enterprise facts into shared docs.
 
 ## Commitment Check
 

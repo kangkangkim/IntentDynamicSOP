@@ -21,7 +21,7 @@ Do not use when:
 - 任务是 General Coding。
 - required DT domain 还没有 GREEN evidence。
 - 只是 TR3 / draft spec / alignment 阶段。
-- 真实企业命令尚未在保密区绑定，却要求运行真实 `tran_build`。
+- 真实企业命令尚未在团队配置内绑定，却要求运行真实 `tran_build`。
 
 ## 输入
 

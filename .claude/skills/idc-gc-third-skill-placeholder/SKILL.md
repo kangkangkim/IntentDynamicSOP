@@ -1,6 +1,6 @@
 ---
 name: idc-gc-third-skill-placeholder
-description: Placeholder adapter for the third original enterprise repository skill in the GC full-suite SOP; replace only inside the confidential environment after the real skill name and contract are known.
+description: Placeholder adapter for the third original enterprise repository skill in the GC full-suite SOP; replace only after team-config onboarding, once the real skill name and contract are known.
 ---
 
 # GC Third Skill Placeholder
@@ -19,7 +19,7 @@ details.
 
 Do not execute this placeholder in the external harness.
 
-In the confidential zone, replace it only after the real third skill has:
+After team-config onboarding, replace it only once the real third skill has:
 
 - a real name.
 - entry conditions.
@@ -43,7 +43,7 @@ third_skill_placeholder:
 ## Hard Rules
 
 - Do not guess the third skill's purpose.
-- Do not map it to an IDC workflow until the confidential contract exists.
+- Do not map it to an IDC workflow until a team-config contract exists.
 - Do not treat this placeholder as an executable skill.
 
 Placeholder refs:

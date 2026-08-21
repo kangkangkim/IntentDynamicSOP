@@ -171,7 +171,7 @@ approved_alignment_ref
 execution_unit_ref
 ```
 
-如果保密区中断，main agent 恢复时先读取 `run_state_ref` 指向的 runtime state，再重新运行 IDC Workflow Router。
+如果接入团队配置后中断，main agent 恢复时先读取 `run_state_ref` 指向的 runtime state，再重新运行 IDC Workflow Router。
 
 恢复后：
 

@@ -56,4 +56,4 @@ Use `references/` for additional documentation:
 - Do not put active routing logic in `assets/`.
 - Do not put static resource files in `references/` when they are templates, images, or data.
 - Do not create a skill for passive data.
-- Enterprise-specific assets must use explicit placeholders outside the confidential zone.
+- Enterprise-specific assets must use explicit placeholders outside team-config onboarding.

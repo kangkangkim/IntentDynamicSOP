@@ -1,6 +1,6 @@
 # D3A Workflow
 
-D3A 场景的 workflow 是固定的用户设计流程。IDC 可以检测输入是否足够进入 D3A、选择哪些固定 layer / DT domain、拆 execution unit、收集 evidence，但不能重新设计 D3A 主流程。
+D3A 场景的 workflow 是 harness 固定的流程。IDC 可以检测输入是否足够进入 D3A、选择哪些固定 layer / DT domain、拆 execution unit、收集 evidence，但不能重新设计 D3A 主流程。
 
 D3A 使用固定 architecture space，并在这个固定空间内做动态 planning。
 
@@ -29,7 +29,7 @@ lane_policy:
   execution_profile: d3a_fixed_workflow
 ```
 
-一旦 Domain Module Router 选择 `d3a`，直接进入用户设计的固定 D3A workflow，
+一旦 Domain Module Router 选择 `d3a`，直接进入 harness 固定的 D3A workflow，
 不再调用通用 Lane Resolver。任务大小、Layer 数量和风险信号仍会影响流程内部的
 planning、DAG、execution unit、agent delegation 和 evidence plan，但不产生 Lane。
 
@@ -158,7 +158,7 @@ d3a_plan:
   execution_strategy: Serial
 ```
 
-上面的 mapping 只是 dummy example。真实 Coding Layer 到 DT Domain 的 mapping 必须在保密区填写。
+上面的 mapping 只是 dummy example。真实 Coding Layer 到 DT Domain 的 mapping 必须在团队配置内填写。
 
 ## Execution Unit 约束
 

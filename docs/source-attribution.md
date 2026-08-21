@@ -1,6 +1,6 @@
 # Source Attribution
 
-这个仓库会吸收公开项目中的方法论，但不直接包含企业 secret，也不复制外部项目的大段 prompt。
+这个仓库会吸收公开项目中的方法论，但不直接包含真实企业细节，也不复制外部项目的大段 prompt。
 
 ## Grill Me Inspiration
 

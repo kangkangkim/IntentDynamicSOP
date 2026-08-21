@@ -1,16 +1,16 @@
 # Intent Dynamic Code
 
-Intent Dynamic Code 是一个非敏感的企业 Coding 工作流骨架。
+Intent Dynamic Code 是一个公开的企业 Coding 工作流骨架。
 
-它的目标不是在外部环境实现真实企业 D3A，而是先把一套可迁移、可验证、可填充的工作流骨架准备好。进入公司保密区后，只填 `team-config.yaml` 一个文件即可接入真实知识、skills 和构建能力（命令封装在 build skill 内部）。
+它的目标不是在外部环境实现真实企业 D3A，而是先把一套可迁移、可验证、可填充的工作流骨架准备好。接入团队后，只填 `team-config.yaml` 一个文件即可接入真实知识、skills 和构建能力（命令封装在 build skill 内部）。
 
 ## 项目优势
 
 IDC 的核心优势是把动态智能分流和企业固定 SOP 分开：外层可以根据输入动态判断，内层可以保护团队已经验证过的固定流程。
 
-- **公共框架可复用**：`IDC Core` 只保存 `idc-workflow` 统一 skill 入口、`idc-*` skills、router、lane、gate、schema、human views 和 adapter eligibility registry，不保存企业 secret。
-- **企业知识不外泄**：真实 D3A 知识、GC SOP 原子能力、repo path、内部 skill 名（构建命令封装在 build skill 内部）都通过保密区 `team-config.yaml` / knowledge index 接入。
-- **D3A 主流程固定**：D3A 是用户设计的固定 workflow，Lane 对它不适用，并跳过通用 Lane Resolver。IDC 只在固定流程内选择 Layer、DT Domain、adapter、execution unit 和 evidence，不重排 D3A。
+- **公共框架可复用**：`IDC Core` 只保存 `idc-workflow` 统一 skill 入口、`idc-*` skills、router、lane、gate、schema、human views 和 adapter eligibility registry，不保存真实企业细节。
+- **企业知识不外泄**：真实 D3A 知识、GC SOP 原子能力、repo path、内部 skill 名（构建命令封装在 build skill 内部）都通过团队配置 `team-config.yaml` / knowledge index 接入。
+- **D3A 主流程固定**：D3A 是 harness 固定的 workflow，Lane 对它不适用，并跳过通用 Lane Resolver。IDC 只在固定流程内选择 Layer、DT Domain、adapter、execution unit 和 evidence，不重排 D3A。
 - **Human Alignment 管检测**：Discovery 只做 intake / normalize / signal；Human Alignment Check 统一检测 readiness、critical gap、docs needed、approval validity 和 scope drift。
 - **GC SOP 可配置且真正生效**：绑定只表示能力可用。每个 Lane 可独立配置 Skill allow/deny/required 集合与 stage 编排；Capability Selector 执行这些策略并记录顺序、选用与跳过原因。
 - **Evidence-first 完成标准**：API Contract 先于 implementation；RED evidence 先于 GREEN evidence；D3A DONE 必须满足 required DT GREEN 和 `tran_build PASS`。
@@ -20,11 +20,11 @@ IDC 的核心优势是把动态智能分流和企业固定 SOP 分开：外层�
 - **执行不可绕过**：所有 repository mutation 都必须经过 Execution Authorization 并真实派发 executor。General Coding 是外层执行协议，GC Adapter 只是 executor 内按需调用的原子能力；main agent 不能直接实现后再补证据。
 - **Skill 注册冲突可检测**：Preflight 检查 capability、stage、Lane/profile 与 trigger 的重叠；未声明的冲突直接阻断，有意组合或替换必须显式使用 `composes_with` / `supersedes`。
 
-## V0 定位
+## v1.0 定位
 
-V0 不是完整企业 D3A 实现，而是可进入保密区落地的最小成熟框架。
+v1.0 是首个可用版本：一套可接入团队配置、可验证、可填充的工作流骨架。
 
-V0 已经固定：
+v1.0 已经固定：
 
 - 统一入口：`idc-workflow` skill（显式调用为 `$idc-workflow`，也支持自然语言自动匹配）。
 - 能力实现：所有可执行能力都沉淀为 `.claude/skills/idc-*/SKILL.md`，不维护 `.claude/commands`。
@@ -32,7 +32,7 @@ V0 已经固定：
 - 三种 Lane：`fast`、`lite`、`complex`。
 - D3A 固定 Coding Layer：`TRAN_CFG`、`DO`、`VISP_ADP`、`TFC_TFI`、`TFE`、`ADP`、`DRV`。
 - D3A 不参与 Lane 分类：输出 `lane_applicability: not_applicable`，由 `d3a_fixed_workflow` 接管。
-- V0 DT Domain placeholder：`TPRINT`、`FW`、`DPF`。
+- 默认 DT Domain placeholder：`TPRINT`、`FW`、`DPF`。
 - Human Alignment Check 作为 readiness / gap / approval gate。
 - Skill Adapter Router 作为 GC SOP、Superpowers、DT skill、build skill 的唯一接入门。
 - `team-config.yaml.template` 是唯一团队配置入口；`idc-team-config` 校验并生成只读有效配置。
@@ -40,7 +40,7 @@ V0 已经固定：
 - Capability Selector、Knowledge Load Plan、Context Load Plan、Delegation Contract、Execution Authorization、Knowledge Consumption Receipt 和 Execution Receipt 构成不可绕过的执行链。
 - Mock D3A / General E2E examples 和 harness tests。
 
-V0 不做：不复制企业内部 D3A 知识；不编造 Coding Layer 到 DT Domain 的真实 mapping；不内置真实 repo path、构建命令、日志、API 或企业 skill 名；不把 GC SOP 十几个能力全部默认打开；不让模型重新设计 D3A 主流程。
+v1.0 不做：不复制企业内部 D3A 知识；不编造 Coding Layer 到 DT Domain 的真实 mapping；不内置真实 repo path、构建命令、日志、API 或企业 skill 名；不把 GC SOP 十几个能力全部默认打开；不让模型重新设计 D3A 主流程。
 
 进入企业内部后，优先补的是索引和 binding，而不是把企业知识搬进 public harness：
 
@@ -57,7 +57,7 @@ V0 不做：不复制企业内部 D3A 知识；不编造 Coding Layer 到 DT Dom
 
 ## 多团队复用模型
 
-IDC 的整体能力面向多个团队复用。公共仓库只维护稳定框架和非敏感 contract；团队差异通过轻量 DIY 层接入。
+IDC 的整体能力面向多个团队复用。公共仓库只维护稳定框架和公开 contract；团队差异通过轻量 DIY 层接入。
 
 ```text
 IDC Core
@@ -131,7 +131,7 @@ Domain Module 决定领域差异、required contracts 和 Lane applicability。G
 ## 快速开始
 
 ```sh
-cp team-config.yaml.template team-config.yaml   # 保密区内填写
+cp team-config.yaml.template team-config.yaml   # 团队配置内填写
 ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb
 python3 tests/test_harness.py
 ```
@@ -149,9 +149,9 @@ $idc-workflow <TASK_OR_TR3>
 | 文档 | 看什么 |
 |---|---|
 | `QUICKSTART.md` | 从复制仓库到第一条 vertical slice 的 9 步操作。 |
-| `docs/architecture.md` | 架构正本：分流、Domain Module、gate、知识系统、保密边界、架构图与命名约定。 |
+| `docs/architecture.md` | 架构正本：分流、Domain Module、gate、知识系统、团队配置边界、架构图与命名约定。 |
 | `docs/adoption-guide.md` | 其他团队如何复制 SOP：Core/Module 边界、复制原则、第一周落地。 |
-| `docs/confidential-migration-checklist.md` | 入区前后 checklist：填什么、先跑哪条 slice、失败闭环。 |
+| `docs/confidential-migration-checklist.md` | 接入前后 checklist：填什么、先跑哪条 slice、失败闭环。 |
 | `docs/atomic-skills.md` | 哪些能力已拆成可复用原子 skill 及编排顺序。 |
 | `docs/skillization-boundary.md` | 哪些内容应该 skill 化，哪些应保持 reference。 |
 | `docs/agent-team-architecture.md` | Main agent 只做 planning / delegation 的 agent team 架构。 |
@@ -204,7 +204,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module（`references/d
 - `.claude/skills/idc-team-config/`：单配置校验、preflight、有效配置生成、Capability Selector、Knowledge Planner、Consumption Verifier 和分阶段 Context Load Plan 的可执行实现。
 - `team-config.yaml.template`：唯一团队入口，收敛 Domain、registries、skill bindings、adapter extensions、knowledge、Lane capability profile、可选 alignment 管线和自优化策略。
 - `.claude/agents/`：`d3a-layer-coder`、`dt-test-writer`、`build-error-analyzer`、`general-coder` subagent 定义。
-- `examples/`：mock D3A、E2E TR3 D3A、E2E General 三个非敏感 walkthrough。
+- `examples/`：mock D3A、E2E TR3 D3A、E2E General 三个公开 walkthrough。
 - `test/`：可复制到 Claude Code 手动体验的场景卡。
 - `tests/test_harness.py`：harness 自检。
 
@@ -216,6 +216,6 @@ python3 tests/test_harness.py
 
 测试覆盖：registry 固定性（D3A Layer / DT Domain 不漂移）、planner 不越界、contract / lane / provider / context 约束、RED→GREEN→`tran_build` 状态门、Runtime State / Resume Policy、placeholder hygiene、team-config 覆盖规则，以及 D3A、Fast、Lite、Complex 的 Capability Selection → Knowledge Plan → Context Plan → Authorization → Knowledge Consumption 运行矩阵。
 
-## 保密区迁移
+## 团队配置迁移
 
-真实 Layer 职责、verification mapping、DT / `tran_build` build skill、repo path 等只能在公司保密区填写，且只写进 `team-config.yaml`（知识正文留在企业本地）。完整 checklist 见 `docs/confidential-migration-checklist.md`。
+真实 Layer 职责、verification mapping、DT / `tran_build` build skill、repo path 等只能在团队配置内填写，且只写进 `team-config.yaml`（知识正文留在企业本地）。完整 checklist 见 `docs/confidential-migration-checklist.md`。

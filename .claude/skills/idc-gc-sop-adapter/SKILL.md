@@ -1,11 +1,11 @@
 ---
 name: idc-gc-sop-adapter
-description: Use inside the confidential enterprise environment after IDC routing and Human Alignment approval to reuse the internal GC full-suite SOP atomic capabilities without letting GC own IDC Domain, Lane, Contract Gate, or Completion Gate decisions.
+description: Use after team-config onboarding, following IDC routing and Human Alignment approval, to reuse the internal GC full-suite SOP atomic capabilities without letting GC own IDC Domain, Lane, Contract Gate, or Completion Gate decisions.
 ---
 
 # GC SOP Adapter Skill
 
-This skill is the confidential-zone adapter for the enterprise GC full-suite SOP.
+This skill is the team-config onboarding adapter for the enterprise GC full-suite SOP.
 
 It does not contain real GC implementation details in this external harness.
 
@@ -24,7 +24,7 @@ Use only when all are true:
 - Domain Module Router has selected `d3a` or another registered module when a domain module is required.
 - Human Alignment is approved.
 - Required contracts are present.
-- The target enterprise repository is available in the confidential zone.
+- The target enterprise repository is available after team-config onboarding.
 - Capability Selector selected the requested GC atom from the effective registry.
 - A dispatched executor already loaded the active Domain execution Skill
   (`idc-general-coding`, `idc-d3a-coding`, or Custom Domain equivalent).
@@ -79,7 +79,7 @@ Known external adapter names:
 ```
 
 The third original-repository skill is intentionally a placeholder until the
-confidential zone supplies its real name and contract.
+team config supplies its real name and contract.
 
 ## Handoff Shape
 
@@ -134,11 +134,11 @@ gc_atomic_result:
   `allowed_paths`; return `BLOCKED` with the path conflict instead.
 - Do not execute every configured GC atom; only run the minimal sufficient set selected for the current stage.
 - Do not expose real GC SOP content in this external harness.
-- Keep all enterprise paths, commands, logs, test names, and APIs as placeholders outside the confidential zone.
+- Keep all enterprise paths, commands, logs, test names, and APIs as placeholders outside team-config onboarding.
 
 ## Source Boundary
 
-Real GC SOP content must stay in the confidential enterprise repository.
+Real GC SOP content must stay in the team's private enterprise repository.
 
 Use placeholders in this external harness:
 

@@ -172,7 +172,7 @@ context_packet:
 
 ## Runtime State 形状
 
-保密区可能中断，main agent 不能依赖会话记忆恢复任务。
+接入团队配置后可能中断，main agent 不能依赖会话记忆恢复任务。
 
 每个稳定阶段必须写入轻量 checkpoint：
 

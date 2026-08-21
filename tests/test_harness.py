@@ -224,7 +224,7 @@ def test_registry_files_match_fixed_architecture():
         ("architecture", architecture),
         ("README", readme),
     ]:
-        assert_true("固定" in text and "用户设计" in text, f"{label} 必须声明 D3A 是用户设计的固定流程。")
+        assert_true("harness 固定" in text, f"{label} 必须声明 D3A 是 harness 固定的流程。")
 
 
 def test_registry_knowledge_templates_exist():
@@ -442,8 +442,8 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         assert_true(fragment in quickstart, f"QUICKSTART 缺少步骤：{fragment}")
     assert_true("D3A 是当前第一个自定义 active module" in README, "README 必须声明 D3A 是自定义 module。")
     assert_true("## 项目优势" in README, "README 必须总结项目优势。")
-    assert_true("## V0 定位" in README, "README 必须明确 V0 定位。")
-    assert_true("V0 不是完整企业 D3A 实现" in README, "README 必须声明 V0 不是完整企业实现。")
+    assert_true("## v1.0 定位" in README, "README 必须明确 v1.0 定位。")
+    assert_true("v1.0 是首个可用版本" in README, "README 必须声明 v1.0 是首个可用版本。")
     assert_true("Human Alignment 管检测" in README, "README 必须声明 Human Alignment 管检测。")
     assert_true("GC SOP 可配置且真正生效" in README, "README 必须声明 Lane 配置由 Capability Selector 实际执行。")
     assert_true("真实 D3A 知识地址" in README, "README 必须声明保密区绑定 D3A 知识索引地址。")
@@ -763,7 +763,7 @@ def test_repo_rules_are_canonical_in_claude_md():
     assert_true(claude_path.exists(), "CLAUDE.md 应该作为 repo rules canonical 文件保留。")
     for fragment in [
         "# Intent-Driven Coding Harness",
-        "仓库内不得包含企业 secret",
+        "仓库内不得包含真实企业细节",
         "用户侧统一入口是 `idc-workflow` skill",
         "不维护 `.claude/commands`",
         "所有可执行 IDC 能力都必须沉淀为 `.claude/skills/idc-*/SKILL.md`",
@@ -1015,7 +1015,7 @@ def test_confidential_vertical_slice_readiness_gate_exists():
 
     for fragment in [
         "Vertical Slice Readiness Gate",
-        "first confidential-zone vertical slice selected",
+        "first team-config onboarding vertical slice selected",
         "All required checks must PASS",
         "Each check must include an `evidence_ref`",
         "Readiness evidence cannot replace",
@@ -1027,7 +1027,7 @@ def test_confidential_vertical_slice_readiness_gate_exists():
 
     assert_true("vertical-slice-readiness-gate.md" in context_planner, "带 readiness signal 的 Context Plan 必须加载 Vertical Slice Readiness Gate。")
     assert_true("vertical-slice-readiness.schema.yaml" in context_planner, "带 readiness signal 的 Context Plan 必须加载 Vertical Slice Readiness schema。")
-    assert_true("Before first confidential-zone D3A execution" in skill, "idc-workflow 必须要求首条保密区 D3A 执行前跑 readiness gate。")
+    assert_true("Before the first D3A execution after team-config onboarding" in skill, "idc-workflow 必须要求首条 team-config D3A 执行前跑 readiness gate。")
     assert_true("Vertical Slice Readiness Gate" in checklist, "保密区 checklist 必须引用 readiness gate。")
     assert_true("不能替代" in checklist and "`tran_build` PASS evidence" in checklist, "保密区 checklist 必须声明 readiness 不能替代完成证据。")
     assert_true("status: NOT_READY" in example, "readiness example 必须默认 NOT_READY。")
@@ -1260,7 +1260,7 @@ def test_adoption_and_deep_dive_docs_exist():
         "approved fixed D3A workflow",
         "fixed layer registry only",
         "valid checkpoint",
-        "Team Binding for confidential commands",
+        "Team Binding for real enterprise commands",
         "Completion / Escalation",
         "Required DT GREEN + tran_build PASS",
     ]:
@@ -1837,7 +1837,7 @@ def test_clarification_provider_uses_grill_me_method_with_fallback():
     assert_true("assets/question-card-template.md" in skill, "idc-intent-grilling 必须加载 question card asset。")
     assert_true("name: idc-intent-grilling-with-docs" in docs_skill, "必须内置 idc-intent-grilling-with-docs skill。")
     assert_true("references/grill-with-docs-method.md" in docs_skill, "idc-intent-grilling-with-docs 必须加载 Grill With Docs reference。")
-    assert_true("Update non-sensitive docs only when decisions crystallize" in docs_skill, "Grill With Docs 必须只沉淀已明确决策。")
+    assert_true("Update public docs only when decisions crystallize" in docs_skill, "Grill With Docs 必须只沉淀已明确决策。")
     assert_true("Do not write implementation code." in docs_skill, "Grill With Docs 不能写实现代码。")
     for fragment in [
         "Grill With Docs Method",

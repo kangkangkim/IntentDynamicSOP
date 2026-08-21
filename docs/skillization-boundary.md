@@ -89,7 +89,7 @@ docs/
   human-readable design, adoption, attribution, and migration notes
 
 examples/
-  non-sensitive walkthrough and fixture assets
+  public walkthrough and fixture assets
 
 test/
   manual scenario cards
@@ -114,7 +114,7 @@ The entry is the `idc-workflow` skill itself; there is no command alias layer.
 Lower-level skills are internal building blocks. Users should not need to call
 them directly.
 
-## Confidential Boundary
+## Team-Config Boundary
 
 Enterprise GC SOP and original-repository skills should be represented by
 adapter skills in the external harness.
@@ -128,5 +128,5 @@ The adapter can declare:
 - what it must not override.
 
 The adapter must not contain real enterprise paths, commands, APIs, logs, test
-names, or SOP internals outside the confidential zone. Those confidential
+names, or SOP internals outside team-config onboarding. Those private
 materials should become internal assets / references in the enterprise repo.

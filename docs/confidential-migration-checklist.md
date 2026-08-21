@@ -1,6 +1,6 @@
-# 保密区迁移 Checklist
+# 团队配置迁移 Checklist
 
-这份 checklist 用来判断：当前非敏感 harness 能不能进入公司保密区，以及进入后第一步应该做什么。
+这份 checklist 用来判断：当前公开 harness 能不能接入公司团队配置，以及接入后第一步应该做什么。
 
 企业已有资产与 `team-config.yaml` 插槽的逐项匹配关系，见图 `docs/enterprise-adoption-map.html`；也可以用浏览器打开 `docs/team-config-generator.html`，填表交互式生成 `team-config.yaml`。
 
@@ -17,7 +17,7 @@
 - Mock examples。
 - Harness tests。
 
-## 进入保密区后需要填写的内容
+## 接入团队配置后需要填写的内容
 
 多团队复用时，默认不要 fork IDC Core。每个团队只填写 `team-config.yaml`：
 
@@ -27,7 +27,7 @@
 
 仓库内注册表（`dt-domains.yaml`、`general-components.yaml`、`general-test-domains.yaml`）对企业接入方只读。
 
-这些内容只能在公司保密区填写：
+这些内容只能在公司团队配置内填写：
 
 - 真实 D3A Layer 职责 / 边界。
 - 真实 Layer API rules / coding patterns。
@@ -43,7 +43,7 @@
 - 公司没有 Grill Me / Grill With Docs：直接带入 GitHub 仓库里的 `idc-intent-grilling`、`idc-intent-grilling-with-docs`、`grill-me-method.md`、`grill-with-docs-method.md` 和 `question-card-template.md`。
 - 真实 GC 全家桶 SOP atomic ability mapping。
 - 真实原代码仓 skill contract：`idc-dt-design`、`idc-dt-writer`、`<ENTERPRISE_GC_THIRD_SKILL_NAME>`。
-- 真实 GC / DT adapter binding：基于 `team-config.yaml.template` 在保密区复制出 `team-config.yaml` 并填写团队自己的参数。
+- 真实 GC / DT adapter binding：基于 `team-config.yaml.template` 在团队配置内复制出 `team-config.yaml` 并填写团队自己的参数。
 
 公共 `.claude/skills/idc-workflow/references/registries/skill-adapters.yaml`
 只作为 adapter eligibility registry，不放任何团队真实路径、命令或内部 skill 名。
@@ -63,9 +63,9 @@ python3 tests/test_harness.py
 
 - 测试全部通过。
 - Placeholder hygiene 通过。
-- 仓库里没有企业 secret。
+- 仓库里没有真实企业细节。
 - D3A Layer registry 仍然匹配固定架构。
-- DT Domain registry 仍然只包含 V0 placeholder domain；真实 DT domain 只通过 `team-config.yaml.domain.d3a.dt_domains` 覆盖，不直接改注册表。
+- DT Domain registry 仍然只包含默认 placeholder domain；真实 DT domain 只通过 `team-config.yaml.domain.d3a.dt_domains` 覆盖，不直接改注册表。
 - 没有 `.DS_Store` 等无关元数据文件。
 
 ## 入区后的第一条 Vertical Slice

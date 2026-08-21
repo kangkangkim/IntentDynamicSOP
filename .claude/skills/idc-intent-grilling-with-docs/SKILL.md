@@ -1,6 +1,6 @@
 ---
 name: idc-intent-grilling-with-docs
-description: Use when a draft spec, structured requirement, or TR3 design doc needs Grill Me style clarification against project documentation, and the session should also create or update non-sensitive decision docs such as CONTEXT.md, ADRs, or glossary entries before alignment; never write implementation code.
+description: Use when a draft spec, structured requirement, or TR3 design doc needs Grill Me style clarification against project documentation, and the session should also create or update public decision docs such as CONTEXT.md, ADRs, or glossary entries before alignment; never write implementation code.
 ---
 
 # Intent Grilling With Docs
@@ -22,7 +22,7 @@ Use for:
 - TR3 or structured requirements that need clarification against existing docs.
 - Draft specs that should produce a durable decision record before Alignment.
 - Domain vocabulary, API semantics, or scope decisions that must be remembered.
-- Company confidential environments that do not already have Grill With Docs.
+- Company team-config onboarding environments that do not already have Grill With Docs.
 
 Do not use for:
 
@@ -59,7 +59,7 @@ Requirement Assessor
   -> Select current frontier
   -> AskUserTool <= 5 multiple-choice question cards
   -> User answers
-  -> Update non-sensitive docs only when decisions crystallize
+  -> Update public docs only when decisions crystallize
   -> Commitment check
   -> READY_FOR_ALIGNMENT / NEXT_FRONTIER / ESCALATE
 ```
@@ -85,9 +85,9 @@ grill_with_docs_output:
 
 - Do not write implementation code.
 - Do not edit source files, tests, build files, or production configs.
-- Only create or update non-sensitive docs requested by the workflow.
-- Do not write enterprise secrets, real internal APIs, private paths, logs, or
-  confidential build commands into shared docs.
+- Only create or update public docs requested by the workflow.
+- Do not write real enterprise details, real internal APIs, private paths, logs, or
+  private build commands into shared docs.
 - Do not decide Domain or Lane.
 - Do not override scope, contract, or completion gate.
 - Do not ask more than 5 questions per frontier round.

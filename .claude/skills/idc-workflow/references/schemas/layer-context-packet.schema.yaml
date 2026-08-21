@@ -38,7 +38,7 @@ example:
       files:
         - <ENTERPRISE_REPO_PATH>
       notes:
-        - Dynamic repository context 必须在保密区内收集。
+        - Dynamic repository context 必须在团队配置内收集。
     required_dt: [TPRINT]
     acceptance_criteria:
       - DO context packet 只包含 DO layer knowledge。

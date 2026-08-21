@@ -2,9 +2,9 @@ schema: vertical_slice_readiness
 version: 0
 
 description: >
-  Non-sensitive readiness contract for the first confidential-zone D3A vertical
+  公开 readiness contract for the first team-config D3A vertical
   slice. This contract proves the harness is bound to enough real enterprise
-  facts to run one evidence-based loop. It must not contain enterprise secrets
+  facts to run one evidence-based loop. It must not contain real enterprise details
   in the external repository.
 
 vertical_slice:

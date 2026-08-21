@@ -239,7 +239,7 @@
   <main>
     <header class="page-head">
       <h1>IDC team-config.yaml Generator</h1>
-      <p class="subtitle">在浏览器里填表单，右侧实时生成 <code>team-config.yaml</code>。本地校验规则与 <code>tests/test_harness.py</code> 一致；路径存在性浏览器验不了，复制进保密区后跑一次 harness 即可确认。草稿自动存在本机（localStorage），不会上传到任何地方。</p>
+      <p class="subtitle">在浏览器里填表单，右侧实时生成 <code>team-config.yaml</code>。本地校验规则与 <code>tests/test_harness.py</code> 一致；路径存在性浏览器验不了，接入团队配置后跑一次 harness 即可确认。草稿自动存在本机（localStorage），不会上传到任何地方。</p>
     </header>
 
     <div class="layout">
@@ -271,7 +271,7 @@
               <label>DT Domain 列表 <code>domain.d3a.dt_domains</code>（条目：id + knowledge_ref）</label>
               <div class="rows" id="dtlist"></div>
               <button class="btn addrow" data-list="dtlist" type="button">+ 添加 DT Domain</button>
-              <p class="hint">留空 = 沿用仓库 V0 placeholder（TPRINT / FW / DPF）；填任意条则整表替换。</p>
+              <p class="hint">留空 = 沿用仓库默认 placeholder（TPRINT / FW / DPF）；填任意条则整表替换。</p>
             </div>
 
             <div class="field"><label>Custom Domain ID <code>domain.custom.id</code></label><input type="text" data-path="domain.custom.id" placeholder="仅 custom 模式填写" /></div>
@@ -370,13 +370,13 @@
             <button class="btn" id="downloadBtn" type="button">下载 team-config.yaml</button>
             <button class="btn danger" id="clearBtn" type="button">清空草稿</button>
           </div>
-          <div class="note">填好的 team-config.yaml 含企业真实路径与 skill ref（真实命令封装在企业 skill 内部）：只放保密区，不要提交回共享 harness 仓库。</div>
+          <div class="note">填好的 team-config.yaml 含企业真实路径与 skill ref（真实命令封装在企业 skill 内部）：只保留在团队配置接入环境，不要提交回共享 harness 仓库。</div>
         </div>
 
         <div class="panel">
           <h2>本地校验（与 harness 同规则）</h2>
           <ul class="checks" id="checks"></ul>
-          <p class="hint">每个 skill_ref 的路径存在性浏览器无法验证，由保密区内 <code>idc-team-config</code> Resolver 完成。</p>
+          <p class="hint">每个 skill_ref 的路径存在性浏览器无法验证，由团队配置内 <code>idc-team-config</code> Resolver 完成。</p>
         </div>
       </aside>
     </div>
@@ -720,7 +720,7 @@
       });
       add(extensionRowsOk, "每条扩展能力都有 id / capability keys / stages / skill_ref");
 
-      add(true, "每个 skill_ref 的路径存在性由保密区 Resolver 验证", true);
+      add(true, "每个 skill_ref 的路径存在性由接入团队后的 Resolver 验证", true);
       return checks;
     }
 

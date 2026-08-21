@@ -88,7 +88,8 @@ Evidence-based completion。
 
 必须替换（接入团队全部通过 `team-config.yaml` 覆盖，不改共享文件）：
 
-- Test domain registry（`domain.d3a.dt_domains` / `general.test_domains` / `general.components` 非空时整体替换，不合并）。
+- Test domain registry（`domain.d3a.dt_domains` / `general.test_domains` 非空时整体替换，不合并）。
+- General coding-layer / component registry（`general.components` 整体替换，不合并）。
 - Verification mapping（`knowledge.verification_mapping_ref`）。
 - Knowledge refs（registry 条目的 `knowledge_ref`、`knowledge.layer_docs`）。
 - Build / run skills（`bindings.*.skill_ref`；命令封装在 Skill 内）。

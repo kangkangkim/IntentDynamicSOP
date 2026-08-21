@@ -77,8 +77,8 @@ Known original-repository skill adapters:
 .claude/skills/idc-gc-third-skill-placeholder/SKILL.md
 ```
 
-The third skill remains a placeholder until the confidential environment
-provides the real skill name and contract.
+The third skill remains a placeholder until team-config onboarding provides
+the real skill name and contract.
 
 ## Rules
 

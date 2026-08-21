@@ -19,7 +19,7 @@ the team can really execute.
 
 ## Step 1: Copy The Harness
 
-Copy this repository into the confidential environment. Do not add enterprise
+Copy this repository into the team environment. Do not add enterprise
 paths, commands, logs, APIs, knowledge bodies, or internal Skill names to the
 public harness.
 

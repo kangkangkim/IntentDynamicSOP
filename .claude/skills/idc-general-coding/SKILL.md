@@ -74,4 +74,4 @@ general_coding_result:
 - Choose test domains only from the effective registry: repo default `../idc-workflow/references/registries/general-test-domains.yaml`, or replaced wholesale by `team-config.yaml.general.test_domains` when non-empty (never merge).
 - Every execution unit code change must be `<= 500 LOC`.
 - Completion requires tool evidence, not model confidence.
-- Keep enterprise details as placeholders outside the confidential environment.
+- Keep enterprise details as placeholders outside team-config onboarding.

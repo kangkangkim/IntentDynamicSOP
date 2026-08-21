@@ -2,7 +2,7 @@
 
 外部环境只保留 placeholder。
 
-进入保密区后填写：
+接入团队配置后填写：
 
 ```text
 <ENTERPRISE_GENERAL_TEST_SECONDARY_COMMAND>

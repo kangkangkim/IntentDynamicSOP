@@ -256,7 +256,7 @@
 
         <div class="cell rowlabel">
           团队身份与代码仓
-          <p>保密区里的真实仓库位置和内部 skill 根目录。</p>
+          <p>团队配置内的真实仓库位置和内部 skill 根目录。</p>
         </div>
         <div class="cell">
           <span class="stage stage-violet">team:</span>
@@ -292,7 +292,7 @@
           <ul>
             <li>条目形如 {id, knowledge_ref}</li>
             <li>非空列表整体替换仓库注册表</li>
-            <li>留 [] 用仓库 V0 placeholder</li>
+            <li>留 [] 用仓库默认 placeholder</li>
           </ul>
           <pre class="example">domain:
   d3a:
@@ -431,9 +431,9 @@
       <article class="phase">
         <h2>0 入区前</h2>
         <ol>
-          <li>复制 harness 进保密区</li>
+          <li>复制 harness 接入团队配置</li>
           <li><code>python3 tests/test_harness.py</code> 全绿</li>
-          <li>确认无企业 secret 混入</li>
+          <li>确认无真实企业细节混入</li>
         </ol>
         <div class="trigger"><b>例：</b>输出 <code>45 个测试通过</code> 才算过。</div>
       </article>

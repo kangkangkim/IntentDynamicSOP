@@ -1,6 +1,6 @@
 ---
 name: idc-team-config
-description: Validate and resolve the confidential team-config.yaml into read-only effective IDC runtime configuration; use during team adoption, readiness checks, custom-domain registration, or adapter-binding diagnosis.
+description: Validate and resolve the private team-config.yaml into read-only effective IDC runtime configuration; use during team adoption, readiness checks, custom-domain registration, or adapter-binding diagnosis.
 ---
 
 # IDC Team Config

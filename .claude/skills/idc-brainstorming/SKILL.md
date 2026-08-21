@@ -14,7 +14,7 @@ brainstorming. It does not merely refer to the upstream name. Read
 `references/superpowers-brainstorming-method.md` before running the skill, then
 apply the IDC-specific handoff and approval constraints in this file.
 
-In a confidential company environment, prefer the team's existing
+After team-config onboarding, prefer the team's existing
 brainstorming implementation when effective team config provides
 `idc-brainstorming`. This skill remains the shared IDC wrapper and fallback
 contract so every team returns the same draft-spec shape.
@@ -138,7 +138,7 @@ When this skill is used inside IDC, hand off to:
 - Use Chinese if the user used Chinese.
 - TR3 skips this skill unless the TR3 is too incomplete to identify behavior.
 - Domain hint must not suppress idc-brainstorming: `general + rough` still uses this skill.
-- Keep enterprise details as placeholders outside the confidential environment.
+- Keep real enterprise details as placeholders outside team-config onboarding.
 - Company-owned brainstorming should be reused through Team Binding, not copied
   into the shared harness.
 - All questions or direction choices shown to the user must be emitted through

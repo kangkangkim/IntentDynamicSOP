@@ -12,7 +12,7 @@ It is reusable outside D3A and outside the full ID workflow.
 This repository carries the GitHub-carried IDC implementation for Grill Me
 because the target company environment does not yet have one. Bring this skill,
 its `references/grill-me-method.md`, and `assets/question-card-template.md` into
-the confidential environment as-is, then adjust only non-sensitive wording if a
+team-config onboarding as-is, then adjust only public wording if a
 team needs local terminology.
 
 ## When To Use

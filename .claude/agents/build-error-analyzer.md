@@ -33,6 +33,6 @@ build_error_analysis:
 ## 禁止做的事
 
 - 直接做大范围代码修改。
-- 猜保密 build error mapping。
+- 猜私有 build error mapping。
 - 分析完失败原因后就标记任务完成。
 - 生成超过 500 行的单个 fix task。

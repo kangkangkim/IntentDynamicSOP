@@ -35,7 +35,7 @@ Human Alignment Check 不写代码、不做最终实现规划。它只决定当�
 - `readiness`: 是否已经能生成 Alignment View。
 - `critical_gap`: contract / scope / completion gate / API semantics / test evidence / file placement 是否缺关键决策。
 - `needs_alternatives`: raw idea 是否还需要 Brainstorming 发散。
-- `docs_needed`: 澄清结果是否需要同步到非敏感 docs / ADR / glossary。
+- `docs_needed`: 澄清结果是否需要同步到公开 docs / ADR / glossary。
 - `approval_validity`: 已有 approval ref / runtime checkpoint 是否仍可信。
 - `scope_drift`: 当前事实是否超出已 approve 的 scope。
 

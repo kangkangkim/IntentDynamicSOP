@@ -251,15 +251,15 @@ Consumption Receipt for the authorized `knowledge_plan_id`.
 - Keep router, gate, lane, provider, completion, resume, and evidence behavior in `references/`; do not promote them to standalone skills unless they need independent invocation.
 - Do not skillize passive assets such as schemas, registries, examples, human-view templates, lane definitions, evidence files, and knowledge templates;沉淀 them as references or assets according to the official skill directory shape.
 - Superpowers Adapter may provide the inner engineering loop after approval, but IDC owns Domain, Lane, Contract Gate, and Completion Gate.
-- GC SOP Adapter may reuse confidential enterprise atomic abilities after approval, but must go through Skill Adapter Router and cannot invent original repository skill details.
+- GC SOP Adapter may reuse team-owned enterprise atomic abilities after approval, but must go through Skill Adapter Router and cannot invent original repository skill details.
 - Skill Adapter Router must select GC / DT / Superpowers adapters from `references/registries/skill-adapters.yaml`; adapter names are not triggers by themselves.
 - For Lane-applicable routes, Capability Selector must execute `team-config.yaml.lane.profiles.<lane>` Skill policy and orchestration. Never silently ignore configured allow/deny/required lists or ordered steps.
 - Team-specific paths, knowledge refs, and internal skill refs (including DT design / writing / build skills) must be supplied through `team-config.yaml`; real build commands live inside the bound skill, never in the config. Use `team-config.yaml.template` as the fill-parameters entrypoint.
 - Registries (`dt-domains.yaml`, `general-components.yaml`, `general-test-domains.yaml`) are repo read-only defaults; a non-empty team-config list (`domain.d3a.dt_domains`, `general.components`, `general.test_domains`) replaces the registry wholesale — never merge sources.
-- Original repository DT skills are represented as adapters: `idc-dt-design` for DT design, `idc-dt-writer` for DT writing, and `idc-gc-third-skill-placeholder` until the third skill is named in the confidential zone.
+- Original repository DT skills are represented as adapters: `idc-dt-design` for DT design, `idc-dt-writer` for DT writing, and `idc-gc-third-skill-placeholder` until the third skill is named during team-config onboarding.
 - Use `upstream-superpowers-brainstorming` as the `raw_idea` baseline, then apply `idc-brainstorming-overlay` before handoff to the configured clarification skill.
 - Skip Discovery Provider for TR3 unless the TR3 is too incomplete to identify behavior.
-- Before first confidential-zone D3A execution, run Vertical Slice Readiness Gate and require all required readiness checks PASS.
+- Before the first D3A execution after team-config onboarding, run Vertical Slice Readiness Gate and require all required readiness checks PASS.
 - Clarification Provider only asks for critical missing information needed for contracts, scope, or completion gates.
 - The clarification skill configured in `effective.alignment` may apply `grill-me-method` internally (decision tree, frontier rounds, commitment check, no implementation).
 - If `grill-me-method` is unavailable, fall back to `builtin-critical-questions` as the method **inside the same configured clarification skill**; never skip invoking the configured clarification skill or substitute a non-configured one.
@@ -278,7 +278,7 @@ Consumption Receipt for the authorized `knowledge_plan_id`.
 - Every execution unit requires a READY Knowledge Load Plan. Loading an
   unplanned Layer/component/test-domain ref blocks completion; required static
   refs and provider/search results require a VERIFIED consumption receipt.
-- Keep enterprise details as placeholders outside the confidential environment.
+- Keep enterprise details as placeholders outside team configuration.
 - All user-facing questions, approvals, re-alignment choices, and escalation decisions must be emitted through `AskUserTool` according to `references/workflows/ask-user-tool-policy.md`; do not ask the user by plain text.
 - The alignment pipeline (`team-config.yaml.alignment`) configures only the intent-processing steps before approval: it may rebind or reorder pre-alignment skills with ordered stage mappings. Scenario Router, Contract Gate, Human Alignment approval, and completion ownership stay framework-owned and are not configurable through it.
 - Run pre-alignment from the effective alignment pipeline in `.idc/effective-team-config.yaml`. An absent or partial alignment section (missing `bindings` or `orchestration`) falls back to the framework default five-step chain with no other output difference; never merge team overrides with the framework default chain ad hoc.

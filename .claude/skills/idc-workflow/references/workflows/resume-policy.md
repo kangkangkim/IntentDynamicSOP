@@ -1,6 +1,6 @@
 # Resume Policy
 
-Resume Policy 负责让保密区中断后的任务能接上。
+Resume Policy 负责让接入团队配置后中断的任务能接上。
 
 核心原则：
 
@@ -17,7 +17,7 @@ Resume Policy 负责让保密区中断后的任务能接上。
 - “继续上次任务”。
 - “中断了，接着跑”。
 - “从之前 checkpoint 恢复”。
-- 保密区会话、subagent、official dynamic workflow 中断后重新进入。
+- 团队配置内会话、subagent、official dynamic workflow 中断后重新进入。
 
 必须先读取：
 

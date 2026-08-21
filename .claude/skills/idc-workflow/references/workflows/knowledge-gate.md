@@ -84,7 +84,7 @@ context_provider_result:
 
 OKL 本质是 LLM Wiki。
 
-保密区入口基本是：
+接入团队配置后，入口基本是：
 
 ```text
 okl-query

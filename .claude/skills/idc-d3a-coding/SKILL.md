@@ -7,14 +7,14 @@ description: Use only after the IDC workflow selects Domain = d3a and Human Alig
 
 当 IDC workflow 选择 `Domain = d3a` 且 Human Alignment 已批准后，使用这个 skill。
 
-D3A 场景使用用户设计的固定 D3A workflow。它与 General Coding 共享
+D3A 场景使用 harness 固定的 D3A workflow。它与 General Coding 共享
 `Planner -> Knowledge Preparation -> Execution Unit Split -> TDD -> Completion`
 骨架；这个 skill 只能在固定流程内做 layer planning、DT mapping、knowledge
 准备、execution unit 拆分、adapter 绑定和 evidence 收集，不能重排或重新设计
 D3A 主流程。
 
 D3A 不参与 `fast / lite / complex` Lane 分类。Domain Module Router 选中 D3A
-后跳过通用 Lane Resolver，由用户设计的固定 D3A workflow 自己定义 planning、
+后跳过通用 Lane Resolver，由 harness 固定的 D3A workflow 自己定义 planning、
 delegation 和 evidence 深度。
 
 ## When To Use
@@ -96,9 +96,9 @@ d3a_execution_result:
   Knowledge Load Plan；Knowledge Consumption 未 VERIFIED 或出现跨 Layer ref
   时不得进入 DONE。
 
-## 保密区绑定
+## 团队配置绑定
 
-以下 placeholder 只能在企业保密区替换：
+以下 placeholder 只能在团队配置内替换：
 
 ```text
 <ENTERPRISE_API_CONTRACT>

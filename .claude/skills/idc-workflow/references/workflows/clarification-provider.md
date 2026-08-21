@@ -48,7 +48,7 @@ grill-with-docs-method
 
 默认 fallback provider。
 
-它不依赖外部服务，保密区内也必须可用。
+它不依赖外部服务，团队配置内也必须可用。
 
 它只能基于当前 request、repo context summary、contract gap 和 completion gate gap 提问。
 
@@ -77,13 +77,13 @@ Use the project skill:
 .claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md
 ```
 
-它可以产出非敏感的决策记录草案，例如：
+它可以产出公开的决策记录草案，例如：
 
 ```text
 docs/decision-records/<placeholder>.md
 ```
 
-在外部环境只能写 placeholder 级文档；进入保密区后才能填真实内部细节。
+在外部环境只能写 placeholder 级文档；接入团队配置后才能填真实内部细节。
 
 ## Provider 边界
 
@@ -175,5 +175,5 @@ clarification_provider:
 - 不把 clarification 回答当作 DONE evidence。
 - 每轮必须说明这些问题为什么阻塞 contract、scope 或 completion gate。
 - 用户用中文输入时，澄清问题必须用中文。
-- docs mode 只能写非敏感 placeholder 文档。
+- docs mode 只能写公开 placeholder 文档。
 - 不允许用普通文本直接追问用户；如果 `AskUserTool` 不可用，返回 `BLOCKED_NEEDS_ASK_USER_TOOL`。

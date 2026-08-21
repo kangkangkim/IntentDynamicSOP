@@ -2,9 +2,9 @@ schema: skill_adapter
 version: 0
 
 description: >
-  Non-sensitive contract for external harness skills that wrap enterprise
+  公开 contract for external harness skills that wrap enterprise
   original-repository skills or SOP atoms. Adapters declare boundaries; they do
-  not copy confidential implementation details.
+  not copy team-private implementation details.
 
 skill_adapter:
   id: string

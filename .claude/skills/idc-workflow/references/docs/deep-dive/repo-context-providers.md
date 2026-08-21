@@ -7,7 +7,7 @@ Repo Context Providers 的目标是找到足够、可引用、可验证的仓库
 ```text
 grep      -> 文本事实
 CodeGraph -> 结构事实
-OKL       -> LLM Wiki 知识文档事实，保密区用 okl-query 命令调用
+OKL       -> LLM Wiki 知识文档事实，团队配置内用 okl-query 命令调用
 ```
 
 这些事实会进入 Context Packet，帮助 Agent 执行，但不能直接作为 DONE evidence。

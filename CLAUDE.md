@@ -1,10 +1,10 @@
 # Intent-Driven Coding Harness
 
-这个仓库保存 Intent-Driven Coding 工作流的非敏感骨架。
+这个仓库保存 Intent-Driven Coding 工作流的公开骨架。
 
 ## 范围
 
-- 仓库内不得包含企业 secret。
+- 仓库内不得包含真实企业细节。
 - 不得编造内部 D3A 实现细节。
 - 涉及专有 API、路径、命令、日志、测试名、构建系统、架构事实时，必须使用显式 placeholder。
 - 优先使用小而可组合的 Markdown / YAML 文件，不引入自定义 agent framework。
@@ -30,7 +30,7 @@
 5. 只有任务属于 D3A domain module 时，才使用 D3A workflow。
 6. D3A architecture 和主 workflow 是固定的：不能创建或删除 D3A Layer；Lane 对 D3A 不适用，并跳过通用 Lane Resolver。
 7. D3A knowledge 必须渐进加载，只加载受影响的 coding layer 和 DT domain。
-8. 企业特定细节在进入保密区前都必须保持 placeholder。
+8. 企业特定细节在接入团队配置前都必须保持 placeholder。
 9. API Contract 和 task contract 形成前，不要实现 production code。
 10. 没有 RED / GREEN evidence，不要标记 implementation complete。
 11. required DT domain 全部 GREEN 且 `tran_build` PASS 后，才能标记 D3A task done。

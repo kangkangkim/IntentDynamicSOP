@@ -2,7 +2,7 @@ schema: runtime_state
 version: 1
 
 description: >
-  Machine-readable checkpoint for resuming an IDC workflow after confidential-zone
+  Machine-readable checkpoint for resuming an IDC workflow after team-config onboarding
   interruption. This file is state, not evidence; DONE still requires tool evidence.
 
 runtime_state:

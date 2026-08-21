@@ -73,7 +73,7 @@ IDC overlay 只做接线和边界微调：
 - upstream design 输出不直接进入实现，而是进入 `intent-grilling`。
 - draft spec 不等于 approved contract。
 - 最终人工 gate 仍然是 `intent-alignment` 的 Alignment View。
-- 外部环境只能生成非敏感 draft spec。
+- 外部环境只能生成公开 draft spec。
 - `Spike / Bounded / Architectural` 只表示 Discovery 深度，不是 Lane。
 - Discovery 可以补充 `lane_signals`，但不能把 path 直接映射为 `fast / lite / complex`；Domain Module Lane applicability 优先，只有 applicable dynamic-lane route 才由 Lane Resolver 判断。D3A 的 Lane 为 `not_applicable`。
 
@@ -81,7 +81,7 @@ IDC overlay 只做接线和边界微调：
 
 默认 fallback provider。
 
-它不依赖外部服务，保密区内也必须可用。
+它不依赖外部服务，团队配置内也必须可用。
 
 它只做最小展开：
 
@@ -173,5 +173,5 @@ discovery_provider:
 - 不在 Discovery 阶段写实现代码。
 - 不把 draft spec 当作 approved contract。
 - 用户用中文输入时，Discovery 问题和方案必须用中文。
-- 外部环境只能生成非敏感 draft spec。
+- 外部环境只能生成公开 draft spec。
 - 不允许用普通文本直接追问用户；如果 `AskUserTool` 不可用，返回 `BLOCKED_NEEDS_ASK_USER_TOOL`。

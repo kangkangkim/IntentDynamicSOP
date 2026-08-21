@@ -37,7 +37,7 @@ Preflight 还会把每个 Lane step 和 required Skill 送入真实 Capability S
 
 Resolver 把文件引用绝对化后才交给 Selector 和 Adapter Router，因此运行结果
 不依赖启动命令的当前目录。本地 knowledge refs 使用同一规则并验证存在性；
-`https://`、`okl://` 等显式 URI 保持原样。
+`https://` 等显式 URI 保持原样。
 
 ## 团队验收
 

@@ -1,11 +1,11 @@
 # 架构说明
 
-Intent Dynamic Code 把稳定的工作流机制和保密的企业 domain binding 分开。
+Intent Dynamic Code 把稳定的工作流机制和私有配置的企业 domain binding 分开。
 
 一句话：
 
 ```text
-外部做通用 harness，保密区填真实企业知识。
+外部做通用 harness，接入团队后填真实企业知识。
 ```
 
 ## 总体分层
@@ -142,7 +142,7 @@ Lane applicability 有三种策略：
 - `fixed` 为确实需要固定 Lane 的团队 Domain Module 保留。
 - `not_applicable` 不输出 Lane，由 Domain workflow 接管；D3A 使用此策略。
 
-V0 只有三种 Lane，且只允许这三种输出：
+v1.0 只有三种 Lane，且只允许这三种输出：
 
 ```text
 fast
@@ -237,7 +237,7 @@ Human Alignment 发生在 Planner 之前。Discovery 只提供 normalized reques
 
 - 是否需要 Brainstorming 继续发散。
 - 是否存在 contract / scope / completion gate / API semantics / test evidence / file placement gap。
-- 是否需要 Grill With Docs 同步非敏感决策记录。
+- 是否需要 Grill With Docs 同步公开决策记录。
 - 是否可以生成 Alignment View。
 - 已有 approval ref / checkpoint 是否仍有效。
 - 是否发生 scope drift，需要 Re-alignment。
@@ -289,7 +289,7 @@ DT mapping、TDD 状态机和 completion gate。
 
 ## D3A Module
 
-D3A 场景的主流程是固定的用户设计流程。IDC 只能判断输入是否满足进入条件，并在固定流程内部做 layer、DT domain、execution unit、adapter 和 evidence 的动态选择；不能重排或重新设计 D3A 主流程。
+D3A 场景的主流程是 harness 固定的流程。IDC 只能判断输入是否满足进入条件，并在固定流程内部做 layer、DT domain、execution unit、adapter 和 evidence 的动态选择；不能重排或重新设计 D3A 主流程。
 
 D3A 使用固定架构空间，但在这个固定空间内动态规划。
 
@@ -305,7 +305,7 @@ ADP
 DRV
 ```
 
-V0 DT Domain：
+默认 DT Domain placeholder：
 
 ```text
 TPRINT
@@ -328,7 +328,7 @@ D3A 的动态性主要发生在：
 - D3A Planner 不能创建新的 D3A Layer。
 - D3A Planner 不能删除已有 D3A Layer。
 - Coding Layer 到 DT Domain 是多对多关系，不能在外部环境猜。
-- 所有真实 mapping 必须进入保密区后填写。
+- 所有真实 mapping 必须接入团队配置后填写。
 - API Contract 必须先于 implementation。
 - RED evidence 必须先于 GREEN evidence。
 - DONE 必须同时满足 required DT GREEN 和 `tran_build PASS`。
@@ -356,7 +356,7 @@ General Coding 用于简单普通开发任务 fallback。
 
 更复杂的非 D3A 任务优先进入 Dynamic Scenario Mode。
 
-V0 只预留 assessment 维度：
+v1.0 只预留 assessment 维度：
 
 - Complexity
 - Uncertainty
@@ -372,7 +372,7 @@ V0 只预留 assessment 维度：
 - Subagent 拆分策略。
 - Review 和 final verification 强度。
 
-## 三个关键角色
+## 四个关键角色
 
 ```text
 Scenario Router
@@ -407,9 +407,9 @@ Dynamic Repository Context
   -> Repository Search
 ```
 
-V0 只定义接口和模板，不接真实企业 CodeGraph / Wiki。
+v1.0 只定义接口和模板，不接真实企业 CodeGraph / Wiki。
 
-## 保密边界
+## 团队配置边界
 
 外部可以开发：
 
@@ -420,7 +420,7 @@ V0 只定义接口和模板，不接真实企业 CodeGraph / Wiki。
 - Placeholder skill 接口。
 - Harness tests。
 
-必须进入保密区开发：
+必须接入团队配置开发：
 
 - 真实 Domain Module 知识。
 - 真实 D3A Layer / DT Domain 知识。

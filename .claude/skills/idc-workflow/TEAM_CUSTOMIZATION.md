@@ -19,7 +19,7 @@ IDC Core
   adapter eligibility registry
 
 Team Binding
-  owned by the adopting team in a confidential location
+  owned by the adopting team in a private team location
   owns team-config.yaml with Domain selection/definition, repository paths,
   internal skill refs, adapter extensions, and knowledge indexes
 
@@ -71,14 +71,14 @@ Shared registries (`dt-domains.yaml`, `general-components.yaml`,
 `general-test-domains.yaml`) are read-only defaults: a non-empty
 `domain.d3a.dt_domains` / `general.components` / `general.test_domains` in
 `team-config.yaml` replaces the corresponding registry wholesale (never merge).
-Do not edit shared registry files in the confidential copy.
+Do not edit shared registry files in the team copy.
 
 Custom domains are adoption configuration: use `domain.mode: custom` and fill
 the inline `domain.custom` contract. Do not edit the shared Domain registry.
 
 For multi-team reuse, do not put concrete team paths or commands into the shared
 adapter registry. Keep `references/registries/skill-adapters.yaml` as the common
-eligibility table, and let each adopting team provide confidential values in:
+eligibility table, and let each adopting team provide private values in:
 
 ```text
 team-config.yaml
@@ -108,7 +108,7 @@ implementation:
 
 ## What D3A Teams Fill In Confidentially
 
-Only inside the confidential environment, fill real values in exactly one file:
+Only inside the team configuration, fill real values in exactly one file:
 
 ```text
 team-config.yaml
@@ -120,7 +120,7 @@ team-config.yaml
 - Skill refs go to `bindings.*`; commands and pass/fail logic remain inside those skills.
 
 The repo registries (`d3a-layers.yaml`, `dt-domains.yaml`), `d3a/module.yaml`,
-and `d3a-workflow.md` stay untouched placeholders in the confidential copy.
+and `d3a-workflow.md` stay untouched placeholders in the team copy.
 
 Keep the fixed D3A Coding Layer names:
 

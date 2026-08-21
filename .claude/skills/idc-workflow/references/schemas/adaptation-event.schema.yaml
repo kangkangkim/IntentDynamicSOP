@@ -17,6 +17,6 @@ adaptation_event:
   confidential_payload_ref: string | null
 
 rules:
-  - Event summaries are bounded and redact confidential implementation details.
+  - Event summaries are bounded and redact team-private implementation details.
   - Events are observations, not active policy.
   - Model guesses are not enterprise facts.

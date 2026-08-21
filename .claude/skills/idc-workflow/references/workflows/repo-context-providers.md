@@ -32,7 +32,7 @@ Provider 顺序由 `workflows/provider-selection-matrix.md` 决定。
 |---|---|---|
 | `grep` | 文本事实 | 这个 symbol / error / config 在哪里出现？ |
 | `codegraph` | 结构事实 | 谁调用谁？影响范围是什么？ |
-| `OKL` | LLM Wiki 工具；保密区通过 `okl-query` 命令调用 | 历史设计、TR3、领域约定怎么说？ |
+| `OKL` | LLM Wiki 工具；团队配置内通过 `okl-query` 命令调用 | 历史设计、TR3、领域约定怎么说？ |
 | `repo_search` | 仓库搜索 | 类似实现和测试在哪里？ |
 
 ## 使用规则

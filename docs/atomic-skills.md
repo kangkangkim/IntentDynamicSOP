@@ -16,7 +16,7 @@ Atomic Skill 是可以被其他团队单独复用的小能力。
 
 - 有独立输入和输出。
 - 不绑定 D3A 私有知识。
-- 不依赖真实企业路径、命令或 secret。
+- 不依赖真实企业路径、命令或企业私有细节。
 - 能被 `idc-workflow` 编排，也能被其他 workflow 单独调用。
 - 有明确 handoff 条件。
 
@@ -55,7 +55,6 @@ domain-module-router
 lane-resolver
 contract-gate
 requirement-assessor
-output-surface-router
 automated-closure-loop
 execution-unit-policy
 progressive-constraint-loading
@@ -119,7 +118,7 @@ Skill package shape:
 draft_spec / structured_requirement / tr3_design_doc + docs -> clarification answers + doc refs
 ```
 
-用于需要把澄清结果沉淀为非敏感决策文档、CONTEXT 或 glossary 的场景。
+用于需要把澄清结果沉淀为公开决策文档、CONTEXT 或 glossary 的场景。
 
 它和 `idc-intent-grilling` 共用 Grill Me 的 decision tree / frontier round
 方法，但额外读取：
@@ -155,7 +154,7 @@ idc-superpowers-adapter 只提供 approved 后的执行纪律
 ### idc-gc-sop-adapter
 
 ```text
-approved_alignment + selected GC atom -> confidential GC SOP handoff
+approved_alignment + selected GC atom -> team-config GC SOP handoff
 ```
 
 用于在企业内部复用 GC 全家桶 SOP 的原子能力。
@@ -184,7 +183,7 @@ dt_design_ref + allowed paths -> DT changes + RED/GREEN evidence refs
 selected DT domain + enterprise command placeholder -> DT build/run evidence
 ```
 
-D3A verification 阶段的 DT build / run evidence 接口 skill。外部 harness 只定义非敏感输入输出，不包含真实企业命令。
+D3A verification 阶段的 DT build / run evidence 接口 skill。外部 harness 只定义公开输入输出，不包含真实企业命令。
 
 ### idc-tran-build
 

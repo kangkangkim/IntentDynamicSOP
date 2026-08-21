@@ -30,4 +30,4 @@
 
 ## 安全声明
 
-本文件不含真实企业代码/路径/命令/日志。所有具体值均为 placeholder，符合 placeholder 保密区约定。
+本文件不含真实企业代码/路径/命令/日志。所有具体值均为 placeholder，符合 placeholder 团队配置约定。

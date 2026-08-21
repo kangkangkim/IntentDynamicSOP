@@ -66,7 +66,7 @@ D3A 不使用 Lane 行。它按 `d3a_fixed_workflow` 和当前 Layer Context Pac
 
 ## OKL Adapter Rules
 
-OKL 是已有 LLM Wiki 能力，保密区入口基本是：
+OKL 是已有 LLM Wiki 能力，接入团队配置后，入口基本是：
 
 ```text
 okl-query

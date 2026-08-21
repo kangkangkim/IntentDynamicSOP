@@ -1,7 +1,7 @@
 # Vertical Slice Readiness Gate
 
-This gate is used only when the harness moves into a confidential enterprise
-zone and the team is preparing the first real D3A vertical slice.
+This gate is used only when the harness moves into team-config onboarding
+and the team is preparing the first real D3A vertical slice.
 
 It does not prove the task is DONE. It only proves the harness has enough real
 bindings to start an approved execution loop.
@@ -13,7 +13,7 @@ Use this gate after:
 ```text
 Domain = d3a
 Human Alignment approved
-first confidential-zone vertical slice selected
+first team-config onboarding vertical slice selected
 ```
 
 Do not use it in the external non-sensitive repository except with placeholders

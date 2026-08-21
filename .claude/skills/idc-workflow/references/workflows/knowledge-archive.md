@@ -37,6 +37,6 @@ knowledge_archive:
 ## Hard Rules
 
 - Do not archive speculative decisions.
-- Do not copy confidential knowledge into the shared harness.
+- Do not copy private knowledge into the shared harness.
 - If `knowledge_archive.skill_ref` is null, skip unless team policy marks archive as required.
 - Archive refs are knowledge, not RED / GREEN / build evidence.

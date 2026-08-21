@@ -76,6 +76,6 @@ The draft spec must include:
 - Use Chinese if the user used Chinese.
 - TR3 skips this skill unless the TR3 is too incomplete to identify behavior.
 - Domain hint must not suppress discovery: `general + rough` still uses this skill.
-- Keep enterprise details as placeholders outside the confidential environment.
+- Keep enterprise details as placeholders outside team-config onboarding.
 - All questions or direction choices shown to the user must be emitted through
   `AskUserTool`; if it is unavailable, return `BLOCKED_NEEDS_ASK_USER_TOOL`.

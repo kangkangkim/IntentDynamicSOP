@@ -18,7 +18,7 @@ Use only after:
 - `idc-dt-design` has produced `READY_FOR_DT_WRITER`, or an equivalent approved DT design ref exists.
 - The selected DT domain is known.
 - Allowed paths and forbidden paths are explicit.
-- The DT build skill is bound (`bindings.dt_build.skill_ref`) in the confidential zone.
+- The DT build skill is bound (`bindings.dt_build.skill_ref`) after team-config onboarding.
 
 Do not use when:
 
