@@ -4,6 +4,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ".claude/skills/idc-workflow/references"
@@ -387,7 +388,7 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "default: lite",
         "profiles:",
         "skills: {allow: [], deny: [], required: []}",
-        "mode: autonomous # autonomous | ordered",
+        "mode: ordered # autonomous | ordered",
         "capability_selection:",
         "autonomous_minimal_sufficient",
         "self_optimization:",
@@ -1145,6 +1146,11 @@ def test_manual_test_scenarios_exist_for_user_experience():
         "test/04-approved-general-execution.md": ["general_execution", "Delegation Contract", "general-coder"],
         "test/05-build-failure-fix.md": ["build_failed", "build-error-analyzer", "targeted fix"],
         "test/06-large-fanout-dynamic-workflow.md": ["official_dynamic_workflow.required = true", "fanout_collect_verify", "repeat_until_pass"],
+        "test/07-lane-fast.md": ["fast_required_conditions", "fast_scope_evidence_present", "不应该跳过验证", "不应该因为"],
+        "test/08-lane-lite-new-capability.md": ["new_or_changed_test_required", "selected_lane = lite", "coverage_evidence_or_exemption", "不应该进 fast"],
+        "test/09-lane-anti-fast-one-liner.md": ["fast_disqualified_by", "behavior_contract_change", "unknown", "不应该因为"],
+        "test/10-lane-complex-hard-trigger.md": ["cross_module_or_layer_impact", "multiple_test_domains", "needs_dependency_dag", "decision_rule = hard_trigger"],
+        "test/11-lane-api-contract-change.md": ["api_semantic_change", "selected_lane = complex", "不应该因"],
     }
     for file_name, fragments in expectations.items():
         text = read_text(file_name)
@@ -2119,6 +2125,97 @@ def test_filled_team_config_when_present():
     )
 
 
+def test_select_capabilities_rejects_unknown_signal():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+    config = ROOT / "examples/team-config.full-bindings.yaml"
+    assert_true(resolver.exists() and selector.exists() and config.exists(), "Resolver / Selector / full-bindings 配置缺失。")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        effective = Path(temp_dir) / "effective.yaml"
+        resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(resolved.returncode == 0, f"team-config Resolver 执行失败：{resolved.stderr}")
+
+        bad_demand = Path(temp_dir) / "unknown-signal.yaml"
+        bad_demand.write_text(
+            """capability_demand:
+  execution_unit_ref: sigtest
+  selected_stage: verification
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: lite
+  execution_profile: lane_driven
+  required_capability_keys: []
+  optional_capability_keys: []
+  observed_signals: [test_faild]
+  contract_refs: []
+""",
+            encoding="utf-8",
+        )
+        bad = subprocess.run(
+            ["ruby", str(selector), "--effective", str(effective), "--demand", str(bad_demand)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(bad.returncode != 0, "未知 observed_signals 必须非零退出，不能静默放行。")
+        assert_true("NEEDS_SIGNAL_MAPPING" in bad.stderr, f"stderr 必须报告 NEEDS_SIGNAL_MAPPING：{bad.stderr}")
+        assert_true("test_faild" in bad.stderr, "stderr 必须列出未知信号 token。")
+
+        good_demand = Path(temp_dir) / "known-signal.yaml"
+        good_demand.write_text(
+            """capability_demand:
+  execution_unit_ref: sigtest
+  selected_stage: verification
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: lite
+  execution_profile: lane_driven
+  required_capability_keys: []
+  optional_capability_keys: []
+  observed_signals: [tdd_required]
+  contract_refs: []
+""",
+            encoding="utf-8",
+        )
+        good = subprocess.run(
+            ["ruby", str(selector), "--effective", str(effective), "--demand", str(good_demand)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(good.returncode == 0, f"已知信号必须 READY 退出 0：{good.stderr}{good.stdout}")
+        assert_true("status: READY" in good.stdout, "已知信号 demand 必须 status: READY。")
+
+
+def test_lane_profiles_use_ordered_mode():
+    config_file = ROOT / "team-config.yaml"
+    if not config_file.exists():
+        return
+    config = yaml.safe_load(config_file.read_text(encoding="utf-8"))
+    profiles = config["lane"]["profiles"]
+    for lane in ["fast", "lite", "complex"]:
+        assert_true(
+            profiles[lane]["orchestration"]["mode"] == "ordered",
+            f"{lane} profile 必须使用 ordered orchestration。",
+        )
+    lite_stages = {step["stage"] for step in profiles["lite"]["orchestration"]["steps"]}
+    assert_true(
+        {"planning", "implementation", "review", "verification", "fix"} <= lite_stages,
+        "lite steps 必须覆盖 planning/implementation/review/verification/fix 五个 stage。",
+    )
+    complex_stages = {step["stage"] for step in profiles["complex"]["orchestration"]["steps"]}
+    assert_true(
+        {"planning", "implementation", "review", "verification", "fix", "completion"} <= complex_stages,
+        "complex steps 必须覆盖 planning/implementation/review/verification/fix/completion 六个 stage。",
+    )
+
+
 def test_team_config_resolver_and_lane_capability_selection_execute():
     resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
     selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
@@ -2890,6 +2987,8 @@ def run():
         test_team_config_resolver_and_lane_capability_selection_execute,
         test_d3a_and_general_lane_runtime_matrix_execute,
         test_filled_team_config_when_present,
+        test_lane_profiles_use_ordered_mode,
+        test_select_capabilities_rejects_unknown_signal,
         test_unpassed_dt_blocks_all_layers_green,
         test_tran_build_must_pass_before_done,
         test_placeholder_hygiene,

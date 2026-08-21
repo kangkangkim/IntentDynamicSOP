@@ -59,6 +59,35 @@ Lane configuration is runtime policy, not descriptive metadata. Resolver rejects
 unknown, unbound, Lane-ineligible, or stage-ineligible Skill IDs so a typo cannot
 silently fall back to the shared registry.
 
+## Ordered-first lane policy
+
+Lanes use `ordered` orchestration by default. The declared `steps` are the
+fixed mandatory backbone: a step with no `trigger_signals` fires whenever
+its `stage` is active; a step with `trigger_signals` fires only when all its
+signals are observed (signal-gated optional, fixed order — not AI-discretionary
+autonomous addition). A stage without any matching declared step returns
+`NEEDS_ORCHESTRATION_MAPPING` and must be re-planned rather than silently
+filled. Under `ordered`, `skills.allow` no longer bounds free selection —
+only step skills are eligible (`orchestration_step_excluded` removes the
+rest), so an empty `allow` (complex) is safe. `max_optional_skills` is inert
+under `ordered` (no autonomous budget); it only matters under `autonomous`.
+
+## Outer execution protocols are not lane-selected
+
+Some Skills are outer execution protocols loaded by the Domain executor at
+runtime, not capabilities the front-end Selector picks. For the General
+Domain, `idc-general-coding` (CLAUDE.md rule 14) is the outer protocol the
+executor loads; `idc-gc-sop-adapter` and other adapters are the inner
+atomic abilities the Selector emits. Outer protocols MUST NOT appear in
+`lane.profiles.<lane>.skills` allow/required lists or in
+`available_capabilities`. If a Skill ID presented as a selected
+capability is not registered in `available_capabilities` or
+`adapter_extensions`, the Selector treats it as registry-ineligible and
+returns `NEEDS_ADAPTER_MAPPING` rather than emitting it. This keeps the
+outer-protocol boundary explicit so a configured lane profile cannot
+silently pull in a Domain execution Skill as if it were an atomic
+capability.
+
 ## Important distinction
 
 ```text

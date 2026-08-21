@@ -49,6 +49,42 @@ configured_required_ids = Array(skill_policy["required"])
 orchestration = lane_profile["orchestration"] || {}
 orchestration_mode = lane_applicability == "applicable" ? (orchestration["mode"] || "autonomous") : "execution_profile"
 orchestration_steps = Array(orchestration["steps"])
+capability_signals = available.flat_map { |capability| Array(capability["trigger_signals"]) }
+step_signals = lane_applicability == "applicable" ? orchestration_steps.flat_map { |step| Array(step["trigger_signals"]) } : []
+known_signals = (capability_signals + step_signals).uniq
+unknown_signals = signals - known_signals
+
+unless unknown_signals.empty?
+  result = {
+    "capability_selection_result" => {
+      "execution_unit_ref" => demand["execution_unit_ref"],
+      "selected_domain" => demand["selected_domain"],
+      "selected_stage" => stage,
+      "strategy" => "autonomous_minimal_sufficient",
+      "orchestration" => {
+        "mode" => orchestration_mode,
+        "matched_step_ids" => [],
+        "configured_skill_ids" => []
+      },
+      "selected" => [],
+      "skipped" => [],
+      "unresolved_required_capabilities" => Array(required_keys),
+      "unresolved_configured_skill_ids" => [],
+      "status" => "NEEDS_SIGNAL_MAPPING",
+      "unknown_signals" => unknown_signals,
+      "known_signals_count" => known_signals.length
+    }
+  }
+  output = YAML.dump(result)
+  if options[:output]
+    Pathname.new(options[:output]).expand_path.write(output)
+  else
+    puts output
+  end
+  warn "NEEDS_SIGNAL_MAPPING: unknown observed_signals: #{unknown_signals.join(', ')}; not declared by any capability.trigger_signals or lane step.trigger_signals"
+  exit 1
+end
+
 matching_steps = orchestration_steps.select do |step|
   next false unless step.is_a?(Hash) && step["stage"] == stage
   required_signals = Array(step["trigger_signals"])

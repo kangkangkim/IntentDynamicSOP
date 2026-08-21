@@ -127,10 +127,11 @@ lane:
   # registry-eligible bound skills; deny always wins; required runs whenever its
   # declared stage is active.
   profiles:
+    # ordered: only declared steps run; conditional steps carry trigger_signals.
     fast:
       skills: {allow: [], deny: [], required: []}
       orchestration:
-        mode: autonomous # autonomous | ordered
+        mode: ordered # autonomous | ordered
         steps: []
         # - id: implement
         #   stage: implementation
@@ -139,12 +140,12 @@ lane:
     lite:
       skills: {allow: [], deny: [], required: []}
       orchestration:
-        mode: autonomous
+        mode: ordered
         steps: []
     complex:
       skills: {allow: [], deny: [], required: []}
       orchestration:
-        mode: autonomous
+        mode: ordered
         steps: []
 
 capability_selection:
