@@ -254,7 +254,7 @@ python3 tests/test_harness.py | grep 失败
 python3 tests/test_harness.py
 ```
 
-期望最后一行：`61 个测试通过。`（本卡只新增文档，不改任何被测行为。）
+期望最后一行：`67 个测试通过。`（本卡只新增文档，不改任何被测行为。）
 
 ## 一句话结论
 

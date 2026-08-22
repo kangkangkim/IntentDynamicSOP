@@ -189,6 +189,10 @@ validate_registry(value_at(config, "general", "test_domains") || [], "general.te
 custom = value_at(config, "domain", "custom") || {}
 if mode == "custom"
   errors << "domain.custom.id is required" unless present?(custom["id"])
+  reserved_domain_keywords = %w[d3a general custom]
+  if present?(custom["id"]) && reserved_domain_keywords.include?(custom["id"].to_s)
+    errors << "domain.custom.id must not reuse a reserved domain keyword: #{custom['id']} (reserved: #{reserved_domain_keywords.join(', ')})"
+  end
   errors << "domain.custom.trigger_rules must not be empty" unless present?(custom["trigger_rules"])
   validate_registry(custom["coding_layers"] || [], "domain.custom.coding_layers", errors)
   validate_registry(custom["test_domains"] || [], "domain.custom.test_domains", errors)

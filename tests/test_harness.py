@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -923,7 +924,7 @@ def test_delegation_contract_keeps_main_agent_as_planner():
             text=True,
         )
         assert_true(auth_knowledge.returncode == 0, f"Authorization 测试 Knowledge Plan 失败：{auth_knowledge.stderr}")
-        knowledge_plan_id = re.search(r"knowledge_plan_id:\s+(\w+)", knowledge_plan_path.read_text(encoding="utf-8")).group(1)
+        knowledge_plan_id = re.search(r"knowledge_plan_id:\s+['\"]?(\w+)", knowledge_plan_path.read_text(encoding="utf-8")).group(1)
         rendered_request = valid_request.replace("<KNOWLEDGE_PLAN_REF>", str(knowledge_plan_path)).replace("<KNOWLEDGE_PLAN_ID>", knowledge_plan_id)
         valid_path = Path(temp_dir) / "valid-auth.yaml"
         valid_path.write_text(rendered_request, encoding="utf-8")
@@ -2274,6 +2275,103 @@ def test_custom_required_contracts_are_validated_and_consumed():
         assert_true("contract-gate.md" in planned.stdout, "required_contracts 必须与 Contract Gate 工作流一起下发。")
 
 
+def test_plan_context_accepts_declared_custom_domain_id():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    base = (ROOT / "examples/team-config.custom-domain.yaml").read_text(encoding="utf-8")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Path(temp_dir) / "custom-domain.yaml"
+        config.write_text(base, encoding="utf-8")
+        effective = Path(temp_dir) / "custom-domain-effective.yaml"
+        resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(resolved.returncode == 0, f"custom domain 配置解析失败：{resolved.stderr}")
+
+        keyword_form = subprocess.run(
+            [
+                "ruby", str(context_planner),
+                "--effective", str(effective),
+                "--phase", "planning",
+                "--domain", "custom",
+                "--lane", "lite",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            keyword_form.returncode == 0 and "status: READY" in keyword_form.stdout,
+            f"--domain custom 必须 READY：{keyword_form.stdout}{keyword_form.stderr}",
+        )
+
+        declared_form = subprocess.run(
+            [
+                "ruby", str(context_planner),
+                "--effective", str(effective),
+                "--phase", "planning",
+                "--domain", "demo-payment",
+                "--lane", "lite",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            declared_form.returncode == 0 and "status: READY" in declared_form.stdout,
+            f"--domain demo-payment（声明的 domain.custom.id）必须 READY：{declared_form.stdout}{declared_form.stderr}",
+        )
+        keyword_plan = yaml.safe_load(keyword_form.stdout)["context_load_plan"]
+        declared_plan = yaml.safe_load(declared_form.stdout)["context_load_plan"]
+        assert_true(
+            keyword_plan.get("required_contracts") == declared_plan.get("required_contracts") and bool(keyword_plan.get("required_contracts")),
+            "两种 --domain 形式物化的 required_contracts 必须一致。",
+        )
+        assert_true(keyword_plan.get("lane") == declared_plan.get("lane"), "两种 --domain 形式的 lane 必须一致。")
+
+        unknown = subprocess.run(
+            [
+                "ruby", str(context_planner),
+                "--effective", str(effective),
+                "--phase", "planning",
+                "--domain", "payment-unknown",
+                "--lane", "lite",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            unknown.returncode != 0 and "status: INVALID" in unknown.stdout,
+            f"乱写的 --domain 取值必须 INVALID：{unknown.stdout}",
+        )
+        assert_true(
+            "accepted: custom, demo-payment" in unknown.stdout,
+            f"错误信息必须列出可接受的取值：{unknown.stdout}",
+        )
+
+        reserved_id = Path(temp_dir) / "reserved-domain-id.yaml"
+        reserved_id.write_text(base.replace("id: demo-payment", "id: d3a", 1), encoding="utf-8")
+        reserved_checked = subprocess.run(
+            ["ruby", str(resolver), "--config", str(reserved_id), "--check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            reserved_checked.returncode != 0,
+            f"domain.custom.id 填保留关键字必须 INVALID：{reserved_checked.stdout}",
+        )
+        assert_true(
+            "domain.custom.id" in reserved_checked.stderr and "reserved" in reserved_checked.stderr,
+            f"错误必须定位到 domain.custom.id 并说明保留字：{reserved_checked.stderr}",
+        )
+
+
 def test_fixed_lane_policy_conflicting_lane_is_rejected():
     resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
     context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
@@ -3476,7 +3574,8 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
             assert_true(knowledge_planned.returncode == 0, f"{scenario} Knowledge Plan 失败：{knowledge_planned.stdout}\n{knowledge_planned.stderr}")
             knowledge_text = knowledge_plan.read_text(encoding="utf-8")
             assert_true("status: READY" in knowledge_text and f"execution_unit_ref: {expected['unit']}" in knowledge_text, f"{scenario} Knowledge Plan 未绑定正确 execution unit。")
-            knowledge_plan_id = re.search(r"knowledge_plan_id:\s+(\w+)", knowledge_text).group(1)
+            # Psych 会给 0 开头的哈希值加引号，取值正则必须容忍可选引号。
+            knowledge_plan_id = re.search(r"knowledge_plan_id:\s+['\"]?(\w+)", knowledge_text).group(1)
             required_block = knowledge_text.split("required_static_knowledge:", 1)[1].split("search_scopes:", 1)[0]
             required_refs = re.findall(r'^\s+ref: "([^"]+)"', required_block, flags=re.MULTILINE)
             assert_true(required_refs, f"{scenario} Knowledge Plan 没有选择任何静态知识。")
@@ -3500,7 +3599,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
             execution_output = phase_outputs["execution"]
             assert_true(expected["domain_skill"] in execution_output, f"{scenario} 未加载正确的 Domain execution Skill。")
             assert_true(execution_output.count("capability_id:") == expected["selected"], f"{scenario} Context Plan 没有保留全部选中能力。")
-            assert_true(f"knowledge_plan_id: {knowledge_plan_id}" in execution_output, f"{scenario} Execution Context 未绑定 Knowledge Plan。")
+            assert_true(re.search(rf"knowledge_plan_id:\s+['\"]?{re.escape(knowledge_plan_id)}", execution_output) is not None, f"{scenario} Execution Context 未绑定 Knowledge Plan。")
             if expected["domain"] == "d3a":
                 all_output = "\n".join(phase_outputs.values())
                 assert_true("lane: " in all_output and "lane: fast" not in all_output and "lane: lite" not in all_output and "lane: complex" not in all_output, "D3A 必须保持 Lane not_applicable。")
@@ -3689,7 +3788,7 @@ def test_d3a_team_dt_domain_override_takes_effect():
         assert_true(team_planned.returncode == 0 and "status: READY" in team_knowledge_plan.read_text(encoding="utf-8"), f"team dt Knowledge Plan 未 READY：{team_planned.stdout}\n{team_planned.stderr}")
         team_plan_text = team_knowledge_plan.read_text(encoding="utf-8")
         assert_true("execution_unit_ref: d3a-do-unit" in team_plan_text, "team dt Knowledge Plan 必须绑定 d3a-do-unit。")
-        team_plan_id = re.search(r"knowledge_plan_id:\s+(\w+)", team_plan_text).group(1)
+        team_plan_id = re.search(r"knowledge_plan_id:\s+['\"]?(\w+)", team_plan_text).group(1)
         team_required = yaml.safe_load(team_plan_text)["knowledge_load_plan"]["required_static_knowledge"]
         team_dt_refs = {entry["id"]: entry["ref"] for entry in team_required if entry.get("kind") == "test_domain"}
         assert_true(set(team_dt_refs) == {"TEAM_DT_A", "TEAM_DT_B"}, f"team dt Knowledge Plan 必须解析团队 DT 知识：{sorted(team_dt_refs)}")
@@ -3735,7 +3834,7 @@ def test_d3a_team_dt_domain_override_takes_effect():
             text=True,
         )
         assert_true(executed.returncode == 0 and "status: READY" in executed.stdout, f"team dt Execution Context Plan 失败：{executed.stdout}\n{executed.stderr}")
-        assert_true(f"knowledge_plan_id: {team_plan_id}" in executed.stdout, "Execution Context 必须绑定同一个 team dt Knowledge Plan。")
+        assert_true(re.search(rf"knowledge_plan_id:\s+['\"]?{re.escape(team_plan_id)}", executed.stdout) is not None, "Execution Context 必须绑定同一个 team dt Knowledge Plan。")
         assert_true("idc-d3a-coding/SKILL.md" in executed.stdout, "D3A Execution Context 必须加载 idc-d3a-coding Skill。")
 
     doc_locks = [
@@ -3748,6 +3847,96 @@ def test_d3a_team_dt_domain_override_takes_effect():
         assert_true("knowledge_catalog.d3a.test_domains" in doc and "整体替换" in doc, f"{path} 必须按生效 registry 声明 DT Domain 选择。")
         assert_true("只能选择 TPRINT、FW、DPF" not in doc and "V0 DT Domain" not in doc, f"{path} 不得把 TPRINT、FW、DPF 硬编码为唯一可选 DT 集合。")
     assert_true("TRAN_CFG、DO、VISP_ADP、TFC_TFI、TFE、ADP、DRV" in read_text(doc_locks[0]), "D3A Coding Layer 固定声明必须保留。")
+
+
+def test_official_entry_regenerates_effective_config_after_team_config_swap():
+    prepare_runtime = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    minimal_config = ROOT / "examples/team-config.minimal.yaml"
+    team_dt_config = ROOT / "examples/team-config.d3a-team-dt.yaml"
+    for required in [prepare_runtime, context_planner, minimal_config, team_dt_config]:
+        assert_true(required.exists(), f"official entry 回归链路缺少文件：{required}")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        sandbox = Path(temp_dir) / "harness"
+        shutil.copytree(ROOT, sandbox, ignore=shutil.ignore_patterns(".git", ".idc", "__pycache__"))
+        sandbox_prepare = sandbox / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
+        sandbox_planner = sandbox / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+        sandbox_config = sandbox / "team-config.yaml"
+        effective = sandbox / ".idc/effective-team-config.yaml"
+
+        # 第一轮：minimal general 配置经无参正式入口生成 effective。
+        shutil.copyfile(minimal_config, sandbox_config)
+        first = subprocess.run(
+            ["ruby", str(sandbox_prepare)],
+            cwd=sandbox,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            first.returncode == 0 and "status: READY" in first.stdout,
+            f"无参正式入口首轮必须 READY：{first.stdout}\n{first.stderr}",
+        )
+        assert_true(effective.exists(), "首轮运行后必须生成 .idc/effective-team-config.yaml。")
+        first_effective = effective.read_text(encoding="utf-8")
+        assert_true("minimal-general-team" in first_effective, "首轮 effective 必须来自 minimal general 配置。")
+        assert_true(
+            re.search(r"^domain:\n  id: general$", first_effective, re.MULTILINE) is not None,
+            "首轮 effective 的 domain 必须是 general。",
+        )
+
+        # 第二轮：根目录 team-config.yaml 被替换后，同一条无参命令必须覆盖旧 effective。
+        shutil.copyfile(team_dt_config, sandbox_config)
+        second = subprocess.run(
+            ["ruby", str(sandbox_prepare)],
+            cwd=sandbox,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            second.returncode == 0 and "status: READY" in second.stdout,
+            f"team-config.yaml 替换后无参正式入口必须重新 READY：{second.stdout}\n{second.stderr}",
+        )
+        second_effective = effective.read_text(encoding="utf-8")
+        assert_true(
+            "TEAM_DT_A" in second_effective and "TEAM_DT_B" in second_effective,
+            "覆盖后的 effective 必须包含团队 DT 域 TEAM_DT_A / TEAM_DT_B。",
+        )
+        for builtin in ["TPRINT", "FW", "DPF"]:
+            assert_true(
+                len(re.findall(rf"^\s*- id: {builtin}$", second_effective, re.MULTILINE)) == 0,
+                f"覆盖后的 effective 不得残留内置 DT 域 {builtin}（整体替换，不合并）。",
+            )
+        assert_true(
+            "test_domains_source: team-config.yaml" in second_effective,
+            "覆盖后的 effective 必须标记 test_domains_source: team-config.yaml。",
+        )
+        assert_true(
+            "minimal-general-team" not in second_effective,
+            "覆盖后的 effective 不得残留首轮 minimal 配置内容。",
+        )
+
+        # 第三轮：下游 plan_context 消费再生成产物，证明生效的是新配置。
+        planned = subprocess.run(
+            ["ruby", str(sandbox_planner), "--effective", str(effective), "--phase", "planning", "--domain", "d3a"],
+            cwd=sandbox,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            planned.returncode == 0 and "status: READY" in planned.stdout,
+            f"下游 plan_context 消费再生成产物必须保持 READY：{planned.stdout}\n{planned.stderr}",
+        )
+        mismatched = subprocess.run(
+            ["ruby", str(sandbox_planner), "--effective", str(effective), "--phase", "planning", "--domain", "general"],
+            cwd=sandbox,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            mismatched.returncode != 0 and "INVALID" in mismatched.stdout and "does not match effective domain" in mismatched.stdout,
+            f"再生成产物 domain 为 d3a 时 --domain general 必须被拒绝：{mismatched.stdout}",
+        )
 
 
 def can_enter_done(required_domains, green_domains, tran_build_status):
@@ -3831,9 +4020,11 @@ def run():
         test_team_config_resolver_and_lane_capability_selection_execute,
         test_d3a_and_general_lane_runtime_matrix_execute,
         test_d3a_team_dt_domain_override_takes_effect,
+        test_official_entry_regenerates_effective_config_after_team_config_swap,
         test_filled_team_config_when_present,
         test_plan_context_rejects_domain_mode_mismatch,
         test_custom_required_contracts_are_validated_and_consumed,
+        test_plan_context_accepts_declared_custom_domain_id,
         test_fixed_lane_policy_conflicting_lane_is_rejected,
         test_fixed_lane_policy_skips_lane_resolver_dynamic_keeps_it,
         test_missing_lane_falls_back_to_lane_default,

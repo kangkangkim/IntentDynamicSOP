@@ -167,7 +167,6 @@ end
 
 fail_plan("--effective and --phase are required") unless options[:effective] && options[:phase]
 fail_plan("unknown phase: #{options[:phase]}") unless PHASES.include?(options[:phase])
-fail_plan("unknown domain: #{options[:domain]}") if options[:domain] && !DOMAINS.include?(options[:domain])
 fail_plan("unknown lane: #{options[:lane]}") if options[:lane] && !LANES.include?(options[:lane])
 fail_plan("--domain is required after bootstrap") if options[:phase] != "bootstrap" && !options[:domain]
 fail_plan("--selection is required for execution") if options[:phase] == "execution" && !options[:selection]
@@ -178,26 +177,33 @@ fail_plan("effective config is not generated runtime state") unless effective["g
 
 # Gate 2: an explicitly requested --domain must match the effective config's
 # domain, so a team that switched/unplugged a domain cannot still run sessions
-# of the other domain. Bootstrap passes no --domain and stays exempt.
-if options[:domain]
-  effective_domain_id = effective.dig("domain", "id")
-  effective_domain_source = effective.dig("domain", "source")
-  domain_consistent =
-    case options[:domain]
-    when "general", "d3a"
-      effective_domain_id == options[:domain]
-    when "custom"
-      effective_domain_source == "team-config-inline"
-    else
-      false
-    end
-  unless domain_consistent
+# of the other domain. A custom domain accepts both the literal `custom`
+# keyword and its declared domain.custom.id; both forms run the custom domain.
+# Bootstrap passes no --domain and stays exempt.
+effective_domain_id = effective.dig("domain", "id")
+effective_custom_domain = effective.dig("domain", "source") == "team-config-inline"
+accepted_domains = effective_custom_domain ? ["custom", effective_domain_id.to_s] : [effective_domain_id.to_s]
+accepted_domains = accepted_domains.reject(&:empty?).uniq
+if options[:domain] && effective_custom_domain && !accepted_domains.include?(options[:domain])
+  fail_plan(
+    "unknown domain: #{options[:domain]} (effective domain: custom/#{effective_domain_id}; " \
+    "accepted: #{accepted_domains.join(', ')})"
+  )
+end
+if options[:domain] && !effective_custom_domain
+  if !DOMAINS.include?(options[:domain])
+    fail_plan("unknown domain: #{options[:domain]} (accepted: #{accepted_domains.join(', ')})")
+  end
+  if effective_domain_id != options[:domain]
     fail_plan(
       "--domain #{options[:domain]} does not match effective domain #{effective_domain_id || 'unknown'}; " \
       "switch team-config domain.mode or use the effective domain"
     )
   end
 end
+# The declared custom domain id and the `custom` keyword are the same domain;
+# normalize to the keyword the knowledge plans and output shape speak.
+options[:domain] = "custom" if effective_custom_domain && options[:domain]
 
 lane_applicable = options[:domain] == "general"
 custom_lane_mode = nil
