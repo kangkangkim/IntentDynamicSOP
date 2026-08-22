@@ -63,7 +63,7 @@ Planner 或 execution。
 
 ## 固定 Architecture Space
 
-Coding Layer：
+Coding Layer（架构固定，不提供配置覆盖）：
 
 ```text
 TRAN_CFG
@@ -75,13 +75,11 @@ ADP
 DRV
 ```
 
-V0 DT Domain：
-
-```text
-TPRINT
-FW
-DPF
-```
+DT Domain 只能从生效 registry 选择：`.idc/effective-team-config.yaml` 的
+`knowledge_catalog.d3a.test_domains`。仓库默认 placeholder registry 是
+TPRINT、FW、DPF；当 `team-config.yaml` 的 `domain.d3a.dt_domains` 非空时
+整体替换默认 registry（不合并两个来源）；禁止选择生效 registry 之外的
+DT Domain。
 
 ## 主流程
 

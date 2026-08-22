@@ -29,6 +29,9 @@ run. Teams do not manually maintain `.idc/effective-team-config.yaml`.
    ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb --config team-config.yaml --check
    ```
 
+   `--registry PATH` overrides the shared domain module registry
+   (`idc-workflow/references/domains/registry.yaml` by default) for diagnosis.
+
 4. Materialize the read-only effective configuration when validation passes:
 
    ```sh
@@ -50,7 +53,10 @@ ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb
 The preflight includes a three-reference `bootstrap_load_plan`. After Domain,
 Lane, or phase changes, generate the next minimal plan instead of reading the
 effective registry directly. The decision phase may omit `--lane` (the lane is
-not resolved yet); from `planning` onward `--lane` is required:
+not resolved yet); from `planning` onward `--lane` is required.
+`plan_context.rb` rejects a `--domain` that does not match the effective
+config's domain mode; fix `domain.mode` in `team-config.yaml` and regenerate
+the effective config:
 
 ```sh
 ruby .claude/skills/idc-team-config/scripts/plan_context.rb \

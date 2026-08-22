@@ -176,6 +176,29 @@ fail_plan("--knowledge-plan is required for execution") if options[:phase] == "e
 effective = load_yaml(options[:effective])
 fail_plan("effective config is not generated runtime state") unless effective["generated"] == true
 
+# Gate 2: an explicitly requested --domain must match the effective config's
+# domain, so a team that switched/unplugged a domain cannot still run sessions
+# of the other domain. Bootstrap passes no --domain and stays exempt.
+if options[:domain]
+  effective_domain_id = effective.dig("domain", "id")
+  effective_domain_source = effective.dig("domain", "source")
+  domain_consistent =
+    case options[:domain]
+    when "general", "d3a"
+      effective_domain_id == options[:domain]
+    when "custom"
+      effective_domain_source == "team-config-inline"
+    else
+      false
+    end
+  unless domain_consistent
+    fail_plan(
+      "--domain #{options[:domain]} does not match effective domain #{effective_domain_id || 'unknown'}; " \
+      "switch team-config domain.mode or use the effective domain"
+    )
+  end
+end
+
 lane_applicable = options[:domain] == "general"
 if options[:domain] == "custom"
   custom_lane_mode = effective.dig("domain", "lane_policy", "mode")

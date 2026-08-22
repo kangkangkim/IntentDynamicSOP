@@ -13,7 +13,7 @@ domain_module:
     selected_lane: null
     bypass_lane_resolver: true
     execution_profile: d3a_fixed_workflow
-    reason: D3A uses the user-designed fixed workflow instead of Lane classification.
+    reason: D3A uses the harness-fixed workflow instead of Lane classification.
   pre_alignment:
     domain_hint_does_not_imply_readiness: true
     raw_idea_route:

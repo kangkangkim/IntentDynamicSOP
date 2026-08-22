@@ -10,8 +10,9 @@ require "yaml"
 
 options = { check: false }
 OptionParser.new do |parser|
-  parser.banner = "Usage: resolve_team_config.rb --config PATH [--check | --output PATH]"
+  parser.banner = "Usage: resolve_team_config.rb --config PATH [--registry PATH] [--check | --output PATH]"
   parser.on("--config PATH") { |value| options[:config] = value }
+  parser.on("--registry PATH") { |value| options[:registry] = value }
   parser.on("--check") { options[:check] = true }
   parser.on("--output PATH") { |value| options[:output] = value }
 end.parse!
@@ -26,6 +27,12 @@ root_candidates = [Pathname.pwd.expand_path, config_path.dirname]
 root_candidates.concat(config_path.dirname.ascend.to_a)
 harness_root = root_candidates.find { |path| path.join(".claude/skills/idc-workflow").directory? }
 abort "ERROR: cannot locate IDC harness root" unless harness_root
+
+domain_registry_path = if options[:registry]
+                         Pathname.new(options[:registry]).expand_path
+                       else
+                         harness_root.join(".claude/skills/idc-workflow/references/domains/registry.yaml")
+                       end
 
 begin
   source_text = config_path.read
@@ -146,6 +153,34 @@ errors << "team.repo_path does not exist or is not a directory: #{team_repo_ref}
 
 mode = value_at(config, "domain", "mode")
 errors << "domain.mode must be d3a, general, or custom" unless %w[d3a general custom].include?(mode)
+
+# Gate 1: a builtin domain.mode must be active-registered in the shared domain
+# module registry; `custom` domains are inline-registered via domain.custom.
+active_domain_ids = []
+if %w[d3a general].include?(mode)
+  if domain_registry_path.file?
+    begin
+      domain_registry = YAML.safe_load(domain_registry_path.read, permitted_classes: [], aliases: false) || {}
+    rescue Psych::Exception => e
+      errors << "domain module registry is invalid: #{domain_registry_path}: #{e.message}"
+      domain_registry = {}
+    end
+    domain_entries = domain_registry["domain_modules"]
+    if domain_entries.is_a?(Array)
+      active_domain_ids = domain_entries
+        .select { |entry| entry.is_a?(Hash) && entry["status"] == "active" }
+        .map { |entry| entry["id"] }
+        .compact
+    else
+      errors << "domain module registry must list domain_modules: #{domain_registry_path}"
+    end
+  else
+    errors << "domain module registry is missing: #{domain_registry_path}"
+  end
+  unless active_domain_ids.include?(mode)
+    errors << "domain.mode #{mode} is not registered in the domain module registry; register it or switch domain.mode"
+  end
+end
 
 validate_registry(value_at(config, "domain", "d3a", "dt_domains") || [], "domain.d3a.dt_domains", errors)
 validate_registry(value_at(config, "general", "components") || [], "general.components", errors)

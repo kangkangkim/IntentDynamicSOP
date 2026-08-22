@@ -2127,6 +2127,151 @@ def test_filled_team_config_when_present():
     )
 
 
+def test_plan_context_rejects_domain_mode_mismatch():
+    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        general_config = Path(temp_dir) / "team-config.yaml"
+        general_config.write_text(
+            """config_version: 1
+
+team:
+  id: gate-general-team
+  repo_path: .
+
+domain:
+  mode: general
+
+bindings: {}
+""",
+            encoding="utf-8",
+        )
+        effective = Path(temp_dir) / "effective.yaml"
+        preflighted = subprocess.run(
+            ["ruby", str(preflight), "--config", str(general_config), "--output", str(effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            preflighted.returncode == 0 and "status: READY" in preflighted.stdout,
+            f"General 模式最小配置 preflight 必须 READY：{preflighted.stdout}\n{preflighted.stderr}",
+        )
+
+        mismatched = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "d3a"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            mismatched.returncode != 0 and "does not match effective domain" in mismatched.stdout,
+            f"effective domain 为 general 时 --domain d3a 必须被拒绝：{mismatched.stdout}",
+        )
+
+        matched = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "general"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            matched.returncode == 0 and "status: READY" in matched.stdout,
+            f"effective domain 为 general 时 --domain general 必须保持 READY：{matched.stdout}",
+        )
+
+
+def test_domain_mode_requires_registered_builtin_module():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        registry = Path(temp_dir) / "registry.yaml"
+        registry.write_text(
+            """domain_modules:
+  - id: general
+    module_file: domains/general/module.yaml
+    status: active
+  - id: template-domain
+    module_file: domains/template-domain/module.yaml
+    status: template
+""",
+            encoding="utf-8",
+        )
+        d3a_config = Path(temp_dir) / "team-config.yaml"
+        d3a_config.write_text(
+            """config_version: 1
+
+team:
+  id: gate-d3a-team
+  repo_path: .
+
+domain:
+  mode: d3a
+
+bindings: {}
+""",
+            encoding="utf-8",
+        )
+        checked = subprocess.run(
+            ["ruby", str(resolver), "--config", str(d3a_config), "--registry", str(registry), "--check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            checked.returncode != 0,
+            f"domain.mode d3a 指向未注册 d3a 的 registry 时必须 INVALID：{checked.stdout}",
+        )
+        assert_true(
+            "domain.mode d3a is not registered in the domain module registry; register it or switch domain.mode" in checked.stderr,
+            f"Registry Gate 必须给出可操作错误信息：{checked.stderr}",
+        )
+
+
+def test_domain_mode_general_with_d3a_unplugged_stays_ready():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        registry = Path(temp_dir) / "registry.yaml"
+        registry.write_text(
+            """domain_modules:
+  - id: general
+    module_file: domains/general/module.yaml
+    status: active
+  - id: template-domain
+    module_file: domains/template-domain/module.yaml
+    status: template
+""",
+            encoding="utf-8",
+        )
+        general_config = Path(temp_dir) / "team-config.yaml"
+        general_config.write_text(
+            """config_version: 1
+
+team:
+  id: gate-general-team
+  repo_path: .
+
+domain:
+  mode: general
+
+bindings: {}
+""",
+            encoding="utf-8",
+        )
+        checked = subprocess.run(
+            ["ruby", str(resolver), "--config", str(general_config), "--registry", str(registry), "--check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            checked.returncode == 0 and "READY" in checked.stdout,
+            f"拔掉 d3a 注册不得影响 general 团队：{checked.stdout}\n{checked.stderr}",
+        )
+
+
 def test_select_capabilities_rejects_unknown_signal():
     resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
     selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
@@ -2419,8 +2564,13 @@ def test_alignment_pipeline_runtime_consumption_is_materialized():
     effective_schema = read_text(".claude/skills/idc-workflow/references/schemas/effective-team-config.schema.yaml")
 
     with tempfile.TemporaryDirectory() as temp_dir:
+        default_config = Path(temp_dir) / "alignment-default-general.yaml"
+        default_config.write_text(
+            config.read_text(encoding="utf-8").replace("mode: d3a", "mode: general", 1),
+            encoding="utf-8",
+        )
         default_effective = Path(temp_dir) / "alignment-default-effective.yaml"
-        default_resolved = run_alignment_resolver(config, default_effective)
+        default_resolved = run_alignment_resolver(default_config, default_effective)
         assert_true(default_resolved.returncode == 0, f"未配置 alignment 段的解析失败：{default_resolved.stderr}")
         default_text = default_effective.read_text(encoding="utf-8")
         assert_true(has_top_level_alignment(default_text), "未配置 alignment 段时 effective-team-config 必须物化框架默认链。")
@@ -2448,6 +2598,10 @@ def test_alignment_pipeline_runtime_consumption_is_materialized():
         assert_true(".claude/skills/idc-intent-alignment/SKILL.md" in decision_default.stdout, "未配置 alignment 段时 decision 意图 refs 必须与当前硬编码列表等价。")
 
         configured = write_alignment_config(temp_dir, "alignment-configured.yaml", build_alignment_section())
+        configured.write_text(
+            configured.read_text(encoding="utf-8").replace("mode: d3a", "mode: general", 1),
+            encoding="utf-8",
+        )
         configured_effective = Path(temp_dir) / "alignment-configured-effective.yaml"
         configured_resolved = run_alignment_resolver(configured, configured_effective)
         assert_true(configured_resolved.returncode == 0, f"显式 alignment 配置解析失败：{configured_resolved.stderr}")
@@ -2534,8 +2688,22 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true("registration_audit:" in effective_text and "status: PASS" in effective_text, "有效配置必须通过 Skill Registration Audit。")
         assert_true("fast-implement" in effective_text and "complex-plan" in effective_text, "每个 Lane 的 Skill 编排必须物化进有效配置。")
 
+        general_config = Path(temp_dir) / "team-config-general.yaml"
+        general_config.write_text(
+            config.read_text(encoding="utf-8").replace("mode: d3a", "mode: general", 1),
+            encoding="utf-8",
+        )
+        general_effective = Path(temp_dir) / "general-effective.yaml"
+        general_resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(general_config), "--output", str(general_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(general_resolved.returncode == 0, f"General 模式变体解析失败：{general_resolved.stderr}")
+
         decision_without_lane = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "general"],
+            ["ruby", str(context_planner), "--effective", str(general_effective), "--phase", "decision", "--domain", "general"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2543,7 +2711,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true(decision_without_lane.returncode == 0 and "status: READY" in decision_without_lane.stdout, f"decision 阶段不应强制 --lane：{decision_without_lane.stdout}")
         assert_true("lane-resolver.md" in decision_without_lane.stdout, "decision 阶段必须加载 Lane Resolver。")
         planning_without_lane = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "planning", "--domain", "general"],
+            ["ruby", str(context_planner), "--effective", str(general_effective), "--phase", "planning", "--domain", "general"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2873,7 +3041,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true("source: team-config-inline" in custom_text and "id: demo-payment" in custom_text, "Custom Domain 必须从 team-config 内联物化。")
 
         decision_plan = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "general", "--lane", "fast"],
+            ["ruby", str(context_planner), "--effective", str(general_effective), "--phase", "decision", "--domain", "general", "--lane", "fast"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2893,7 +3061,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
 
         selection_file = Path(temp_dir) / "fast-selection.yaml"
         selected = subprocess.run(
-            ["ruby", str(selector), "--effective", str(effective), "--demand", str(ROOT / "examples/capability-demands/fast.yaml"), "--output", str(selection_file)],
+            ["ruby", str(selector), "--effective", str(general_effective), "--demand", str(ROOT / "examples/capability-demands/fast.yaml"), "--output", str(selection_file)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2901,14 +3069,14 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true(selected.returncode == 0, f"Context Planner 测试准备 selection 失败：{selected.stderr}")
         knowledge_plan_file = Path(temp_dir) / "fast-knowledge-plan.yaml"
         knowledge_planned = subprocess.run(
-            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(ROOT / "examples/knowledge-demands/fast.yaml"), "--output", str(knowledge_plan_file)],
+            ["ruby", str(knowledge_planner), "--effective", str(general_effective), "--demand", str(ROOT / "examples/knowledge-demands/fast.yaml"), "--output", str(knowledge_plan_file)],
             cwd=ROOT,
             capture_output=True,
             text=True,
         )
         assert_true(knowledge_planned.returncode == 0, f"Context Planner 测试准备 Knowledge Plan 失败：{knowledge_planned.stderr}")
         execution_plan = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--selection", str(selection_file), "--knowledge-plan", str(knowledge_plan_file)],
+            ["ruby", str(context_planner), "--effective", str(general_effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--selection", str(selection_file), "--knowledge-plan", str(knowledge_plan_file)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2919,7 +3087,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true("capability_id: dt_build" not in execution_plan.stdout and "idc-d3a-coding/SKILL.md" not in execution_plan.stdout, "Fast General execution 不得加载未选中的 DT/D3A Skill。")
 
         missing_selection = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--knowledge-plan", str(knowledge_plan_file)],
+            ["ruby", str(context_planner), "--effective", str(general_effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--knowledge-plan", str(knowledge_plan_file)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2927,7 +3095,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true(missing_selection.returncode != 0 and "--selection is required for execution" in missing_selection.stdout, "Execution 不得绕过 Capability Selector 直接生成加载计划。")
 
         missing_knowledge_plan = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--selection", str(selection_file)],
+            ["ruby", str(context_planner), "--effective", str(general_effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--selection", str(selection_file)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2998,10 +3166,27 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
         )
         assert_true(resolved.returncode == 0, f"Runtime matrix Resolver 失败：{resolved.stderr}")
 
+        general_config = Path(temp_dir) / "team-config-general.yaml"
+        general_config.write_text(
+            (ROOT / "examples/team-config.full-bindings.yaml").read_text(encoding="utf-8").replace("mode: d3a", "mode: general", 1),
+            encoding="utf-8",
+        )
+        general_effective = Path(temp_dir) / "general-effective.yaml"
+        general_resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(general_config), "--output", str(general_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(general_resolved.returncode == 0, f"Runtime matrix General 模式变体解析失败：{general_resolved.stderr}")
+
         for scenario, expected in matrix.items():
+            # plan_context 的 domain gate 要求 --domain 与 effective domain 一致：
+            # general 场景用 general 模式 effective，d3a 场景用 full-bindings 的 d3a effective。
+            scenario_effective = general_effective if expected["domain"] == "general" else effective
             selection = Path(temp_dir) / f"{scenario}-selection.yaml"
             selected = subprocess.run(
-                ["ruby", str(selector), "--effective", str(effective), "--demand", str(ROOT / f"examples/capability-demands/{scenario}.yaml"), "--output", str(selection)],
+                ["ruby", str(selector), "--effective", str(scenario_effective), "--demand", str(ROOT / f"examples/capability-demands/{scenario}.yaml"), "--output", str(selection)],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
@@ -3014,7 +3199,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
 
             knowledge_plan = Path(temp_dir) / f"{scenario}-knowledge-plan.yaml"
             knowledge_planned = subprocess.run(
-                ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(ROOT / f"examples/knowledge-demands/{scenario}.yaml"), "--output", str(knowledge_plan)],
+                ["ruby", str(knowledge_planner), "--effective", str(scenario_effective), "--demand", str(ROOT / f"examples/knowledge-demands/{scenario}.yaml"), "--output", str(knowledge_plan)],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
@@ -3031,7 +3216,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
             for phase in ["decision", "planning", "execution", "completion"]:
                 command = [
                     "ruby", str(context_planner),
-                    "--effective", str(effective),
+                    "--effective", str(scenario_effective),
                     "--phase", phase,
                     "--domain", expected["domain"],
                 ]
@@ -3198,6 +3383,104 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
     assert_true("DONE 必须同时满足 required DT GREEN 和 `tran_build PASS`" in d3a_skill, "D3A 固定完成 Gate 必须要求 DT GREEN 与 tran_build PASS。")
 
 
+def test_d3a_team_dt_domain_override_takes_effect():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    team_config = ROOT / "examples/team-config.d3a-team-dt.yaml"
+    team_demand = ROOT / "examples/knowledge-demands/d3a-team-dt.yaml"
+    for required in [resolver, selector, knowledge_planner, context_planner, team_config, team_demand]:
+        assert_true(required.exists(), f"team dt override 链路缺少文件：{required}")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        effective = Path(temp_dir) / "effective.yaml"
+        resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(team_config), "--output", str(effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(resolved.returncode == 0, f"team dt override Resolver 失败：{resolved.stderr}")
+
+        effective_data = yaml.safe_load(effective.read_text(encoding="utf-8"))
+        effective_ids = [entry["id"] for entry in effective_data["knowledge_catalog"]["d3a"]["test_domains"]]
+        assert_true(effective_ids == ["TEAM_DT_A", "TEAM_DT_B"], f"dt_domains 覆盖必须整体替换默认 registry：{effective_ids}")
+        for builtin in ["TPRINT", "FW", "DPF"]:
+            assert_true(builtin not in effective_ids, f"覆盖后内置 {builtin} 不得残留（整体替换，不合并）。")
+        assert_true(effective_data["domain"]["test_domains_source"] == "team-config.yaml", "覆盖后 domain.test_domains_source 必须指向 team-config.yaml。")
+
+        team_knowledge_plan = Path(temp_dir) / "team-knowledge-plan.yaml"
+        team_planned = subprocess.run(
+            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(team_demand), "--output", str(team_knowledge_plan)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(team_planned.returncode == 0 and "status: READY" in team_knowledge_plan.read_text(encoding="utf-8"), f"team dt Knowledge Plan 未 READY：{team_planned.stdout}\n{team_planned.stderr}")
+        team_plan_text = team_knowledge_plan.read_text(encoding="utf-8")
+        assert_true("execution_unit_ref: d3a-do-unit" in team_plan_text, "team dt Knowledge Plan 必须绑定 d3a-do-unit。")
+        team_plan_id = re.search(r"knowledge_plan_id:\s+(\w+)", team_plan_text).group(1)
+        team_required = yaml.safe_load(team_plan_text)["knowledge_load_plan"]["required_static_knowledge"]
+        team_dt_refs = {entry["id"]: entry["ref"] for entry in team_required if entry.get("kind") == "test_domain"}
+        assert_true(set(team_dt_refs) == {"TEAM_DT_A", "TEAM_DT_B"}, f"team dt Knowledge Plan 必须解析团队 DT 知识：{sorted(team_dt_refs)}")
+        assert_true(str(team_dt_refs.get("TEAM_DT_A", "")).endswith(".claude/skills/idc-workflow/references/knowledge/general/tests/GENERAL_TEST_PLACEHOLDER.md"), "TEAM_DT_A 必须绑定团队配置声明的 knowledge_ref。")
+        assert_true(str(team_dt_refs.get("TEAM_DT_B", "")).endswith("docs/architecture.md"), "TEAM_DT_B 必须绑定团队配置声明的 knowledge_ref。")
+
+        builtin_dt_demand = Path(temp_dir) / "builtin-dt-demand.yaml"
+        builtin_dt_demand.write_text(
+            team_demand.read_text(encoding="utf-8").replace(
+                "selected_test_domains: [TEAM_DT_A, TEAM_DT_B]", "selected_test_domains: [TPRINT]"
+            ),
+            encoding="utf-8",
+        )
+        builtin_planned = subprocess.run(
+            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(builtin_dt_demand)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(builtin_planned.returncode != 0 and "NEEDS_KNOWLEDGE_MAPPING" in builtin_planned.stdout, "覆盖后选择内置 TPRINT 必须被拒绝（整体替换，不合并）。")
+        assert_true("TPRINT" in builtin_planned.stdout and "not available in effective knowledge catalog" in builtin_planned.stdout, f"错误必须指明 TPRINT 不在生效 catalog：{builtin_planned.stdout}")
+
+        selection = Path(temp_dir) / "team-dt-selection.yaml"
+        selected = subprocess.run(
+            ["ruby", str(selector), "--effective", str(effective), "--demand", str(ROOT / "examples/capability-demands/d3a.yaml"), "--output", str(selection)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(selected.returncode == 0 and "status: READY" in selection.read_text(encoding="utf-8"), f"team dt Selector 失败：{selected.stdout}\n{selected.stderr}")
+
+        executed = subprocess.run(
+            [
+                "ruby", str(context_planner),
+                "--effective", str(effective),
+                "--phase", "execution",
+                "--domain", "d3a",
+                "--selection", str(selection),
+                "--knowledge-plan", str(team_knowledge_plan),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(executed.returncode == 0 and "status: READY" in executed.stdout, f"team dt Execution Context Plan 失败：{executed.stdout}\n{executed.stderr}")
+        assert_true(f"knowledge_plan_id: {team_plan_id}" in executed.stdout, "Execution Context 必须绑定同一个 team dt Knowledge Plan。")
+        assert_true("idc-d3a-coding/SKILL.md" in executed.stdout, "D3A Execution Context 必须加载 idc-d3a-coding Skill。")
+
+    doc_locks = [
+        ".claude/skills/idc-workflow/references/constraints/planning/d3a-planning-constraints.yaml",
+        ".claude/skills/idc-workflow/references/workflows/d3a-workflow.md",
+        ".claude/skills/idc-workflow/references/schemas/d3a-plan.schema.yaml",
+    ]
+    for path in doc_locks:
+        doc = read_text(path)
+        assert_true("knowledge_catalog.d3a.test_domains" in doc and "整体替换" in doc, f"{path} 必须按生效 registry 声明 DT Domain 选择。")
+        assert_true("只能选择 TPRINT、FW、DPF" not in doc and "V0 DT Domain" not in doc, f"{path} 不得把 TPRINT、FW、DPF 硬编码为唯一可选 DT 集合。")
+    assert_true("TRAN_CFG、DO、VISP_ADP、TFC_TFI、TFE、ADP、DRV" in read_text(doc_locks[0]), "D3A Coding Layer 固定声明必须保留。")
+
+
 def can_enter_done(required_domains, green_domains, tran_build_status):
     return can_enter_all_layers_green(required_domains, green_domains) and tran_build_status == "PASS"
 
@@ -3278,7 +3561,11 @@ def run():
         test_registries_are_team_config_overridable,
         test_team_config_resolver_and_lane_capability_selection_execute,
         test_d3a_and_general_lane_runtime_matrix_execute,
+        test_d3a_team_dt_domain_override_takes_effect,
         test_filled_team_config_when_present,
+        test_plan_context_rejects_domain_mode_mismatch,
+        test_domain_mode_requires_registered_builtin_module,
+        test_domain_mode_general_with_d3a_unplugged_stays_ready,
         test_lane_profiles_use_ordered_mode,
         test_alignment_pipeline_config_shape_mirrors_lane_profiles,
         test_alignment_pipeline_framework_invariants_are_enforced,

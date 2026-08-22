@@ -31,6 +31,12 @@ team-config.yaml
   test-domain lists replace their defaults wholesale.
 - `mode: custom` creates an effective Domain Module from `domain.custom`; the
   team does not edit `domains/registry.yaml` or create another config file.
+- `mode: d3a` and `mode: general` must be registered `status: active` in the
+  shared domain module registry (`domains/registry.yaml`; overridable with the
+  resolver's `--registry PATH`). An unregistered mode fails with
+  `domain.mode <mode> is not registered in the domain module registry; register
+  it or switch domain.mode`. `mode: custom` is exempt: it registers inline via
+  `domain.custom`.
 
 ## Adapter materialization
 

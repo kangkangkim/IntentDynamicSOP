@@ -2,8 +2,8 @@ stage: planning
 constraints:
   - id: fixed_d3a_layers
     rule: D3A Planner 只能选择 TRAN_CFG、DO、VISP_ADP、TFC_TFI、TFE、ADP、DRV。
-  - id: fixed_v0_dt_domains
-    rule: V0 DT Domain 只能选择 TPRINT、FW、DPF。
+  - id: effective_dt_domain_registry
+    rule: DT Domain 只能从生效 registry 选择：`.idc/effective-team-config.yaml` 的 `knowledge_catalog.d3a.test_domains`。仓库默认 placeholder 是 TPRINT、FW、DPF；当 `team-config.yaml` 的 `domain.d3a.dt_domains` 非空时整体替换默认 registry（不合并两个来源）；禁止选择生效 registry 之外的 DT Domain。
   - id: no_layer_creation
     rule: D3A Planner 不能创建或删除 D3A Layer。
   - id: no_mapping_guess
