@@ -7,6 +7,7 @@ require "json"
 require "optparse"
 require "pathname"
 require "yaml"
+require_relative "../../idc-team-config/scripts/compat_ruby21"
 
 options = {}
 OptionParser.new do |parser|
@@ -18,7 +19,7 @@ abort "ERROR: --request is required" unless options[:request]
 
 request_path = Pathname.new(options[:request]).expand_path
 begin
-  document = YAML.safe_load(request_path.read, permitted_classes: [], aliases: false) || {}
+  document = IDCRubyCompat.safe_yaml_load(request_path.read) || {}
 rescue Errno::ENOENT, Psych::Exception => e
   abort "ERROR: #{e.message}"
 end
@@ -57,7 +58,7 @@ end
 if present?(request["knowledge_load_plan_ref"])
   knowledge_plan_path = Pathname.new(request["knowledge_load_plan_ref"].to_s).expand_path
   begin
-    knowledge_document = YAML.safe_load(knowledge_plan_path.read, permitted_classes: [], aliases: false) || {}
+    knowledge_document = IDCRubyCompat.safe_yaml_load(knowledge_plan_path.read) || {}
     knowledge_plan = knowledge_document["knowledge_load_plan"] || {}
     errors << "knowledge load plan must be READY" unless knowledge_plan["status"] == "READY"
     knowledge_body = knowledge_plan.reject { |key, _value| key == "knowledge_plan_id" }

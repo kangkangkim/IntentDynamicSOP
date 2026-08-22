@@ -16,6 +16,7 @@ IDC 的核心优势是把动态智能分流和企业固定 SOP 分开：外层�
 - **Evidence-first 完成标准**：API Contract 先于 implementation；RED evidence 先于 GREEN evidence；D3A DONE 必须满足 required DT GREEN 和 `tran_build PASS`。
 - **多团队单配置接入**：其他团队复用 IDC Core，只维护 `team-config.yaml`；Custom Domain 和新 GC atoms 也由 Resolver 动态注册。
 - **运行时自动生效**：`idc-workflow` 每次入口自动执行 preflight，原子重建 effective config 并校验源 YAML digest；团队不维护生成文件，也不会误用旧配置。
+- **兼容企业旧运行时**：IDC Ruby 脚本支持 Ruby 2.1.9+；兼容层在新版 Ruby 上自动 no-op，不要求团队额外安装 gem。
 - **上下文按阶段收敛**：preflight 只加载三个 Router；Decision、Planning、Execution、Completion、Resume 分别生成 Context Load Plan。每个 execution unit 另有 Knowledge Load Plan，精确选择 Layer/component/test-domain 知识并用消费回执防止跨边界加载。
 - **执行不可绕过**：所有 repository mutation 都必须经过 Execution Authorization 并真实派发 executor。General Coding 是外层执行协议，GC Adapter 只是 executor 内按需调用的原子能力；main agent 不能直接实现后再补证据。
 - **Skill 注册冲突可检测**：Preflight 检查 capability、stage、Lane/profile 与 trigger 的重叠；未声明的冲突直接阻断，有意组合或替换必须显式使用 `composes_with` / `supersedes`。

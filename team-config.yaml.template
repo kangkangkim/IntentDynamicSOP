@@ -132,6 +132,7 @@ lane:
   profiles:
     # autonomous is immediately runnable; switch to ordered when this team wants
     # only declared steps to run, then provide at least one step per used stage.
+    # Ordered example: mode: ordered # autonomous | ordered
     fast:
       skills: {allow: [], deny: [], required: []}
       orchestration:

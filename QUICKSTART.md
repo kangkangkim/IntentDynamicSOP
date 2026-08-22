@@ -23,6 +23,15 @@ Copy this repository into the team environment. Do not add enterprise
 paths, commands, logs, APIs, knowledge bodies, or internal Skill names to the
 public harness.
 
+Runtime scripts support Ruby 2.1.9 and newer. Check the team host before the
+first preflight:
+
+```sh
+ruby --version
+```
+
+No additional Ruby gems are required by IDC runtime scripts.
+
 ## Step 2: Create Team Config
 
 ```sh

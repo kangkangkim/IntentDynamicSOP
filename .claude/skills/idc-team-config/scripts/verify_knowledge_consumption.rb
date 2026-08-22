@@ -6,6 +6,7 @@ require "pathname"
 require "digest"
 require "json"
 require "yaml"
+require_relative "compat_ruby21"
 
 options = {}
 OptionParser.new do |parser|
@@ -18,7 +19,7 @@ end.parse!
 abort "ERROR: --plan and --receipt are required" unless options[:plan] && options[:receipt]
 
 def load_yaml(path)
-  YAML.safe_load(Pathname.new(path).expand_path.read, permitted_classes: [], aliases: false) || {}
+  IDCRubyCompat.safe_yaml_load(Pathname.new(path).expand_path.read) || {}
 rescue Errno::ENOENT, Psych::Exception => e
   abort "ERROR: #{e.message}"
 end

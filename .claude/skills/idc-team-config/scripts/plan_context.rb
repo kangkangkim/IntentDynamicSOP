@@ -4,6 +4,7 @@
 require "optparse"
 require "pathname"
 require "yaml"
+require_relative "compat_ruby21"
 
 PHASES = %w[bootstrap decision planning execution completion resume].freeze
 DOMAINS = %w[general d3a custom].freeze
@@ -158,7 +159,7 @@ def fail_plan(message, exit_code = 2)
 end
 
 def load_yaml(path)
-  YAML.safe_load(Pathname.new(path).expand_path.read, permitted_classes: [], aliases: false) || {}
+  IDCRubyCompat.safe_yaml_load(Pathname.new(path).expand_path.read) || {}
 rescue Errno::ENOENT, Psych::Exception => e
   fail_plan(e.message)
 end

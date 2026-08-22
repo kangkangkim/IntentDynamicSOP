@@ -7,6 +7,7 @@ require "pathname"
 require "rbconfig"
 require "tempfile"
 require "yaml"
+require_relative "compat_ruby21"
 
 harness_root = Pathname.new(__dir__).join("../../../..").expand_path
 options = {
@@ -51,7 +52,7 @@ unless status.success?
   exit status.exitstatus
 end
 
-effective = YAML.safe_load(output_path.read, permitted_classes: [], aliases: false) || {}
+effective = IDCRubyCompat.safe_yaml_load(output_path.read) || {}
 selector = Pathname.new(__dir__).join("select_capabilities.rb")
 context_planner = Pathname.new(__dir__).join("plan_context.rb")
 policy_checks = []
@@ -90,7 +91,7 @@ check_selection = lambda do |lane_id, check_id, stage, skill_ids, trigger_signal
       policy_errors << "#{check_id}: selector failed: #{selection_stderr.strip} #{selection_stdout.strip}"
       next
     end
-    selection = YAML.safe_load(selection_stdout, permitted_classes: [], aliases: false) || {}
+    selection = IDCRubyCompat.safe_yaml_load(selection_stdout) || {}
     selected_ids = Array(selection.dig("capability_selection_result", "selected")).map { |item| item["capability_id"] }
     unless selected_ids.first(skill_ids.length) == skill_ids
       policy_errors << "#{check_id}: expected ordered prefix #{skill_ids.inspect}, got #{selected_ids.inspect}"
@@ -206,7 +207,7 @@ unless context_status.success?
   )
   exit 4
 end
-bootstrap_load_plan = YAML.safe_load(context_stdout, permitted_classes: [], aliases: false).fetch("context_load_plan")
+bootstrap_load_plan = IDCRubyCompat.safe_yaml_load(context_stdout).fetch("context_load_plan")
 
 puts YAML.dump(
   "runtime_preflight" => {

@@ -7,6 +7,7 @@ require "json"
 require "optparse"
 require "pathname"
 require "yaml"
+require_relative "compat_ruby21"
 
 options = { check: false }
 OptionParser.new do |parser|
@@ -24,7 +25,7 @@ config_path = Pathname.new(options[:config]).expand_path
 abort "ERROR: config not found: #{config_path}" unless config_path.file?
 
 root_candidates = [Pathname.pwd.expand_path, config_path.dirname]
-root_candidates.concat(config_path.dirname.ascend.to_a)
+config_path.dirname.ascend { |path| root_candidates << path }
 harness_root = root_candidates.find { |path| path.join(".claude/skills/idc-workflow").directory? }
 abort "ERROR: cannot locate IDC harness root" unless harness_root
 
@@ -36,7 +37,7 @@ domain_registry_path = if options[:registry]
 
 begin
   source_text = config_path.read
-  config = YAML.safe_load(source_text, permitted_classes: [], aliases: false)
+  config = IDCRubyCompat.safe_yaml_load(source_text)
 rescue Psych::Exception => e
   abort "ERROR: invalid YAML: #{e.message}"
 end
@@ -117,7 +118,7 @@ def load_builtin_knowledge_registry(harness_root, relative_path, root_key, error
   end
 
   begin
-    document = YAML.safe_load(path.read, permitted_classes: [], aliases: false) || {}
+    document = IDCRubyCompat.safe_yaml_load(path.read) || {}
   rescue Psych::Exception => e
     errors << "builtin knowledge registry is invalid: #{path}: #{e.message}"
     return []
@@ -160,7 +161,7 @@ active_domain_ids = []
 if %w[d3a general].include?(mode)
   if domain_registry_path.file?
     begin
-      domain_registry = YAML.safe_load(domain_registry_path.read, permitted_classes: [], aliases: false) || {}
+      domain_registry = IDCRubyCompat.safe_yaml_load(domain_registry_path.read) || {}
     rescue Psych::Exception => e
       errors << "domain module registry is invalid: #{domain_registry_path}: #{e.message}"
       domain_registry = {}
@@ -508,7 +509,8 @@ extensions.each_with_index do |entry, index|
   attempted_keys = Array(entry["capability_keys"]) & reserved_capability_keys
   errors << "#{path}.capability_keys contains protected orchestration ownership: #{attempted_keys.join(', ')}" if attempted_keys.any?
   forbidden_ownership = %w[domain_selection lane_selection contract_gate human_alignment completion_gate]
-  attempted = forbidden_ownership & Array(entry["may_override"]&.keys)
+  may_override = entry["may_override"]
+  attempted = forbidden_ownership & Array(may_override && may_override.keys)
   errors << "#{path}.may_override cannot contain protected ownership keys: #{attempted.join(', ')}" if attempted.any?
 end
 
@@ -711,7 +713,7 @@ capability_registry_path = harness_root.join(".claude/skills/idc-workflow/refere
 capability_rows = []
 if capability_registry_path.file?
   begin
-    registry = YAML.safe_load(capability_registry_path.read, permitted_classes: [], aliases: false) || {}
+    registry = IDCRubyCompat.safe_yaml_load(capability_registry_path.read) || {}
     capability_rows = registry["team_capabilities"] || []
   rescue Psych::Exception => e
     errors << "team capability registry is invalid: #{e.message}"
