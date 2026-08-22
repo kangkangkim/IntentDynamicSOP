@@ -123,7 +123,7 @@ rules:
   - alignment.orchestration.mode is always ordered; every framework stage requires a step mapping, otherwise the resolver returns NEEDS_ORCHESTRATION_MAPPING.
   - The alignment_check step (Human Alignment gate) cannot be removed; teams may rebind its skill_ref only.
   - raw_idea and critical_gaps_remain form the framework signal floor and must stay covered by step trigger_signals.
-  - alignment.bindings skill_refs must keep the .claude/skills/idc-*/SKILL.md shape; unresolved step skill_ids return NEEDS_TEAM_CONFIG.
+  - alignment.bindings skill_refs may use team://, harness://, absolute, or relative paths, but must resolve to an idc-*/SKILL.md target; unresolved step skill_ids return NEEDS_TEAM_CONFIG.
   - Missing lane.profiles uses backward-compatible autonomous empty profiles; newly generated configs include all three profiles explicitly.
   - Missing lane.default, capability_selection, and self_optimization are materialized with documented safe defaults.
   - Self-optimization cannot modify IDC Core or bypass Human Alignment promotion.

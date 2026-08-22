@@ -15,6 +15,7 @@ Planner
   -> Knowledge Consumption Verification
   -> Verification
   -> Error Analyzer / Targeted Fix / Re-plan
+  -> verify_completion.rb
   -> DONE
 ```
 

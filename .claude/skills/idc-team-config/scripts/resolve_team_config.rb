@@ -373,11 +373,12 @@ else
       errors << "#{path}.skill_ref is required"
       next
     end
-    unless original_ref.to_s.match?(%r{^\.claude/skills/idc-[a-z0-9-]+/SKILL\.md$})
-      errors << "#{path}.skill_ref must bind a .claude/skills/idc-*/SKILL.md ref (idc- prefix discipline): #{original_ref}"
+    resolved_ref = resolve_file_ref(original_ref, team_root, harness_root)
+    resolved_path = Pathname.new(resolved_ref)
+    unless resolved_path.basename.to_s == "SKILL.md" && resolved_path.parent.basename.to_s.match?(/^idc-[a-z0-9-]+$/)
+      errors << "#{path}.skill_ref must resolve to an idc-*/SKILL.md path (idc- prefix discipline): #{original_ref}"
       next
     end
-    resolved_ref = resolve_file_ref(original_ref, team_root, harness_root)
     unless Pathname.new(resolved_ref).file?
       errors << "#{path}.skill_ref does not exist: #{original_ref} (resolved to #{resolved_ref})"
     end

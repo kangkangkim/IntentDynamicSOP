@@ -219,6 +219,14 @@ main agent                     = planner / delegator / evidence summarizer
 ID、dispatch tool-call ref、executor session ref 和 loaded Domain execution Skill。
 缺少 provenance 时，即使测试通过也不能 DONE。
 
+最终完成状态由 `idc-team-config/scripts/verify_completion.rb` 机器校验。它绑定
+Authorization Result、Execution Receipt 和 Knowledge Consumption Result，检查
+changed paths 没有越过授权范围，再应用 Fast/Lite/Complex 或 D3A 的 evidence
+要求。只有输出 `completion_verification_result.status: DONE` 才能完成。
+Lane-applicable Custom Domain 复用其所选 Lane contract；`not_applicable` Custom
+Domain 则提交自己的 completion evidence refs，并由绑定的 completion Skill
+实施领域 Gate。
+
 ## Human Alignment
 
 Human Alignment 是唯一默认人工对齐点，也是 readiness / critical gap / approval validity 的统一检测 gate。
@@ -267,6 +275,7 @@ Planner
   -> TDD Execution
   -> Verification
   -> Error Analyzer / Targeted Fix / Re-plan
+  -> Executable Completion Verifier
   -> DONE
 ```
 

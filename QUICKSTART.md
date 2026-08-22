@@ -206,6 +206,11 @@ source digest, validates Skill registration conflicts, and dry-runs every
 configured Lane step and required Skill through the real Selector. Its
 bootstrap plan contains only Input, Scenario, and Domain Router references.
 
+The template defaults Lane orchestration to `autonomous`, so filling team,
+Domain, bindings, and knowledge refs does not require inventing stage steps.
+Teams that need a fixed internal SOP can switch an individual Lane to
+`ordered`; that Lane must then declare every stage it intends to execute.
+
 For diagnosis or CI, the lower-level checks remain available:
 
 ```sh
@@ -254,6 +259,7 @@ Preflight
   -> Subagent / Agent Team execution
   -> Knowledge Consumption Receipt verification
   -> Execution Receipt
+  -> executable Completion Verification
   -> Completion Gate
 ```
 
@@ -293,6 +299,18 @@ tran_build PASS
 Knowledge Consumption Result = VERIFIED with provider/search result refs
 Execution Receipt and Completion Summary
 ```
+
+For every execution unit, finish with the executable Completion Gate:
+
+```sh
+ruby .claude/skills/idc-team-config/scripts/verify_completion.rb \
+  --request .idc/runs/<task-id>/attempt-<n>/completion-request-<execution-unit>.yaml \
+  --output .idc/runs/<task-id>/attempt-<n>/completion-result-<execution-unit>.yaml
+```
+
+Only `completion_verification_result.status: DONE` is complete. General applies
+the selected Fast/Lite/Complex evidence contract; D3A additionally requires
+RED and GREEN evidence for every required DT Domain plus `tran_build PASS`.
 
 A configured GC or DT Skill that never becomes eligible should be fixed in its
 capability mapping or Lane/profile policy, not forced to run globally.

@@ -37,7 +37,7 @@ v1.0 已经固定：
 - Skill Adapter Router 作为 GC SOP、Superpowers、DT skill、build skill 的唯一接入门。
 - `team-config.yaml.template` 是唯一团队配置入口；`idc-team-config` 校验并生成只读有效配置。
 - Fast / Lite / Complex 使用各自的 capability profile。团队既可让 Selector 自主补齐最小充分集合，也可用 ordered steps 固定过程；无匹配步骤时明确阻断，不静默回退。
-- Capability Selector、Knowledge Load Plan、Context Load Plan、Delegation Contract、Execution Authorization、Knowledge Consumption Receipt 和 Execution Receipt 构成不可绕过的执行链。
+- Capability Selector、Knowledge Load Plan、Context Load Plan、Delegation Contract、Execution Authorization、Knowledge Consumption Receipt、Execution Receipt 和可执行 Completion Verifier 构成不可绕过的执行链。
 - Mock D3A / General E2E examples 和 harness tests。
 
 v1.0 不做：不复制企业内部 D3A 知识；不编造 Coding Layer 到 DT Domain 的真实 mapping；不内置真实 repo path、构建命令、日志、API 或企业 skill 名；不把 GC SOP 十几个能力全部默认打开；不让模型重新设计 D3A 主流程。
@@ -75,6 +75,10 @@ Generated Runtime
   阶段加载：context_load_plan.required_refs
   只读，不是第二配置入口
 ```
+
+“唯一配置”表示团队不再修改 IDC Core registry、module 或生成态；团队自己的
+Skill 实现和知识正文仍保留在团队仓库/知识系统中，`team-config.yaml` 只绑定其
+引用，不把实现或正文复制进配置。
 
 单元选择与知识选择是 per-execution-unit 产物，必须使用带
 execution-unit 的文件名，避免下一个执行单元覆写 Delegation Contract 已经
@@ -182,8 +186,8 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module（`references/d
 
 ```text
 用户任务 -> Input Maturity Gate -> D3A raw idea 时 Brainstorming / 有关键缺口时 Grill Me
-  -> Human Alignment Check -> AskUserTool approval -> Domain Module Router
-  -> d3a module -> D3A Fixed Workflow (Lane N/A) -> Contract Gate -> Human Alignment
+  -> Domain Module Router -> d3a module -> Contract Gate + Human Alignment Check
+  -> AskUserTool approval -> D3A Fixed Workflow (Lane N/A)
   -> Alignment Pack -> Automated Closure Loop -> D3A Specification
   -> API Contract Freeze -> Planner (Layer / DT / DAG / Knowledge Requirements)
   -> Knowledge Gate -> Knowledge Preparation

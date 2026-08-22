@@ -34,7 +34,10 @@ errors << "knowledge plan integrity check failed" unless plan["knowledge_plan_id
 errors << "knowledge_plan_id does not match" unless receipt["knowledge_plan_id"] == plan["knowledge_plan_id"]
 errors << "execution_unit_ref does not match" unless receipt["execution_unit_ref"] == plan["execution_unit_ref"]
 
-normalize_ref = ->(ref) { Pathname.new(ref.to_s).expand_path.to_s }
+normalize_ref = lambda do |ref|
+  value = ref.to_s
+  value.match?(%r{^[a-z][a-z0-9+.-]*:}i) ? value : Pathname.new(value).expand_path.to_s
+end
 required_refs = Array(plan["required_static_knowledge"]).map { |entry| normalize_ref.call(entry["ref"]) }.uniq
 required_refs.each do |ref|
   next if ref.match?(%r{^[a-z][a-z0-9+.-]*:}i)

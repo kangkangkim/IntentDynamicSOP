@@ -77,11 +77,16 @@ result = {
   "execution_authorization_result" => {
     "status" => errors.empty? ? "AUTHORIZED" : "BLOCKED_DELEGATION_REQUIRED",
     "authorization_id" => authorization_id,
+    "execution_unit_ref" => errors.empty? ? request["execution_unit_ref"] : nil,
+    "selected_domain" => errors.empty? ? request["selected_domain"] : nil,
+    "selected_lane" => errors.empty? ? request["selected_lane"] : nil,
     "executor_kind" => errors.empty? ? executor["kind"] : nil,
     "domain_execution_skill_ref" => errors.empty? ? request["domain_execution_skill_ref"] : nil,
     "knowledge_load_plan_ref" => errors.empty? ? request["knowledge_load_plan_ref"] : nil,
     "knowledge_plan_id" => errors.empty? ? request["knowledge_plan_id"] : nil,
     "selected_atomic_skill_refs" => errors.empty? ? Array(request["selected_atomic_skill_refs"]) : [],
+    "allowed_paths" => errors.empty? ? Array(request["allowed_paths"]) : [],
+    "expected_outputs" => errors.empty? ? Array(request["expected_outputs"]) : [],
     "errors" => errors
   }
 }

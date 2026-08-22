@@ -263,7 +263,7 @@ Consumption Receipt for the authorized `knowledge_plan_id`.
 - Clarification Provider only asks for critical missing information needed for contracts, scope, or completion gates.
 - The clarification skill configured in `effective.alignment` may apply `grill-me-method` internally (decision tree, frontier rounds, commitment check, no implementation).
 - If `grill-me-method` is unavailable, fall back to `builtin-critical-questions` as the method **inside the same configured clarification skill**; never skip invoking the configured clarification skill or substitute a non-configured one.
-- All Lanes must self-close with evidence.
+- All Lanes must self-close through `../idc-team-config/scripts/verify_completion.rb`; prose, tests alone, or an unverified Execution Receipt cannot produce `DONE`.
 - Treat Fast as an evidence-backed small-change path: absent or unknown signals never satisfy Fast conditions; a tiny localized production-code change may be Fast only when no new test code is needed and existing verification can close it. New capabilities, behavior-contract changes, new/changed tests, multi-file or multi-component work, focused design, broad repo exploration, or unknown scope must be at least Lite unless a Complex hard trigger applies.
 - `fast` does not mean "no verification"; it means small closure.
 - Single execution unit code change must be `<= 500 LOC`.

@@ -114,6 +114,17 @@ ruby .claude/skills/idc-team-config/scripts/verify_knowledge_consumption.rb \
   --receipt <KNOWLEDGE_CONSUMPTION_RECEIPT>
 ```
 
+Finally run the machine Completion Gate. It validates Authorization,
+Execution Receipt, Knowledge Consumption, the selected Lane's evidence, and
+the D3A RED/GREEN/`tran_build` requirements or Custom Domain completion
+evidence when applicable:
+
+```sh
+ruby .claude/skills/idc-team-config/scripts/verify_completion.rb \
+  --request <COMPLETION_VERIFICATION_REQUEST> \
+  --output .idc/runs/<task-id>/attempt-<n>/completion-result.yaml
+```
+
 ## Output
 
 ```yaml
@@ -148,6 +159,8 @@ team_config_result:
 - Preflight dry-runs every configured Lane step and required Skill through the
   real Capability Selector. Return `NEEDS_TEAM_CONFIG` if selection or order
   differs from the YAML policy.
+- Completion is not a prose decision: require `verify_completion.rb` to return
+  `DONE` for each execution unit before the workflow reports completion.
 - Context Load Plan is the runtime loading authority. Read only
   `required_refs`; do not preload all available capabilities or schemas.
 - Knowledge Load Plan is bound to one execution unit. Authorization requires

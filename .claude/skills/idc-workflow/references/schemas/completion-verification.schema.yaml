@@ -1,0 +1,58 @@
+completion_verification_request:
+  task_id: string
+  selected_domain: general | d3a | custom
+  selected_lane: fast | lite | complex | null
+  execution_unit_ref: ref
+  authorization_result_ref: ref
+  knowledge_consumption_result_ref: ref
+  test_based_verification: boolean
+  execution_receipt:
+    authorization_id: sha256
+    dispatch_tool_call_ref: ref
+    executor_session_ref: ref
+    executor_kind: subagent | agent_team | official_dynamic_workflow
+    loaded_domain_execution_skill_ref: skill_ref
+    executed_atomic_skill_refs: []
+    knowledge_plan_id: sha256
+    knowledge_consumption_result_ref: ref
+    changed_paths: []
+    evidence_refs: []
+  evidence:
+    task_summary_ref: ref | null
+    task_contract_ref: ref | null
+    acceptance_criteria_ref: ref | null
+    changed_files_review_ref: ref | null
+    focused_plan_ref: ref | null
+    detailed_plan_ref: ref | null
+    relevant_context_refs: []
+    evidence_plan_ref: ref | null
+    verification_evidence_refs: []
+    coverage_evidence_ref: ref | null
+    coverage_exemption: {reason: string | null}
+    audit_or_review_ref: ref | null
+    custom_completion_evidence_refs: []
+    d3a_specification_ref: ref | null
+    api_contract_ref: ref | null
+    completion_summary_ref: ref
+  d3a:
+    required_dt_domains: []
+    red_evidence_by_domain: {}
+    green_evidence_by_domain: {}
+    tran_build_status: PASS | FAIL | NOT_RUN
+    tran_build_evidence_ref: ref | null
+
+completion_verification_result:
+  status: DONE | BLOCKED_COMPLETION
+  selected_domain: general | d3a | custom
+  selected_lane: fast | lite | complex | null
+  execution_unit_ref: ref
+  authorization_id: sha256 | null
+  knowledge_plan_id: sha256 | null
+  errors: []
+
+rules:
+  - Authorization, Execution Receipt, and Knowledge Consumption Result must bind the same execution unit and knowledge plan.
+  - General completion applies the selected Lane evidence requirements.
+  - A lane-applicable Custom Domain applies the selected Lane evidence requirements; a not-applicable Custom Domain requires custom completion evidence.
+  - Test-based Lite and Complex completion requires coverage evidence or a reasoned exemption.
+  - D3A completion requires RED and GREEN evidence for every required DT domain plus tran_build PASS evidence.

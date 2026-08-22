@@ -58,6 +58,16 @@ completion_summary_exists
 
 ## 通用规则
 
+运行时使用以下可执行 Gate，不由 main agent 凭 prose 自行判断：
+
+```sh
+ruby .claude/skills/idc-team-config/scripts/verify_completion.rb \
+  --request <COMPLETION_VERIFICATION_REQUEST>
+```
+
+输入与结果遵循 `schemas/completion-verification.schema.yaml`。只有结果为
+`completion_verification_result.status: DONE`，当前 execution unit 才完成。
+
 - 任何 Lane 都不能无 evidence 标记 DONE。
 - 任何 repository mutation 都必须有 Execution Receipt：authorization ID、
   dispatch tool-call ref、executor session ref 和 loaded Domain execution Skill。
@@ -72,6 +82,9 @@ completion_summary_exists
   不受此条约束。
 - 如果 Lane 的 minimum requirements 无法满足，必须升级 Lane 或返回 targeted fix / re-plan。
 - Domain Module 可以在 Lane requirements 之上追加自己的 completion gate。
+- Lane-applicable Custom Domain 复用所选 Lane 的 evidence contract；Lane 为
+  `not_applicable` 时必须提供 `custom_completion_evidence_refs` 和 completion
+  summary，由其配置的 completion Skill 负责生成领域证据。
 
 例如 D3A：
 

@@ -28,11 +28,16 @@ execution_authorization_request:
 execution_authorization_result:
   status: AUTHORIZED | BLOCKED_DELEGATION_REQUIRED | BLOCKED_INVALID_EXECUTOR
   authorization_id: sha256 | null
+  execution_unit_ref: ref | null
+  selected_domain: general | d3a | string | null
+  selected_lane: fast | lite | complex | null
   executor_kind: subagent | agent_team | official_dynamic_workflow | null
   domain_execution_skill_ref: skill_ref | null
   knowledge_load_plan_ref: ref | null
   knowledge_plan_id: sha256 | null
   selected_atomic_skill_refs: []
+  allowed_paths: []
+  expected_outputs: []
   errors: []
 
 execution_receipt:
