@@ -8,6 +8,10 @@ Context Engineering 定义 Claude Code 运行 `id-workflow` 时如何渐进式�
 
 - `prepare_runtime.rb` 生成最小 bootstrap plan；后续阶段由
   `plan_context.rb` 生成 `required_refs`，该清单是加载依据。
+- Alignment signal 默认视为不完整并加载团队配置的全链；只有调用方确认当前
+  trigger 集合完整时才使用 `--signals-complete` 精确匹配（同一步骤声明的
+  trigger 必须全部出现）。始终保留 `alignment_check`，发现新 signal 后必须
+  重新生成 plan。
 - 不默认加载整个 `references/`。
 - 不默认读取全部 `docs/`、`examples/`、`tests/`。
 - 不把 OKL / docs / CodeGraph / grep finding 当作 DONE evidence。

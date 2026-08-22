@@ -86,23 +86,21 @@ DOMAIN_REFS = {
 
 SIGNAL_REFS = {
   "raw_idea" => %w[
-    .claude/skills/idc-brainstorming/SKILL.md
-    .claude/skills/idc-intent-discovery/SKILL.md
     .claude/skills/idc-workflow/references/workflows/discovery-provider.md
     .claude/skills/idc-workflow/references/schemas/discovery-provider.schema.yaml
     .claude/skills/idc-workflow/references/human-views/brainstorming-view.md
   ],
   "clarification_required" => %w[
-    .claude/skills/idc-intent-grilling/SKILL.md
-    .claude/skills/idc-intent-grilling/references/grill-me-method.md
     .claude/skills/idc-workflow/references/workflows/clarification-provider.md
     .claude/skills/idc-workflow/references/schemas/clarification-provider.schema.yaml
     .claude/skills/idc-workflow/references/human-views/clarification-view.md
   ],
-  "docs_clarification_required" => %w[
-    .claude/skills/idc-intent-grilling-with-docs/SKILL.md
-    .claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md
+  "critical_gaps_remain" => %w[
+    .claude/skills/idc-workflow/references/workflows/clarification-provider.md
+    .claude/skills/idc-workflow/references/schemas/clarification-provider.schema.yaml
+    .claude/skills/idc-workflow/references/human-views/clarification-view.md
   ],
+  "docs_clarification_required" => [],
   "user_question_required" => %w[.claude/skills/idc-workflow/references/workflows/ask-user-tool-policy.md],
   "tr3_input" => %w[
     .claude/skills/idc-workflow/references/schemas/normalized-request.schema.yaml
@@ -122,6 +120,11 @@ SIGNAL_REFS = {
   ]
 }.freeze
 
+# Method assets remain owned by their configured Skills and are deliberately not
+# appended by signal policy. Built-in defaults load these from their own SKILL.md:
+# .claude/skills/idc-intent-grilling/references/grill-me-method.md
+# .claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md
+
 # Framework-default alignment baseline: the five intent skills the resolver
 # materializes (resolve_team_config.rb `alignment_default_bindings`) when
 # team-config.yaml has no alignment section. Documented here so the source
@@ -135,9 +138,9 @@ FRAMEWORK_DEFAULT_ALIGNMENT_REFS = %w[
   .claude/skills/idc-intent-alignment/SKILL.md
 ].freeze
 
-options = { signals: [] }
+options = { signals: [], signals_complete: false }
 OptionParser.new do |parser|
-  parser.banner = "Usage: plan_context.rb --effective PATH --phase PHASE [--domain DOMAIN] [--lane LANE] [--selection PATH] [--knowledge-plan PATH] [--signal SIGNAL]"
+  parser.banner = "Usage: plan_context.rb --effective PATH --phase PHASE [--domain DOMAIN] [--lane LANE] [--selection PATH] [--knowledge-plan PATH] [--signal SIGNAL] [--signals-complete]"
   parser.on("--effective PATH") { |value| options[:effective] = value }
   parser.on("--phase PHASE") { |value| options[:phase] = value }
   parser.on("--domain DOMAIN") { |value| options[:domain] = value }
@@ -145,7 +148,9 @@ OptionParser.new do |parser|
   parser.on("--selection PATH") { |value| options[:selection] = value }
   parser.on("--knowledge-plan PATH") { |value| options[:knowledge_plan] = value }
   parser.on("--signal SIGNAL") { |value| options[:signals] << value }
+  parser.on("--signals-complete") { options[:signals_complete] = true }
 end.parse!
+options[:signals] = options[:signals].uniq
 
 def fail_plan(message, exit_code = 2)
   puts YAML.dump("context_load_plan" => { "status" => "INVALID", "reason" => message })
@@ -232,17 +237,28 @@ end
 refs = Array(COMMON_REFS[options[:phase]])
 refs.concat(Array(DOMAIN_REFS.dig(options[:domain], options[:phase]))) if options[:domain]
 
+alignment_declared_signals = []
+alignment_resolution = nil
 if options[:phase] == "decision"
   alignment = effective["alignment"]
   unless alignment.is_a?(Hash) && !alignment.empty?
     fail_plan("effective config is missing the materialized alignment pipeline; regenerate it with resolve_team_config.rb")
   end
   alignment_bindings = alignment["bindings"] || {}
-  # Collect skill_ids across ALL orchestration steps (do not filter by stage —
-  # the framework-default chain and a configured pipeline both express every
-  # intent skill through their steps, not just the alignment_check step).
   alignment_steps = Array(alignment.dig("orchestration", "steps"))
-  alignment_skill_ids = alignment_steps.flat_map do |step|
+  alignment_declared_signals = alignment_steps.flat_map do |step|
+    step.is_a?(Hash) ? Array(step["trigger_signals"]) : []
+  end.uniq
+  selected_alignment_steps = if options[:signals_complete]
+                               alignment_steps.select do |step|
+                                 next false unless step.is_a?(Hash)
+                                 required_signals = Array(step["trigger_signals"])
+                                 step["stage"] == "alignment_check" || required_signals.empty? || (required_signals - options[:signals]).empty?
+                               end
+                             else
+                               alignment_steps
+                             end
+  alignment_skill_ids = selected_alignment_steps.flat_map do |step|
     step.is_a?(Hash) ? Array(step["skill_ids"]) : []
   end
   alignment_skill_refs = alignment_skill_ids.map do |skill_id|
@@ -254,6 +270,14 @@ if options[:phase] == "decision"
   end
   fail_plan("decision phase derived no alignment skill refs from the effective alignment pipeline") if alignment_skill_refs.empty?
   refs.concat(alignment_skill_refs)
+  selected_step_ids = selected_alignment_steps.map { |step| step["id"] }.compact
+  all_step_ids = alignment_steps.map { |step| step.is_a?(Hash) ? step["id"] : nil }.compact
+  alignment_resolution = {
+    "signal_set" => options[:signals_complete] ? "complete" : "uncertain",
+    "matched_step_ids" => selected_step_ids,
+    "skipped_step_ids" => all_step_ids - selected_step_ids,
+    "fallback_reason" => options[:signals_complete] ? nil : "signal set not declared complete; loaded full configured alignment pipeline"
+  }
 end
 
 if options[:domain] == "custom"
@@ -283,9 +307,10 @@ if lane_applicable && options[:lane] && %w[decision planning execution completio
   refs << ".claude/skills/idc-workflow/references/lanes/#{options[:lane]}.yaml"
 end
 
-unknown_signals = options[:signals] - SIGNAL_REFS.keys
+known_signals = SIGNAL_REFS.keys + (options[:phase] == "decision" ? alignment_declared_signals : [])
+unknown_signals = options[:signals] - known_signals.uniq
 fail_plan("unknown signal(s): #{unknown_signals.join(', ')}") if unknown_signals.any?
-options[:signals].each { |signal| refs.concat(SIGNAL_REFS.fetch(signal)) }
+options[:signals].each { |signal| refs.concat(Array(SIGNAL_REFS[signal])) }
 
 selected_capabilities = []
 selection = nil
@@ -333,6 +358,7 @@ context_plan = {
   "domain" => options[:domain],
   "lane" => options[:lane],
   "signals" => options[:signals],
+  "alignment_resolution" => alignment_resolution,
   "required_refs" => refs,
   "selected_capabilities" => selected_capabilities,
   "knowledge_load_plan_ref" => options[:knowledge_plan] && Pathname.new(options[:knowledge_plan]).expand_path.to_s,

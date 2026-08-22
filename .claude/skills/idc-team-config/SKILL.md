@@ -163,6 +163,10 @@ team_config_result:
   `DONE` for each execution unit before the workflow reports completion.
 - Context Load Plan is the runtime loading authority. Read only
   `required_refs`; do not preload all available capabilities or schemas.
+- Decision Context Plans preserve the complete configured Alignment pipeline by
+  default. `--signals-complete` enables exact step matching only when the caller
+  supplies the complete current trigger set; `alignment_check` always remains
+  selected, and new signals require a regenerated plan.
 - Knowledge Load Plan is bound to one execution unit. Authorization requires
   it READY; Completion requires a VERIFIED consumption receipt with no
   unplanned Layer, component, or test-domain refs.

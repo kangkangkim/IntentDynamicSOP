@@ -86,6 +86,11 @@ execution-unit 的文件名，避免下一个执行单元覆写 Delegation Contr
 重跑用递增的 attempt 子目录留版本、不静默覆盖；`.idc/effective-team-config.yaml`
 是唯一例外（全局配置、原子再生、带 source_sha256）。
 
+Alignment Context Plan 默认保守加载团队配置的完整链。只有调用方确认当前信号
+集合完整时才传 `--signals-complete`，此时按 `alignment.orchestration.steps`
+精确选择（同一步骤的 triggers 为 AND）并始终保留 `alignment_check`；团队
+自定义 bindings、顺序和 trigger token 都是唯一 Skill 选择来源。
+
 `team-config.yaml` 的可选顶层 `alignment` 段把 pre-alignment 意图加工链做成可配置管线（与 Lane 编排同形状）：
 
 ```yaml

@@ -53,18 +53,9 @@ or execution skill.
 
 This skill must route rough requests before Domain execution.
 
-Treat these as `raw_idea` only when the user intent is actually vague, even when the user mentions General Coding:
-
-```text
-rough
-vague
-sketchy
-early idea
-大概想做
-先试试
-不完整想法
-还没想清楚
-```
+Treat `rough`, `vague`, `sketchy`, `early idea`, `大概想做`, `先试试`,
+`不完整想法`, and `还没想清楚` as `raw_idea` only when intent is actually
+vague, even when the user mentions General Coding.
 
 If a General Coding request is rough, run `idc-intent-discovery` first.
 
@@ -115,17 +106,14 @@ references/workflows/input-adapter.md
   -> references/human-views/
 ```
 
-The intent-processing steps above are driven by the effective alignment
-pipeline materialized in `.idc/effective-team-config.yaml` from
-`team-config.yaml` (`alignment:` key; shape in
-`references/schemas/team-config.schema.yaml`):
+The intent-processing steps come only from the effective `alignment:` pipeline
+(shape: `references/schemas/team-config.schema.yaml`). An absent or partial
+section uses the framework default chain. Teams may rebind/reorder intent
+skills; router, gate, and approval ownership remains framework-owned.
 
 ```yaml
 alignment:
 ```
-An absent or partial section (missing `bindings`/`orchestration`) falls back
-to the framework default chain above; only intent skills may be rebound or
-reordered. Router, gate, and approval ownership is framework-owned.
 
 After the user approves:
 
@@ -188,12 +176,18 @@ ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
   --domain general
 ```
 
+Decision planning loads the full configured Alignment pipeline by default.
+Use `--signals-complete` only with the complete current signal set; it matches
+effective step triggers, preserves configured order/bindings, and always keeps
+`alignment_check`. Regenerate the plan whenever signals change. Details:
+`CONTEXT_ENGINEERING.md`.
 Supported phases are `bootstrap`, `decision`, `planning`, `execution`,
 `completion`, and `resume`. Add only observed signals with repeated `--signal`:
 
 ```text
 raw_idea
 clarification_required
+critical_gaps_remain
 docs_clarification_required
 user_question_required
 tr3_input
@@ -202,6 +196,8 @@ repo_context_required
 vertical_slice_readiness_required
 ```
 
+Team-owned Alignment trigger tokens are valid in decision planning. They select
+Skills only through effective bindings; no hardcoded intent Skill may be added.
 Continue only when `context_load_plan.status: READY`, then read exactly its
 `required_refs`. Do not preload refs for later phases. Schema:
 `references/schemas/context-load-plan.schema.yaml`.
