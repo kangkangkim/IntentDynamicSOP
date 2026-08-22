@@ -1,0 +1,37 @@
+knowledge_load_plan:
+  status: READY | NEEDS_KNOWLEDGE_MAPPING
+  knowledge_plan_id: sha256 | null
+  source_sha256: sha256
+  execution_unit_ref: string
+  selected_domain: general | d3a | custom
+  selected_layer: string | null
+  selected_components: []
+  selected_test_domains: []
+  required_static_knowledge:
+    - kind: architecture | verification_mapping | layer | component | test_domain
+      id: string
+      ref: ref
+      source: string
+  search_scopes:
+    - kind: feature_docs_scope
+      id: string
+      ref: ref
+      source: string
+  repo_context:
+    required: boolean
+    mode: bound_skill | bounded_grep | none
+    provider_skill_ref: skill_ref | null
+    policy_ref: ref | null
+    fallback: bounded_grep | none
+  consumption_policy:
+    all_required_static_refs_must_be_loaded: true
+    unplanned_static_refs_forbidden: true
+    search_scope_result_required: boolean
+    provider_result_required: boolean
+  errors: []
+
+rules:
+  - The plan is bound to one execution_unit_ref and one Domain.
+  - Knowledge refs are selected from effective config only.
+  - D3A Layer overrides come from knowledge.layer_docs before the built-in Layer catalog.
+  - Unselected Layer, component, and test-domain refs are forbidden.

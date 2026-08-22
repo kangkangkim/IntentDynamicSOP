@@ -1,0 +1,22 @@
+schema: adaptation_event
+version: 1
+
+adaptation_event:
+  run_id: string
+  execution_unit_ref: string
+  domain: string
+  lane_applicability: applicable | not_applicable
+  selected_lane: fast | lite | complex | null
+  execution_profile: string
+  event_type: route_corrected | capability_missed | capability_unneeded | knowledge_missing | plan_corrected | verification_failed | completion_corrected
+  gap_class: routing_gap | binding_gap | knowledge_gap | planning_gap | verification_gap | workflow_gap | core_candidate_gap
+  observed_summary: string
+  original_decision_ref: string
+  corrected_decision_ref: string
+  evidence_refs: []
+  confidential_payload_ref: string | null
+
+rules:
+  - Event summaries are bounded and redact team-private implementation details.
+  - Events are observations, not active policy.
+  - Model guesses are not enterprise facts.

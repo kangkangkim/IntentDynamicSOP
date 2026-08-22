@@ -1,0 +1,24 @@
+lane:
+  id: lite
+  purpose: 普通开发任务，范围可控，需要聚焦验证。
+  hard_triggers: []
+  fast_required_conditions: []
+  required_outputs:
+    - task_contract
+    - acceptance_criteria
+    - focused_plan
+    - relevant_context
+    - test_or_build_evidence
+  verification_level: focused
+  capability_selection:
+    strategy: autonomous_minimal_sufficient
+    max_optional_skills: 3
+    selection_scope: current_stage
+    require_selected_and_skipped_reasons: true
+  completion_requirements:
+    - task_contract_exists
+    - acceptance_criteria_checked
+    - focused_plan_executed
+    - relevant_context_used
+    - test_or_build_evidence_exists
+    - completion_summary_exists

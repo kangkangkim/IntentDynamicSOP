@@ -1,0 +1,44 @@
+schema: capability_selection
+version: 1
+
+capability_demand:
+  execution_unit_ref: string
+  selected_stage: string
+  selected_domain: string
+  lane_applicability: applicable | not_applicable
+  selected_lane: fast | lite | complex | null
+  execution_profile: lane_driven | d3a_fixed_workflow | string
+  required_capability_keys: []
+  optional_capability_keys: []
+  observed_signals: []
+  contract_refs: []
+
+capability_selection_result:
+  execution_unit_ref: string
+  selected_domain: string
+  selected_stage: string
+  strategy: autonomous_minimal_sufficient
+  selected:
+    - capability_id: string
+      skill_ref: string
+      requirement: configured | required | optional
+      execution_order: integer
+      reason: string
+  skipped:
+    - capability_id: string
+      reason: unbound | stage_mismatch | signal_missing | lane_ineligible | team_lane_not_allowed | team_lane_denied | orchestration_step_excluded | profile_ineligible | contract_missing | optional_budget_exhausted | superseded
+  unresolved_required_capabilities: []
+  orchestration:
+    mode: autonomous | ordered | execution_profile
+    matched_step_ids: []
+  status: READY | NEEDS_ADAPTER_MAPPING | NEEDS_TEAM_CONFIG | NEEDS_ORCHESTRATION_MAPPING
+
+rules:
+  - Configured does not mean selected.
+  - Every selected and skipped bound capability has an explicit reason.
+  - Required demands cannot be dropped because of an optional budget.
+  - Fast, Lite, and Complex use their own Lane capability profile.
+  - Lane allow/deny/required lists and orchestration steps are runtime inputs, not documentation.
+  - Autonomous mode runs configured step skills first and may add the minimal sufficient set.
+  - Ordered mode runs only the matching step skills in configured order and never silently falls back.
+  - D3A uses d3a_fixed_workflow eligibility and does not invent a Lane.

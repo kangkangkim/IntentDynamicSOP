@@ -1,0 +1,129 @@
+schema: team_config
+version: 1
+
+team_config:
+  config_version: 1
+  team:
+    id: string
+    repo_path: path
+  domain:
+    mode: d3a | general | custom
+    d3a:
+      dt_domains:
+        - id: string
+          knowledge_ref: ref
+    custom:
+      id: string | null
+      trigger_rules: []
+      lane_policy:
+        mode: dynamic | fixed | not_applicable
+        selected_lane: fast | lite | complex | null
+      coding_layers:
+        - id: string
+          knowledge_ref: ref
+      test_domains:
+        - id: string
+          knowledge_ref: ref
+      required_contracts: [task_contract, verification_contract, api_contract, d3a_specification] # subset of allowed contract ids; template default: [task_contract, verification_contract]
+      workflow_skill_ref: skill_ref | null
+      planner_skill_ref: skill_ref | null
+      completion_skill_ref: skill_ref | null
+  general:
+    components: []
+    test_domains: []
+  bindings:
+    capability_name:
+      skill_ref: skill_ref | null
+  adapter_extensions:
+    - id: idc-prefixed-string
+      execution_role: atomic_capability | verification_capability | pre_alignment_capability
+      capability_keys: []
+      allowed_stages: []
+      eligible_lanes: []
+      execution_profiles: []
+      trigger_signals: []
+      skill_ref: skill_ref
+      input_contract_ref: ref | null
+      output_contract_ref: ref | null
+      evidence_required: boolean
+      requires: []
+      blocks_when: []
+      composes_with: []
+      supersedes: []
+  knowledge:
+    architecture_doc_ref: ref | null
+    feature_docs_root_ref: ref | null
+    layer_docs: {}
+    verification_mapping_ref: ref | null
+    repo_context:
+      provider_skill_ref: skill_ref | null
+      policy_ref: ref | null
+      fallback: bounded_grep | none
+  lane:
+    default: fast | lite | complex # optional; defaults to lite
+    profiles:
+      lane_id:
+        skills:
+          allow: []
+          deny: []
+          required: []
+        orchestration:
+          mode: autonomous | ordered
+          steps:
+            - id: string
+              stage: string
+              skill_ids: []
+              trigger_signals: []
+  alignment: # optional; mirrors the lane orchestration shape for the pre-alignment pipeline
+    bindings:
+      capability_name:
+        skill_ref: skill_ref
+    orchestration:
+      mode: ordered
+      steps:
+        - id: string
+          stage: discovery | divergence | clarification | alignment_check
+          skill_ids: []
+          trigger_signals: []
+  capability_selection: # optional; defaults to the values below
+    mode: autonomous_minimal_sufficient
+    lane_profiles:
+      fast:
+        max_optional_skills: integer | null
+      lite:
+        max_optional_skills: integer | null
+      complex:
+        max_optional_skills: integer | null
+    d3a_profile:
+      max_optional_skills: integer | null
+    require_selected_and_skipped_reasons: true
+  self_optimization: # optional; defaults to disabled safe policy
+    mode: disabled | observe | propose_only
+    event_store_ref: ref | null
+    replay_cases_ref: ref | null
+    team_overlay_ref: ref | null
+    promotion_requires_human_alignment: true
+    auto_modify_core: false
+
+rules:
+  - team-config.yaml is the only team-authored configuration source.
+  - Generated .idc files are read-only runtime state.
+  - Commands and pass/fail logic live inside bound skills.
+  - Registry overrides replace defaults wholesale and never merge sources.
+  - Custom Domain definitions are registered from domain.custom without editing shared registries.
+  - domain.custom.required_contracts must be a list drawn from the allowed contract ids (task_contract, verification_contract, api_contract, d3a_specification); invalid shapes or unknown ids are rejected at resolve time and the effective list is surfaced in the domain's planning-phase context plan.
+  - Adapter extensions cannot override Domain, Lane, Contract, Human Alignment, or Completion ownership.
+  - Adapter extensions cannot register orchestration or Domain execution Skills as atomic capabilities.
+  - Overlapping capability, stage, scope, and trigger registrations must declare composes_with or supersedes.
+  - A bound skill is only available; Capability Selector decides whether it runs.
+  - Lane profiles are executable policy: allow/deny/required and matching orchestration steps must affect selection.
+  - Ordered orchestration has no silent fallback when the active stage lacks a matching step.
+  - The alignment section configures the pre-alignment pipeline only; Scenario Router, gate, and completion ownership are not configurable through it.
+  - Missing alignment (or missing alignment.bindings / alignment.orchestration) materializes the framework default five-step chain with framework-owned trigger signals and no other output difference.
+  - alignment.orchestration.mode is always ordered; every framework stage requires a step mapping, otherwise the resolver returns NEEDS_ORCHESTRATION_MAPPING.
+  - The alignment_check step (Human Alignment gate) cannot be removed; teams may rebind its skill_ref only.
+  - raw_idea and critical_gaps_remain form the framework signal floor and must stay covered by step trigger_signals.
+  - alignment.bindings skill_refs may use team://, harness://, absolute, or relative paths, but must resolve to an idc-*/SKILL.md target; unresolved step skill_ids return NEEDS_TEAM_CONFIG.
+  - Missing lane.profiles uses backward-compatible autonomous empty profiles; newly generated configs include all three profiles explicitly.
+  - Missing lane.default, capability_selection, and self_optimization are materialized with documented safe defaults.
+  - Self-optimization cannot modify IDC Core or bypass Human Alignment promotion.

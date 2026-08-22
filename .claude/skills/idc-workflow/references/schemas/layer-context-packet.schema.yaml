@@ -1,0 +1,47 @@
+layer_context:
+  layer: string
+  goal: string
+  api_contract: object
+  responsibility: string
+  architecture_constraints: []
+  coding_patterns: []
+  knowledge_plan_id: sha256
+  required_static_knowledge_refs: []
+  knowledge_search_scopes: []
+  repo_context:
+    files: []
+    notes: []
+  required_dt: []
+  acceptance_criteria: []
+  execution_unit:
+    max_change_loc: 500
+    split_required: boolean
+
+example:
+  layer_context:
+    layer: DO
+    goal: 增加 dummy 状态读取路径的 DO 部分。
+    api_contract:
+      ref: examples/mock-d3a-task/api-contract.yaml
+    responsibility: <ENTERPRISE_PLACEHOLDER>
+    architecture_constraints:
+      - D3A architecture 是固定的。
+      - 未经 planner 授权，不修改其他 Layer。
+    coding_patterns:
+      - <ENTERPRISE_PLACEHOLDER>
+    knowledge_plan_id: <KNOWLEDGE_PLAN_SHA256>
+    required_static_knowledge_refs:
+      - .claude/skills/idc-workflow/references/knowledge/d3a/layers/DO.md
+      - .claude/skills/idc-workflow/references/knowledge/d3a/dt/TPRINT.md
+    knowledge_search_scopes: []
+    repo_context:
+      files:
+        - <ENTERPRISE_REPO_PATH>
+      notes:
+        - Dynamic repository context 必须在团队配置内收集。
+    required_dt: [TPRINT]
+    acceptance_criteria:
+      - DO context packet 只包含 DO layer knowledge。
+    execution_unit:
+      max_change_loc: 500
+      split_required: false

@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IDC Enterprise Adoption and Matching Map</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --ink: #17202a;
+      --muted: #5f6f82;
+      --line: #cdd6e3;
+      --panel: #ffffff;
+      --blue: #1d5fbf;
+      --blue-soft: #eaf2ff;
+      --teal: #0f766e;
+      --teal-soft: #e5f5f1;
+      --amber: #936316;
+      --amber-soft: #fff3dc;
+      --violet: #6d28d9;
+      --violet-soft: #f1ebff;
+      --red: #b42318;
+      --red-soft: #fff0ed;
+      --gray: #475467;
+      --gray-soft: #eef1f4;
+      --shadow: 0 10px 26px rgba(23, 32, 42, 0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.42;
+    }
+
+    main {
+      width: min(1400px, calc(100vw - 36px));
+      margin: 0 auto;
+      padding: 28px 0 44px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 30px; letter-spacing: 0; }
+    h2 { font-size: 17px; letter-spacing: 0; }
+    h3 { font-size: 13px; letter-spacing: 0; }
+    p, li { color: var(--muted); font-size: 13px; }
+
+    code {
+      padding: 1px 5px;
+      border-radius: 5px;
+      background: rgba(23, 32, 42, 0.08);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .page-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 16px;
+    }
+
+    .subtitle {
+      max-width: 980px;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(2, max-content);
+      gap: 8px 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      margin-right: 6px;
+      border-radius: 50%;
+      vertical-align: 0;
+    }
+
+    .amber { background: var(--amber); }
+    .violet { background: var(--violet); }
+    .blue { background: var(--blue); }
+    .red { background: var(--red); }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .match {
+      min-width: 1180px;
+      display: grid;
+      grid-template-columns: 240px 380px 480px;
+    }
+
+    .cell {
+      min-height: 104px;
+      padding: 12px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .match > .cell:nth-child(3n) { border-right: 0; }
+
+    .head {
+      min-height: 52px;
+      background: #f0f3f7;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .rowlabel {
+      background: #f8fafc;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .rowlabel p { color: var(--muted); font-weight: 400; }
+
+    .stage {
+      display: inline-block;
+      margin-bottom: 7px;
+      padding: 2px 7px;
+      border: 1px solid currentColor;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .stage-amber { color: var(--amber); background: var(--amber-soft); }
+    .stage-violet { color: var(--violet); background: var(--violet-soft); }
+    .stage-blue { color: var(--blue); background: var(--blue-soft); }
+    .stage-red { color: var(--red); background: var(--red-soft); }
+    .stage-teal { color: var(--teal); background: var(--teal-soft); }
+
+    .cell strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .cell ul { margin: 7px 0 0; padding-left: 17px; }
+    .cell li { margin: 3px 0; font-size: 12px; }
+
+    .trigger {
+      margin-top: 8px;
+      padding: 7px 8px;
+      border-left: 3px solid var(--line);
+      background: #fbfcfe;
+      color: var(--ink);
+      font-size: 12px;
+    }
+
+    .trigger b { color: var(--ink); }
+
+    pre.example {
+      margin: 8px 0 0;
+      padding: 8px 10px;
+      border-left: 3px solid var(--violet);
+      background: #fbfcfe;
+      border-radius: 0 6px 6px 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11.5px;
+      color: var(--ink);
+      white-space: pre-wrap;
+    }
+
+    .phases {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .phase {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .phase h2 { margin-bottom: 8px; font-size: 14px; }
+
+    .phase ol { margin: 0; padding-left: 18px; }
+    .phase li { margin: 5px 0; font-size: 12px; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .panel {
+      min-height: 156px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .panel h2 { margin-bottom: 8px; }
+    .panel ul { margin: 0; padding-left: 18px; }
+    .panel li { margin: 5px 0; }
+
+    @media (max-width: 920px) {
+      main { width: min(100vw - 24px, 760px); padding-top: 22px; }
+      .page-head { grid-template-columns: 1fr; }
+      .legend { grid-template-columns: 1fr 1fr; }
+      .phases { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="page-head">
+      <div>
+        <h1>IDC Enterprise Adoption and Matching Map</h1>
+        <p class="subtitle">企业接入不改 harness：左列是企业已有资产，中列是 <code>team-config.yaml</code> 里对应的插槽，右列是 harness 里谁消费它、怎么生效。配置非空即整体替换仓库默认注册表（不合并）；没填的能力不会被猜，而是显式失败。各示例均为 demo 虚拟值，仅示意格式，不代表任何企业真实信息。</p>
+      </div>
+      <div class="legend" aria-label="legend">
+        <span><i class="dot amber"></i>企业已有资产</span>
+        <span><i class="dot violet"></i>team-config 插槽</span>
+        <span><i class="dot blue"></i>harness 消费点</span>
+        <span><i class="dot red"></i>未配置时</span>
+      </div>
+    </header>
+
+    <section class="table-wrap" aria-label="enterprise asset to harness slot matching table">
+      <div class="match">
+        <div class="cell head">企业已有资产</div>
+        <div class="cell head">team-config.yaml 插槽</div>
+        <div class="cell head">harness 消费点 / 生效方式</div>
+
+        <div class="cell rowlabel">
+          团队身份与代码仓
+          <p>团队配置内的真实仓库位置和内部 skill 根目录。</p>
+        </div>
+        <div class="cell">
+          <span class="stage stage-violet">team:</span>
+          <strong>config_version / id / repo_path</strong>
+          <ul>
+            <li>id: &lt;TEAM_ID&gt;</li>
+            <li>repo_path: &lt;REPO_PATH&gt;</li>
+            <li>config_version: 1</li>
+          </ul>
+          <pre class="example">team:
+  id: demo-team
+  repo_path: /repos/demo-vehicle
+  repo_path: /repos/demo-code</pre>
+          </ul>
+        </div>
+        <div class="cell">
+          <span class="stage stage-blue">SKILL.md 首读映射</span>
+          <strong>workflow 启动时先读 team-config.yaml</strong>
+          <ul>
+            <li>repo_path 驱动 repo context provider 定位</li>
+            <li>Resolver 从 harness root 解析每个 skill_ref</li>
+            <li>填写校验：路径不存在或残留占位符 -> 测试红</li>
+          </ul>
+        </div>
+
+        <div class="cell rowlabel">
+          领域注册表
+          <p>真实 DT Domain、GC 组件、测试域清单。</p>
+        </div>
+        <div class="cell">
+          <span class="stage stage-violet">domain: / general:</span>
+          <strong>d3a.dt_domains / components / test_domains</strong>
+          <ul>
+            <li>条目形如 {id, knowledge_ref}</li>
+            <li>非空列表整体替换仓库注册表</li>
+            <li>留 [] 用仓库默认 placeholder</li>
+          </ul>
+          <pre class="example">domain:
+  d3a:
+    dt_domains:
+    - id: DT_DEMO
+      knowledge_ref: docs/dt/DT_DEMO.md
+# 填了这 1 条，TPRINT/FW/DPF 整个被替换</pre>
+          </ul>
+        </div>
+        <div class="cell">
+          <span class="stage stage-blue">Domain / Knowledge Gate</span>
+          <strong>替换 dt-domains.yaml 等注册表（不合并）</strong>
+          <ul>
+            <li>Planner 只能从替换后的清单选 DT Domain</li>
+            <li>Knowledge Gate 只加载受影响域的 knowledge_ref</li>
+            <li>D3A 7 层固定，不走这条通道</li>
+          </ul>
+        </div>
+
+        <div class="cell rowlabel">
+          内部 Skill 能力池
+          <p>公司已有 Brainstorming、GC SOP 原子能力、dt-design / dt-writer、impl review 等 skill。</p>
+        </div>
+        <div class="cell">
+          <span class="stage stage-violet">bindings.*.skill_ref</span>
+          <strong>20 个槽位全部绑定 skill_ref，按能力语义对号入座</strong>
+          <ul>
+            <li>brainstorming / ut_design / impl_review / tdd_workflow ...</li>
+            <li>dt_design / dt_writer / dt_build / tran_build 同为 skill 槽（见下行）</li>
+            <li>没有的能力留 null</li>
+          </ul>
+          <pre class="example">bindings:
+  impl_review:
+    skill_ref: /repos/demo-skills/impl-review.md
+  brainstorming:
+    skill_ref: .claude/skills/idc-brainstorming/SKILL.md
+# skill_ref 可为 harness 相对路径或绝对路径</pre>
+          </ul>
+        </div>
+        <div class="cell">
+          <span class="stage stage-blue">Skill Adapter Router</span>
+          <strong>按 registry eligibility 匹配，不按名字猜</strong>
+          <ul>
+            <li>stage + capability key + contract + blocks_when 全匹配才触发</li>
+            <li>公司 skill 输出归一化成 IDC contract / evidence</li>
+          </ul>
+          <div class="trigger"><b>未配置时：</b>无 registry row 匹配 -> <code>NEEDS_ADAPTER_MAPPING</code></div>
+        </div>
+
+        <div class="cell rowlabel">
+          构建与验证系统
+          <p>真实 DT build / run、tran_build 和 PASS 判定，封装在企业 skill 里。</p>
+        </div>
+        <div class="cell">
+          <span class="stage stage-violet">bindings 构建槽（同为 skill 槽）</span>
+          <strong>绑定企业 build skill，配置里永远不出现命令</strong>
+          <ul>
+            <li>dt_build.skill_ref / tran_build.skill_ref</li>
+            <li>没有现成 build skill？先把真实命令包成极小 wrapper skill（跑命令、回传日志 / exit code），再绑定</li>
+          </ul>
+          <pre class="example">bindings:
+  dt_build:
+    skill_ref: /repos/demo-skills/dt-build.sh
+  tran_build:
+    skill_ref: /repos/demo-skills/tran-build.sh</pre>
+          </ul>
+        </div>
+        <div class="cell">
+          <span class="stage stage-blue">idc-dt-build / idc-tran-build</span>
+          <strong>委托绑定的企业 skill 执行，产出 evidence</strong>
+          <ul>
+            <li>命令封装在 skill 内部，harness 只见 skill_ref</li>
+            <li>RED / GREEN / PASS 只认工具输出，不认模型自信</li>
+            <li>失败交给 build-error-analyzer 生成 targeted fix task</li>
+          </ul>
+          <div class="trigger"><b>未配置时：</b>槽位为 null -> <code>NEEDS_TEAM_CONFIG</code>，产不出真 evidence -> 到不了 DONE</div>
+        </div>
+
+        <div class="cell rowlabel">
+          领域知识库
+          <p>架构文档、Layer 文档、verification mapping、repo context provider。</p>
+        </div>
+        <div class="cell">
+          <span class="stage stage-violet">knowledge:</span>
+          <strong>只填 ref，不搬正文</strong>
+          <ul>
+            <li>architecture_doc_ref / feature_docs_root_ref</li>
+            <li>layer_docs: {LAYER: ref}</li>
+            <li>verification_mapping_ref / repo_context.provider_skill_ref</li>
+          </ul>
+          <pre class="example">knowledge:
+  layer_docs:
+    TFE: /repos/demo-docs/layers/TFE.md
+  verification_mapping_ref: /repos/demo-docs/verify-map.md</pre>
+          </ul>
+        </div>
+        <div class="cell">
+          <span class="stage stage-blue">Layer Context Packet</span>
+          <strong>渐进加载，一次只装当前 Layer</strong>
+          <ul>
+            <li>知识正文留在企业本地，harness 只存地址</li>
+            <li>无 anchor 时按领域语义选 provider，不靠猜</li>
+          </ul>
+          <div class="trigger"><b>未配置时：</b>Knowledge Gate 判定知识不足 -> 阻断 coding</div>
+        </div>
+
+        <div class="cell rowlabel">
+          流程偏好
+          <p>默认执行强度和允许跳过的步骤。</p>
+        </div>
+        <div class="cell">
+          <span class="stage stage-violet">lane:</span>
+          <strong>Lane default + Capability Selection</strong>
+          <ul>
+            <li>default: fast / lite / complex（仅 dynamic-lane route）</li>
+            <li>Fast 1 / Lite 3 / Complex dynamic optional skill budget</li>
+          </ul>
+          <pre class="example">lane:
+  default: lite             # D3A 忽略此值，采用固定 workflow
+  default: lite</pre>
+          </ul>
+        </div>
+        <div class="cell">
+          <span class="stage stage-blue">Lane Resolver</span>
+          <strong>Lane 只决定流程跑多重</strong>
+          <ul>
+            <li>D3A module 标记 Lane 不适用并跳过 Resolver</li>
+            <li>Complex hard trigger 仍直接进 complex</li>
+            <li>跳步不能绕过 API Contract 和 RED / GREEN</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="phases" aria-label="adoption phases">
+      <article class="phase">
+        <h2>0 入区前</h2>
+        <ol>
+          <li>复制 harness 接入团队配置</li>
+          <li><code>python3 tests/test_harness.py</code> 全绿</li>
+          <li>确认无真实企业细节混入</li>
+        </ol>
+        <div class="trigger"><b>例：</b>输出 <code>45 个测试通过</code> 才算过。</div>
+      </article>
+      <article class="phase">
+        <h2>1 填一个文件</h2>
+        <ol>
+          <li>cp template -> <code>team-config.yaml</code></li>
+          <li>按上表左列资产对号填中列插槽</li>
+          <li>再跑 harness：填错的就地校验变红</li>
+        </ol>
+        <div class="trigger"><b>例：</b>最小可用 = config_version + team 两项 + domain.mode + 必需 skill_ref。可用 <a href="team-config-generator.html">交互式生成器</a>填表生成。</div>
+      </article>
+      <article class="phase">
+        <h2>2 过 Readiness Gate</h2>
+        <ol>
+          <li>跑 vertical-slice-readiness gate</li>
+          <li>看 BLOCKED 清单还缺哪个 binding</li>
+          <li>gate 只证明能启动，不替代 evidence</li>
+        </ol>
+        <div class="trigger"><b>例：</b>BLOCKED 项 <code>tran_build skill 未绑定</code> -> 回第 1 步补。</div>
+      </article>
+      <article class="phase">
+        <h2>3 第一条 vertical slice</h2>
+        <ol>
+          <li>1 个 Layer + 1 个 DT Domain</li>
+          <li>freeze API Contract -> RED -> GREEN</li>
+          <li><code>tran_build</code> PASS -> Completion Summary</li>
+        </ol>
+        <div class="trigger"><b>例：</b>TFE 层 × DT_DEMO：RED ref -> GREEN ref -> tran_build PASS。</div>
+      </article>
+      <article class="phase">
+        <h2>4 扩展与复用</h2>
+        <ol>
+          <li>逐步加 Layer / DT / GC 组件</li>
+          <li>第二团队：另一个 team-config.yaml</li>
+          <li>非 D3A 领域：复制 template-domain/ 模块</li>
+        </ol>
+        <div class="trigger"><b>例：</b>第二团队只改 team.id / repo_path，skill 池共用。</div>
+      </article>
+    </section>
+
+    <section class="summary" aria-label="adoption rules">
+      <article class="panel">
+        <h2>企业要准备什么</h2>
+        <ul>
+          <li>一个可访问的代码仓路径</li>
+          <li>内部 skill 清单与存放根目录</li>
+          <li>真实 DT / tran_build 能力（企业 skill，命令封装在 skill 内部）</li>
+          <li>领域知识地址（不搬正文）</li>
+        </ul>
+      </article>
+
+      <article class="panel">
+        <h2>harness 不改什么</h2>
+        <ul>
+          <li>IDC Core：router / gate / lane / schema</li>
+          <li>D3A 7 层固定架构</li>
+          <li>Skill Adapter registry 的 eligibility 规则</li>
+          <li>验证门：API Contract 先行、RED 先于 GREEN</li>
+        </ul>
+      </article>
+
+      <article class="panel">
+        <h2>生效怎么保证</h2>
+        <ul>
+          <li>首读链路：workflow 启动先加载 team-config</li>
+          <li>静态校验：harness 测试就地检查填好的配置</li>
+          <li>显式失败：缺配置返回状态码，不静默跳过</li>
+          <li>证据门：没有真实 evidence 到不了 DONE</li>
+        </ul>
+      </article>
+
+      <article class="panel">
+        <h2>常见失败信号</h2>
+        <ul>
+          <li><code>NEEDS_TEAM_CONFIG</code>：必需槽位还是 null</li>
+          <li><code>NEEDS_ADAPTER_MAPPING</code>：registry 无匹配行</li>
+          <li>Readiness Gate <code>BLOCKED</code>：binding 不足</li>
+          <li>测试红：残留 &lt;占位符&gt; 或 ref 指向不存在</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

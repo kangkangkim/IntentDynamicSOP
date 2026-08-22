@@ -1,0 +1,124 @@
+config_version: 1
+team:
+  id: public-self-test
+  repo_path: .
+domain:
+  mode: d3a
+  d3a:
+    dt_domains: []
+  custom:
+    id: null
+    trigger_rules: []
+    lane_policy:
+      mode: dynamic
+      selected_lane: null
+    coding_layers: []
+    test_domains: []
+    required_contracts: [task_contract, verification_contract]
+    workflow_skill_ref: null
+    planner_skill_ref: null
+    completion_skill_ref: null
+general:
+  components: []
+  test_domains: []
+bindings:
+  coding_standard: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  brainstorming: {skill_ref: .claude/skills/idc-brainstorming/SKILL.md}
+  asis_miner: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  scene_challenge: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  req_check: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  tech_design: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  phase_plan: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  ut_design: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  ut_generate: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  impl_review: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  tdd_workflow: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  static_scan: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  defect_fix: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  git_commit: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  knowledge_archive: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  system_test: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  dt_design: {skill_ref: .claude/skills/idc-dt-design/SKILL.md}
+  dt_writer: {skill_ref: .claude/skills/idc-dt-writer/SKILL.md}
+  dt_build: {skill_ref: .claude/skills/idc-dt-build/SKILL.md}
+  tran_build: {skill_ref: .claude/skills/idc-tran-build/SKILL.md}
+adapter_extensions:
+  - id: idc-team-api-review
+    execution_role: atomic_capability
+    capability_keys: [api_review]
+    allowed_stages: [review]
+    eligible_lanes: [lite, complex]
+    execution_profiles: [d3a_fixed_workflow]
+    trigger_signals: [api_semantic_change]
+    skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md
+    input_contract_ref: null
+    output_contract_ref: null
+    evidence_required: true
+    requires: [api_contract]
+    blocks_when: []
+    composes_with: []
+    supersedes: []
+knowledge:
+  architecture_doc_ref: docs/architecture.md
+  feature_docs_root_ref: docs
+  layer_docs:
+    DO: .claude/skills/idc-workflow/references/knowledge/d3a/layers/DO.md
+  verification_mapping_ref: examples/e2e-tr3-d3a/execution-plan.yaml
+  repo_context:
+    provider_skill_ref: null
+    policy_ref: null
+    fallback: bounded_grep
+lane:
+  default: lite
+  profiles:
+    fast:
+      skills:
+        allow: [coding_standard, static_scan, defect_fix]
+        deny: []
+        required: [coding_standard]
+      orchestration:
+        mode: ordered
+        steps:
+          - id: fast-implement
+            stage: implementation
+            skill_ids: [coding_standard]
+            trigger_signals: []
+    lite:
+      skills:
+        allow: [coding_standard, asis_miner, req_check, tech_design, phase_plan, ut_design, ut_generate, impl_review, tdd_workflow, static_scan, defect_fix]
+        deny: []
+        required: [tech_design]
+      orchestration:
+        mode: autonomous
+        steps:
+          - id: lite-plan
+            stage: planning
+            skill_ids: [tech_design, phase_plan]
+            trigger_signals: []
+    complex:
+      skills:
+        allow: []
+        deny: [git_commit]
+        required: [tech_design]
+      orchestration:
+        mode: autonomous
+        steps:
+          - id: complex-plan
+            stage: planning
+            skill_ids: [tech_design, phase_plan, scene_challenge, asis_miner, ut_design]
+            trigger_signals: []
+capability_selection:
+  mode: autonomous_minimal_sufficient
+  lane_profiles:
+    fast: {max_optional_skills: 1}
+    lite: {max_optional_skills: 3}
+    complex: {max_optional_skills: null}
+  d3a_profile: {max_optional_skills: null}
+  require_selected_and_skipped_reasons: true
+self_optimization:
+  mode: disabled
+  event_store_ref: null
+  replay_cases_ref: null
+  team_overlay_ref: null
+  promotion_requires_human_alignment: true
+  auto_modify_core: false

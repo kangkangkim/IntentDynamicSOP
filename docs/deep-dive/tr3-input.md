@@ -10,13 +10,14 @@ TR3 是高级输入源。
 - 验收标准。
 - 影响范围。
 
-Input Adapter 会抽取：
+Input Adapter 会抽取两个顶层产物：
 
 ```text
 normalized_request
 classification
-lane_signals
 ```
+
+其中 `classification` 内部包含若干字段，例如 `domain_candidates`、`change_type`、`change_shape`、`lane_signals`、`lane_signal_evidence`、`missing_information`、`next_pre_alignment_step`。`lane_signals` 是嵌套在 `classification` 之下的字段，而非顶层产物。
 
 TR3 可以帮助识别：
 

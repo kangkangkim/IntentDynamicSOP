@@ -1,2 +1,7 @@
 .DS_Store
 .claude/settings.local.json
+team-config.yaml
+.idc/
+.cache/
+demo-project/
+desktop-pet/

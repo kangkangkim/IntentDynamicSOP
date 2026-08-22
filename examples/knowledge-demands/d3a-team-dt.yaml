@@ -1,0 +1,10 @@
+knowledge_demand:
+  execution_unit_ref: d3a-do-unit
+  selected_domain: d3a
+  selected_layer: DO
+  selected_components: []
+  selected_test_domains: [TEAM_DT_A, TEAM_DT_B]
+  include_architecture: true
+  include_feature_docs_scope: false
+  include_verification_mapping: true
+  repo_context_required: true

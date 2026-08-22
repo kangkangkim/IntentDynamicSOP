@@ -1,0 +1,55 @@
+d3a_plan:
+  coding_layers: []
+  dt_domains: []
+  dependency_dag:
+    - from: string
+      to: string
+  verification_mapping:
+    coding_layer:
+      required_dt_domains: []
+  knowledge_requirements:
+    coding_layer: []
+  layer_context_packets:
+    - coding_layer: string
+      knowledge_refs: []
+      required_dt_domains: []
+      execution_unit_refs: []
+  execution_strategy: Serial | Parallel | Mixed DAG
+
+rules:
+  - coding_layers 只能从 registries/d3a-layers.yaml 选择。
+  - dt_domains 只能从生效 registry 选择：`.idc/effective-team-config.yaml` 的 `knowledge_catalog.d3a.test_domains`（仓库默认 `registries/dt-domains.yaml`；当 `team-config.yaml` 的 `domain.d3a.dt_domains` 非空时整体替换默认 registry，不合并两个来源）。
+  - dependency_dag edge 必须引用已选择的 coding_layers。
+  - verification_mapping key 必须引用已选择的 coding_layers。
+  - required_dt_domains 必须引用已选择的 dt_domains。
+  - knowledge_requirements 和 layer_context_packets 必须逐一覆盖 coding_layers。
+  - 每个 Layer Context Packet 只能包含一个 coding_layer 及其最小必要 knowledge。
+  - 每个 Layer Context Packet 必须进入 TDD State Machine 并产生独立 RED/GREEN evidence。
+  - Coding Layer 到 DT Domain 是多对多关系，不能猜。
+
+example:
+  d3a_plan:
+    coding_layers: [DO, TFE, DRV]
+    dt_domains: [TPRINT, FW]
+    dependency_dag:
+      - from: DO
+        to: TFE
+      - from: TFE
+        to: DRV
+    verification_mapping:
+      DO:
+        required_dt_domains: [TPRINT]
+      TFE:
+        required_dt_domains: [TPRINT, FW]
+      DRV:
+        required_dt_domains: [FW]
+    knowledge_requirements:
+      DO: [layer_rules, api_contract, repo_anchors]
+      TFE: [layer_rules, dependency_contracts, repo_anchors]
+      DRV: [layer_rules, dt_constraints, repo_anchors]
+    layer_context_packets:
+      - coding_layer: DO
+        knowledge_refs: [<ENTERPRISE_PLACEHOLDER>]
+        required_dt_domains: [TPRINT]
+        execution_unit_refs: [do-unit-1]
+    execution_strategy: Serial

@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IDC team-config.yaml Generator</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --ink: #17202a;
+      --muted: #5f6f82;
+      --line: #cdd6e3;
+      --panel: #ffffff;
+      --blue: #1d5fbf;
+      --blue-soft: #eaf2ff;
+      --teal: #0f766e;
+      --teal-soft: #e5f5f1;
+      --amber: #936316;
+      --amber-soft: #fff3dc;
+      --violet: #6d28d9;
+      --violet-soft: #f1ebff;
+      --red: #b42318;
+      --red-soft: #fff0ed;
+      --gray: #475467;
+      --gray-soft: #eef1f4;
+      --shadow: 0 10px 26px rgba(23, 32, 42, 0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.42;
+    }
+
+    main {
+      width: min(1500px, calc(100vw - 36px));
+      margin: 0 auto;
+      padding: 28px 0 44px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 15px; }
+    p, li { color: var(--muted); font-size: 13px; }
+
+    code {
+      padding: 1px 5px;
+      border-radius: 5px;
+      background: rgba(23, 32, 42, 0.08);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .page-head { margin-bottom: 16px; }
+    .subtitle { max-width: 1040px; margin-top: 8px; font-size: 14px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 460px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+    }
+
+    summary {
+      padding: 12px 14px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--ink);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    summary::before { content: "▸"; color: var(--muted); font-size: 12px; }
+    details[open] summary::before { content: "▾"; }
+
+    .body { padding: 4px 14px 14px; }
+
+    .field { margin: 10px 0; }
+    .field label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .field label code { font-weight: 400; }
+
+    .field input[type="text"],
+    .field select,
+    .field textarea {
+      width: 100%;
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .field textarea { min-height: 88px; resize: vertical; }
+
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: 2px solid var(--blue-soft);
+      border-color: var(--blue);
+    }
+
+    .hint { margin-top: 3px; font-size: 11.5px; color: var(--muted); }
+
+    .check { display: flex; align-items: center; gap: 7px; margin: 10px 0; font-size: 13px; color: var(--ink); }
+
+    .rows { margin-top: 4px; }
+    .row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+      gap: 8px;
+      align-items: center;
+      margin: 6px 0;
+    }
+    .row.wide { grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.6fr) auto; }
+
+    .row input {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--ink);
+    }
+
+    .btn {
+      padding: 6px 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn:hover { border-color: var(--blue); color: var(--blue); }
+    .btn.danger { color: var(--red); }
+    .btn.danger:hover { border-color: var(--red); }
+
+    .addrow { margin-top: 6px; }
+
+    .binding-group {
+      margin: 10px 0;
+      padding: 10px 12px;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+    .binding-group h3 { margin-bottom: 6px; color: var(--violet); font-size: 12px; }
+    .binding-item { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px; align-items: center; margin: 6px 0; }
+    .binding-item .k { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--ink); }
+
+    aside {
+      position: sticky;
+      top: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .panel h2 { margin-bottom: 8px; }
+
+    pre.yaml {
+      margin: 0;
+      padding: 12px;
+      max-height: 460px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #0e1621;
+      color: #d8e4f5;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11.5px;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .btn.primary:hover { color: #fff; opacity: 0.9; }
+
+    .checks { list-style: none; margin: 0; padding: 0; }
+    .checks li {
+      margin: 6px 0;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      color: var(--ink);
+    }
+    .checks li.ok { background: var(--teal-soft); color: var(--teal); }
+    .checks li.bad { background: var(--red-soft); color: var(--red); }
+    .checks li.warn { background: var(--amber-soft); color: var(--amber); }
+
+    .note {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-left: 3px solid var(--amber);
+      background: var(--amber-soft);
+      border-radius: 0 6px 6px 0;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    @media (max-width: 1080px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="page-head">
+      <h1>IDC team-config.yaml Generator</h1>
+      <p class="subtitle">在浏览器里填表单，右侧实时生成 <code>team-config.yaml</code>。本地校验规则与 <code>tests/test_harness.py</code> 一致；路径存在性浏览器验不了，接入团队配置后跑一次 harness 即可确认。草稿自动存在本机（localStorage），不会上传到任何地方。</p>
+    </header>
+
+    <div class="layout">
+      <section aria-label="config form">
+
+        <details open>
+          <summary>1 团队身份与代码仓 <code>team:</code></summary>
+          <div class="body">
+            <div class="field">
+              <label>团队 ID <code>team.id</code></label>
+              <input type="text" id="t_id" data-path="team.id" placeholder="demo-team" />
+            </div>
+            <div class="field">
+              <label>代码仓路径 <code>team.repo_path</code></label>
+              <input type="text" id="t_repo" data-path="team.repo_path" placeholder="/repos/demo-vehicle" />
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>2 领域注册表 <code>domain: / general:</code>（非空整体替换，不合并）</summary>
+          <div class="body">
+            <div class="field">
+              <label>领域模式 <code>domain.mode</code></label>
+              <select id="d_mode" data-path="domain.mode"><option value="d3a">d3a</option><option value="general">general</option><option value="custom">custom</option></select>
+            </div>
+
+            <div class="field">
+              <label>DT Domain 列表 <code>domain.d3a.dt_domains</code>（条目：id + knowledge_ref）</label>
+              <div class="rows" id="dtlist"></div>
+              <button class="btn addrow" data-list="dtlist" type="button">+ 添加 DT Domain</button>
+              <p class="hint">留空 = 沿用仓库默认 placeholder（TPRINT / FW / DPF）；填任意条则整表替换。</p>
+            </div>
+
+            <div class="field"><label>Custom Domain ID <code>domain.custom.id</code></label><input type="text" data-path="domain.custom.id" placeholder="仅 custom 模式填写" /></div>
+            <div class="field"><label>Custom 触发规则（逗号分隔）</label><input type="text" data-path="domain.custom.trigger_rules" placeholder="payment change, billing API" /></div>
+            <div class="field"><label>Custom Lane 策略</label><select data-path="domain.custom.lane_policy.mode"><option value="dynamic">dynamic</option><option value="fixed">fixed</option><option value="not_applicable">not_applicable</option></select></div>
+            <div class="field"><label>Custom 固定 Lane</label><select data-path="domain.custom.lane_policy.selected_lane"><option value="">null</option><option value="fast">fast</option><option value="lite">lite</option><option value="complex">complex</option></select></div>
+            <div class="field"><label>Custom Coding Layers</label><div class="rows" id="customlayers"></div><button class="btn addrow" data-list="customlayers" data-kind="comp" type="button">+ 添加 Layer</button></div>
+            <div class="field"><label>Custom Test Domains</label><div class="rows" id="customtests"></div><button class="btn addrow" data-list="customtests" data-kind="td" type="button">+ 添加 Test Domain</button></div>
+            <div class="field"><label>Custom Workflow Skill</label><input type="text" data-path="domain.custom.workflow_skill_ref" placeholder="null" /></div>
+            <div class="field"><label>Custom Planner Skill</label><input type="text" data-path="domain.custom.planner_skill_ref" placeholder="null" /></div>
+            <div class="field"><label>Custom Completion Skill</label><input type="text" data-path="domain.custom.completion_skill_ref" placeholder="null" /></div>
+
+            <div class="field">
+              <label>GC 组件列表 <code>general.components</code></label>
+              <div class="rows" id="complist"></div>
+              <button class="btn addrow" data-list="complist" type="button">+ 添加组件</button>
+            </div>
+
+            <div class="field">
+              <label>General 测试域列表 <code>general.test_domains</code></label>
+              <div class="rows" id="tdlist"></div>
+              <button class="btn addrow" data-list="tdlist" type="button">+ 添加测试域</button>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary>3 Skill 绑定 <code>bindings.*</code>（20 个槽位，全部绑 skill_ref，没有的留空）</summary>
+          <div class="body">
+            <div id="bindingArea"></div>
+            <p class="hint">skill_ref 支持绝对路径或仓库相对路径（如 <code>.claude/skills/idc-brainstorming/SKILL.md</code>）。dt_design / dt_writer / dt_build / tran_build 也是 skill 槽：真实命令封装在企业 skill 内部，配置里永远不出现命令。没有现成 build skill？先把命令包成极小 wrapper skill（跑命令、回传日志 / exit code）再绑定。</p>
+            <div class="field"><label>扩展能力（每行：id | capability keys | stages | skill_ref | role | composes_with | supersedes）</label><textarea data-path="adapter.extensions" placeholder="idc-team-api-review | api_review | review | team://skills/api-review/SKILL.md | atomic_capability | |"></textarea></div>
+          </div>
+        </details>
+
+        <details>
+          <summary>4 知识索引 <code>knowledge:</code>（只填地址，正文留在企业本地）</summary>
+          <div class="body">
+            <div class="field">
+              <label>架构文档 <code>knowledge.architecture_doc_ref</code></label>
+              <input type="text" data-path="knowledge.architecture_doc_ref" placeholder="/repos/demo-docs/architecture.md" />
+            </div>
+            <div class="field">
+              <label>特性文档根目录 <code>knowledge.feature_docs_root_ref</code></label>
+              <input type="text" data-path="knowledge.feature_docs_root_ref" placeholder="/repos/demo-docs/features/" />
+            </div>
+            <div class="field">
+              <label>Layer 文档映射 <code>knowledge.layer_docs</code></label>
+              <div class="rows" id="layerdocs"></div>
+              <button class="btn addrow" data-list="layerdocs" data-kind="layer" type="button">+ 添加 Layer 映射</button>
+            </div>
+            <div class="field">
+              <label>Verification mapping <code>knowledge.verification_mapping_ref</code></label>
+              <input type="text" data-path="knowledge.verification_mapping_ref" placeholder="/repos/demo-docs/verify-map.md" />
+            </div>
+            <div class="field">
+              <label>Repo context provider Skill</label>
+              <input type="text" data-path="knowledge.repo_context.provider_skill_ref" placeholder="/skills/repo-context/SKILL.md" />
+            </div>
+            <div class="field"><label>Repo context policy</label><input type="text" data-path="knowledge.repo_context.policy_ref" placeholder="/repos/demo-docs/provider-policy.md" /></div>
+          </div>
+        </details>
+
+        <details>
+          <summary>5 流程偏好 <code>lane:</code></summary>
+          <div class="body">
+            <div class="field">
+              <label>默认 Lane <code>lane.default</code></label>
+              <p class="hint">仅用于 Lane 适用的 dynamic route；D3A 采用固定 workflow，不读取此默认值。</p>
+              <select data-path="lane.default">
+                <option value="lite">lite（默认）</option>
+                <option value="fast">fast</option>
+                <option value="complex">complex</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Capability Selector</label>
+              <p class="hint">Fast 最多 1 个可选 Skill，Lite 最多 3 个，Complex 与 D3A 不设固定上限，但始终选择最小充分集合。</p>
+            </div>
+            <div id="laneProfileArea"></div>
+            <div class="field"><label>自优化模式</label><select data-path="self.mode"><option value="disabled">disabled</option><option value="observe">observe</option><option value="propose_only">propose_only</option></select></div>
+            <div class="field"><label>Adaptation event store</label><input type="text" data-path="self.event_store_ref" placeholder="null" /></div>
+            <div class="field"><label>Replay cases</label><input type="text" data-path="self.replay_cases_ref" placeholder="null" /></div>
+            <div class="field"><label>Team overlay</label><input type="text" data-path="self.team_overlay_ref" placeholder="null" /></div>
+          </div>
+        </details>
+
+      </section>
+
+      <aside aria-label="generated output">
+        <div class="panel">
+          <h2>生成的 team-config.yaml</h2>
+          <pre class="yaml" id="yamlOut"></pre>
+          <div class="actions">
+            <button class="btn primary" id="copyBtn" type="button">复制 YAML</button>
+            <button class="btn" id="downloadBtn" type="button">下载 team-config.yaml</button>
+            <button class="btn danger" id="clearBtn" type="button">清空草稿</button>
+          </div>
+          <div class="note">填好的 team-config.yaml 含企业真实路径与 skill ref（真实命令封装在企业 skill 内部）：只保留在团队配置接入环境，不要提交回共享 harness 仓库。</div>
+        </div>
+
+        <div class="panel">
+          <h2>本地校验（与 harness 同规则）</h2>
+          <ul class="checks" id="checks"></ul>
+          <p class="hint">每个 skill_ref 的路径存在性浏览器无法验证，由团队配置内 <code>idc-team-config</code> Resolver 完成。</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    "use strict";
+
+    var D3A_LAYERS = ["TRAN_CFG", "DO", "VISP_ADP", "TFC_TFI", "TFE", "ADP", "DRV"];
+
+    var BINDING_GROUPS = [
+      { title: "通用与前置", items: ["coding_standard", "brainstorming"] },
+      { title: "需求与设计", items: ["asis_miner", "scene_challenge", "req_check", "tech_design", "phase_plan"] },
+      { title: "测试", items: ["ut_design", "ut_generate", "tdd_workflow", "system_test"] },
+      { title: "质量与收尾", items: ["impl_review", "static_scan", "defect_fix", "git_commit", "knowledge_archive"] },
+      { title: "DT 与构建", items: ["dt_design", "dt_writer", "dt_build", "tran_build"] }
+    ];
+
+    var STORAGE_KEY = "idc-team-config-draft";
+
+    function el(id) { return document.getElementById(id); }
+
+    function rowInputs(listEl) {
+      return Array.prototype.map.call(
+        listEl.querySelectorAll(".row"),
+        function (r) { return Array.prototype.map.call(r.querySelectorAll("input, select"), function (i) { return i.value.trim(); }); }
+      );
+    }
+
+    function addListRow(listEl, kind) {
+      var row = document.createElement("div");
+      row.className = "row" + (kind === "layer" ? " wide" : "");
+      var first;
+      if (kind === "layer") {
+        first = document.createElement("select");
+        first.style.width = "100%";
+        first.style.padding = "6px 8px";
+        first.style.border = "1px solid var(--line)";
+        first.style.borderRadius = "6px";
+        first.style.fontSize = "12.5px";
+        D3A_LAYERS.forEach(function (l) {
+          var o = document.createElement("option");
+          o.value = l; o.textContent = l;
+          first.appendChild(o);
+        });
+      } else {
+        first = document.createElement("input");
+        first.type = "text";
+        first.placeholder = kind === "dt" ? "DT_DEMO" : (kind === "comp" ? "COMPONENT_ID" : "TEST_DOMAIN_ID");
+      }
+      var second = document.createElement("input");
+      second.type = "text";
+      second.placeholder = "knowledge_ref（如 /repos/demo-docs/dt/DT_DEMO.md）";
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "btn danger";
+      del.textContent = "删除";
+      del.addEventListener("click", function () { row.remove(); render(); });
+      row.appendChild(first); row.appendChild(second); row.appendChild(del);
+      first.addEventListener("input", render);
+      first.addEventListener("change", render);
+      second.addEventListener("input", render);
+      listEl.appendChild(row);
+    }
+
+    Array.prototype.forEach.call(document.querySelectorAll(".addrow"), function (btn) {
+      btn.addEventListener("click", function () {
+        var kind = btn.getAttribute("data-kind") || ({ dtlist: "dt", complist: "comp", tdlist: "td" })[btn.getAttribute("data-list")] || "comp";
+        addListRow(el(btn.getAttribute("data-list")), kind);
+        render();
+      });
+    });
+
+    // ---- bindings form ----
+    (function buildBindings() {
+      var area = el("bindingArea");
+      BINDING_GROUPS.forEach(function (g) {
+        var box = document.createElement("div");
+        box.className = "binding-group";
+        var h = document.createElement("h3");
+        h.textContent = g.title;
+        box.appendChild(h);
+        g.items.forEach(function (key) {
+          var item = document.createElement("div");
+          item.className = "binding-item";
+          var k = document.createElement("span");
+          k.className = "k";
+          k.textContent = key + ".skill_ref";
+          var inp = document.createElement("input");
+          inp.type = "text";
+          inp.dataset.path = "binding." + key;
+          inp.placeholder = "null";
+          item.appendChild(k); item.appendChild(inp);
+          box.appendChild(item);
+        });
+        area.appendChild(box);
+      });
+    })();
+
+    (function buildLaneProfiles() {
+      var area = el("laneProfileArea");
+      ["fast", "lite", "complex"].forEach(function (lane) {
+        var box = document.createElement("div");
+        box.className = "binding-group";
+        box.innerHTML =
+          "<h3>" + lane.toUpperCase() + " Lane Skills 与编排</h3>" +
+          "<div class='field'><label>Allow Skill IDs（逗号分隔，空表示全部 Lane-eligible）</label><input type='text' data-path='lane." + lane + ".allow' /></div>" +
+          "<div class='field'><label>Deny Skill IDs</label><input type='text' data-path='lane." + lane + ".deny' /></div>" +
+          "<div class='field'><label>Required Skill IDs</label><input type='text' data-path='lane." + lane + ".required' /></div>" +
+          "<div class='field'><label>Max Optional Skills（非负整数或 null）</label><input type='text' data-path='lane." + lane + ".max_optional_skills' placeholder='" + ({fast: "1", lite: "3", complex: "null"})[lane] + "' /></div>" +
+          "<div class='field'><label>Orchestration mode</label><select data-path='lane." + lane + ".mode'><option value='autonomous'>autonomous</option><option value='ordered'>ordered</option></select></div>" +
+          "<div class='field'><label>Steps（每行：id | stage | skill IDs | trigger signals）</label><textarea data-path='lane." + lane + ".steps' placeholder='plan | planning | tech_design,phase_plan | focused_design_required'></textarea></div>";
+        area.appendChild(box);
+      });
+    })();
+
+    // ---- yaml helpers ----
+    function yv(value) {
+      if (!value) { return "null"; }
+      if (/^\/|^\./.test(value)) { return value; }
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value) || /: | #|[{}\[\]&*!|>'"%@`]/.test(value) || /^\d+$/.test(value)) {
+        return "'" + value.replace(/'/g, "''") + "'";
+      }
+      return value;
+    }
+
+    function collect() {
+      var data = {};
+      Array.prototype.forEach.call(document.querySelectorAll("[data-path]"), function (inp) {
+        data[inp.getAttribute("data-path")] = inp.value.trim();
+      });
+      data.dt = rowInputs(el("dtlist"));
+      data.comp = rowInputs(el("complist"));
+      data.td = rowInputs(el("tdlist"));
+      data.customlayers = rowInputs(el("customlayers"));
+      data.customtests = rowInputs(el("customtests"));
+      data.layerdocs = rowInputs(el("layerdocs"));
+      return data;
+    }
+
+    function plain(v) { return v && v !== "null" ? v : null; }
+
+    function yamlList(value) {
+      if (!plain(value)) { return "[]"; }
+      return "[" + value.split(/[,，]/).map(function (item) { return yv(item.trim()); }).filter(function (item) { return item !== "null"; }).join(", ") + "]";
+    }
+
+    function orchestrationRows(value) {
+      if (!plain(value)) { return []; }
+      return value.split(/\r?\n/).map(function (line) { return line.trim(); }).filter(Boolean).map(function (line) {
+        return line.split("|").map(function (part) { return part.trim(); });
+      });
+    }
+
+    function budgetValue(value, fallback) {
+      if (!plain(value)) { return fallback; }
+      return value === "null" ? "null" : value;
+    }
+
+    function listBlock(rows) {
+      var out = [];
+      rows.forEach(function (r) {
+        if (r[0] || r[1]) {
+          out.push("    - id: " + yv(r[0] || null));
+          out.push("      knowledge_ref: " + yv(r[1] || null));
+        }
+      });
+      return out;
+    }
+
+    function buildYaml(d) {
+      var L = [];
+      L.push("# team-config.yaml (generated by docs/team-config-generator.html)");
+      L.push("#");
+      L.push("# Registry lists (domain.d3a.dt_domains, general.components, general.test_domains)");
+      L.push("# replace the repo registries WHOLESALE when non-empty; they never merge sources.");
+      L.push("# Do not commit the filled team-config.yaml back to the shared harness.");
+      L.push("");
+      L.push("config_version: 1");
+      L.push("");
+      L.push("team:");
+      L.push("  id: " + yv(plain(d["team.id"])));
+      L.push("  repo_path: " + yv(plain(d["team.repo_path"])));
+      L.push("");
+      L.push("domain:");
+      L.push("  mode: " + (d["domain.mode"] || "d3a"));
+      L.push("  d3a:");
+      var dtRows = listBlock(d.dt);
+      if (dtRows.length) { L.push("    dt_domains:"); L = L.concat(dtRows.map(function (line) { return "  " + line; })); }
+      else { L.push("    dt_domains: []"); }
+      L.push("  custom:");
+      L.push("    id: " + yv(plain(d["domain.custom.id"])));
+      L.push("    trigger_rules: " + yamlList(d["domain.custom.trigger_rules"]));
+      var customLaneMode = d["domain.custom.lane_policy.mode"] || "dynamic";
+      var customSelectedLane = customLaneMode === "fixed" ? plain(d["domain.custom.lane_policy.selected_lane"]) : null;
+      L.push("    lane_policy: {mode: " + customLaneMode + ", selected_lane: " + yv(customSelectedLane) + "}");
+      var customLayers = listBlock(d.customlayers);
+      if (customLayers.length) { L.push("    coding_layers:"); L = L.concat(customLayers.map(function (line) { return "  " + line; })); } else { L.push("    coding_layers: []"); }
+      var customTests = listBlock(d.customtests);
+      if (customTests.length) { L.push("    test_domains:"); L = L.concat(customTests.map(function (line) { return "  " + line; })); } else { L.push("    test_domains: []"); }
+      L.push("    required_contracts: [task_contract, verification_contract]");
+      L.push("    workflow_skill_ref: " + yv(plain(d["domain.custom.workflow_skill_ref"])));
+      L.push("    planner_skill_ref: " + yv(plain(d["domain.custom.planner_skill_ref"])));
+      L.push("    completion_skill_ref: " + yv(plain(d["domain.custom.completion_skill_ref"])));
+      L.push("");
+      L.push("general:");
+      var compRows = listBlock(d.comp);
+      if (compRows.length) { L.push("  components:"); L = L.concat(compRows); }
+      else { L.push("  components: []"); }
+      var tdRows = listBlock(d.td);
+      if (tdRows.length) { L.push("  test_domains:"); L = L.concat(tdRows); }
+      else { L.push("  test_domains: []"); }
+      L.push("");
+      L.push("bindings:");
+      ["coding_standard", "brainstorming", "asis_miner", "scene_challenge", "req_check", "tech_design", "phase_plan", "ut_design", "ut_generate", "impl_review", "tdd_workflow", "static_scan", "defect_fix", "git_commit", "knowledge_archive", "system_test", "dt_design", "dt_writer", "dt_build", "tran_build"].forEach(function (key) {
+        L.push("  " + key + ":");
+        L.push("    skill_ref: " + yv(plain(d["binding." + key])));
+      });
+      L.push("");
+      var ext = plain(d["adapter.extensions"]);
+      if (ext) {
+        L.push("adapter_extensions:");
+        ext.split(/\r?\n/).map(function (line) { return line.trim(); }).filter(Boolean).forEach(function (line) {
+          var parts = line.split("|").map(function (s) { return s.trim(); });
+          L.push("  - id: " + yv(parts[0]));
+          L.push("    execution_role: " + yv(parts[4] || "atomic_capability"));
+          L.push("    capability_keys: " + yamlList(parts[1]));
+          L.push("    allowed_stages: " + yamlList(parts[2]));
+          L.push("    eligible_lanes: [fast, lite, complex]");
+          L.push("    execution_profiles: []");
+          L.push("    trigger_signals: []");
+          L.push("    skill_ref: " + yv(parts[3] || null));
+          L.push("    input_contract_ref: null");
+          L.push("    output_contract_ref: null");
+          L.push("    evidence_required: true");
+          L.push("    requires: []");
+          L.push("    blocks_when: []");
+          L.push("    composes_with: " + yamlList(parts[5]));
+          L.push("    supersedes: " + yamlList(parts[6]));
+        });
+      } else { L.push("adapter_extensions: []"); }
+      L.push("");
+      L.push("knowledge:");
+      L.push("  architecture_doc_ref: " + yv(plain(d["knowledge.architecture_doc_ref"])));
+      L.push("  feature_docs_root_ref: " + yv(plain(d["knowledge.feature_docs_root_ref"])));
+      var ld = d.layerdocs.filter(function (r) { return r[0] || r[1]; });
+      if (ld.length) {
+        L.push("  layer_docs:");
+        ld.forEach(function (r) { L.push("    " + (r[0] || "LAYER") + ": " + yv(r[1] || null)); });
+      } else { L.push("  layer_docs: {}"); }
+      L.push("  verification_mapping_ref: " + yv(plain(d["knowledge.verification_mapping_ref"])));
+      L.push("  repo_context:");
+      L.push("    provider_skill_ref: " + yv(plain(d["knowledge.repo_context.provider_skill_ref"])));
+      L.push("    policy_ref: " + yv(plain(d["knowledge.repo_context.policy_ref"])));
+      L.push("    fallback: bounded_grep");
+      L.push("");
+      L.push("lane:");
+      L.push("  default: " + (d["lane.default"] || "lite"));
+      L.push("  profiles:");
+      ["fast", "lite", "complex"].forEach(function (lane) {
+        L.push("    " + lane + ":");
+        L.push("      skills:");
+        L.push("        allow: " + yamlList(d["lane." + lane + ".allow"]));
+        L.push("        deny: " + yamlList(d["lane." + lane + ".deny"]));
+        L.push("        required: " + yamlList(d["lane." + lane + ".required"]));
+        L.push("      orchestration:");
+        L.push("        mode: " + (d["lane." + lane + ".mode"] || "autonomous"));
+        var steps = orchestrationRows(d["lane." + lane + ".steps"]);
+        if (!steps.length) {
+          L.push("        steps: []");
+        } else {
+          L.push("        steps:");
+          steps.forEach(function (parts) {
+            L.push("          - id: " + yv(parts[0] || null));
+            L.push("            stage: " + yv(parts[1] || null));
+            L.push("            skill_ids: " + yamlList(parts[2]));
+            L.push("            trigger_signals: " + yamlList(parts[3]));
+          });
+        }
+      });
+      L.push("");
+      L.push("capability_selection:");
+      L.push("  mode: autonomous_minimal_sufficient");
+      L.push("  lane_profiles:");
+      L.push("    fast: {max_optional_skills: " + budgetValue(d["lane.fast.max_optional_skills"], "1") + "}");
+      L.push("    lite: {max_optional_skills: " + budgetValue(d["lane.lite.max_optional_skills"], "3") + "}");
+      L.push("    complex: {max_optional_skills: " + budgetValue(d["lane.complex.max_optional_skills"], "null") + "}");
+      L.push("  d3a_profile: {max_optional_skills: null}");
+      L.push("  require_selected_and_skipped_reasons: true");
+      L.push("");
+      L.push("self_optimization:");
+      L.push("  mode: " + (d["self.mode"] || "disabled"));
+      L.push("  event_store_ref: " + yv(plain(d["self.event_store_ref"])));
+      L.push("  replay_cases_ref: " + yv(plain(d["self.replay_cases_ref"])));
+      L.push("  team_overlay_ref: " + yv(plain(d["self.team_overlay_ref"])));
+      L.push("  promotion_requires_human_alignment: true");
+      L.push("  auto_modify_core: false");
+      return L.join("\n") + "\n";
+    }
+
+    function validate(d) {
+      var checks = [];
+      function add(ok, text, warn) { checks.push({ ok: ok, text: text, warn: warn }); }
+
+      var teamOk = ["team.id", "team.repo_path"].every(function (k) { return plain(d[k]); });
+      add(teamOk, "team.id / team.repo_path 已填写");
+
+      var values = [d["team.id"], d["team.repo_path"]].join(" ");
+      var hasAngle = /<[A-Z_]+>/.test(values);
+      add(!hasAngle, "无残留 <占位符>（如 <TEAM_ID>）");
+
+      var mode = d["domain.mode"] || "d3a";
+      var laneMode = d["domain.custom.lane_policy.mode"] || "dynamic";
+      var laneSelectionOk = laneMode !== "fixed" || ["fast", "lite", "complex"].indexOf(d["domain.custom.lane_policy.selected_lane"]) >= 0;
+      var customOk = mode !== "custom" || (plain(d["domain.custom.id"]) && plain(d["domain.custom.workflow_skill_ref"]) && plain(d["domain.custom.planner_skill_ref"]) && plain(d["domain.custom.completion_skill_ref"]) && laneSelectionOk);
+      add(customOk, "domain.mode 合法，custom 模式必需 Skill 已填写");
+
+      var pairsOk = d.dt.concat(d.comp).concat(d.td).concat(d.customlayers).concat(d.customtests).every(function (r) { return (!r[0] && !r[1]) || (r[0] && r[1]); });
+      add(pairsOk, "注册表条目成对（id 与 knowledge_ref 同时给）");
+
+      var dtNonPlaceholder = d.dt.every(function (r) { return !r[0] || !/^<[A-Z_]+>$/.test(r[0]); });
+      add(dtNonPlaceholder, "DT id 无 <DT_ID> 式占位符");
+
+      var laneOk = ["fast", "lite", "complex"].indexOf(d["lane.default"] || "lite") >= 0;
+      add(laneOk, "lane.default 属于 fast / lite / complex");
+
+      ["fast", "lite", "complex"].forEach(function (lane) {
+        var steps = orchestrationRows(d["lane." + lane + ".steps"]);
+        var stepsOk = steps.every(function (parts) { return parts.length === 4 && parts.slice(0, 3).every(Boolean); });
+        var mode = d["lane." + lane + ".mode"] || "autonomous";
+        add(stepsOk && (mode !== "ordered" || steps.length > 0), lane + " Lane 编排格式有效，ordered 模式至少有一个 step");
+        var budget = d["lane." + lane + ".max_optional_skills"];
+        add(!plain(budget) || budget === "null" || /^\d+$/.test(budget), lane + " Lane max_optional_skills 合法");
+      });
+
+      var extensionRowsOk = !plain(d["adapter.extensions"]) || d["adapter.extensions"].split(/\r?\n/).filter(function (line) { return line.trim(); }).every(function (line) {
+        var parts = line.split("|").map(function (part) { return part.trim(); });
+        var requiredParts = parts.slice(0, 4);
+        var roleOk = !parts[4] || ["atomic_capability", "verification_capability", "pre_alignment_capability"].indexOf(parts[4]) >= 0;
+        return parts.length >= 4 && requiredParts.every(Boolean) && roleOk;
+      });
+      add(extensionRowsOk, "每条扩展能力都有 id / capability keys / stages / skill_ref");
+
+      add(true, "每个 skill_ref 的路径存在性由接入团队后的 Resolver 验证", true);
+      return checks;
+    }
+
+    function renderChecks(checks) {
+      var ul = el("checks");
+      ul.innerHTML = "";
+      checks.forEach(function (c) {
+        var li = document.createElement("li");
+        li.className = c.warn ? "warn" : (c.ok ? "ok" : "bad");
+        li.textContent = (c.warn ? "⚠ " : (c.ok ? "✓ " : "✗ ")) + c.text;
+        ul.appendChild(li);
+      });
+    }
+
+    function render() {
+      var d = collect();
+      var yaml = buildYaml(d);
+      el("yamlOut").textContent = yaml;
+      renderChecks(validate(d));
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ draft: formSnapshot() })); } catch (e) { /* 忽略隐私模式 */ }
+    }
+
+    function formSnapshot() {
+      var s = {};
+      Array.prototype.forEach.call(document.querySelectorAll("[data-path]"), function (inp) { s[inp.getAttribute("data-path")] = inp.value; });
+      return s;
+    }
+
+    function restore() {
+      var raw;
+      try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return; }
+      if (!raw) { return; }
+      var snap;
+      try { snap = JSON.parse(raw).draft; } catch (e) { return; }
+      Object.keys(snap).forEach(function (k) {
+        var inp = document.querySelector('[data-path="' + k + '"]');
+        if (inp) { inp.value = snap[k]; }
+      });
+    }
+
+    document.addEventListener("input", function (ev) {
+      if (ev.target.matches("[data-path]")) { render(); }
+    });
+
+    el("copyBtn").addEventListener("click", function () {
+      var text = el("yamlOut").textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { flash("复制成功"); }, function () { fallbackCopy(text); });
+      } else { fallbackCopy(text); }
+    });
+
+    function fallbackCopy(text) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); flash("复制成功"); } catch (e) { flash("复制失败，请手动选择"); }
+      document.body.removeChild(ta);
+    }
+
+    function flash(msg) {
+      var b = el("copyBtn");
+      var old = b.textContent;
+      b.textContent = msg;
+      setTimeout(function () { b.textContent = old; }, 1400);
+    }
+
+    el("downloadBtn").addEventListener("click", function () {
+      var blob = new Blob([el("yamlOut").textContent], { type: "text/yaml" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "team-config.yaml";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    });
+
+    el("clearBtn").addEventListener("click", function () {
+      if (!window.confirm("清空全部表单与本地草稿？")) { return; }
+      Array.prototype.forEach.call(document.querySelectorAll("[data-path]"), function (inp) { inp.value = ""; });
+      ["dtlist", "complist", "tdlist", "customlayers", "customtests", "layerdocs"].forEach(function (id) { el(id).innerHTML = ""; });
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      render();
+    });
+
+    restore();
+    render();
+  </script>
+</body>
+</html>

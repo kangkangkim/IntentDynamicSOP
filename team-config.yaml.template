@@ -1,0 +1,216 @@
+# team-config.yaml.template
+#
+# Copy to team-config.yaml inside the confidential environment. This is the only
+# team-authored configuration file. Generated files under .idc/ are read-only.
+# Real commands stay inside bound enterprise skills and never appear here.
+
+config_version: 1
+
+team:
+  id: <TEAM_ID>
+  repo_path: <REPO_PATH>
+
+domain:
+  # d3a: built-in enterprise-defined D3A workflow
+  # general: dynamic General Coding workflow
+  # custom: inline team-owned Domain Module defined below
+  mode: d3a
+
+  d3a:
+    # Non-empty replaces registries/dt-domains.yaml wholesale; never merge.
+    # Entries: {id: <DT_ID>, knowledge_ref: <ENTERPRISE_DT_KNOWLEDGE_REF>}
+    dt_domains: []
+
+  custom:
+    id: null
+    trigger_rules: []
+    lane_policy:
+      mode: dynamic # dynamic | fixed | not_applicable
+      selected_lane: null # required only when mode=fixed
+    # Inline registries make custom-domain adoption possible without editing the
+    # shared domains/registry.yaml or creating another hand-authored config file.
+    coding_layers: [] # entries: {id, knowledge_ref}
+    test_domains: []  # entries: {id, knowledge_ref}
+    # Allowed ids: task_contract | verification_contract | api_contract | d3a_specification
+    required_contracts: [task_contract, verification_contract]
+    workflow_skill_ref: null
+    planner_skill_ref: null
+    completion_skill_ref: null
+
+general:
+  # Non-empty lists replace repo registries wholesale; never merge.
+  components: []    # entries: {id, knowledge_ref}
+  test_domains: []  # entries: {id, knowledge_ref}
+
+bindings:
+  coding_standard:
+    skill_ref: null
+  brainstorming:
+    skill_ref: null
+  asis_miner:
+    skill_ref: null
+  scene_challenge:
+    skill_ref: null
+  req_check:
+    skill_ref: null
+  tech_design:
+    skill_ref: null
+  phase_plan:
+    skill_ref: null
+  ut_design:
+    skill_ref: null
+  ut_generate:
+    skill_ref: null
+  impl_review:
+    skill_ref: null
+  tdd_workflow:
+    skill_ref: null
+  static_scan:
+    skill_ref: null
+  defect_fix:
+    skill_ref: null
+  git_commit:
+    skill_ref: null
+  knowledge_archive:
+    skill_ref: null
+  system_test:
+    skill_ref: null
+  dt_design:
+    skill_ref: null
+  dt_writer:
+    skill_ref: null
+  dt_build:
+    skill_ref: null
+  tran_build:
+    skill_ref: null
+
+# Add team-specific GC atoms or repository skills here without editing the
+# shared adapter registry. Resolver appends validated rows to the effective
+# registry; extensions cannot override Domain, Lane, Contract, or Completion.
+adapter_extensions: []
+#  - id: idc-<team-capability>
+#    execution_role: atomic_capability # atomic_capability | verification_capability | pre_alignment_capability
+#    capability_keys: []
+#    allowed_stages: []
+#    eligible_lanes: [fast, lite, complex]
+#    execution_profiles: []
+#    trigger_signals: []
+#    skill_ref: <ENTERPRISE_SKILL_REF>
+#    input_contract_ref: null
+#    output_contract_ref: null
+#    evidence_required: true
+#    requires: []
+#    blocks_when: []
+#    composes_with: [] # declare intentional overlap; both may run
+#    supersedes: []    # declare replacement; listed skills are removed when eligible
+
+# Portable Skill refs:
+# - 'team://skills/example/SKILL.md' resolves from team.repo_path.
+# - 'harness://.claude/skills/idc-example/SKILL.md' resolves from IDC Core.
+# - Plain relative refs try team.repo_path first, then IDC Core.
+# - Quote URI refs in flow mappings: {skill_ref: 'team://skills/example/SKILL.md'}.
+
+knowledge:
+  architecture_doc_ref: null
+  feature_docs_root_ref: null
+  layer_docs: {}
+  verification_mapping_ref: null
+  repo_context:
+    provider_skill_ref: null
+    policy_ref: null
+    fallback: bounded_grep
+
+lane:
+  # Consumed when --lane is omitted for a lane-applicable domain (planning
+  # onward); fixed custom domains auto-fill lane_policy.selected_lane instead.
+  # D3A / not_applicable domains ignore this value.
+  default: lite
+  # Each Lane can expose a different skill set and team-owned process. Skill IDs
+  # are binding names above or adapter_extension IDs. Empty allow means all
+  # registry-eligible bound skills; deny always wins; required runs whenever its
+  # declared stage is active.
+  profiles:
+    # autonomous is immediately runnable; switch to ordered when this team wants
+    # only declared steps to run, then provide at least one step per used stage.
+    # Ordered example: mode: ordered # autonomous | ordered
+    fast:
+      skills: {allow: [], deny: [], required: []}
+      orchestration:
+        mode: autonomous # autonomous | ordered
+        steps: []
+        # - id: implement
+        #   stage: implementation
+        #   skill_ids: [coding_standard]
+        #   trigger_signals: []
+    lite:
+      skills: {allow: [], deny: [], required: []}
+      orchestration:
+        mode: autonomous
+        steps: []
+    complex:
+      skills: {allow: [], deny: [], required: []}
+      orchestration:
+        mode: autonomous
+        steps: []
+
+capability_selection:
+  mode: autonomous_minimal_sufficient
+  lane_profiles:
+    fast:
+      max_optional_skills: 1
+    lite:
+      max_optional_skills: 3
+    complex:
+      max_optional_skills: null
+  d3a_profile:
+    # D3A uses workflow stages instead of Lane, but still selects only abilities
+    # justified by the current Layer Context Packet.
+    max_optional_skills: null
+  require_selected_and_skipped_reasons: true
+
+self_optimization:
+  mode: disabled # disabled | observe | propose_only
+  event_store_ref: null
+  replay_cases_ref: null
+  team_overlay_ref: null
+  promotion_requires_human_alignment: true
+  auto_modify_core: false
+
+# Pre-alignment pipeline (optional). Mirrors the lane orchestration shape and
+# configures intent-processing steps only: Scenario Router, Contract Gate,
+# Human Alignment approval, and completion ownership are not configurable
+# through it. A missing section (or missing bindings / orchestration) falls
+# back to the framework default five-step chain below with no other output
+# difference. The alignment_check step (Human Alignment gate) cannot be
+# removed; teams may rebind its skill_ref only. raw_idea and
+# critical_gaps_remain form the framework signal floor.
+alignment:
+  bindings:
+    intent_discovery: {skill_ref: .claude/skills/idc-intent-discovery/SKILL.md}
+    brainstorming: {skill_ref: .claude/skills/idc-brainstorming/SKILL.md}
+    intent_grilling: {skill_ref: .claude/skills/idc-intent-grilling/SKILL.md}
+    intent_grilling_with_docs: {skill_ref: .claude/skills/idc-intent-grilling-with-docs/SKILL.md}
+    intent_alignment: {skill_ref: .claude/skills/idc-intent-alignment/SKILL.md}
+  orchestration:
+    mode: ordered # ordered only; every framework stage requires a step mapping
+    steps:
+      - id: alignment-discovery
+        stage: discovery
+        skill_ids: [intent_discovery]
+        trigger_signals: [raw_idea]
+      - id: alignment-brainstorming
+        stage: divergence
+        skill_ids: [brainstorming]
+        trigger_signals: [alternatives_needed]
+      - id: alignment-grilling
+        stage: clarification
+        skill_ids: [intent_grilling]
+        trigger_signals: [critical_gaps_remain]
+      - id: alignment-grilling-with-docs
+        stage: clarification
+        skill_ids: [intent_grilling_with_docs]
+        trigger_signals: [docs_clarification_required]
+      - id: alignment-check
+        stage: alignment_check
+        skill_ids: [intent_alignment]
+        trigger_signals: [] # always runs; framework-owned Human Alignment gate

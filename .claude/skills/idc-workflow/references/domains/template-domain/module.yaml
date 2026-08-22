@@ -1,0 +1,33 @@
+domain_module:
+  id: <DOMAIN_ID>
+  name: <DOMAIN_NAME>
+  status: template
+  route:
+    route_id: <DOMAIN_ROUTE_ID>
+    trigger_rules:
+      - <ENTERPRISE_PLACEHOLDER>
+    fallback: GENERAL_CODING
+  lane_policy:
+    # Use dynamic for normal team domains. Use fixed + selected_lane only when
+    # the team's domain SOP itself mandates one execution intensity.
+    mode: dynamic
+    resolver: workflows/lane-resolver.md
+  registries:
+    coding_layers: domains/template-domain/layers.yaml
+    test_domains: domains/template-domain/test-domains.yaml
+  workflow:
+    entrypoint: domains/template-domain/workflow.md
+    requirement_assessor: workflows/requirement-assessor.md
+    planner_schema: schemas/domain-plan.schema.yaml
+    tdd_state_machine: workflows/tdd-state-machine.md
+    completion_gate: <ENTERPRISE_PLACEHOLDER>
+  knowledge:
+    root: domains/template-domain/knowledge
+    loading_policy: progressive
+  execution:
+    agents:
+      - <ENTERPRISE_PLACEHOLDER>
+    skills:
+      - <ENTERPRISE_PLACEHOLDER>
+  examples:
+    - domains/template-domain/examples/mock-task

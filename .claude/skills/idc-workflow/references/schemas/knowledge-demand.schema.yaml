@@ -1,0 +1,17 @@
+knowledge_demand:
+  execution_unit_ref: string
+  selected_domain: general | d3a | custom
+  selected_layer: string | null
+  selected_components: []
+  selected_test_domains: []
+  include_architecture: boolean
+  include_feature_docs_scope: boolean
+  include_verification_mapping: boolean
+  repo_context_required: boolean
+
+rules:
+  - D3A and Custom Domain execution units require exactly one selected_layer.
+  - D3A requires at least one selected_test_domain.
+  - General may select components and test domains but cannot select a Layer.
+  - Every selected ID must exist in effective knowledge_catalog.
+  - Optional shared knowledge is loaded only when its include flag is true.

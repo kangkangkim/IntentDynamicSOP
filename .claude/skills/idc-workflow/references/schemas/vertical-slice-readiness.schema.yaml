@@ -1,0 +1,85 @@
+schema: vertical_slice_readiness
+version: 0
+
+description: >
+  公开 readiness contract for the first team-config D3A vertical
+  slice. This contract proves the harness is bound to enough real enterprise
+  facts to run one evidence-based loop. It must not contain real enterprise details
+  in the external repository.
+
+vertical_slice:
+  slice_id: string
+  status: NOT_READY | READY_FOR_ALIGNMENT | READY_FOR_EXECUTION | BLOCKED
+  selected_domain: d3a
+  lane_applicability: not_applicable
+  selected_lane: null
+  execution_profile: d3a_fixed_workflow
+  scope:
+    user_request_ref: string
+    approved_alignment_ref: string
+    max_layers: 2
+    max_dt_domains: 1
+    max_change_loc_per_execution_unit: 500
+  bindings:
+    repository:
+      repo_path: <ENTERPRISE_REPO_PATH>
+      repo_rules_ref: string
+    knowledge:
+      layer_knowledge_refs: []
+      dt_knowledge_refs: []
+      architecture_rules_ref: string
+    verification:
+      verification_mapping_ref: string
+      dt_build_skill_ref: <ENTERPRISE_DT_BUILD_SKILL_REF>
+      tran_build_skill_ref: <ENTERPRISE_TRAN_BUILD_SKILL_REF>
+    providers:
+      grep:
+        status: PLACEHOLDER | BOUND
+        evidence_ref_required: true
+      codegraph:
+        status: PLACEHOLDER | BOUND | NOT_AVAILABLE
+        evidence_ref_required: true
+      okl:
+        status: PLACEHOLDER | BOUND | NOT_AVAILABLE
+        evidence_ref_required: true
+  readiness_checks:
+    - id: layer_knowledge_bound
+      required: true
+      status: PASS | FAIL
+      evidence_ref: string
+    - id: dt_knowledge_bound
+      required: true
+      status: PASS | FAIL
+      evidence_ref: string
+    - id: verification_mapping_bound
+      required: true
+      status: PASS | FAIL
+      evidence_ref: string
+    - id: repo_context_provider_bound
+      required: true
+      status: PASS | FAIL
+      evidence_ref: string
+    - id: dt_red_green_build_skill_bound
+      required: true
+      status: PASS | FAIL
+      evidence_ref: string
+    - id: tran_build_skill_bound
+      required: true
+      status: PASS | FAIL
+      evidence_ref: string
+    - id: placeholder_hygiene_preserved
+      required: true
+      status: PASS | FAIL
+      evidence_ref: string
+  forbidden:
+    - Do not run Lane Resolver or select any Lane for a D3A slice.
+    - Do not mark READY_FOR_EXECUTION while any required readiness check is FAIL.
+    - Do not replace external placeholders with guessed enterprise facts.
+    - Do not treat TR3 DT design as RED or GREEN evidence.
+    - Do not treat OKL or docs as test/build evidence.
+    - Do not expand beyond the approved layer and DT domain scope.
+
+completion_rule: >
+  READY_FOR_EXECUTION requires all required readiness_checks PASS and a human
+  approved_alignment_ref. DONE still requires D3A RED evidence, all required DT
+  GREEN evidence, and tran_build PASS.

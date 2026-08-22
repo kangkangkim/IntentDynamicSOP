@@ -1,6 +1,6 @@
 ---
 name: dt-test-writer
-description: Use to prepare DT test evidence from an API Contract, acceptance criteria, and selected DT domain placeholder or confidential DT knowledge.
+description: Use to prepare DT test evidence from an API Contract, acceptance criteria, and selected DT domain placeholder or team-config DT knowledge.
 ---
 
 # dt-test-writer
@@ -14,7 +14,7 @@ description: Use to prepare DT test evidence from an API Contract, acceptance cr
 - API Contract。
 - Acceptance criteria。
 - Required DT domains。
-- DT knowledge placeholder 或保密区内的真实 DT knowledge。
+- DT knowledge placeholder 或团队配置内的真实 DT knowledge。
 
 ## 必须输出
 

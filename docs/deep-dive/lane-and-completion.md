@@ -8,6 +8,9 @@ lite
 complex
 ```
 
+IDC v1.0 只允许这三种 Lane。不要把 `known-domain`、`d3a`、`gc`、
+`dynamic`、`unknown` 这类 domain / scenario / adapter 概念写成 Lane。
+
 所有 Lane 都必须自闭环：
 
 ```text
@@ -36,11 +39,10 @@ complex = 强闭环
 
 ## D3A
 
-D3A 的 completion gate 追加在 Lane 之上：
+D3A 是固定范式 Domain Module，Lane 对它不适用；它跳过 Lane Resolver，其执行和证据要求由 harness 固定的 `d3a_fixed_workflow` 决定。
+其 completion gate 直接来自 D3A workflow：
 
 ```text
-Lane completion
-+
 D3A RED evidence
 +
 required DT GREEN

@@ -24,10 +24,10 @@
 ## 不触碰的范围
 
 - 不触碰任何真实业务代码。
-- 不触碰 `.claude/skills/id-workflow/references/domains/d3a/` 目录。
+- 不触碰 `.claude/skills/idc-workflow/references/domains/d3a/` 目录。
 - 不修改、不覆盖 GENERAL-MOCK-001 已有的 fixture 文件。
 - 不依赖任何真实企业路径、命令或日志。
 
 ## 安全声明
 
-本文件不含真实企业代码/路径/命令/日志。所有具体值均为 placeholder，符合 placeholder 保密区约定。
+本文件不含真实企业代码/路径/命令/日志。所有具体值均为 placeholder，符合 placeholder 团队配置约定。

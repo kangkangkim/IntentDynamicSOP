@@ -1,0 +1,11 @@
+capability_demand:
+  execution_unit_ref: lite-unit
+  selected_stage: planning
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: lite
+  execution_profile: lane_driven
+  required_capability_keys: [technical_design]
+  optional_capability_keys: [phase_planning, as_is_analysis, requirement_check]
+  observed_signals: [focused_design_required, multi_file_or_multi_component_change]
+  contract_refs: [task_contract, verification_contract]

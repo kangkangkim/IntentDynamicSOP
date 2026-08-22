@@ -1,0 +1,30 @@
+general_plan:
+  task_id: string
+  selected_components:
+    - GENERAL_COMPONENT_PLACEHOLDER
+  required_test_domains:
+    - GENERAL_TEST_PLACEHOLDER
+  dependency_notes: []
+  execution_units:
+    - id: string
+      component: GENERAL_COMPONENT_PLACEHOLDER
+      summary: string
+      max_change_loc: 500
+      knowledge_demand_ref: ref
+      required_evidence:
+        - red | green | build | static_check | manual_inspection
+  completion_gate:
+    required:
+      - task_contract_satisfied
+      - verification_contract_satisfied
+      - required_tests_or_builds_pass
+      - completion_summary_exists
+
+rules:
+  - General plan must not reference D3A Layer registry.
+  - General plan must not reference DT Domain registry.
+  - General component and test domain ids are placeholders until a real team defines them.
+  - API Contract is optional unless API or external behavior changes.
+  - Every execution unit max_change_loc must be 500.
+  - Every execution unit must declare a Knowledge Demand for its selected component and test domains.
+  - Completion requires tool evidence.
