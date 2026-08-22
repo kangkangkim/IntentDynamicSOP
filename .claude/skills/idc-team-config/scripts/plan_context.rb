@@ -200,13 +200,27 @@ if options[:domain]
 end
 
 lane_applicable = options[:domain] == "general"
+custom_lane_mode = nil
 if options[:domain] == "custom"
   custom_lane_mode = effective.dig("domain", "lane_policy", "mode")
   lane_applicable = custom_lane_mode != "not_applicable"
-  options[:lane] ||= effective.dig("domain", "lane_policy", "selected_lane") if custom_lane_mode == "fixed"
+  if custom_lane_mode == "fixed"
+    fixed_lane = effective.dig("domain", "lane_policy", "selected_lane")
+    if options[:lane] && options[:lane] != fixed_lane
+      fail_plan(
+        "--lane #{options[:lane]} conflicts with domain.custom.lane_policy.mode fixed selected_lane #{fixed_lane}; " \
+        "omit --lane or update the fixed policy in team-config.yaml"
+      )
+    end
+    options[:lane] ||= fixed_lane
+  end
 end
 if lane_applicable && %w[planning execution completion].include?(options[:phase]) && !options[:lane]
-  fail_plan("--lane is required for a lane-applicable domain")
+  lane_default = effective.dig("lane", "default").to_s
+  if lane_default.empty?
+    fail_plan("--lane is required for a lane-applicable domain and the effective config has no lane.default fallback")
+  end
+  options[:lane] = lane_default
 end
 
 refs = Array(COMMON_REFS[options[:phase]])
@@ -247,7 +261,18 @@ if options[:domain] == "custom"
   refs << custom_ref if custom_ref
 end
 
-refs << ".claude/skills/idc-workflow/references/workflows/lane-resolver.md" if lane_applicable && options[:domain] == "custom" && options[:phase] == "decision"
+# Surface the effective domain's declared required contracts in the planning
+# plan so downstream contract gating sees them; the gate workflow ref rides
+# along so the plan is self-contained for contract enforcement.
+required_contracts = Array(effective.dig("domain", "required_contracts")).map(&:to_s)
+if options[:phase] == "planning" && required_contracts.any?
+  refs << ".claude/skills/idc-workflow/references/workflows/contract-gate.md"
+end
+
+# Lane Resolver owns dynamic lane selection only (lane-resolver.md): a fixed
+# lane policy pins selected_lane up front and not_applicable domains are
+# handled by their execution profile, so neither injects the resolver ref.
+refs << ".claude/skills/idc-workflow/references/workflows/lane-resolver.md" if custom_lane_mode == "dynamic" && options[:domain] == "custom" && options[:phase] == "decision"
 if lane_applicable && options[:lane] && %w[decision planning execution completion].include?(options[:phase])
   refs << ".claude/skills/idc-workflow/references/lanes/#{options[:lane]}.yaml"
 end
@@ -295,21 +320,22 @@ missing_refs = refs.reject do |ref|
 end
 fail_plan("planned reference(s) do not exist: #{missing_refs.join(', ')}") if missing_refs.any?
 
-puts YAML.dump(
-  "context_load_plan" => {
-    "status" => "READY",
-    "source_sha256" => effective["source_sha256"],
-    "phase" => options[:phase],
-    "domain" => options[:domain],
-    "lane" => options[:lane],
-    "signals" => options[:signals],
-    "required_refs" => refs,
-    "selected_capabilities" => selected_capabilities,
-    "knowledge_load_plan_ref" => options[:knowledge_plan] && Pathname.new(options[:knowledge_plan]).expand_path.to_s,
-    "knowledge_plan_id" => knowledge_plan && knowledge_plan["knowledge_plan_id"],
-    "required_static_knowledge" => knowledge_plan ? Array(knowledge_plan["required_static_knowledge"]) : [],
-    "knowledge_search_scopes" => knowledge_plan ? Array(knowledge_plan["search_scopes"]) : [],
-    "repo_context_plan" => knowledge_plan ? knowledge_plan["repo_context"] : nil,
-    "load_policy" => "read_required_refs_only"
-  }
-)
+context_plan = {
+  "status" => "READY",
+  "source_sha256" => effective["source_sha256"],
+  "phase" => options[:phase],
+  "domain" => options[:domain],
+  "lane" => options[:lane],
+  "signals" => options[:signals],
+  "required_refs" => refs,
+  "selected_capabilities" => selected_capabilities,
+  "knowledge_load_plan_ref" => options[:knowledge_plan] && Pathname.new(options[:knowledge_plan]).expand_path.to_s,
+  "knowledge_plan_id" => knowledge_plan && knowledge_plan["knowledge_plan_id"],
+  "required_static_knowledge" => knowledge_plan ? Array(knowledge_plan["required_static_knowledge"]) : [],
+  "knowledge_search_scopes" => knowledge_plan ? Array(knowledge_plan["search_scopes"]) : [],
+  "repo_context_plan" => knowledge_plan ? knowledge_plan["repo_context"] : nil,
+  "load_policy" => "read_required_refs_only"
+}
+context_plan["required_contracts"] = required_contracts if options[:phase] == "planning" && required_contracts.any?
+
+puts YAML.dump("context_load_plan" => context_plan)

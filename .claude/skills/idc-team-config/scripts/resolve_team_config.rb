@@ -197,6 +197,19 @@ if mode == "custom"
   %w[workflow_skill_ref planner_skill_ref completion_skill_ref].each do |key|
     errors << "domain.custom.#{key} is required" unless present?(custom[key])
   end
+  allowed_contract_ids = %w[task_contract verification_contract api_contract d3a_specification]
+  unless custom["required_contracts"].nil?
+    required_contracts = custom["required_contracts"]
+    if !required_contracts.is_a?(Array)
+      errors << "domain.custom.required_contracts must be a list of contract ids: #{allowed_contract_ids.join(', ')}"
+    else
+      required_contracts.each do |contract_id|
+        unless allowed_contract_ids.include?(contract_id)
+          errors << "domain.custom.required_contracts contains unknown contract id #{contract_id.inspect}; allowed ids: #{allowed_contract_ids.join(', ')}"
+        end
+      end
+    end
+  end
 end
 
 lane_policy = custom["lane_policy"] || {}

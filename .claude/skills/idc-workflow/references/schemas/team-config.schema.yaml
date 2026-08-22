@@ -24,7 +24,7 @@ team_config:
       test_domains:
         - id: string
           knowledge_ref: ref
-      required_contracts: []
+      required_contracts: [task_contract, verification_contract, api_contract, d3a_specification] # subset of allowed contract ids; template default: [task_contract, verification_contract]
       workflow_skill_ref: skill_ref | null
       planner_skill_ref: skill_ref | null
       completion_skill_ref: skill_ref | null
@@ -111,6 +111,7 @@ rules:
   - Commands and pass/fail logic live inside bound skills.
   - Registry overrides replace defaults wholesale and never merge sources.
   - Custom Domain definitions are registered from domain.custom without editing shared registries.
+  - domain.custom.required_contracts must be a list drawn from the allowed contract ids (task_contract, verification_contract, api_contract, d3a_specification); invalid shapes or unknown ids are rejected at resolve time and the effective list is surfaced in the domain's planning-phase context plan.
   - Adapter extensions cannot override Domain, Lane, Contract, Human Alignment, or Completion ownership.
   - Adapter extensions cannot register orchestration or Domain execution Skills as atomic capabilities.
   - Overlapping capability, stage, scope, and trigger registrations must declare composes_with or supersedes.

@@ -53,7 +53,9 @@ NEED_TRIAGE
 - Module 内部规划由该 module 的 planner 负责。
 - D3A 是自定义 domain module，不是 Core 特例。
 - Domain Module 可以声明 `lane_policy.mode: dynamic | fixed | not_applicable`。
-- `dynamic` module 交给 Lane Resolver；`fixed` 为确实需要固定 Lane 的团队扩展保留；`not_applicable` 由 module execution profile 接管并跳过 Lane Resolver。
+- `dynamic` module 交给 Lane Resolver；lane-applicable 路由缺省 `--lane` 时回落 `lane.default`，两者皆无才 INVALID。
+- `fixed` module 的 `selected_lane` 固定生效：缺省 `--lane` 自动填充，显式冲突的 `--lane` 会被拒绝，且 fixed Lane 不再经过 Lane Resolver。
+- `not_applicable` 由 module execution profile 接管并跳过 Lane Resolver。
 - D3A module 使用 `not_applicable` 和 `d3a_fixed_workflow`，不输出 Lane。
 - GC SOP atomic abilities 通过 Skill Adapter Router 复用，不写进 Domain Module Router。
 

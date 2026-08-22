@@ -152,3 +152,7 @@ rules:
   - Choose the minimal sufficient set and record selected and skipped reasons.
   - Required capabilities are not counted against the optional-skill budget.
   - D3A matches execution_profiles instead of a Lane.
+  - A not_applicable custom domain reusing the fixed dt_* bindings must declare
+    the d3a_fixed_workflow execution profile via execution_profiles; the
+    d3a_fixed_workflow literal is owned by the D3A execution profile, not by
+    the dt_* capability rows themselves.

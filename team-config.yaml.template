@@ -31,6 +31,7 @@ domain:
     # shared domains/registry.yaml or creating another hand-authored config file.
     coding_layers: [] # entries: {id, knowledge_ref}
     test_domains: []  # entries: {id, knowledge_ref}
+    # Allowed ids: task_contract | verification_contract | api_contract | d3a_specification
     required_contracts: [task_contract, verification_contract]
     workflow_skill_ref: null
     planner_skill_ref: null
@@ -120,7 +121,9 @@ knowledge:
     fallback: bounded_grep
 
 lane:
-  # Fallback only for lane-applicable dynamic routes. D3A ignores this value.
+  # Consumed when --lane is omitted for a lane-applicable domain (planning
+  # onward); fixed custom domains auto-fill lane_policy.selected_lane instead.
+  # D3A / not_applicable domains ignore this value.
   default: lite
   # Each Lane can expose a different skill set and team-owned process. Skill IDs
   # are binding names above or adapter_extension IDs. Empty allow means all

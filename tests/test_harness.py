@@ -2182,6 +2182,270 @@ bindings: {}
         )
 
 
+def test_custom_required_contracts_are_validated_and_consumed():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    base = (ROOT / "examples/team-config.custom-domain.yaml").read_text(encoding="utf-8")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        bad_shape = Path(temp_dir) / "contracts-bad-shape.yaml"
+        bad_shape.write_text(
+            base.replace(
+                "required_contracts: [task_contract, verification_contract]",
+                "required_contracts: {shape: bogus, entries: 42}",
+                1,
+            ),
+            encoding="utf-8",
+        )
+        shape_checked = subprocess.run(
+            ["ruby", str(resolver), "--config", str(bad_shape), "--check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            shape_checked.returncode != 0,
+            f"required_contracts 非法形状不得静默放行：{shape_checked.stdout}",
+        )
+        assert_true(
+            "domain.custom.required_contracts" in shape_checked.stderr,
+            f"错误必须定位到 required_contracts 字段：{shape_checked.stderr}",
+        )
+
+        unknown_id = Path(temp_dir) / "contracts-unknown-id.yaml"
+        unknown_id.write_text(
+            base.replace(
+                "required_contracts: [task_contract, verification_contract]",
+                "required_contracts: [task_contract, bogus_contract]",
+                1,
+            ),
+            encoding="utf-8",
+        )
+        unknown_checked = subprocess.run(
+            ["ruby", str(resolver), "--config", str(unknown_id), "--check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            unknown_checked.returncode != 0,
+            f"未知 contract id 必须 INVALID：{unknown_checked.stdout}",
+        )
+        assert_true(
+            "bogus_contract" in unknown_checked.stderr and "domain.custom.required_contracts" in unknown_checked.stderr,
+            f"错误必须指出未知 contract id：{unknown_checked.stderr}",
+        )
+
+        valid = Path(temp_dir) / "contracts-valid.yaml"
+        valid.write_text(
+            base.replace(
+                "required_contracts: [task_contract, verification_contract]",
+                "required_contracts: [task_contract, api_contract]",
+                1,
+            ),
+            encoding="utf-8",
+        )
+        effective = Path(temp_dir) / "contracts-effective.yaml"
+        resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(valid), "--output", str(effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(resolved.returncode == 0, f"合法 required_contracts 必须 READY：{resolved.stderr}")
+        planned = subprocess.run(
+            [
+                "ruby", str(context_planner),
+                "--effective", str(effective),
+                "--phase", "planning",
+                "--domain", "custom",
+                "--lane", "lite",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            planned.returncode == 0 and "status: READY" in planned.stdout,
+            f"Custom Domain planning plan 失败：{planned.stdout}{planned.stderr}",
+        )
+        assert_true("required_contracts:" in planned.stdout, "planning plan 必须物化 domain 声明的 required_contracts。")
+        assert_true("- task_contract" in planned.stdout and "- api_contract" in planned.stdout, "planning plan 必须列出全部 required contracts。")
+        assert_true("contract-gate.md" in planned.stdout, "required_contracts 必须与 Contract Gate 工作流一起下发。")
+
+
+def test_fixed_lane_policy_conflicting_lane_is_rejected():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    base = (ROOT / "examples/team-config.custom-domain.yaml").read_text(encoding="utf-8")
+    fixed_text = base.replace("mode: dynamic", "mode: fixed", 1).replace("selected_lane: null", "selected_lane: lite", 1)
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Path(temp_dir) / "fixed-lane.yaml"
+        config.write_text(fixed_text, encoding="utf-8")
+        effective = Path(temp_dir) / "fixed-lane-effective.yaml"
+        resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(resolved.returncode == 0, f"fixed lane 配置解析失败：{resolved.stderr}")
+
+        conflicting = subprocess.run(
+            [
+                "ruby", str(context_planner),
+                "--effective", str(effective),
+                "--phase", "planning",
+                "--domain", "custom",
+                "--lane", "complex",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            conflicting.returncode == 2 and "status: INVALID" in conflicting.stdout,
+            f"fixed=lite 时显式 --lane complex 必须被拒绝：{conflicting.stdout}",
+        )
+        assert_true(
+            "lite" in conflicting.stdout and "complex" in conflicting.stdout,
+            f"冲突错误必须同时指出 fixed selected_lane 与显式 --lane：{conflicting.stdout}",
+        )
+
+        autofilled = subprocess.run(
+            [
+                "ruby", str(context_planner),
+                "--effective", str(effective),
+                "--phase", "planning",
+                "--domain", "custom",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            autofilled.returncode == 0 and "status: READY" in autofilled.stdout,
+            f"fixed 模式缺省 --lane 必须自动填充 selected_lane：{autofilled.stdout}{autofilled.stderr}",
+        )
+        assert_true("lane: lite" in autofilled.stdout, "fixed 模式自动填充的 lane 必须是 selected_lane lite。")
+
+
+def test_fixed_lane_policy_skips_lane_resolver_dynamic_keeps_it():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    base = (ROOT / "examples/team-config.custom-domain.yaml").read_text(encoding="utf-8")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        fixed_config = Path(temp_dir) / "fixed-decision.yaml"
+        fixed_config.write_text(
+            base.replace("mode: dynamic", "mode: fixed", 1).replace("selected_lane: null", "selected_lane: lite", 1),
+            encoding="utf-8",
+        )
+        fixed_effective = Path(temp_dir) / "fixed-decision-effective.yaml"
+        fixed_resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(fixed_config), "--output", str(fixed_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(fixed_resolved.returncode == 0, f"fixed lane 配置解析失败：{fixed_resolved.stderr}")
+        fixed_plan = subprocess.run(
+            [
+                "ruby", str(context_planner),
+                "--effective", str(fixed_effective),
+                "--phase", "decision",
+                "--domain", "custom",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            fixed_plan.returncode == 0 and "status: READY" in fixed_plan.stdout,
+            f"fixed 模式 decision plan 失败：{fixed_plan.stdout}{fixed_plan.stderr}",
+        )
+        assert_true("lane-resolver.md" not in fixed_plan.stdout, "fixed lane 已由 policy 固定，decision 不得再加载 Lane Resolver。")
+
+        dynamic_effective = Path(temp_dir) / "dynamic-decision-effective.yaml"
+        dynamic_resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(ROOT / "examples/team-config.custom-domain.yaml"), "--output", str(dynamic_effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(dynamic_resolved.returncode == 0, f"dynamic custom 配置解析失败：{dynamic_resolved.stderr}")
+        dynamic_plan = subprocess.run(
+            [
+                "ruby", str(context_planner),
+                "--effective", str(dynamic_effective),
+                "--phase", "decision",
+                "--domain", "custom",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            dynamic_plan.returncode == 0 and "status: READY" in dynamic_plan.stdout,
+            f"dynamic custom decision plan 失败：{dynamic_plan.stdout}{dynamic_plan.stderr}",
+        )
+        assert_true("lane-resolver.md" in dynamic_plan.stdout, "dynamic 模式 decision 仍必须加载 Lane Resolver。")
+
+
+def test_missing_lane_falls_back_to_lane_default():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        effective = Path(temp_dir) / "lane-default-effective.yaml"
+        resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(ROOT / "examples/team-config.custom-domain.yaml"), "--output", str(effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(resolved.returncode == 0, f"lane-applicable dynamic 配置解析失败：{resolved.stderr}")
+
+        defaulted = subprocess.run(
+            [
+                "ruby", str(context_planner),
+                "--effective", str(effective),
+                "--phase", "planning",
+                "--domain", "custom",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            defaulted.returncode == 0 and "status: READY" in defaulted.stdout,
+            f"lane-applicable 域缺省 --lane 时必须回落 lane.default：{defaulted.stdout}",
+        )
+        assert_true("lane: lite" in defaulted.stdout, "回落使用的必须是 effective config 的 lane.default: lite。")
+        assert_true("references/lanes/lite.yaml" in defaulted.stdout, "回落 lane 必须加载对应的 Lane policy。")
+
+        effective_data = yaml.safe_load(effective.read_text(encoding="utf-8"))
+        effective_data["lane"].pop("default", None)
+        no_default = Path(temp_dir) / "no-lane-default-effective.yaml"
+        no_default.write_text(yaml.safe_dump(effective_data), encoding="utf-8")
+        invalid = subprocess.run(
+            [
+                "ruby", str(context_planner),
+                "--effective", str(no_default),
+                "--phase", "planning",
+                "--domain", "custom",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            invalid.returncode == 2 and "--lane is required" in invalid.stdout,
+            f"既无 --lane 也无 lane.default 时必须 INVALID：{invalid.stdout}",
+        )
+
+
 def test_domain_mode_requires_registered_builtin_module():
     resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
 
@@ -2716,7 +2980,12 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
             capture_output=True,
             text=True,
         )
-        assert_true(planning_without_lane.returncode == 2 and "--lane is required" in planning_without_lane.stdout, "planning 起必须强制 --lane。")
+        # full-bindings 配置显式声明 lane.default: lite：缺省 --lane 时必须回落该默认值。
+        assert_true(
+            planning_without_lane.returncode == 0 and "status: READY" in planning_without_lane.stdout,
+            f"planning 起缺省 --lane 必须回落 lane.default：{planning_without_lane.stdout}",
+        )
+        assert_true("lane: lite" in planning_without_lane.stdout, "回落使用的必须是 effective config 的 lane.default: lite。")
 
         expected = {
             "fast": (1, ["coding_standard"]),
@@ -3564,6 +3833,10 @@ def run():
         test_d3a_team_dt_domain_override_takes_effect,
         test_filled_team_config_when_present,
         test_plan_context_rejects_domain_mode_mismatch,
+        test_custom_required_contracts_are_validated_and_consumed,
+        test_fixed_lane_policy_conflicting_lane_is_rejected,
+        test_fixed_lane_policy_skips_lane_resolver_dynamic_keeps_it,
+        test_missing_lane_falls_back_to_lane_default,
         test_domain_mode_requires_registered_builtin_module,
         test_domain_mode_general_with_d3a_unplugged_stays_ready,
         test_lane_profiles_use_ordered_mode,

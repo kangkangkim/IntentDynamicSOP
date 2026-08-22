@@ -53,7 +53,12 @@ ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb
 The preflight includes a three-reference `bootstrap_load_plan`. After Domain,
 Lane, or phase changes, generate the next minimal plan instead of reading the
 effective registry directly. The decision phase may omit `--lane` (the lane is
-not resolved yet); from `planning` onward `--lane` is required.
+not resolved yet); from `planning` onward an omitted `--lane` falls back to the
+effective config's `lane.default` (D3A and `not_applicable` custom domains
+ignore it), and planning is INVALID only when neither `--lane` nor `lane.default`
+is available. A custom domain with `lane_policy.mode: fixed` auto-fills its
+`selected_lane` and rejects an explicit conflicting `--lane`; fixed lanes skip
+the Lane Resolver, which only runs for `mode: dynamic`.
 `plan_context.rb` rejects a `--domain` that does not match the effective
 config's domain mode; fix `domain.mode` in `team-config.yaml` and regenerate
 the effective config:
