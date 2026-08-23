@@ -22,11 +22,16 @@ execution_authorization_request:
   executor:
     kind: subagent | agent_team | official_dynamic_workflow
     agent_id: string
+  technical_plan_confirmation:
+    required: true | false
+    trigger_reason: d3a_fixed_workflow | lane=fast | lane=lite | lane=complex
+    confirmation_ref: ref
+    status: confirmed | not_required
   allowed_paths: []
   expected_outputs: []
 
 execution_authorization_result:
-  status: AUTHORIZED | BLOCKED_DELEGATION_REQUIRED | BLOCKED_INVALID_EXECUTOR
+  status: AUTHORIZED | BLOCKED_DELEGATION_REQUIRED | BLOCKED_INVALID_EXECUTOR | BLOCKED_PLAN_CONFIRMATION_REQUIRED
   authorization_id: sha256 | null
   execution_unit_ref: ref | null
   selected_domain: general | d3a | string | null
@@ -35,6 +40,7 @@ execution_authorization_result:
   domain_execution_skill_ref: skill_ref | null
   knowledge_load_plan_ref: ref | null
   knowledge_plan_id: sha256 | null
+  technical_plan_confirmation: echo | null
   selected_atomic_skill_refs: []
   allowed_paths: []
   expected_outputs: []
@@ -54,6 +60,10 @@ execution_receipt:
 
 rules:
   - Every repository mutation in IDC execution, verification, or fix states requires AUTHORIZED.
+  - technical_plan_confirmation.required is a framework floor and is always true for d3a and every lane (fast / lite / complex); it is not configurable through team-config.
+  - Every execution authorization request must carry technical_plan_confirmation with status=confirmed before dispatch; otherwise the gate returns BLOCKED_PLAN_CONFIRMATION_REQUIRED.
+  - technical_plan_confirmation.confirmation_ref must point to an on-disk plan artifact conforming to general-plan.schema.yaml or d3a-plan.schema.yaml; a missing file blocks authorization.
+  - If plan check finds the plan exceeds the approved Alignment Pack scope, return NEEDS_RE_ALIGNMENT back to Human Alignment instead of confirming in-gate.
   - main_agent is never a valid executor, including Fast and Lite.
   - General execution loads idc-general-coding as the outer execution protocol.
   - GC SOP adapters are inner selected atomic abilities and cannot replace the Domain execution skill.

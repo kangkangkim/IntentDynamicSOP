@@ -29,10 +29,16 @@ properties:
       alignment_resolution:
         type: [object, "null"]
         additionalProperties: false
-        required: [signal_set, matched_step_ids, skipped_step_ids, fallback_reason]
+        required: [signal_set, alignment_check_gate, matched_step_ids, skipped_step_ids, fallback_reason, steps]
         properties:
           signal_set:
             enum: [complete, uncertain]
+          alignment_check_gate:
+            # complete: pre-alignment signals are resolved and the gate can be
+            # evaluated on must_execute steps; uncertain: the gate waits on the
+            # open per-step trigger evaluations carried in
+            # pending_trigger_evaluations.
+            enum: [pre_alignment_signals_resolved, pending_trigger_evaluations]
           matched_step_ids:
             type: array
             uniqueItems: true
@@ -43,6 +49,41 @@ properties:
             items: {type: string, minLength: 1}
           fallback_reason:
             type: [string, "null"]
+          steps:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+              required: [step_id, trigger_signals, skill_ref, status]
+              properties:
+                step_id: {type: string, minLength: 1}
+                trigger_signals:
+                  type: array
+                  uniqueItems: true
+                  items: {type: string, minLength: 1}
+                skill_ref:
+                  # Steps usually bind one Skill; multi-skill steps carry the
+                  # resolved refs as an array.
+                  type: [string, array]
+                  items: {type: string, minLength: 1}
+                status:
+                  enum: [must_execute, always_run, skipped_by_signal, pending_trigger_evaluation]
+          pending_trigger_evaluations:
+            # Emitted only when signal_set is uncertain: every signal-guarded
+            # (non-alignment_check, non-empty trigger_signals) step whose
+            # trigger evaluation is still open under the full-pipeline fallback.
+            type: array
+            uniqueItems: true
+            items:
+              type: object
+              additionalProperties: false
+              required: [step_id, trigger_signals]
+              properties:
+                step_id: {type: string, minLength: 1}
+                trigger_signals:
+                  type: array
+                  uniqueItems: true
+                  items: {type: string, minLength: 1}
       required_refs:
         type: array
         minItems: 1

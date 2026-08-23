@@ -934,11 +934,27 @@ def test_delegation_contract_keeps_main_agent_as_planner():
   selected_atomic_skill_refs: [.claude/skills/idc-gc-sop-adapter/SKILL.md]
   delegation_contract_ref: delegation-1
   main_agent_role: planning_and_delegation_only
+  technical_plan_confirmation:
+    required: true
+    trigger_reason: lane=lite
+    confirmation_ref: <PLAN_CONFIRMATION_REF>
+    status: confirmed
   executor: {kind: subagent, agent_id: general-coder}
   allowed_paths: [src/example.rb]
   expected_outputs: [changed_paths, evidence_refs, execution_receipt]
 """
     with tempfile.TemporaryDirectory() as temp_dir:
+        auth_plan = Path(temp_dir) / "general-plan.yaml"
+        auth_plan.write_text(
+            "general_plan:\n"
+            "  task_id: auth-test\n"
+            "  selected_components: [GENERAL_COMPONENT_PLACEHOLDER]\n"
+            "  execution_units:\n"
+            "    - id: unit-1\n"
+            "      summary: placeholder unit\n"
+            "      max_change_loc: 500\n",
+            encoding="utf-8",
+        )
         auth_effective = Path(temp_dir) / "auth-effective.yaml"
         auth_resolved = subprocess.run(
             ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"), "--config", str(ROOT / "examples/team-config.full-bindings.yaml"), "--output", str(auth_effective)],
@@ -958,7 +974,7 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         )
         assert_true(auth_knowledge.returncode == 0, f"Authorization 测试 Knowledge Plan 失败：{auth_knowledge.stderr}")
         knowledge_plan_id = re.search(r"knowledge_plan_id:\s+['\"]?(\w+)", knowledge_plan_path.read_text(encoding="utf-8")).group(1)
-        rendered_request = valid_request.replace("<KNOWLEDGE_PLAN_REF>", str(knowledge_plan_path)).replace("<KNOWLEDGE_PLAN_ID>", knowledge_plan_id)
+        rendered_request = valid_request.replace("<KNOWLEDGE_PLAN_REF>", str(knowledge_plan_path)).replace("<KNOWLEDGE_PLAN_ID>", knowledge_plan_id).replace("<PLAN_CONFIRMATION_REF>", str(auth_plan))
         valid_path = Path(temp_dir) / "valid-auth.yaml"
         valid_path.write_text(rendered_request, encoding="utf-8")
         valid = subprocess.run(["ruby", str(authorizer), "--request", str(valid_path)], cwd=ROOT, capture_output=True, text=True)
@@ -968,6 +984,182 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         invalid_path.write_text(rendered_request.replace("agent_id: general-coder", "agent_id: main_agent"), encoding="utf-8")
         invalid = subprocess.run(["ruby", str(authorizer), "--request", str(invalid_path)], cwd=ROOT, capture_output=True, text=True)
         assert_true(invalid.returncode == 3 and "BLOCKED_DELEGATION_REQUIRED" in invalid.stdout and "main_agent cannot be execution owner" in invalid.stdout, "Main agent 作为 executor 必须被机器 Gate 拒绝。")
+
+
+def test_plan_confirmation_gate_is_framework_floor():
+    authorizer = ROOT / ".claude/skills/idc-workflow/scripts/authorize_execution.rb"
+    assert_true(authorizer.exists(), "缺少 authorize_execution.rb。")
+
+    # 机器行为：三种 BLOCKED_PLAN_CONFIRMATION_REQUIRED + 一种 AUTHORIZED。
+    with tempfile.TemporaryDirectory() as temp_dir:
+        effective = Path(temp_dir) / "plan-confirm-effective.yaml"
+        resolved = subprocess.run(
+            ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"), "--config", str(ROOT / "examples/team-config.full-bindings.yaml"), "--output", str(effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(resolved.returncode == 0, f"Plan Confirmation 测试 Resolver 失败：{resolved.stderr}")
+        demand = Path(temp_dir) / "plan-confirm-demand.yaml"
+        demand.write_text((ROOT / "examples/knowledge-demands/fast.yaml").read_text(encoding="utf-8").replace("fast-unit", "unit-1"), encoding="utf-8")
+        knowledge_plan_path = Path(temp_dir) / "plan-confirm-knowledge-plan.yaml"
+        planned = subprocess.run(
+            ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"), "--effective", str(effective), "--demand", str(demand), "--output", str(knowledge_plan_path)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(planned.returncode == 0, f"Plan Confirmation 测试 Knowledge Plan 失败：{planned.stderr}")
+        knowledge_plan_id = re.search(r"knowledge_plan_id:\s+['\"]?(\w+)", knowledge_plan_path.read_text(encoding="utf-8")).group(1)
+
+        plan_artifact = Path(temp_dir) / "general-plan.yaml"
+        plan_artifact.write_text(
+            "general_plan:\n"
+            "  task_id: plan-confirm-test\n"
+            "  selected_components: [GENERAL_COMPONENT_PLACEHOLDER]\n"
+            "  execution_units:\n"
+            "    - id: unit-1\n"
+            "      summary: placeholder unit\n"
+            "      max_change_loc: 500\n",
+            encoding="utf-8",
+        )
+
+        def request_with(confirmation_lines):
+            return (
+                "execution_authorization_request:\n"
+                "  task_id: plan-confirm-test\n"
+                "  workflow_id: general_execution\n"
+                "  selected_domain: general\n"
+                "  selected_lane: fast\n"
+                "  human_alignment_status: approved\n"
+                "  approved_alignment_ref: alignment-1\n"
+                "  execution_unit_ref: unit-1\n"
+                "  context_packet_ref: context-1\n"
+                "  capability_selection_ref: selection-1\n"
+                "  capability_selection_status: READY\n"
+                f"  knowledge_load_plan_ref: {knowledge_plan_path}\n"
+                "  knowledge_load_plan_status: READY\n"
+                f"  knowledge_plan_id: {knowledge_plan_id}\n"
+                "  domain_execution_skill_ref: .claude/skills/idc-general-coding/SKILL.md\n"
+                "  selected_atomic_skill_refs: []\n"
+                "  delegation_contract_ref: delegation-1\n"
+                "  main_agent_role: planning_and_delegation_only\n"
+                + (confirmation_lines or "")
+                + "  executor: {kind: subagent, agent_id: general-coder}\n"
+                "  allowed_paths: [src/example.rb]\n"
+                "  expected_outputs: [changed_paths, evidence_refs, execution_receipt]\n"
+            )
+
+        blocked_cases = {
+            "missing-confirmation": (
+                request_with(None),
+                "technical_plan_confirmation is required",
+            ),
+            "unconfirmed-status": (
+                request_with(
+                    "  technical_plan_confirmation:\n"
+                    "    required: true\n"
+                    "    trigger_reason: lane=fast\n"
+                    "    status: pending\n"
+                ),
+                "technical_plan_confirmation.status must be confirmed",
+            ),
+            "missing-plan-file": (
+                request_with(
+                    "  technical_plan_confirmation:\n"
+                    "    required: true\n"
+                    "    trigger_reason: lane=fast\n"
+                    f"    confirmation_ref: {Path(temp_dir) / 'missing-plan.yaml'}\n"
+                    "    status: confirmed\n"
+                ),
+                "confirmation_ref file does not exist",
+            ),
+        }
+        for case_name, (request_text, expected_error) in blocked_cases.items():
+            request_path = Path(temp_dir) / f"{case_name}.yaml"
+            request_path.write_text(request_text, encoding="utf-8")
+            blocked = subprocess.run(["ruby", str(authorizer), "--request", str(request_path)], cwd=ROOT, capture_output=True, text=True)
+            assert_true(
+                blocked.returncode == 3 and "BLOCKED_PLAN_CONFIRMATION_REQUIRED" in blocked.stdout and expected_error in blocked.stdout,
+                f"{case_name} 必须被机器 Gate 以 BLOCKED_PLAN_CONFIRMATION_REQUIRED 阻断（含原因 {expected_error}）：{blocked.stdout}\n{blocked.stderr}",
+            )
+
+        authorized_path = Path(temp_dir) / "confirmed.yaml"
+        authorized_path.write_text(
+            request_with(
+                "  technical_plan_confirmation:\n"
+                "    required: true\n"
+                "    trigger_reason: lane=fast\n"
+                f"    confirmation_ref: {plan_artifact}\n"
+                "    status: confirmed\n"
+            ),
+            encoding="utf-8",
+        )
+        authorized = subprocess.run(["ruby", str(authorizer), "--request", str(authorized_path)], cwd=ROOT, capture_output=True, text=True)
+        assert_true(
+            authorized.returncode == 0 and "status: AUTHORIZED" in authorized.stdout and "authorization_id:" in authorized.stdout,
+            f"confirmed + 落盘计划件必须 AUTHORIZED：{authorized.stdout}\n{authorized.stderr}",
+        )
+
+    # Gate 顺序：Planner -> Technical Plan Confirmation -> Execution Authorization -> dispatch。
+    gate = read_text(".claude/skills/idc-workflow/references/workflows/execution-authorization-gate.md")
+    gate_pipeline = gate.split("```text", 1)[1].split("```", 1)[0]
+    planner_index = gate_pipeline.find("Planner")
+    confirmation_index = gate_pipeline.find("Technical Plan Confirmation")
+    authorization_index = gate_pipeline.find("Execution Authorization Gate")
+    dispatch_index = gate_pipeline.find("dispatch")
+    assert_true(0 < planner_index < confirmation_index < authorization_index < dispatch_index, "Technical Plan Confirmation 必须位于 Planner 之后、Execution Authorization 与 dispatch 之前。")
+
+    # 框架 floor 钉死：d3a + 全部 lane，不可配置。
+    loop = read_text(".claude/skills/idc-workflow/references/workflows/automated-closure-loop.md")
+    assert_true("Plan Check 以 Technical Plan Confirmation 的形式按框架 floor 恢复" in loop, "Automated Closure Loop 必须声明 Plan Check 按框架 floor 恢复。")
+    assert_true("floor 不可通过 team-config 关闭" in loop, "Plan Confirmation floor 必须声明不可配置。")
+    schema = read_text(".claude/skills/idc-workflow/references/schemas/execution-authorization.schema.yaml")
+    for fragment in ["technical_plan_confirmation:", "trigger_reason: d3a_fixed_workflow", "confirmation_ref: ref", "BLOCKED_PLAN_CONFIRMATION_REQUIRED", "framework floor"]:
+        assert_true(fragment in schema, f"Execution Authorization schema 缺少 plan confirmation 契约：{fragment}")
+    delegation_schema = read_text(".claude/skills/idc-workflow/references/schemas/delegation-contract.schema.yaml")
+    assert_true("plan_confirmation_ref: ref" in delegation_schema, "Delegation Contract 必须支持 plan_confirmation_ref。")
+    claude = (ROOT / "CLAUDE.md").read_text()
+    assert_true("16. 任何 repository mutation 的 Execution Authorization 都必须先通过 Technical Plan Confirmation" in claude, "CLAUDE.md 必须把 Plan Confirmation 钉为运行原则 16。")
+    id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
+    assert_true("Technical Plan Confirmation" in id_workflow, "idc-workflow 管道必须包含 Technical Plan Confirmation。")
+    policy = read_text(".claude/skills/idc-workflow/references/workflows/ask-user-tool-policy.md")
+    assert_true("Plan Confirmation 请求确认技术方案三件" in policy, "AskUserTool policy 必须覆盖 Plan Confirmation 触发。")
+    d3a_skill = read_text(".claude/skills/idc-d3a-coding/SKILL.md")
+    assert_true("freeze 前若 Technical Plan Confirmation 未完成" in d3a_skill, "D3A freeze 语义必须是确认后冻结。")
+    alignment_schema = read_text(".claude/skills/idc-workflow/references/schemas/alignment-pack.schema.yaml")
+    assert_true("例外：Execution Authorization 前必须完成 Technical Plan Confirmation" in alignment_schema, "Alignment Pack 默认不卡点必须声明 Plan Confirmation 例外。")
+
+    # Scope drift 红线。
+    assert_true("NEEDS_RE_ALIGNMENT" in gate, "Execution Authorization Gate 必须声明 scope drift 红线。")
+
+    # Runtime state / resume：plan_confirmation_requested / plan_confirmed。
+    runtime_schema = read_text(".claude/skills/idc-workflow/references/schemas/runtime-state.schema.yaml")
+    assert_true("plan_confirmation_requested" in runtime_schema and "plan_confirmed" in runtime_schema, "Runtime State 必须记录 plan confirmation 事件。")
+    resume_policy = read_text(".claude/skills/idc-workflow/references/workflows/resume-policy.md")
+    plan_created_index = resume_policy.find("Plan created")
+    confirmation_requested_index = resume_policy.find("Plan confirmation requested")
+    plan_confirmed_index = resume_policy.find("Plan confirmed")
+    delegation_created_index = resume_policy.find("Delegation Contract created")
+    assert_true(0 < plan_created_index < confirmation_requested_index < plan_confirmed_index < delegation_created_index, "Plan confirmed checkpoint 必须紧跟 Plan created。")
+
+    # 问题2 全套：phase-outputs.md 与 plan-confirmation-view.md。
+    phase_outputs_path = ROOT / ".claude/skills/idc-workflow/references/workflows/phase-outputs.md"
+    assert_true(phase_outputs_path.exists(), "缺少 phase-outputs.md 统一清单。")
+    phase_outputs = phase_outputs_path.read_text()
+    for phase in ["bootstrap", "decision", "planning", "execution", "completion", "resume"]:
+        assert_true(f"## {phase}" in phase_outputs, f"phase-outputs.md 缺少 {phase} phase。")
+    assert_true("general-plan.yaml" in phase_outputs and "d3a-plan.yaml" in phase_outputs, "phase-outputs.md 必须把计划件列为 planning 硬性输出。")
+    assert_true("必须落盘" in phase_outputs and "BLOCKED_PLAN_CONFIRMATION_REQUIRED" in phase_outputs, "phase-outputs.md 必须写明计划件强制落盘与机器强制点。")
+
+    view_path = ROOT / ".claude/skills/idc-workflow/references/human-views/plan-confirmation-view.md"
+    assert_true(view_path.exists(), "缺少 plan-confirmation-view.md。")
+    view = view_path.read_text()
+    assert_true("## 模板" in view and "## 规则" in view, "Plan Confirmation View 必须对齐现有 human-view 格式。")
+    for fragment in ["计划件本体", "API Contract", "DT 设计", "scope"]:
+        assert_true(fragment in view, f"Plan Confirmation View 必须展示确认对象：{fragment}")
+    assert_true("fast" in view and "lite" in view and "complex" in view, "Plan Confirmation View 必须声明 floor 覆盖全部 lane。")
+    assert_true("NEEDS_RE_ALIGNMENT" in view, "Plan Confirmation View 必须拒绝在视图内就地确认超 scope 计划。")
 
 
 def test_resume_policy_supports_interruption_recovery():
@@ -1171,6 +1363,8 @@ def test_manual_test_scenarios_exist_for_user_experience():
         "test/04-approved-general-execution.md",
         "test/05-build-failure-fix.md",
         "test/06-large-fanout-dynamic-workflow.md",
+        "test/18-raw-idea-team-config-brainstorming.md",
+        "test/19-plan-confirmation-gate.md",
     ]
     for file_name in required_files:
         assert_true((ROOT / file_name).exists(), f"缺少手动体验场景：{file_name}")
@@ -1187,6 +1381,8 @@ def test_manual_test_scenarios_exist_for_user_experience():
         "test/09-lane-anti-fast-one-liner.md": ["fast_disqualified_by", "behavior_contract_change", "unknown", "不应该因为"],
         "test/10-lane-complex-hard-trigger.md": ["cross_module_or_layer_impact", "multiple_test_domains", "needs_dependency_dag", "decision_rule = hard_trigger"],
         "test/11-lane-api-contract-change.md": ["api_semantic_change", "selected_lane = complex", "不应该因"],
+        "test/18-raw-idea-team-config-brainstorming.md": ["input_maturity = raw_idea", "idc-brainstorming", "Brainstorming View", "idc-intent-grilling", "idc-intent-grilling-with-docs", "不应该因为", "alternatives_needed"],
+        "test/19-plan-confirmation-gate.md": ["Technical Plan Confirmation", "Plan Confirmation View", "AskUserTool", "Execution Authorization", "不应该在 Plan Confirmation gate 内就地确认超出 scope 的计划", "不应该未经 Technical Plan Confirmation 就 dispatch"],
     }
     for file_name, fragments in expectations.items():
         text = read_text(file_name)
@@ -2832,11 +3028,26 @@ def test_lane_profiles_use_supported_orchestration_modes():
 
 ALIGNMENT_PIPELINE_STEPS = [
     ("alignment-discovery", "discovery", "intent_discovery", "raw_idea"),
-    ("alignment-brainstorming", "divergence", "brainstorming", "alternatives_needed"),
-    ("alignment-grilling", "clarification", "intent_grilling", "critical_gaps_remain"),
+    ("alignment-brainstorming", "divergence", "brainstorming", ("raw_idea", "alternatives_needed")),
+    ("alignment-grilling", "clarification", "intent_grilling", ("critical_gaps_remain", "clarification_required", "tr3_input")),
     ("alignment-grilling-with-docs", "clarification", "intent_grilling_with_docs", "docs_clarification_required"),
     ("alignment-check", "alignment_check", "intent_alignment", None),
 ]
+
+
+def alignment_step_signals(signal):
+    """Normalize the 4th ALIGNMENT_PIPELINE_STEPS column to a list of signals."""
+    if signal is None:
+        return []
+    if isinstance(signal, (tuple, list)):
+        return list(signal)
+    return [signal]
+
+
+def strip_alignment_signal(step, target):
+    """Remove one signal from a pipeline step tuple; an emptied guard becomes None."""
+    filtered = [signal for signal in alignment_step_signals(step[3]) if signal != target]
+    return (step[0], step[1], step[2], filtered[0] if len(filtered) == 1 else (tuple(filtered) if filtered else None))
 
 ALIGNMENT_SKILL_REFS = {
     "intent_discovery": ".claude/skills/idc-intent-discovery/SKILL.md",
@@ -2859,7 +3070,7 @@ def build_alignment_section(bindings=None, steps=None, mode="ordered"):
     lines.append(f"    mode: {mode}")
     lines.append("    steps:")
     for step_id, stage, skill_id, signal in steps:
-        signals = f"[{signal}]" if signal else "[]"
+        signals = "[" + ", ".join(alignment_step_signals(signal)) + "]"
         lines.append(f"      - id: {step_id}")
         lines.append(f"        stage: {stage}")
         lines.append(f"        skill_ids: [{skill_id}]")
@@ -2911,7 +3122,7 @@ def test_alignment_pipeline_config_shape_mirrors_lane_profiles():
         for step in orchestration.get("steps", [])
     ]
     expected_steps = [
-        (step_id, stage, [skill_id], [signal] if signal else [])
+        (step_id, stage, [skill_id], alignment_step_signals(signal))
         for step_id, stage, skill_id, signal in ALIGNMENT_PIPELINE_STEPS
     ]
     assert_true(serialized_steps == expected_steps, f"alignment.orchestration.steps 默认链漂移：{serialized_steps}。")
@@ -2983,7 +3194,7 @@ def test_alignment_pipeline_framework_invariants_are_enforced():
         no_raw_idea = write_alignment_config(
             temp_dir,
             "alignment-no-raw-idea.yaml",
-            build_alignment_section(steps=[(*ALIGNMENT_PIPELINE_STEPS[0][:3], None)] + list(ALIGNMENT_PIPELINE_STEPS[1:])),
+            build_alignment_section(steps=[strip_alignment_signal(step, "raw_idea") for step in ALIGNMENT_PIPELINE_STEPS]),
         )
         no_raw_idea_checked = run_alignment_resolver(no_raw_idea)
         assert_true(no_raw_idea_checked.returncode != 0, "raw_idea 信号下限不得被移除。")
@@ -2995,7 +3206,7 @@ def test_alignment_pipeline_framework_invariants_are_enforced():
         no_gap_signal = write_alignment_config(
             temp_dir,
             "alignment-no-gap-signal.yaml",
-            build_alignment_section(steps=[(step[0], step[1], step[2], None if step[3] == "critical_gaps_remain" else step[3]) for step in ALIGNMENT_PIPELINE_STEPS]),
+            build_alignment_section(steps=[strip_alignment_signal(step, "critical_gaps_remain") for step in ALIGNMENT_PIPELINE_STEPS]),
         )
         no_gap_signal_checked = run_alignment_resolver(no_gap_signal)
         assert_true(
@@ -3157,6 +3368,167 @@ def test_alignment_pipeline_execution_defers_to_config_not_hardcoded():
         len(workflow_text.splitlines()) <= 320,
         "idc-workflow 入口说明重新膨胀，破坏 progressive disclosure。",
     )
+
+
+def run_decision_context_plan(effective_path, signals=None):
+    command = [
+        "ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"),
+        "--effective", str(effective_path), "--phase", "decision", "--domain", "d3a",
+    ]
+    if signals is not None:
+        for signal in signals:
+            command += ["--signal", signal]
+        command += ["--signals-complete"]
+    return subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+
+
+def test_raw_idea_decision_plan_pins_pre_alignment_reachability():
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    assert_true(context_planner.exists(), "缺少 Context Planner 脚本。")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = write_alignment_config(temp_dir, "raw-idea-d3a.yaml", build_alignment_section())
+        effective = Path(temp_dir) / "raw-idea-d3a-effective.yaml"
+        resolved = run_alignment_resolver(config, effective)
+        assert_true(resolved.returncode == 0, f"d3a mode + 默认 alignment 链解析失败：{resolved.stderr}")
+
+        raw_idea = run_decision_context_plan(effective, signals=["raw_idea"])
+        assert_true(raw_idea.returncode == 0, f"raw_idea 信号集的 decision Context Plan 失败：{raw_idea.stdout}{raw_idea.stderr}")
+        assert_true(
+            ".claude/skills/idc-intent-discovery/SKILL.md" in raw_idea.stdout,
+            "raw_idea 精确信号集必须点亮 alignment-discovery（idc-intent-discovery）。",
+        )
+        assert_true(
+            ".claude/skills/idc-brainstorming/SKILL.md" in raw_idea.stdout,
+            "raw_idea 精确信号集必须点亮 alignment-brainstorming（idc-brainstorming，触发信号含 raw_idea）。",
+        )
+        assert_true(
+            ".claude/skills/idc-intent-alignment/SKILL.md" in raw_idea.stdout,
+            "raw_idea 精确信号集必须保留 alignment_check gate（idc-intent-alignment）。",
+        )
+
+        gaps = run_decision_context_plan(effective, signals=["critical_gaps_remain"])
+        assert_true(gaps.returncode == 0, f"critical_gaps_remain 信号集的 decision Context Plan 失败：{gaps.stdout}{gaps.stderr}")
+        assert_true(
+            ".claude/skills/idc-intent-grilling/SKILL.md" in gaps.stdout,
+            "critical_gaps_remain 精确信号集必须点亮 alignment-grilling（idc-intent-grilling）。",
+        )
+
+        uncertain = run_decision_context_plan(effective)
+        assert_true(uncertain.returncode == 0, f"未声明信号的 decision Context Plan 失败：{uncertain.stdout}{uncertain.stderr}")
+        assert_true("signal_set: uncertain" in uncertain.stdout, "未声明信号时必须标记 signal_set: uncertain。")
+        assert_true("pending_trigger_evaluations" in uncertain.stdout, "uncertain 时 alignment_resolution 必须输出 pending_trigger_evaluations。")
+        for skill_ref in ALIGNMENT_SKILL_REFS.values():
+            assert_true(skill_ref in uncertain.stdout, f"uncertain fallback 必须全量加载 alignment 管线 refs：{skill_ref}")
+
+
+def test_input_maturity_signal_matrix_matches_expected_semantics():
+    # 输入成熟度 → alignment 管线语义矩阵：
+    # raw_idea 必须点亮 discovery + brainstorming（grill 可达）；structured / TR3 输入
+    # （clarification_required / tr3_input）必须点亮 grill、不默认点亮 brainstorming；
+    # docs_clarification_required 只点亮 grilling-with-docs；alignment-check 恒 always_run。
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    assert_true(context_planner.exists(), "缺少 Context Planner 脚本。")
+
+    expected_matrix = [
+        (
+            ["raw_idea"], "must_execute", "must_execute", "skipped_by_signal", "skipped_by_signal",
+            "raw_idea 输入必须同时点亮 discovery 与 brainstorming，且默认不进 grill",
+        ),
+        (
+            ["raw_idea", "critical_gaps_remain"], "must_execute", "must_execute", "must_execute", "skipped_by_signal",
+            "raw_idea + 仍有关键缺口时，在 discovery / brainstorming 之上必须追加 grill",
+        ),
+        (
+            ["critical_gaps_remain"], "skipped_by_signal", "skipped_by_signal", "must_execute", "skipped_by_signal",
+            "缺口信号只点亮 grill，不回溯点亮 discovery / brainstorming",
+        ),
+        (
+            ["critical_gaps_remain", "alternatives_needed"], "skipped_by_signal", "must_execute", "must_execute", "skipped_by_signal",
+            "alternatives_needed 只按需点亮 brainstorming，grill 仍由缺口信号点亮",
+        ),
+        (
+            ["clarification_required"], "skipped_by_signal", "skipped_by_signal", "must_execute", "skipped_by_signal",
+            "structured 输入（clarification_required）必须点亮 grill、不默认点亮 brainstorming",
+        ),
+        (
+            ["clarification_required", "alternatives_needed"], "skipped_by_signal", "must_execute", "must_execute", "skipped_by_signal",
+            "structured 输入 + alternatives_needed 时 brainstorming 按需点亮，grill 保持点亮",
+        ),
+        (
+            ["tr3_input"], "skipped_by_signal", "skipped_by_signal", "must_execute", "skipped_by_signal",
+            "TR3 输入（tr3_input）必须点亮 grill、不默认点亮 brainstorming",
+        ),
+        (
+            ["docs_clarification_required"], "skipped_by_signal", "skipped_by_signal", "skipped_by_signal", "must_execute",
+            "docs_clarification_required 只点亮 grilling-with-docs，不点亮其余信号步骤",
+        ),
+    ]
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = write_alignment_config(temp_dir, "input-maturity-matrix.yaml", build_alignment_section())
+        effective = Path(temp_dir) / "input-maturity-matrix-effective.yaml"
+        resolved = run_alignment_resolver(config, effective)
+        assert_true(resolved.returncode == 0, f"d3a mode + 默认 alignment 链解析失败：{resolved.stderr}")
+
+        def plan_step_statuses(signals):
+            plan = run_decision_context_plan(effective, signals=signals)
+            assert_true(
+                plan.returncode == 0,
+                f"信号集 {signals} 的 decision Context Plan 失败：{plan.stdout}{plan.stderr}",
+            )
+            resolution = yaml.safe_load(plan.stdout)["context_load_plan"]["alignment_resolution"]
+            assert_true(
+                resolution.get("signal_set") == "complete",
+                f"signals-complete 下 signal_set 必须是 complete：{signals}",
+            )
+            return {step["step_id"]: step["status"] for step in resolution["steps"]}
+
+        for signals, discovery, brainstorming, grilling, with_docs, semantics in expected_matrix:
+            statuses = plan_step_statuses(signals)
+            label = ",".join(signals)
+            assert_true(
+                statuses.get("alignment-discovery") == discovery,
+                f"[{label}] alignment-discovery 期望 {discovery}（实际 {statuses.get('alignment-discovery')}）：{semantics}。",
+            )
+            assert_true(
+                statuses.get("alignment-brainstorming") == brainstorming,
+                f"[{label}] alignment-brainstorming 期望 {brainstorming}（实际 {statuses.get('alignment-brainstorming')}）：{semantics}。",
+            )
+            assert_true(
+                statuses.get("alignment-grilling") == grilling,
+                f"[{label}] alignment-grilling 期望 {grilling}（实际 {statuses.get('alignment-grilling')}）：{semantics}。",
+            )
+            assert_true(
+                statuses.get("alignment-grilling-with-docs") == with_docs,
+                f"[{label}] alignment-grilling-with-docs 期望 {with_docs}（实际 {statuses.get('alignment-grilling-with-docs')}）：{semantics}。",
+            )
+            assert_true(
+                statuses.get("alignment-check") == "always_run",
+                f"[{label}] alignment-check gate 恒为 always_run（实际 {statuses.get('alignment-check')}）。",
+            )
+
+
+def test_raw_idea_signal_must_light_brainstorming_step():
+    # GREEN：曾是 RED 缺陷证据；plan_context.rb 信号匹配修复（any-of + 双触发信号）后转 GREEN。
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = write_alignment_config(temp_dir, "raw-idea-brainstorming.yaml", build_alignment_section())
+        effective = Path(temp_dir) / "raw-idea-brainstorming-effective.yaml"
+        resolved = run_alignment_resolver(config, effective)
+        assert_true(resolved.returncode == 0, f"d3a mode + 默认 alignment 链解析失败：{resolved.stderr}")
+
+        raw_idea = run_decision_context_plan(effective, signals=["raw_idea"])
+        assert_true(raw_idea.returncode == 0, f"raw_idea 信号集的 decision Context Plan 失败：{raw_idea.stdout}{raw_idea.stderr}")
+        assert_true(
+            ".claude/skills/idc-brainstorming/SKILL.md" in raw_idea.stdout,
+            "raw_idea 精确信号集下 decision Context Plan 必须点亮 brainstorming step"
+            "（alignment-brainstorming 触发信号含 raw_idea，匹配为 any-of）。",
+        )
+        normalized_gate_output = re.sub(r"[ \t]+", "", raw_idea.stdout.replace("\n", ""))
+        assert_true(
+            "alignment_check_gate:pre_alignment_signals_resolved" in normalized_gate_output,
+            "complete 信号集下 alignment_check_gate 必须注解为 pre_alignment_signals_resolved。",
+        )
 
 
 def test_team_config_resolver_and_lane_capability_selection_execute():
@@ -3824,6 +4196,32 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
 
             authorization = Path(temp_dir) / f"{scenario}-authorization.yaml"
             lane_value = expected["lane"] if expected["lane"] else "null"
+            if expected["domain"] == "d3a":
+                plan_artifact = Path(temp_dir) / f"{scenario}-d3a-plan.yaml"
+                plan_artifact.write_text(
+                    "d3a_plan:\n"
+                    "  coding_layers: [DO]\n"
+                    "  dt_domains: [TPRINT]\n"
+                    "  dependency_dag: []\n"
+                    "  verification_mapping:\n"
+                    "    DO:\n"
+                    "      required_dt_domains: [TPRINT]\n",
+                    encoding="utf-8",
+                )
+                confirmation_trigger = "d3a_fixed_workflow"
+            else:
+                plan_artifact = Path(temp_dir) / f"{scenario}-general-plan.yaml"
+                plan_artifact.write_text(
+                    "general_plan:\n"
+                    f"  task_id: matrix-{scenario}\n"
+                    "  selected_components: [GENERAL_COMPONENT_PLACEHOLDER]\n"
+                    "  execution_units:\n"
+                    f"    - id: {expected['unit']}\n"
+                    "      summary: placeholder unit\n"
+                    "      max_change_loc: 500\n",
+                    encoding="utf-8",
+                )
+                confirmation_trigger = f"lane={expected['lane']}"
             authorization.write_text(
                 f"""execution_authorization_request:
   task_id: matrix-{scenario}
@@ -3843,6 +4241,11 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
   selected_atomic_skill_refs: [selected-by-capability-selector]
   delegation_contract_ref: delegation-{scenario}
   main_agent_role: planning_and_delegation_only
+  technical_plan_confirmation:
+    required: true
+    trigger_reason: {confirmation_trigger}
+    confirmation_ref: {plan_artifact}
+    status: confirmed
   executor: {{kind: subagent, agent_id: {expected['domain']}-coder}}
   allowed_paths: [src/example]
   expected_outputs: [changed_paths, evidence_refs, execution_receipt]
@@ -4203,6 +4606,7 @@ def run():
         test_context_engineering_is_progressive_and_not_token_policy,
         test_repo_rules_are_canonical_in_claude_md,
         test_delegation_contract_keeps_main_agent_as_planner,
+        test_plan_confirmation_gate_is_framework_floor,
         test_resume_policy_supports_interruption_recovery,
         test_confidential_vertical_slice_readiness_gate_exists,
         test_progressive_constraint_loading_files_exist,
@@ -4249,6 +4653,9 @@ def run():
         test_alignment_pipeline_runtime_consumption_is_materialized,
         test_alignment_pipeline_docs_record_section_and_ownership,
         test_alignment_pipeline_execution_defers_to_config_not_hardcoded,
+        test_raw_idea_decision_plan_pins_pre_alignment_reachability,
+        test_input_maturity_signal_matrix_matches_expected_semantics,
+        test_raw_idea_signal_must_light_brainstorming_step,
         test_select_capabilities_rejects_unknown_signal,
         test_unpassed_dt_blocks_all_layers_green,
         test_tran_build_must_pass_before_done,

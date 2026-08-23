@@ -31,6 +31,7 @@ delegation_contract:
   knowledge_load_plan_ref: ref
   knowledge_plan_id: sha256
   execution_authorization_request_ref: ref
+  plan_confirmation_ref: ref
   delegation_reason: string
   selection_reason:
     workflow_reason: string
@@ -103,6 +104,7 @@ rules:
   - Main agent 不能直接执行任何 repository mutation，包括 Fast、Lite、Complex 的代码、测试、构建文件、验证产物和 targeted fix。
   - General execution 的 domain_execution_skill_ref 必须是 idc-general-coding；GC adapters 只能出现在 selected_atomic_skill_refs。
   - Agent Result 必须携带 execution_receipt，并绑定 authorization、真实 dispatch tool call 和 executor session。
+  - `plan_confirmation_ref`（可选）引用 Technical Plan Confirmation 已确认的落盘计划件（general-plan / d3a-plan）；Execution Authorization 前必须已完成确认。
   - Delegation、Authorization、Context Packet 和 Execution Receipt 必须绑定同一个 knowledge_plan_id。
   - Completion 前 Knowledge Consumption Result 必须 VERIFIED。
   - Main agent 不能把完整 subagent session 合并回 main session。

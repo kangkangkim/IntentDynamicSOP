@@ -40,5 +40,6 @@ rules:
   - Human Alignment 发生在 Planner 之前。
   - Human Alignment 只确认方向、边界、contract set 和 completion gate。
   - Human Alignment 通过后，默认进入 Automated Closure Loop。
-  - 后续流程默认不再人工卡点。
+  - 后续流程默认不再人工卡点；例外：Execution Authorization 前必须完成 Technical Plan Confirmation（框架 floor，d3a 与全部 lane 不可配置关闭）。
+  - Technical Plan Confirmation 发现计划超出已批准 scope 时返回 NEEDS_RE_ALIGNMENT 回流 Human Alignment，不得在 gate 内就地确认。
   - 只有命中 Escalation Policy 才回到 Human Alignment。

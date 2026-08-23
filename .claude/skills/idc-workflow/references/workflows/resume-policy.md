@@ -38,6 +38,8 @@ Discovery completed
 Clarification completed
 Alignment approved
 Plan created
+Plan confirmation requested（Technical Plan Confirmation，AskUserTool）
+Plan confirmed（紧跟 Plan created；未确认不得进入 Execution Authorization）
 Delegation Contract created
 Subagent / Agent Team dispatched
 Agent result returned

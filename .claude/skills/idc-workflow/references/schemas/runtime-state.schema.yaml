@@ -11,7 +11,7 @@ runtime_state:
   created_at: string
   updated_at: string
   current_state: intake | discovery | clarification | alignment | planning | execution | verification | fix | done | escalated
-  latest_event: new_user_input | normalized_request_ready | human_alignment_approved | agent_result_returned | test_failed | build_failed | fix_failed | scope_changed | completion_gate_blocked | interrupted | resumed
+  latest_event: new_user_input | normalized_request_ready | human_alignment_approved | plan_confirmation_requested | plan_confirmed | agent_result_returned | test_failed | build_failed | fix_failed | scope_changed | completion_gate_blocked | interrupted | resumed
   resume_token: string
   resume_from:
     state: intake | discovery | clarification | alignment | planning | execution | verification | fix | done | escalated
@@ -64,6 +64,7 @@ failure_state:
 resume_rules:
   - Runtime state is not DONE evidence.
   - Resume must reload approved_alignment_ref before execution continues.
+  - Resume must not dispatch until plan_confirmed is recorded; a plan confirmed before interruption stays confirmed only for the same on-disk plan ref.
   - Resume must reload delegation_contract_ref and context_packet_ref before dispatching subagents.
   - Resume must re-run verification if execution may have partially completed before interruption.
   - If scope or contract changed during resume, return to Alignment View.

@@ -38,6 +38,7 @@
 13. Main agent 是 `planning_and_delegation_only`。任何 Lane 的 repository mutation（代码、测试、构建文件、验证产物、targeted fix）都必须经过 Execution Authorization，并真实派发给 subagent / agent team / official dynamic workflow。
 14. General Domain 必须由 executor 加载 `idc-general-coding` 作为外层执行协议；`idc-gc-sop-adapter` 只能作为 Capability Selector 选中的内层原子能力。
 15. delegation tool 不可用时返回 `BLOCKED_DELEGATION_REQUIRED`，不得由 main agent 直接实现；Completion 必须检查 authorization ID、dispatch tool-call ref 和 executor session ref。
+16. 任何 repository mutation 的 Execution Authorization 都必须先通过 Technical Plan Confirmation（框架 floor：d3a 与全部 lane fast/lite/complex，不可配置关闭），确认对象是落盘计划件、required API Contract 与 DT 设计；未经确认不得 dispatch。
 
 ## D3A Layer Registry
 

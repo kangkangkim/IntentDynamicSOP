@@ -9,6 +9,7 @@ Planner
   -> Knowledge Gate
   -> Knowledge Load Plan
   -> Capability Selector
+  -> Technical Plan Confirmation (AskUserTool, framework floor)
   -> Delegation Router
   -> Execution Authorization Gate
   -> Agent Team / Subagent Execution
@@ -23,9 +24,13 @@ Planner
 
 Human Alignment approve 后，后续步骤默认自动执行和验证。
 
+Plan Check 以 Technical Plan Confirmation 的形式按框架 floor 恢复：d3a 与
+全部 lane（fast / lite / complex）在 Execution Authorization 前都必须经
+`AskUserTool` 确认技术方案三件（计划件本体、API Contract、DT 设计）；它只确认
+技术方案，不重新对齐任务方向 / scope，floor 不可通过 team-config 关闭。
+
 不再默认设置：
 
-- Plan Check。
 - Evidence Check。
 - Completion Check。
 
@@ -35,6 +40,7 @@ Human Alignment approve 后，后续步骤默认自动执行和验证。
 
 - Planner 必须遵守已批准的 scope / contract / completion gate。
 - Planner 必须把代码变更拆成不超过 500 行的 execution unit。
+- Technical Plan Confirmation 必须在 Execution Authorization 前完成（框架 floor：d3a 与全部 lane），且计划件必须先落盘。
 - Delegation Router 必须生成 Delegation Contract。
 - Execution Authorization Gate 必须在任何 repo mutation 前返回 `AUTHORIZED`。
 - Execution Authorization 必须绑定同一 execution unit 的 READY Knowledge Load Plan。

@@ -54,7 +54,7 @@ If D3A contract / scope / completion gate 不清楚，route to:
 1. 运行 Requirement Assessor。
 2. 如果需要，进入 Grill Me / 澄清 placeholder。
 3. 产出 D3A Specification。
-4. 在 implementation 前 freeze API Contract。
+4. 在 implementation 前 freeze API Contract；freeze 前若 Technical Plan Confirmation 未完成，先经 `AskUserTool` 确认（含待 freeze 的 API Contract、DT 设计、layer/DAG 计划），确认后冻结。
 5. Planner 只能在固定 D3A Layer registry 内规划。
 6. DT Domain 只能从生效 registry 选择：仓库默认 `dt-domains.yaml`，或 `team-config.yaml.domain.d3a.dt_domains` 非空时整体替换；禁止合并两个来源、禁止 registry 外编造。
 7. Planner 构造 dependency DAG、verification mapping 和逐 Layer knowledge requirements。

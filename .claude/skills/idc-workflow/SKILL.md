@@ -127,7 +127,7 @@ references/workflows/automated-closure-loop.md
   -> references/workflows/progressive-constraint-loading.md
   -> references/workflows/capability-selector.md
   -> references/workflows/delegation-router.md
-  -> references/workflows/execution-authorization-gate.md
+  -> Technical Plan Confirmation via AskUserTool (framework floor: d3a + fast/lite/complex) -> references/workflows/execution-authorization-gate.md
   -> dispatch agent team / subagent
   -> executor loads idc-general-coding or idc-d3a-coding as Domain execution protocol
   -> executor uses idc-superpowers-adapter / idc-gc-sop-adapter only when selected as inner abilities

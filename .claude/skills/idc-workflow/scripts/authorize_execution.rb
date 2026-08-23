@@ -34,6 +34,32 @@ errors << "human_alignment_status must be approved" unless request["human_alignm
 errors << "capability_selection_status must be READY" unless request["capability_selection_status"] == "READY"
 errors << "main_agent_role must be planning_and_delegation_only" unless request["main_agent_role"] == "planning_and_delegation_only"
 
+plan_confirmation = request["technical_plan_confirmation"]
+plan_confirmation_errors = []
+if plan_confirmation.is_a?(Hash)
+  plan_confirmation_errors << "technical_plan_confirmation.required must be true (framework floor)" unless plan_confirmation["required"] == true
+  valid_trigger_reasons = ["d3a_fixed_workflow", "lane=fast", "lane=lite", "lane=complex"]
+  unless valid_trigger_reasons.include?(plan_confirmation["trigger_reason"].to_s)
+    plan_confirmation_errors << "technical_plan_confirmation.trigger_reason must be d3a_fixed_workflow or lane=fast|lite|complex"
+  end
+  if plan_confirmation["status"] == "confirmed"
+    unless present?(plan_confirmation["confirmation_ref"])
+      plan_confirmation_errors << "technical_plan_confirmation.confirmation_ref is required when status is confirmed"
+    end
+    if present?(plan_confirmation["confirmation_ref"])
+      plan_path = Pathname.new(plan_confirmation["confirmation_ref"].to_s).expand_path
+      unless plan_path.file?
+        plan_confirmation_errors << "technical_plan_confirmation.confirmation_ref file does not exist: #{plan_confirmation['confirmation_ref']}"
+      end
+    end
+  else
+    plan_confirmation_errors << "technical_plan_confirmation.status must be confirmed when required is true (framework floor)"
+  end
+else
+  plan_confirmation_errors << "technical_plan_confirmation is required (framework floor: d3a and all lanes)"
+end
+errors.concat(plan_confirmation_errors)
+
 %w[approved_alignment_ref execution_unit_ref context_packet_ref capability_selection_ref knowledge_load_plan_ref knowledge_plan_id domain_execution_skill_ref delegation_contract_ref].each do |key|
   errors << "#{key} is required" unless present?(request[key])
 end
@@ -74,9 +100,16 @@ end
 
 canonical = JSON.generate(request.sort.to_h)
 authorization_id = errors.empty? ? Digest::SHA256.hexdigest(canonical) : nil
+status = if !plan_confirmation_errors.empty?
+           "BLOCKED_PLAN_CONFIRMATION_REQUIRED"
+         elsif errors.empty?
+           "AUTHORIZED"
+         else
+           "BLOCKED_DELEGATION_REQUIRED"
+         end
 result = {
   "execution_authorization_result" => {
-    "status" => errors.empty? ? "AUTHORIZED" : "BLOCKED_DELEGATION_REQUIRED",
+    "status" => status,
     "authorization_id" => authorization_id,
     "execution_unit_ref" => errors.empty? ? request["execution_unit_ref"] : nil,
     "selected_domain" => errors.empty? ? request["selected_domain"] : nil,
@@ -85,6 +118,7 @@ result = {
     "domain_execution_skill_ref" => errors.empty? ? request["domain_execution_skill_ref"] : nil,
     "knowledge_load_plan_ref" => errors.empty? ? request["knowledge_load_plan_ref"] : nil,
     "knowledge_plan_id" => errors.empty? ? request["knowledge_plan_id"] : nil,
+    "technical_plan_confirmation" => errors.empty? ? plan_confirmation : nil,
     "selected_atomic_skill_refs" => errors.empty? ? Array(request["selected_atomic_skill_refs"]) : [],
     "allowed_paths" => errors.empty? ? Array(request["allowed_paths"]) : [],
     "expected_outputs" => errors.empty? ? Array(request["expected_outputs"]) : [],

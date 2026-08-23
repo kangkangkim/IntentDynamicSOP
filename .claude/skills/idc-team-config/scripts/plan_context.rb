@@ -219,7 +219,8 @@ else
     if effective_domain_id != options[:domain]
       fail_plan(
         "--domain #{options[:domain]} does not match effective domain #{effective_domain_id || 'unknown'}; " \
-        "switch team-config domain.mode or use the effective domain"
+        "use the effective domain, or add #{options[:domain]} to domain.enabled " \
+        "(legacy single-domain configs: switch domain.mode)"
       )
     end
   end
@@ -270,7 +271,7 @@ if options[:phase] == "decision"
                                alignment_steps.select do |step|
                                  next false unless step.is_a?(Hash)
                                  required_signals = Array(step["trigger_signals"])
-                                 step["stage"] == "alignment_check" || required_signals.empty? || (required_signals - options[:signals]).empty?
+                                 step["stage"] == "alignment_check" || required_signals.empty? || (required_signals & options[:signals]).any?
                                end
                              else
                                alignment_steps
@@ -289,12 +290,58 @@ if options[:phase] == "decision"
   refs.concat(alignment_skill_refs)
   selected_step_ids = selected_alignment_steps.map { |step| step["id"] }.compact
   all_step_ids = alignment_steps.map { |step| step.is_a?(Hash) ? step["id"] : nil }.compact
+  # Structured per-step status so downstream consumers can distinguish
+  # must-execute steps from signal-skipped ones (complete) or steps whose
+  # trigger evaluation is still pending (uncertain) without re-deriving the
+  # matching semantics. The alignment_check gate step always runs.
+  alignment_step_statuses = []
+  alignment_steps.each do |step|
+    next unless step.is_a?(Hash)
+    step_id = step["id"]
+    next if step_id.nil? || step_id.to_s.empty?
+    required_signals = Array(step["trigger_signals"])
+    status = if step["stage"] == "alignment_check"
+               "always_run"
+             elsif options[:signals_complete]
+               required_signals.empty? || (required_signals & options[:signals]).any? ? "must_execute" : "skipped_by_signal"
+             else
+               "pending_trigger_evaluation"
+             end
+    step_skill_refs = Array(step["skill_ids"]).map do |skill_id|
+      skill_ref = alignment_bindings.dig(skill_id, "skill_ref").to_s
+      skill_ref.empty? ? nil : repo_relative_ref(skill_ref)
+    end.compact
+    alignment_step_statuses << {
+      "step_id" => step_id,
+      "trigger_signals" => required_signals.dup,
+      "skill_ref" => step_skill_refs.length == 1 ? step_skill_refs.first : step_skill_refs,
+      "status" => status
+    }
+  end
+  # Under an uncertain signal set every signal-guarded step is still loaded
+  # (fallback), so each one carries an open trigger evaluation instead of a
+  # must-execute / skipped verdict.
+  pending_trigger_evaluations = []
+  unless options[:signals_complete]
+    alignment_steps.each do |step|
+      next unless step.is_a?(Hash)
+      next if step["stage"] == "alignment_check"
+      required_signals = Array(step["trigger_signals"])
+      next if required_signals.empty?
+      step_id = step["id"]
+      next if step_id.nil? || step_id.to_s.empty?
+      pending_trigger_evaluations << { "step_id" => step_id, "trigger_signals" => required_signals.dup }
+    end
+  end
   alignment_resolution = {
     "signal_set" => options[:signals_complete] ? "complete" : "uncertain",
+    "alignment_check_gate" => options[:signals_complete] ? "pre_alignment_signals_resolved" : "pending_trigger_evaluations",
     "matched_step_ids" => selected_step_ids,
     "skipped_step_ids" => all_step_ids - selected_step_ids,
-    "fallback_reason" => options[:signals_complete] ? nil : "signal set not declared complete; loaded full configured alignment pipeline"
+    "fallback_reason" => options[:signals_complete] ? nil : "signal set not declared complete; loaded full configured alignment pipeline",
+    "steps" => alignment_step_statuses
   }
+  alignment_resolution["pending_trigger_evaluations"] = pending_trigger_evaluations unless options[:signals_complete]
 end
 
 if options[:domain] == "custom"

@@ -378,8 +378,8 @@ alignment_default_bindings = {
 }
 alignment_default_steps = [
   { "id" => "alignment-discovery", "stage" => "discovery", "skill_ids" => ["intent_discovery"], "trigger_signals" => ["raw_idea"] },
-  { "id" => "alignment-brainstorming", "stage" => "divergence", "skill_ids" => ["brainstorming"], "trigger_signals" => ["alternatives_needed"] },
-  { "id" => "alignment-grilling", "stage" => "clarification", "skill_ids" => ["intent_grilling"], "trigger_signals" => ["critical_gaps_remain"] },
+  { "id" => "alignment-brainstorming", "stage" => "divergence", "skill_ids" => ["brainstorming"], "trigger_signals" => ["raw_idea", "alternatives_needed"] },
+  { "id" => "alignment-grilling", "stage" => "clarification", "skill_ids" => ["intent_grilling"], "trigger_signals" => ["critical_gaps_remain", "clarification_required", "tr3_input"] },
   { "id" => "alignment-grilling-with-docs", "stage" => "clarification", "skill_ids" => ["intent_grilling_with_docs"], "trigger_signals" => ["docs_clarification_required"] },
   { "id" => "alignment-check", "stage" => "alignment_check", "skill_ids" => ["intent_alignment"], "trigger_signals" => [] }
 ]
