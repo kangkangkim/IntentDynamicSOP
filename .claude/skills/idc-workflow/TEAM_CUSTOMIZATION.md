@@ -31,6 +31,17 @@ Generated Runtime
 Default adoption rule: reuse IDC Core unchanged and describe all team variation
 through `team-config.yaml`.
 
+Execution order is configured at the narrowest owning scope:
+
+- General uses `lane.profiles.fast|lite|complex.orchestration`.
+- D3A uses `domain.d3a.orchestration`; `framework_default` keeps the fixed
+  implementation and `ordered` changes only the atomic middle steps.
+- Custom uses `domain.custom.orchestration`; `workflow_skill` delegates order to
+  the bound Workflow Skill and `ordered` declares the atomic middle steps.
+
+Core still owns Alignment, Contract, Knowledge, authorization, and Completion
+gates. Ordered steps are executable policy, not visualization.
+
 Start by copying:
 
 ```text
@@ -108,6 +119,34 @@ implementation:
 .claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md
 ```
 
+## Design A Team Alignment Flow
+
+`alignment` is an ordered pre-alignment pipeline, not merely a list of Skill
+paths. Teams may rebind a framework step, change its trigger signals, reorder
+the non-gate steps, or add a team-owned step by declaring both its binding and
+its position in the flow:
+
+```yaml
+alignment:
+  bindings:
+    team_tr3_review:
+      skill_ref: team://skills/idc-team-tr3-review/SKILL.md
+  orchestration:
+    mode: ordered
+    steps:
+      - id: alignment-team-tr3-review
+        stage: clarification
+        skill_ids: [team_tr3_review]
+        trigger_signals: [tr3_design_doc]
+```
+
+The complete configured section must still include the framework stages
+`discovery`, `divergence`, `clarification`, and `alignment_check`, cover the
+`raw_idea` and `critical_gaps_remain` signal floor, and leave the Human
+Alignment check as the final approval gate. A TR3 step may use
+`tr3_design_doc` to run for every TR3 input, while `critical_gaps_remain` and
+`docs_clarification_required` retain conditional Grilling behavior.
+
 ## What D3A Teams Fill In Confidentially
 
 Only inside the team configuration, fill real values in exactly one file:
@@ -119,6 +158,7 @@ team-config.yaml
 - Real DT domains and their knowledge refs go to `domain.d3a.dt_domains`
   (non-empty replaces `dt-domains.yaml` wholesale, no merge).
 - Layer knowledge refs go to `knowledge.layer_docs`; the 7 layer names stay fixed.
+- General Lane knowledge refs go to `knowledge.lane_docs.fast/lite/complex`; only the selected Lane is loaded.
 - Skill refs go to `bindings.*`; commands and pass/fail logic remain inside those skills.
 
 The repo registries (`d3a-layers.yaml`, `dt-domains.yaml`), `d3a/module.yaml`,

@@ -303,9 +303,43 @@ if options[:domain] == "custom"
     "execution" => "workflow_skill_ref",
     "completion" => "completion_skill_ref"
   }[options[:phase]]
+  custom_ref_key = nil if options[:phase] == "execution" && selected_domain.dig("orchestration", "mode") == "ordered"
   custom_ref = selected_domain[custom_ref_key] if custom_ref_key
   fail_plan("custom domain is missing #{custom_ref_key}") if custom_ref_key && custom_ref.to_s.empty?
   refs << custom_ref if custom_ref
+end
+
+
+domain_orchestration_resolution = nil
+domain_declared_signals = []
+if options[:phase] == "execution" && %w[d3a custom].include?(options[:domain])
+  orchestration = selected_domain["orchestration"] || {}
+  if orchestration["mode"] == "ordered"
+    steps = Array(orchestration["steps"])
+    domain_declared_signals = steps.flat_map { |step| step.is_a?(Hash) ? Array(step["trigger_signals"]) : [] }.uniq
+    selected_steps = if options[:signals_complete]
+                       steps.select do |step|
+                         required_signals = step.is_a?(Hash) ? Array(step["trigger_signals"]) : []
+                         required_signals.empty? || (required_signals - options[:signals]).empty?
+                       end
+                     else
+                       steps
+                     end
+    capability_refs = Array(effective["available_capabilities"]).each_with_object({}) do |capability, index|
+      index[capability["id"]] = capability["skill_ref"] if capability.is_a?(Hash)
+    end
+    selected_skill_ids = selected_steps.flat_map { |step| step.is_a?(Hash) ? Array(step["skill_ids"]) : [] }.uniq
+    ordered_refs = selected_skill_ids.map { |skill_id| capability_refs[skill_id] }.compact
+    fail_plan("ordered domain orchestration derived no executable skill refs") if selected_steps.any? && ordered_refs.empty?
+    refs.concat(ordered_refs)
+    domain_orchestration_resolution = {
+      "mode" => "ordered",
+      "signal_set" => options[:signals_complete] ? "complete" : "uncertain",
+      "matched_step_ids" => selected_steps.map { |step| step["id"] },
+      "skipped_step_ids" => steps.map { |step| step["id"] } - selected_steps.map { |step| step["id"] },
+      "ordered_skill_ids" => selected_skill_ids
+    }
+  end
 end
 
 # Surface the effective domain's declared required contracts in the planning
@@ -324,7 +358,7 @@ if lane_applicable && options[:lane] && %w[decision planning execution completio
   refs << ".claude/skills/idc-workflow/references/lanes/#{options[:lane]}.yaml"
 end
 
-known_signals = SIGNAL_REFS.keys + (options[:phase] == "decision" ? alignment_declared_signals : [])
+known_signals = SIGNAL_REFS.keys + (options[:phase] == "decision" ? alignment_declared_signals : []) + domain_declared_signals
 unknown_signals = options[:signals] - known_signals.uniq
 fail_plan("unknown signal(s): #{unknown_signals.join(', ')}") if unknown_signals.any?
 options[:signals].each { |signal| refs.concat(Array(SIGNAL_REFS[signal])) }
@@ -376,6 +410,7 @@ context_plan = {
   "lane" => options[:lane],
   "signals" => options[:signals],
   "alignment_resolution" => alignment_resolution,
+  "domain_orchestration_resolution" => domain_orchestration_resolution,
   "required_refs" => refs,
   "selected_capabilities" => selected_capabilities,
   "knowledge_load_plan_ref" => options[:knowledge_plan] && Pathname.new(options[:knowledge_plan]).expand_path.to_s,

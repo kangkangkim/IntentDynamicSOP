@@ -1,6 +1,7 @@
 knowledge_demand:
   execution_unit_ref: d3a-do-unit
   selected_domain: d3a
+  selected_lane: null
   selected_layer: DO
   selected_components: []
   selected_test_domains: [TEAM_DT_A, TEAM_DT_B]

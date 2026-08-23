@@ -40,6 +40,7 @@ errors << "execution_unit_ref is required" unless present?(execution_unit_ref)
 errors << "selected_domain must be general, d3a, or custom" unless %w[general d3a custom].include?(domain)
 
 selected_layer = demand["selected_layer"]
+selected_lane = demand["selected_lane"]
 selected_components = Array(demand["selected_components"])
 selected_test_domains = Array(demand["selected_test_domains"])
 errors << "selected_components must contain unique IDs" unless selected_components.uniq.length == selected_components.length
@@ -51,6 +52,10 @@ if domain == "d3a"
   errors << "D3A knowledge cannot select General components" if selected_components.any?
 elsif domain == "general"
   errors << "General knowledge cannot select a Layer" if present?(selected_layer)
+  lane_docs_configured = (knowledge = effective["knowledge"] || {}).fetch("lane_docs", {}).values.any? { |refs| Array(refs).any? }
+  if lane_docs_configured && !%w[fast lite complex].include?(selected_lane)
+    errors << "selected_lane is required for configured General lane knowledge"
+  end
 elsif domain == "custom"
   errors << "selected_layer is required for Custom Domain knowledge" unless present?(selected_layer)
   errors << "Custom Domain knowledge cannot select General components" if selected_components.any?
@@ -95,6 +100,17 @@ if present?(selected_layer)
 end
 selected_components.each { |id| select_entry.call(catalog["components"], id, "component") }
 selected_test_domains.each { |id| select_entry.call(catalog["test_domains"], id, "test_domain") }
+
+if domain == "general" && %w[fast lite complex].include?(selected_lane)
+  Array((knowledge["lane_docs"] || {})[selected_lane]).each_with_index do |ref, index|
+    selected_entries << {
+      "kind" => "lane",
+      "id" => "#{selected_lane}-#{index + 1}",
+      "ref" => ref,
+      "source" => "knowledge.lane_docs.#{selected_lane}"
+    } if present?(ref)
+  end
+end
 
 {
   "architecture" => ["include_architecture", "architecture_doc_ref"],
@@ -141,6 +157,7 @@ body = {
   "source_sha256" => effective["source_sha256"],
   "execution_unit_ref" => execution_unit_ref,
   "selected_domain" => domain,
+  "selected_lane" => selected_lane,
   "selected_layer" => selected_layer,
   "selected_components" => selected_components,
   "selected_test_domains" => selected_test_domains,

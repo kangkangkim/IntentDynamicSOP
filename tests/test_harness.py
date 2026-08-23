@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import copy
 import re
 import shutil
 import subprocess
@@ -373,8 +374,10 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "domain:",
         "mode: general",
         "dt_domains: []",
+        "mode: framework_default # framework_default | ordered",
         "custom:",
         "workflow_skill_ref: null",
+        "mode: workflow_skill # workflow_skill | ordered",
         "general:",
         "components: []",
         "test_domains: []",
@@ -416,8 +419,18 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "data-d3a-knowledge",
         "addLayerMapping",
         "refreshLayerMappingUI",
+        "Domain owns the execution model",
+        "knowledge.lane_docs.fast",
+        "Progressive knowledge",
         "domain.custom.lane_policy.selected_lane",
         "laneProfileArea",
+        'data-flow-list="d3a"',
+        'data-flow-list="custom"',
+        "data-add-flow-step",
+        "domain.d3a.orchestration.mode",
+        "domain.custom.orchestration.mode",
+        "renderExecutionFlow",
+        "flowRowsData(scope)",
         "lane.\" + lane + \".allow",
         "lane.\" + lane + \".steps",
         "lane.\" + lane + \".max_optional_skills",
@@ -433,7 +446,11 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         'data-maturity="structured_requirement"',
         'data-maturity="tr3_design_doc"',
         'data-maturity="approved_alignment"',
-        "这里配置的是各策略节点使用哪个 Skill，并不是让五个 Skill 每次串行执行",
+        "设计团队 Alignment 流程",
+        "alignmentCustomList",
+        "addAlignmentStep",
+        "tr3_design_doc",
+        'trigger_signals: " + yamlList(row[3])',
     ]:
         assert_true(fragment in team_config_generator, f"team-config generator 缺少 V1 字段或多扩展能力支持：{fragment}")
     for legacy_field in ["skill_base_path", "use_d3a", "fast_skip_steps", "lite_skip_steps", "complex_skip_steps"]:
@@ -2787,27 +2804,30 @@ def test_select_capabilities_rejects_unknown_signal():
         assert_true("status: READY" in good.stdout, "已知信号 demand 必须 status: READY。")
 
 
-def test_lane_profiles_use_ordered_mode():
+def test_lane_profiles_use_supported_orchestration_modes():
     config_file = ROOT / "team-config.yaml"
     if not config_file.exists():
         return
     config = yaml.safe_load(config_file.read_text(encoding="utf-8"))
     profiles = config["lane"]["profiles"]
     for lane in ["fast", "lite", "complex"]:
+        mode = profiles[lane]["orchestration"]["mode"]
         assert_true(
-            profiles[lane]["orchestration"]["mode"] == "ordered",
-            f"{lane} profile 必须使用 ordered orchestration。",
+            mode in {"autonomous", "ordered"},
+            f"{lane} profile 的 orchestration.mode 必须是 autonomous 或 ordered。",
         )
-    lite_stages = {step["stage"] for step in profiles["lite"]["orchestration"]["steps"]}
-    assert_true(
-        {"planning", "implementation", "review", "verification", "fix"} <= lite_stages,
-        "lite steps 必须覆盖 planning/implementation/review/verification/fix 五个 stage。",
-    )
-    complex_stages = {step["stage"] for step in profiles["complex"]["orchestration"]["steps"]}
-    assert_true(
-        {"planning", "implementation", "review", "verification", "fix", "completion"} <= complex_stages,
-        "complex steps 必须覆盖 planning/implementation/review/verification/fix/completion 六个 stage。",
-    )
+    if profiles["lite"]["orchestration"]["mode"] == "ordered":
+        lite_stages = {step["stage"] for step in profiles["lite"]["orchestration"]["steps"]}
+        assert_true(
+            {"planning", "implementation", "review", "verification", "fix"} <= lite_stages,
+            "ordered lite steps 必须覆盖 planning/implementation/review/verification/fix 五个 stage。",
+        )
+    if profiles["complex"]["orchestration"]["mode"] == "ordered":
+        complex_stages = {step["stage"] for step in profiles["complex"]["orchestration"]["steps"]}
+        assert_true(
+            {"planning", "implementation", "review", "verification", "fix", "completion"} <= complex_stages,
+            "ordered complex steps 必须覆盖 planning/implementation/review/verification/fix/completion 六个 stage。",
+        )
 
 
 ALIGNMENT_PIPELINE_STEPS = [
@@ -3061,6 +3081,36 @@ def test_alignment_pipeline_runtime_consumption_is_materialized():
         assert_true(decision_configured.returncode == 0, f"配置化 alignment 的 decision Context Plan 失败：{decision_configured.stdout}{decision_configured.stderr}")
         for skill_ref in ALIGNMENT_SKILL_REFS.values():
             assert_true(skill_ref in decision_configured.stdout, f"decision 阶段意图类 required_refs 必须从 effective alignment 管线推导：{skill_ref}")
+
+        custom_bindings = {
+            **ALIGNMENT_SKILL_REFS,
+            "team_tr3_review": ".claude/skills/idc-gc-sop-adapter/SKILL.md",
+        }
+        custom_steps = list(ALIGNMENT_PIPELINE_STEPS[:-1]) + [
+            ("alignment-team-tr3-review", "clarification", "team_tr3_review", "tr3_design_doc"),
+            ALIGNMENT_PIPELINE_STEPS[-1],
+        ]
+        custom_config = write_alignment_config(
+            temp_dir,
+            "alignment-team-custom.yaml",
+            build_alignment_section(bindings=custom_bindings, steps=custom_steps),
+        )
+        custom_config.write_text(custom_config.read_text(encoding="utf-8").replace("mode: d3a", "mode: general", 1), encoding="utf-8")
+        custom_effective = Path(temp_dir) / "alignment-team-custom-effective.yaml"
+        custom_resolved = run_alignment_resolver(custom_config, custom_effective)
+        assert_true(custom_resolved.returncode == 0, f"团队自定义 Alignment Skill 解析失败：{custom_resolved.stderr}")
+        custom_decision = subprocess.run(
+            [
+                "ruby", str(context_planner), "--effective", str(custom_effective), "--phase", "decision", "--domain", "general",
+                "--signal", "tr3_design_doc", "--signals-complete",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(custom_decision.returncode == 0, f"团队自定义 Alignment Skill 的 signal 路由失败：{custom_decision.stdout}{custom_decision.stderr}")
+        assert_true("alignment-team-tr3-review" in custom_decision.stdout, "TR3 signal 必须命中团队 Alignment step。")
+        assert_true(".claude/skills/idc-gc-sop-adapter/SKILL.md" in custom_decision.stdout, "命中的团队 Alignment Skill 必须进入 decision Context Plan。")
 
         assert_true(has_top_level_alignment(effective_schema), "effective-team-config schema 必须定义物化后的 alignment 管线。")
 
@@ -3594,6 +3644,78 @@ def can_enter_all_layers_green(required_domains, green_domains):
     return set(required_domains) <= set(green_domains)
 
 
+def test_domain_ordered_orchestration_controls_real_selection_order():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+    base = yaml.safe_load((ROOT / "examples/team-config.full-bindings.yaml").read_text(encoding="utf-8"))
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        d3a_config = copy.deepcopy(base)
+        d3a_config["domain"]["d3a"]["orchestration"] = {
+            "mode": "ordered",
+            "steps": [
+                {"id": "design-tests-first", "stage": "dt_design", "skill_ids": ["ut_design"], "trigger_signals": ["tdd_required"]},
+                {"id": "design-dt-second", "stage": "dt_design", "skill_ids": ["dt_design"], "trigger_signals": ["dt_design_required"]},
+            ],
+        }
+        d3a_path = Path(temp_dir) / "d3a-ordered.yaml"
+        d3a_path.write_text(yaml.safe_dump(d3a_config, sort_keys=False, allow_unicode=True), encoding="utf-8")
+        d3a_effective = Path(temp_dir) / "d3a-effective.yaml"
+        d3a_resolved = subprocess.run(["ruby", str(resolver), "--config", str(d3a_path), "--output", str(d3a_effective)], cwd=ROOT, capture_output=True, text=True)
+        assert_true(d3a_resolved.returncode == 0, f"D3A ordered orchestration 解析失败：{d3a_resolved.stderr}")
+        d3a_selection = Path(temp_dir) / "d3a-selection.yaml"
+        d3a_selected = subprocess.run(["ruby", str(selector), "--effective", str(d3a_effective), "--demand", str(ROOT / "examples/capability-demands/d3a.yaml"), "--output", str(d3a_selection)], cwd=ROOT, capture_output=True, text=True)
+        assert_true(d3a_selected.returncode == 0, f"D3A ordered orchestration 执行失败：{d3a_selected.stdout}\n{d3a_selected.stderr}")
+        d3a_result = yaml.safe_load(d3a_selection.read_text(encoding="utf-8"))["capability_selection_result"]
+        assert_true(d3a_result["orchestration"]["matched_step_ids"] == ["design-tests-first", "design-dt-second"], "D3A 必须按 team-config 声明顺序命中步骤。")
+        assert_true([item["capability_id"] for item in d3a_result["selected"]][:2] == ["ut_design", "dt_design"], "D3A selected.execution_order 必须反映卡片顺序。")
+
+        custom_config = copy.deepcopy(base)
+        custom_config["domain"]["enabled"] = ["custom"]
+        custom_config["domain"]["mode"] = "custom"
+        custom_config["domain"]["custom"] = {
+            "id": "payments",
+            "trigger_rules": ["payment_change"],
+            "lane_policy": {"mode": "not_applicable", "selected_lane": None},
+            "coding_layers": [{"id": "PAYMENT_API", "knowledge_ref": "docs/architecture.md"}],
+            "test_domains": [{"id": "PAYMENT_TEST", "knowledge_ref": "docs/atomic-skills.md"}],
+            "required_contracts": ["task_contract", "verification_contract"],
+            "workflow_skill_ref": ".claude/skills/idc-general-coding/SKILL.md",
+            "planner_skill_ref": ".claude/skills/idc-general-coding/SKILL.md",
+            "completion_skill_ref": ".claude/skills/idc-general-coding/SKILL.md",
+            "orchestration": {
+                "mode": "ordered",
+                "steps": [
+                    {"id": "team-implementation", "stage": "implementation", "skill_ids": ["coding_standard"], "trigger_signals": ["production_code_change"]},
+                ],
+            },
+        }
+        custom_path = Path(temp_dir) / "custom-ordered.yaml"
+        custom_path.write_text(yaml.safe_dump(custom_config, sort_keys=False, allow_unicode=True), encoding="utf-8")
+        custom_effective = Path(temp_dir) / "custom-effective.yaml"
+        custom_resolved = subprocess.run(["ruby", str(resolver), "--config", str(custom_path), "--output", str(custom_effective)], cwd=ROOT, capture_output=True, text=True)
+        assert_true(custom_resolved.returncode == 0, f"Custom ordered orchestration 解析失败：{custom_resolved.stderr}")
+        custom_demand = Path(temp_dir) / "custom-demand.yaml"
+        custom_demand.write_text("""capability_demand:
+  execution_unit_ref: payment-unit
+  selected_stage: implementation
+  selected_domain: payments
+  lane_applicability: not_applicable
+  selected_lane: null
+  execution_profile: payments_workflow
+  required_capability_keys: [coding_standard]
+  optional_capability_keys: []
+  observed_signals: [production_code_change]
+  contract_refs: [task_contract, verification_contract]
+""", encoding="utf-8")
+        custom_selection = Path(temp_dir) / "custom-selection.yaml"
+        custom_selected = subprocess.run(["ruby", str(selector), "--effective", str(custom_effective), "--demand", str(custom_demand), "--output", str(custom_selection)], cwd=ROOT, capture_output=True, text=True)
+        assert_true(custom_selected.returncode == 0, f"Custom ordered orchestration 执行失败：{custom_selected.stdout}\n{custom_selected.stderr}")
+        custom_result = yaml.safe_load(custom_selection.read_text(encoding="utf-8"))["capability_selection_result"]
+        assert_true(custom_result["orchestration"]["matched_step_ids"] == ["team-implementation"], "Custom ordered step 必须被真实 Selector 消费。")
+        assert_true([item["capability_id"] for item in custom_result["selected"]] == ["coding_standard"], "Custom ordered 模式不得并行回落 workflow Skill 的内部顺序。")
+
+
 def test_d3a_and_general_lane_runtime_matrix_execute():
     resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
     selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
@@ -3695,6 +3817,10 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
             else:
                 assert_true(f"references/lanes/{expected['lane']}.yaml" in "\n".join(phase_outputs.values()), f"{scenario} 必须加载自己的 Lane policy。")
                 assert_true("idc-d3a-coding/SKILL.md" not in execution_output, f"{scenario} General 路径不得加载 D3A execution Skill。")
+                assert_true("kind: lane" in knowledge_text and f"source: knowledge.lane_docs.{expected['lane']}" in knowledge_text, f"{scenario} 必须只加载所选 Lane 的团队知识。")
+                other_lanes = {"fast", "lite", "complex"} - {expected["lane"]}
+                for other_lane in other_lanes:
+                    assert_true(f"source: knowledge.lane_docs.{other_lane}" not in knowledge_text, f"{scenario} 不得加载 {other_lane} Lane 知识。")
 
             authorization = Path(temp_dir) / f"{scenario}-authorization.yaml"
             lane_value = expected["lane"] if expected["lane"] else "null"
@@ -4103,6 +4229,7 @@ def run():
         test_tdd_extensions_are_team_config_driven,
         test_registries_are_team_config_overridable,
         test_team_config_resolver_and_lane_capability_selection_execute,
+        test_domain_ordered_orchestration_controls_real_selection_order,
         test_d3a_and_general_lane_runtime_matrix_execute,
         test_d3a_team_dt_domain_override_takes_effect,
         test_official_entry_regenerates_effective_config_after_team_config_swap,
@@ -4116,7 +4243,7 @@ def run():
         test_missing_lane_falls_back_to_lane_default,
         test_domain_mode_requires_registered_builtin_module,
         test_domain_mode_general_with_d3a_unplugged_stays_ready,
-        test_lane_profiles_use_ordered_mode,
+        test_lane_profiles_use_supported_orchestration_modes,
         test_alignment_pipeline_config_shape_mirrors_lane_profiles,
         test_alignment_pipeline_framework_invariants_are_enforced,
         test_alignment_pipeline_runtime_consumption_is_materialized,

@@ -14,6 +14,12 @@ Planner
   -> Verification / Completion
 ```
 
+`.idc/effective-team-config.yaml` 中的 `domain.orchestration` 可以调整这条
+骨架内部原子 Skills 的运行顺序。`mode: framework_default` 使用下文固定实现；
+`mode: ordered` 时按 `steps` 顺序执行，并按每步 `trigger_signals` 过滤。
+这不是重新设计 D3A 主流程：Planner、Knowledge Preparation、Layer/TDD 边界、
+DT/Tran evidence 与 Completion Gate 仍不可删除或转交给团队 Skill。
+
 区别不在于是否经过 Planner、Knowledge 或 TDD，而在于这些阶段读取什么约束：
 
 - General Coding 由 Lane 和通用 component / test-domain registry 调节执行强度。
@@ -83,7 +89,7 @@ DT Domain。
 
 ## 主流程
 
-主流程顺序固定：
+主流程阶段顺序固定；阶段内部的原子 Skill 顺序可由上述 ordered 配置调整：
 
 ```text
 用户任务

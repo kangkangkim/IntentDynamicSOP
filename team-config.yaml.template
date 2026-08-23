@@ -24,6 +24,12 @@ domain:
     # Non-empty replaces registries/dt-domains.yaml wholesale; never merge.
     # Entries: {id: <DT_ID>, knowledge_ref: <ENTERPRISE_DT_KNOWLEDGE_REF>}
     dt_domains: []
+    # framework_default keeps the enterprise-defined D3A sequence. ordered
+    # replaces only the middle execution steps; Planner, Knowledge Gate, and
+    # DT/Tran Completion Gate remain framework-owned.
+    orchestration:
+      mode: framework_default # framework_default | ordered
+      steps: []
 
   custom:
     id: null
@@ -40,6 +46,11 @@ domain:
     workflow_skill_ref: null
     planner_skill_ref: null
     completion_skill_ref: null
+    # workflow_skill delegates the middle execution sequence to the bound
+    # workflow Skill. ordered executes the declared atomic Skill steps instead.
+    orchestration:
+      mode: workflow_skill # workflow_skill | ordered
+      steps: []
 
 general:
   # Non-empty lists replace repo registries wholesale; never merge.
@@ -118,6 +129,11 @@ knowledge:
   architecture_doc_ref: null
   feature_docs_root_ref: null
   layer_docs: {}
+  # General-only progressive knowledge. Each selected Lane loads only its refs.
+  lane_docs:
+    fast: []
+    lite: []
+    complex: []
   verification_mapping_ref: null
   repo_context:
     provider_skill_ref: null

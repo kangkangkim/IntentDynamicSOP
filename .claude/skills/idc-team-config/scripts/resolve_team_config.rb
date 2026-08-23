@@ -110,6 +110,39 @@ def validate_registry(entries, path, errors)
   end
 end
 
+def normalized_domain_orchestration(value, path, default_mode, allowed_modes, errors)
+  return { "mode" => default_mode, "steps" => [] } if value.nil?
+  unless value.is_a?(Hash)
+    errors << "#{path} must be a mapping"
+    return { "mode" => default_mode, "steps" => [] }
+  end
+
+  mode = value["mode"] || default_mode
+  errors << "#{path}.mode must be #{allowed_modes.join(' or ')}" unless allowed_modes.include?(mode)
+  steps = value["steps"]
+  unless steps.is_a?(Array)
+    errors << "#{path}.steps must be a list"
+    steps = []
+  end
+  errors << "#{path}.steps must not be empty in ordered mode" if mode == "ordered" && steps.empty?
+  step_ids = []
+  steps.each_with_index do |step, index|
+    step_path = "#{path}.steps[#{index}]"
+    unless step.is_a?(Hash)
+      errors << "#{step_path} must be a mapping"
+      next
+    end
+    errors << "#{step_path}.id is required" unless present?(step["id"])
+    errors << "#{step_path}.id is duplicated" if present?(step["id"]) && step_ids.include?(step["id"])
+    step_ids << step["id"] if present?(step["id"])
+    errors << "#{step_path}.stage is required" unless present?(step["stage"])
+    errors << "#{step_path}.skill_ids must not be empty" unless present?(step["skill_ids"])
+    errors << "#{step_path}.skill_ids must be a list" unless step["skill_ids"].is_a?(Array)
+    errors << "#{step_path}.trigger_signals must be a list" unless step["trigger_signals"].is_a?(Array)
+  end
+  { "mode" => mode, "steps" => steps }
+end
+
 def load_builtin_knowledge_registry(harness_root, relative_path, root_key, errors)
   path = harness_root.join(relative_path)
   unless path.file?
@@ -198,10 +231,24 @@ if enabled_builtin_modes.any?
 end
 
 validate_registry(value_at(config, "domain", "d3a", "dt_domains") || [], "domain.d3a.dt_domains", errors)
+d3a_orchestration = normalized_domain_orchestration(
+  value_at(config, "domain", "d3a", "orchestration"),
+  "domain.d3a.orchestration",
+  "framework_default",
+  %w[framework_default ordered],
+  errors
+)
 validate_registry(value_at(config, "general", "components") || [], "general.components", errors)
 validate_registry(value_at(config, "general", "test_domains") || [], "general.test_domains", errors)
 
 custom = value_at(config, "domain", "custom") || {}
+custom_orchestration = normalized_domain_orchestration(
+  custom["orchestration"],
+  "domain.custom.orchestration",
+  "workflow_skill",
+  %w[workflow_skill ordered],
+  errors
+)
 if enabled_modes.include?("custom")
   errors << "domain.custom.id is required" unless present?(custom["id"])
   reserved_domain_keywords = %w[d3a general custom]
@@ -594,6 +641,27 @@ if knowledge.is_a?(Hash)
       knowledge_refs << ["knowledge.layer_docs.#{layer}", knowledge["layer_docs"], layer] if present?(ref)
     end
   end
+  lane_docs = knowledge["lane_docs"]
+  if lane_docs.nil?
+    knowledge["lane_docs"] = { "fast" => [], "lite" => [], "complex" => [] }
+  elsif !lane_docs.is_a?(Hash)
+    errors << "knowledge.lane_docs must be a mapping"
+  else
+    unknown_lanes = lane_docs.keys - %w[fast lite complex]
+    errors << "knowledge.lane_docs contains unknown lanes: #{unknown_lanes.join(', ')}" if unknown_lanes.any?
+    %w[fast lite complex].each do |lane_id|
+      refs = lane_docs[lane_id]
+      if refs.nil?
+        lane_docs[lane_id] = []
+      elsif !refs.is_a?(Array)
+        errors << "knowledge.lane_docs.#{lane_id} must be a list"
+      else
+        refs.each_with_index do |ref, index|
+          knowledge_refs << ["knowledge.lane_docs.#{lane_id}[#{index}]", refs, index] if present?(ref)
+        end
+      end
+    end
+  end
   if repo_context.is_a?(Hash) && present?(repo_context["policy_ref"])
     knowledge_refs << ["knowledge.repo_context.policy_ref", repo_context, "policy_ref"]
   end
@@ -693,6 +761,7 @@ build_effective_domain = lambda do |domain_mode|
       "source" => "builtin",
       "lane_applicability" => "not_applicable",
       "execution_profile" => "d3a_fixed_workflow",
+      "orchestration" => d3a_orchestration,
       "coding_layers_source" => "registries/d3a-layers.yaml",
       "test_domains_source" => d3a_overrides.empty? ? "registries/dt-domains.yaml" : "team-config.yaml",
       "coding_layers" => builtin_d3a_layers,
@@ -718,7 +787,8 @@ build_effective_domain = lambda do |domain_mode|
       "required_contracts" => custom["required_contracts"],
       "workflow_skill_ref" => custom["workflow_skill_ref"],
       "planner_skill_ref" => custom["planner_skill_ref"],
-      "completion_skill_ref" => custom["completion_skill_ref"]
+      "completion_skill_ref" => custom["completion_skill_ref"],
+      "orchestration" => custom_orchestration
     }
   else
     {}
@@ -840,6 +910,23 @@ capability_by_id = available_capabilities.each_with_object({}) { |capability, in
       next unless capability
       unless Array(capability["allowed_stages"]).include?(step["stage"])
         errors << "lane.profiles.#{lane_id}.orchestration.steps[#{index}] uses #{skill_id} outside its allowed stage #{step['stage']}"
+      end
+    end
+  end
+end
+
+{ "d3a" => d3a_orchestration, "custom" => custom_orchestration }.each do |domain_id, orchestration|
+  next unless orchestration.is_a?(Hash) && orchestration["mode"] == "ordered"
+  Array(orchestration["steps"]).each_with_index do |step, index|
+    next unless step.is_a?(Hash)
+    Array(step["skill_ids"]).each do |skill_id|
+      capability = capability_by_id[skill_id]
+      if capability.nil?
+        errors << "domain.#{domain_id}.orchestration.steps[#{index}] references unavailable skill ID: #{skill_id}"
+        next
+      end
+      if present?(step["stage"]) && !Array(capability["allowed_stages"]).include?(step["stage"])
+        errors << "domain.#{domain_id}.orchestration.steps[#{index}] uses #{skill_id} outside its allowed stage #{step['stage']}"
       end
     end
   end

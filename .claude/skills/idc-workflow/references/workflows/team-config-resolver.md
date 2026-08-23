@@ -72,6 +72,11 @@ references, ordered orchestration without steps, and steps that place a Skill in
 an unsupported stage. The validated profile is copied into effective config and
 is consumed directly by Capability Selector; it is never treated as a comment.
 
+`domain.d3a.orchestration` and `domain.custom.orchestration` use the same step
+contract. Ordered Domain steps must resolve to available, stage-compatible
+capability IDs and are materialized into the selected Domain module. Missing
+configuration keeps `framework_default` for D3A and `workflow_skill` for Custom.
+
 ## Knowledge materialization
 
 Every configured knowledge field has one consumer:
@@ -81,6 +86,7 @@ Every configured knowledge field has one consumer:
 | `architecture_doc_ref` | Planner and Knowledge Gate |
 | `feature_docs_root_ref` | Discovery and Knowledge Gate |
 | `layer_docs` | Layer/Component Context Packet builder |
+| `lane_docs.<lane>` | General Knowledge Planner for the selected Lane only |
 | `verification_mapping_ref` | Planner and Verification Mapping Gate |
 | `repo_context.provider_skill_ref` | Repo Context Provider |
 | `repo_context.policy_ref` | Provider Selection Matrix overlay |

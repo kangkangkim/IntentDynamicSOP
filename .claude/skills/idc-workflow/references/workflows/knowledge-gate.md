@@ -52,7 +52,8 @@ workflows/provider-selection-matrix.md
 知识条目从 `.idc/effective-team-config.yaml` 读取。Planner / Knowledge Gate 使用
 `knowledge.architecture_doc_ref`、`knowledge.feature_docs_root_ref` 和
 `knowledge.verification_mapping_ref`；Context Packet builder 使用
-`knowledge.layer_docs`。DT、General 或 Custom registry 的 `knowledge_ref` 来自
+`knowledge.layer_docs`。General execution unit 还会按 `selected_lane` 只加载
+`knowledge.lane_docs.<lane>`；其他 Lane 的知识禁止进入本次计划。DT、General 或 Custom registry 的 `knowledge_ref` 来自
 Resolver 选定的单一有效来源，禁止把默认与团队覆盖混合。
 
 Repo Context Provider 使用 `knowledge.repo_context.provider_skill_ref`；Provider
@@ -60,7 +61,7 @@ Selection Matrix 读取 `knowledge.repo_context.policy_ref`。缺少已配置消
 `NEEDS_TEAM_CONFIG`，不得静默忽略字段。
 
 Knowledge Load Plan 必须绑定一个 `execution_unit_ref`。D3A 选择一个 Layer 和
-本单元 required DT Domains；General 选择本单元 component/test domains；Custom
+本单元 required DT Domains；General 选择当前 Lane refs 和本单元 component/test domains；Custom
 Domain 选择一个 coding layer 和 test domains。未知 ID 或缺少 required ref 返回
 `NEEDS_KNOWLEDGE_MAPPING`。
 

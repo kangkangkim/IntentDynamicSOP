@@ -190,6 +190,7 @@
     .skill-add-bar select { width: 100%; }
     .extension-list { display: grid; gap: 8px; margin-top: 10px; }
     .extension-item { display: grid; grid-template-columns: minmax(120px, .8fr) minmax(180px, 1.5fr) minmax(130px, 1fr) minmax(110px, .8fr) auto; gap: 8px; align-items: end; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .extension-item.alignment-extension { grid-template-columns: minmax(110px, .8fr) minmax(190px, 1.4fr) minmax(120px, .8fr) minmax(160px, 1.2fr) minmax(130px, .9fr) auto; }
     .extension-item label { display: grid; gap: 4px; min-width: 0; font-size: 11px; color: var(--muted); }
     .extension-item input { width: 100%; min-width: 0; }
     .empty-capabilities { padding: 14px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); text-align: center; font-size: 12.5px; }
@@ -284,6 +285,8 @@
       grid-template-columns: 210px minmax(0, 1fr) 430px;
       margin-top: 20px;
     }
+    .layout.focus-mode { grid-template-columns: 210px minmax(0, 1fr); }
+    .layout.focus-mode aside { display: none; }
 
     .wizard-nav {
       position: sticky;
@@ -385,6 +388,13 @@
     .question-block:first-child { padding-top: 0; }
     .question-block h3 { margin-bottom: 4px; font-size: 14px; }
     .question-block > p { margin-bottom: 10px; }
+    .principle-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0 18px; }
+    .principle-item { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .principle-item strong { display: block; margin-bottom: 5px; font-size: 13px; }
+    .principle-item span { display: block; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .domain-model { margin: 10px 0; padding: 12px; border-left: 3px solid var(--blue); background: var(--blue-soft); }
+    .domain-model strong { display: block; margin-bottom: 4px; font-size: 13px; }
+    .domain-model span { display: block; color: var(--muted); font-size: 12px; line-height: 1.55; }
     .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 
     .segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--panel); }
@@ -421,7 +431,7 @@
     .alignment-order { display: grid; gap: 6px; margin: 10px 0; }
     .alignment-row {
       display: grid;
-      grid-template-columns: 28px minmax(0, 1fr) auto;
+      grid-template-columns: 28px minmax(140px, .8fr) minmax(180px, 1.2fr) auto;
       gap: 9px;
       align-items: center;
       padding: 9px 10px;
@@ -431,9 +441,32 @@
     }
     .alignment-row strong { display: block; font-size: 12.5px; }
     .alignment-row span { color: var(--muted); font-size: 11px; }
+    .alignment-trigger { display: grid; gap: 3px; color: var(--muted); font-size: 10.5px; }
+    .alignment-trigger input { width: 100%; min-width: 0; padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; }
     .order-actions { display: flex; gap: 3px; }
     .icon-btn { width: 28px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 5px; background: #fff; cursor: pointer; }
     .icon-btn:disabled { cursor: default; opacity: 0.35; }
+
+    .execution-board { display: grid; gap: 14px; }
+    .execution-frame { border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
+    .execution-frame > summary, .execution-frame-head { padding: 13px 14px; background: #f7f9fb; border-bottom: 1px solid var(--line); }
+    .execution-frame > summary { cursor: pointer; font-weight: 800; font-size: 13px; }
+    .execution-frame-body { padding: 14px; }
+    .execution-frame-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .execution-frame-head strong { display: block; font-size: 13px; }
+    .execution-frame-head span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .flow-envelope { display: flex; align-items: stretch; gap: 8px; margin: 12px 0; overflow-x: auto; }
+    .flow-boundary { display: grid; min-width: 120px; place-content: center; padding: 10px; border: 1px dashed var(--teal); border-radius: 6px; color: var(--teal); background: var(--teal-soft); text-align: center; font-size: 11px; font-weight: 700; }
+    .flow-step-list { display: grid; flex: 1; min-width: 0; gap: 7px; }
+    .flow-step-card { display: grid; grid-template-columns: 28px minmax(110px,.8fr) minmax(110px,.75fr) minmax(160px,1.2fr) minmax(150px,1fr) auto; gap: 7px; align-items: end; padding: 9px; border: 1px solid var(--line); border-left: 3px solid var(--teal); border-radius: 6px; background: var(--panel); }
+    .flow-step-card label { display: grid; gap: 3px; min-width: 0; color: var(--muted); font-size: 10.5px; }
+    .flow-step-card input, .flow-step-card select { width: 100%; min-width: 0; padding: 6px 7px; border: 1px solid var(--line); border-radius: 5px; font-size: 11.5px; }
+    .flow-step-card .step-number { align-self: center; }
+    .flow-step-actions { display: flex; gap: 3px; align-self: center; }
+    .flow-empty { padding: 16px; border: 1px dashed var(--line); border-radius: 6px; color: var(--muted); text-align: center; font-size: 12px; }
+    .flow-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .flow-toolbar .field { flex: 0 1 360px; margin: 0; }
+    .flow-mode-note { padding: 11px; border-left: 3px solid var(--teal); background: var(--teal-soft); color: var(--muted); font-size: 12px; }
 
     .wizard-actions {
       display: flex;
@@ -488,6 +521,7 @@
       .head-actions { align-items: flex-end; flex-direction: column; }
       .progress-copy { min-width: 130px; }
       .layout { grid-template-columns: 1fr; }
+      .layout.focus-mode { grid-template-columns: 1fr; }
       .wizard-nav { position: static; display: flex; overflow-x: auto; padding-bottom: 6px; }
       .step-nav { min-width: 132px; border-left: 0; border-bottom: 2px solid transparent; }
       .step-nav.active { border-bottom-color: var(--teal); }
@@ -505,10 +539,15 @@
       .progress-copy { margin-top: 12px; text-align: left; }
       .binding-item { grid-template-columns: 1fr; }
       .skill-add-bar, .extension-item { grid-template-columns: 1fr; }
+      .principle-grid { grid-template-columns: 1fr; }
       .row, .row.wide { grid-template-columns: 1fr auto; }
       .row input:nth-child(2), .row select:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
       .alignment-row { grid-template-columns: 24px minmax(0, 1fr); }
-      .order-actions { grid-column: 2; }
+      .alignment-trigger, .order-actions { grid-column: 2; }
+      .flow-step-card { grid-template-columns: 24px 1fr; }
+      .flow-step-card label, .flow-step-actions { grid-column: 2; }
+      .flow-envelope { display: grid; }
+      .flow-boundary { min-width: 0; }
       aside { position: static; }
     }
   </style>
@@ -519,7 +558,7 @@
       <div>
         <div class="eyebrow">IDC HARNESS SETUP</div>
         <h1>把团队工作方式接入 IDC harness</h1>
-        <p class="subtitle">回答几个关于团队、场景和能力的问题。系统会把选择翻译成 <code>team-config.yaml</code>，不需要先理解全部字段。</p>
+        <p class="subtitle">先理解设计原则，再交互式决定 Alignment、Domain、执行编排和知识策略。最终自动生成可运行的 <code>team-config.yaml</code>。</p>
       </div>
       <div class="head-actions">
         <button class="btn" id="importBtn" type="button">导入 YAML</button>
@@ -532,26 +571,38 @@
       </div>
     </header>
 
-    <div class="layout">
+    <div class="layout focus-mode" id="workspaceLayout">
       <nav class="wizard-nav" aria-label="配置步骤" id="wizardNav">
-        <button class="step-nav active" type="button" data-go="0"><span class="step-number">1</span><span><span class="step-label">团队与场景</span><span class="step-meta">从业务问题开始</span></span></button>
-        <button class="step-nav" type="button" data-go="1"><span class="step-number">2</span><span><span class="step-label">领域细节</span><span class="step-meta">只显示相关字段</span></span></button>
-        <button class="step-nav" type="button" data-go="2"><span class="step-number">3</span><span><span class="step-label">Alignment</span><span class="step-meta">需求如何变清楚</span></span></button>
-        <button class="step-nav" type="button" data-go="3"><span class="step-number">4</span><span><span class="step-label">团队能力</span><span class="step-meta">绑定已有 Skills</span></span></button>
-        <button class="step-nav" type="button" data-go="4"><span class="step-number">5</span><span><span class="step-label">执行策略</span><span class="step-meta">Lane 与编排</span></span></button>
-        <button class="step-nav" type="button" data-go="5"><span class="step-number">6</span><span><span class="step-label">知识入口</span><span class="step-meta">只保存索引</span></span></button>
-        <button class="step-nav" type="button" data-go="6"><span class="step-number">7</span><span><span class="step-label">检查与生成</span><span class="step-meta">确认后下载</span></span></button>
+        <button class="step-nav active" type="button" data-go="0"><span class="step-number">1</span><span><span class="step-label">设计原则</span><span class="step-meta">先理解 Harness</span></span></button>
+        <button class="step-nav" type="button" data-go="1"><span class="step-number">2</span><span><span class="step-label">Alignment</span><span class="step-meta">需求如何变清楚</span></span></button>
+        <button class="step-nav" type="button" data-go="2"><span class="step-number">3</span><span><span class="step-label">Domain</span><span class="step-meta">选择开发场景</span></span></button>
+        <button class="step-nav" type="button" data-go="3"><span class="step-number">4</span><span><span class="step-label">Domain 策略</span><span class="step-meta">固定还是动态</span></span></button>
+        <button class="step-nav" type="button" data-go="4"><span class="step-number">5</span><span><span class="step-label">执行编排</span><span class="step-meta">Skills、Lane 与顺序</span></span></button>
+        <button class="step-nav" type="button" data-go="5"><span class="step-number">6</span><span><span class="step-label">知识设计</span><span class="step-meta">跟随执行单元</span></span></button>
+        <button class="step-nav" type="button" data-go="6"><span class="step-number">7</span><span><span class="step-label">策略预览</span><span class="step-meta">确认后生成</span></span></button>
       </nav>
 
       <section class="wizard-main" aria-label="config form">
         <div class="guide-copy">
-          <h2 id="guideTitle">先认识你的团队</h2>
-          <p id="guideText">填写团队标识、代码仓位置，并勾选团队支持的全部开发场景。后续问题会根据组合自动变化。</p>
+          <h2 id="guideTitle">先理解 IDC Harness 如何工作</h2>
+          <p id="guideText">先建立共同设计语言，再配置团队策略。这里不是字段生成器，而是把团队工作方式翻译成可执行契约。</p>
         </div>
 
         <details class="wizard-step active" data-step="0" open>
-          <summary>1 团队身份与代码仓 <code>team:</code></summary>
+          <summary>1 IDC Harness 的设计原则</summary>
           <div class="body">
+            <div class="question-block">
+              <h3>先理解框架，再设计团队流程</h3>
+              <p>IDC Harness 不替团队规定唯一 SOP。它稳定核心 Gate，把可变化的策略交给团队配置。</p>
+              <div class="principle-grid">
+                <div class="principle-item"><strong>Intent first</strong><span>先根据输入成熟度完成 Human Alignment，再进入 Domain 和实现；Domain 不能绕过用户批准。</span></div>
+                <div class="principle-item"><strong>Domain owns the execution model</strong><span>General 使用动态 Lane，D3A 使用固定范式，Custom 由团队声明 fixed、dynamic 或不使用 Lane。</span></div>
+                <div class="principle-item"><strong>Skills are capabilities</strong><span>注册 Skill 只代表能力可用；是否执行、执行顺序和触发条件由 Domain、Lane 与编排策略决定。</span></div>
+                <div class="principle-item"><strong>Knowledge follows execution</strong><span>知识不一次性灌入上下文。D3A 按 Layer、General 按 Lane、Custom 按团队执行单元渐进加载。</span></div>
+                <div class="principle-item"><strong>Evidence closes the loop</strong><span>代码完成不等于流程完成；只有验证证据和 Completion Gate 均通过后才进入 DONE。</span></div>
+                <div class="principle-item"><strong>One team-owned entry</strong><span>团队只维护 <code>team-config.yaml</code>；Harness Core、企业 Skills 和知识正文各自保持独立。</span></div>
+              </div>
+            </div>
             <div class="question-block">
               <h3>这份配置属于谁？</h3>
               <p>团队 ID 会进入运行记录；代码仓路径用于解析所有 <code>team://</code> 地址。</p>
@@ -567,6 +618,12 @@
                 </div>
               </div>
             </div>
+          </div>
+        </details>
+
+        <details class="wizard-step" data-step="2">
+          <summary>3 选择团队支持的 Domain</summary>
+          <div class="body">
             <div class="question-block">
               <h3>团队主要面对哪类开发任务？</h3>
               <p>可以多选。这描述团队具备哪些开发能力；每次任务仍由 Scenario Router 只选择一个最匹配的 Domain。</p>
@@ -585,17 +642,14 @@
           </div>
         </details>
 
-        <details class="wizard-step" data-step="1">
-          <summary>2 领域注册表 <code>domain: / general:</code>（非空整体替换，不合并）</summary>
+        <details class="wizard-step" data-step="3">
+          <summary>4 根据 Domain 设计执行模型</summary>
           <div class="body">
             <div class="conditional" data-domain-section="d3a">
               <div class="question-block">
-                <h3>企业 DT Domain 是否已经有正式索引？</h3>
-                <p>还没有时可以留空，先使用公开 placeholder 跑通最小 vertical slice；填写任意一项后会整体替换默认列表。</p>
-              <label>DT Domain 列表 <code>domain.d3a.dt_domains</code>（条目：id + knowledge_ref）</label>
-              <div class="rows" id="dtlist"></div>
-              <button class="btn addrow" data-list="dtlist" type="button">+ 添加 DT Domain</button>
-              <p class="hint">留空 = 沿用仓库默认 placeholder（TPRINT / FW / DPF）；填任意条则整表替换。</p>
+                <h3>D3A 使用 Harness 固定范式</h3>
+                <p>选择 D3A 后不再判断 fast、lite、complex。Planner 按 DT 准备知识，拆分到固定 Layer，再通过 TDD、DT build 与 tran build 完成闭环。</p>
+                <div class="domain-model"><strong>Fixed workflow · 不使用 Lane</strong><span>Planner → DT knowledge → Layer execution units → TDD → DT GREEN → tran build PASS → Completion Gate</span></div>
               </div>
             </div>
 
@@ -615,27 +669,20 @@
                   <div class="field"><label>Completion Skill</label><input type="text" data-path="domain.custom.completion_skill_ref" placeholder="team://skills/idc-payments-completion/SKILL.md" /></div>
                 </div>
               </div>
-              <div class="question-block" id="customRegistry">
-                <h3>这个 Domain 如何拆分代码与测试？</h3>
-                <p>至少各登记一个 Coding Layer 和 Test Domain。知识正文留在团队仓，只在这里保存索引。</p>
-                <div class="field"><label>Custom Coding Layers</label><div class="rows" id="customlayers"></div><button class="btn addrow" data-list="customlayers" data-kind="comp" type="button">+ 添加 Layer</button></div>
-                <div class="field"><label>Custom Test Domains</label><div class="rows" id="customtests"></div><button class="btn addrow" data-list="customtests" data-kind="td" type="button">+ 添加 Test Domain</button></div>
-              </div>
             </div>
 
             <div class="conditional" data-domain-section="general">
               <div class="question-block">
-                <h3>是否需要覆盖框架对代码仓的组件认知？</h3>
-                <p>大多数团队可以留空。只有已有稳定组件或测试域索引时再填写，非空列表会整体替换默认来源。</p>
-                <div class="field"><label>组件列表</label><div class="rows" id="complist"></div><button class="btn addrow" data-list="complist" type="button">+ 添加组件</button></div>
-                <div class="field"><label>测试域列表</label><div class="rows" id="tdlist"></div><button class="btn addrow" data-list="tdlist" type="button">+ 添加测试域</button></div>
+                <h3>General 根据任务风险动态选择 Lane</h3>
+                <p>General 的执行模型由 Harness 固定为 dynamic。下一步再决定每条 Lane 可以使用哪些 Skills，以及采用 autonomous 还是 ordered。</p>
+                <div class="domain-model"><strong>Dynamic workflow · fast / lite / complex</strong><span>Lane Resolver 依据范围、风险、测试需求与架构影响选择 Lane；团队配置每条 Lane 的能力边界和顺序。</span></div>
               </div>
             </div>
           </div>
         </details>
 
-        <details class="wizard-step" data-step="2">
-          <summary>3 Human Alignment</summary>
+        <details class="wizard-step" data-step="1">
+          <summary>2 Human Alignment 策略</summary>
           <div class="body">
             <div class="question-block">
               <h3>不同成熟度的输入，会走不同的 Alignment 路径</h3>
@@ -651,7 +698,7 @@
                 </div>
                 <div class="maturity-row" data-maturity="tr3_design_doc">
                   <div class="maturity-kind"><strong>TR3 design doc</strong><span>已有设计、DT、验收或影响范围</span></div>
-                  <div class="maturity-route">TR3 Adapter → Grilling / Grill With Docs（按缺口触发）→ <b>Alignment Check</b><span>TR3 减少澄清成本，但不能替代用户批准，也不是完成证据。</span></div>
+                  <div class="maturity-route">TR3 Adapter → Grilling（<code>critical_gaps_remain</code>）→ Grill With Docs（<code>docs_clarification_required</code>）→ <b>Alignment Check</b><span>默认按缺口触发；团队可加入 <code>tr3_design_doc</code> signal，让 TR3 强制经过某一步。</span></div>
                 </div>
                 <div class="maturity-row" data-maturity="approved_alignment">
                   <div class="maturity-kind"><strong>Approved alignment</strong><span>已有仍然有效的 approval 或 checkpoint</span></div>
@@ -660,19 +707,19 @@
               </div>
             </div>
             <div class="question-block">
-              <h3>需求从模糊到可批准，沿用框架默认过程吗？</h3>
-              <p>这里配置的是各策略节点使用哪个 Skill，并不是让五个 Skill 每次串行执行。多数团队只需要沿用默认绑定。</p>
+              <h3>使用默认 Alignment，还是设计团队自己的对齐流程？</h3>
+              <p>默认策略按运行时 signal 选择最小必要步骤。团队流程可以调整每一步的 Skill、顺序和触发 signals，也可以插入新的对齐步骤。</p>
               <div class="segmented" id="alignmentModeSegments">
-                <button class="segment active" type="button" data-alignment-mode="default">沿用默认链</button>
-                <button class="segment" type="button" data-alignment-mode="custom">接入团队 Skills</button>
+                <button class="segment active" type="button" data-alignment-mode="default">使用 Harness 默认策略</button>
+                <button class="segment" type="button" data-alignment-mode="custom">设计团队 Alignment 流程</button>
               </div>
               <select class="sr-only" data-path="alignment.mode" aria-label="Alignment 配置模式"><option value="default">default</option><option value="custom">custom</option></select>
             </div>
 
             <div class="conditional" id="customAlignment">
               <div class="question-block">
-                <h3>把每种意图处理能力绑定到团队 Skill</h3>
-                <p>某项留空时使用 IDC 内置 Skill。这里改变的是能力实现，不改变 Core 对路由、批准和完成 Gate 的所有权。</p>
+                <h3>1. 核心步骤由哪个 Skill 实现？</h3>
+                <p>留空使用 Harness 内置实现。替换 Skill 不会改变触发策略；触发条件在下一部分调整。</p>
                 <div class="field-grid">
                   <div class="field"><label>Discovery Skill</label><input type="text" data-path="alignment.intent_discovery" placeholder="留空使用内置 discovery" /></div>
                   <div class="field"><label>Brainstorming Skill</label><input type="text" data-path="alignment.brainstorming" placeholder="留空使用内置 brainstorming" /></div>
@@ -682,20 +729,23 @@
                 </div>
               </div>
               <div class="question-block">
-                <h3>这些步骤按什么顺序判断？</h3>
-                <p>用箭头调整顺序。每一步只在对应 signal 出现时触发；Alignment Check 永远保留。</p>
+                <h3>2. 调整核心步骤的顺序与触发条件</h3>
+                <p>signals 用逗号分隔。加入 <code>tr3_design_doc</code> 可让 TR3 强制执行对应步骤；Alignment Check 永远保留并最终调用 AskUserTool。</p>
                 <div class="alignment-order" id="alignmentOrder"></div>
               </div>
-              <div class="advanced-toggle"><div><strong>团队额外 Alignment 步骤</strong><p class="hint">仅在团队有新的 trigger token 和 Skill 时添加。</p></div><button class="btn" type="button" data-advanced="alignmentExtras">展开</button></div>
-              <div class="advanced-section" id="alignmentExtras">
-                <div class="field"><label>额外步骤（每行：id | stage | binding id | trigger signals）</label><textarea data-path="alignment.extra_steps" placeholder="security-probe | clarification | intent_grilling | security_scope_unclear"></textarea></div>
+              <div class="question-block">
+                <h3>3. 插入团队自己的 Alignment Skill</h3>
+                <p>每一项会同时生成 <code>alignment.bindings</code> 和 ordered step。需要多个团队步骤时继续添加即可。</p>
+                <div class="extension-list" id="alignmentCustomList"></div>
+                <button class="btn" id="addAlignmentStep" type="button">添加团队 Alignment Skill</button>
+                <p class="hint">Core 仍要求 discovery、divergence、clarification 和 alignment_check 四类阶段完整，并保留 raw idea 与关键缺口的最低触发覆盖。</p>
               </div>
             </div>
           </div>
         </details>
 
-        <details class="wizard-step" data-step="3">
-          <summary>3 团队能力 <code>bindings.*</code>（按团队实际情况添加或移除）</summary>
+        <details class="wizard-step" data-step="4" id="skillCatalogStep">
+          <summary>5 可用 Skills <code>bindings.*</code></summary>
           <div class="body">
             <div class="question-block">
               <h3>团队已经有哪些可执行 Skills？</h3>
@@ -717,7 +767,7 @@
         </details>
 
         <details class="wizard-step" data-step="5">
-          <summary>4 知识索引 <code>knowledge:</code>（只填地址，正文留在企业本地）</summary>
+          <summary>6 知识跟随执行单元 <code>knowledge:</code></summary>
           <div class="body">
             <div class="field">
               <label>架构文档 <code>knowledge.architecture_doc_ref</code></label>
@@ -728,14 +778,37 @@
               <input type="text" data-path="knowledge.feature_docs_root_ref" placeholder="/repos/demo-docs/features/" />
             </div>
             <div class="conditional question-block" data-d3a-knowledge>
-              <h3>D3A Layer 知识</h3>
-              <p>只在团队启用 D3A 时生效。为实际有团队文档的 Layer 添加映射；七个 Layer 名称由 D3A 固定范式约束。</p>
+              <h3>D3A：知识按 DT 与 Layer 组织</h3>
+              <p>Planner 先读取 DT Domain，再为当前 Layer 加载最小知识包。未覆盖的 Layer 继续使用 Harness 内置目录。</p>
+              <div class="field">
+                <label>DT Domain 列表 <code>domain.d3a.dt_domains</code></label>
+                <div class="rows" id="dtlist"></div>
+                <button class="btn addrow" data-list="dtlist" type="button">添加 DT Domain</button>
+                <p class="hint">留空使用仓库默认目录；填写任意一项后整体替换默认列表。</p>
+              </div>
               <div class="field">
               <label>Layer 文档映射 <code>knowledge.layer_docs</code></label>
               <div class="rows" id="layerdocs"></div>
               <button class="btn addrow" id="addLayerMapping" data-list="layerdocs" data-kind="layer" type="button">添加 D3A Layer</button>
               <p class="hint" id="layerMappingHint">尚未添加 Layer 文档；运行时使用 IDC 内置知识。</p>
               </div>
+            </div>
+            <div class="conditional question-block" data-general-knowledge>
+              <h3>General：知识跟随 Lane</h3>
+              <p>不同 Lane 的上下文预算不同。这里只填该 Lane 进入规划和执行时需要补充的团队知识地址，多个地址用逗号分隔。</p>
+              <div class="field-grid">
+                <div class="field"><label>Fast Lane 知识</label><input type="text" data-path="knowledge.lane_docs.fast" placeholder="docs/runbooks/small-change.md" /></div>
+                <div class="field"><label>Lite Lane 知识</label><input type="text" data-path="knowledge.lane_docs.lite" placeholder="docs/engineering/feature-change.md" /></div>
+                <div class="field"><label>Complex Lane 知识</label><input type="text" data-path="knowledge.lane_docs.complex" placeholder="docs/architecture/, docs/security/" /></div>
+              </div>
+              <div class="field"><label>组件知识目录</label><div class="rows" id="complist"></div><button class="btn addrow" data-list="complist" type="button">添加组件</button></div>
+              <div class="field"><label>测试域知识目录</label><div class="rows" id="tdlist"></div><button class="btn addrow" data-list="tdlist" type="button">添加测试域</button></div>
+            </div>
+            <div class="conditional question-block" data-custom-knowledge>
+              <h3>Custom：知识跟随团队执行单元</h3>
+              <p>Custom Domain 不强制使用 D3A Layer。按照团队 Planner 实际产生的 Coding Layer 和 Test Domain 保存知识地址。</p>
+              <div class="field"><label>Custom Coding Layers</label><div class="rows" id="customlayers"></div><button class="btn addrow" data-list="customlayers" data-kind="comp" type="button">添加执行单元</button></div>
+              <div class="field"><label>Custom Test Domains</label><div class="rows" id="customtests"></div><button class="btn addrow" data-list="customtests" data-kind="td" type="button">添加测试域</button></div>
             </div>
             <div class="field">
               <label>Verification mapping <code>knowledge.verification_mapping_ref</code></label>
@@ -749,23 +822,52 @@
           </div>
         </details>
 
-        <details class="wizard-step" data-step="4">
-          <summary>5 流程偏好 <code>lane:</code></summary>
+        <details class="wizard-step" data-step="4" id="executionOrchestrationStep">
+          <summary>5 执行顺序 <code>lane / domain orchestration</code></summary>
           <div class="body">
-            <div class="conditional" data-lane-applicable="false">
-              <div class="question-block"><h3>D3A 不需要配置 Lane</h3><p>D3A 使用固定工作流。系统仍会生成兼容的默认 Lane 段，但运行时不会读取它，也不会执行 Lane Resolver。</p></div>
+            <div class="question-block">
+              <h3>按实际运行顺序设计每个场景</h3>
+              <p>每个框代表一条独立执行策略。步骤从上到下运行；移动卡片会直接改变生成 YAML 中的 ordered steps。Domain 外部的 Alignment、Contract Gate 和 Completion Gate 仍由 Core 保证。</p>
             </div>
-            <div class="conditional" data-lane-applicable="true">
+            <div class="execution-board">
+            <div class="conditional" data-execution-domain="general">
               <div class="question-block">
-                <h3>不确定任务规模时，从哪个 Lane 起步？</h3>
+                <h3>General · 三条 Lane 分别编排</h3>
                 <p>推荐 lite：保留设计和聚焦验证，又不会默认加载 complex 的完整能力集合。</p>
                 <div class="field"><label>默认 Lane</label><select data-path="lane.default"><option value="lite">lite（推荐）</option><option value="fast">fast</option><option value="complex">complex</option></select></div>
               </div>
               <div class="question-block">
-                <h3>团队要控制每条 Lane 的固定顺序吗？</h3>
-                <p>推荐先使用 autonomous，让 Selector 选择最小充分能力；已有严格 SOP 的 Lane 再切 ordered。</p>
                 <div id="laneProfileArea"></div>
               </div>
+            </div>
+            <div class="conditional" data-execution-domain="d3a">
+              <div class="execution-frame">
+                <div class="execution-frame-head"><div><strong>D3A Domain</strong><span>Core 外壳：Planner → Knowledge Gate → 团队步骤 → DT/Tran Completion Gate</span></div></div>
+                <div class="execution-frame-body">
+                  <div class="flow-toolbar">
+                    <div class="field"><label>中间执行策略</label><select data-path="domain.d3a.orchestration.mode"><option value="framework_default">沿用 D3A 固定范式</option><option value="ordered">按团队步骤顺序执行</option></select></div>
+                    <button class="btn" type="button" data-add-flow-step="d3a">添加 D3A 步骤</button>
+                  </div>
+                  <textarea class="sr-only" data-path="domain.d3a.orchestration.steps" aria-label="D3A ordered steps"></textarea>
+                  <div class="flow-mode-note" data-flow-note="d3a">默认由 idc-d3a-coding 执行 Planner → Layer/TDD → DT build → tran build 固定范式。</div>
+                  <div class="flow-envelope"><div class="flow-boundary">Planner<br>+ Knowledge Gate</div><div class="flow-step-list" data-flow-list="d3a"></div><div class="flow-boundary">DT + Tran<br>Completion Gate</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="conditional" data-execution-domain="custom">
+              <div class="execution-frame">
+                <div class="execution-frame-head"><div><strong>Custom Domain</strong><span>Core 外壳：Custom Planner → 团队步骤 → Custom Completion</span></div></div>
+                <div class="execution-frame-body">
+                  <div class="flow-toolbar">
+                    <div class="field"><label>中间执行策略</label><select data-path="domain.custom.orchestration.mode"><option value="workflow_skill">由 Workflow Skill 自己编排</option><option value="ordered">按团队步骤顺序执行</option></select></div>
+                    <button class="btn" type="button" data-add-flow-step="custom">添加 Custom 步骤</button>
+                  </div>
+                  <textarea class="sr-only" data-path="domain.custom.orchestration.steps" aria-label="Custom ordered steps"></textarea>
+                  <div class="flow-mode-note" data-flow-note="custom">默认由 domain.custom.workflow_skill_ref 内部决定执行顺序。</div>
+                  <div class="flow-envelope"><div class="flow-boundary">Custom<br>Planner</div><div class="flow-step-list" data-flow-list="custom"></div><div class="flow-boundary">Custom<br>Completion</div></div>
+                </div>
+              </div>
+            </div>
             </div>
             <div class="advanced-toggle"><div><strong>自优化观察</strong><p class="hint">首次接入建议 disabled；稳定运行后再收集事件并提出改进建议。</p></div><button class="btn" type="button" data-advanced="selfOptimization">展开</button></div>
             <div class="advanced-section" id="selfOptimization">
@@ -821,6 +923,10 @@
   <script>
     "use strict";
 
+    var skillCatalogStep = document.getElementById("skillCatalogStep");
+    var executionOrchestrationStep = document.getElementById("executionOrchestrationStep");
+    skillCatalogStep.parentNode.insertBefore(executionOrchestrationStep, skillCatalogStep);
+
     var D3A_LAYERS = ["TRAN_CFG", "DO", "VISP_ADP", "TFC_TFI", "TFE", "ADP", "DRV"];
 
     var BINDING_GROUPS = [
@@ -852,7 +958,7 @@
     var importedFileName = "";
     var importError = "";
 
-    var STORAGE_KEY = "idc-team-config-draft";
+    var STORAGE_KEY = "idc-team-config-strategy-draft-v2";
 
     function el(id) { return document.getElementById(id); }
 
@@ -1062,30 +1168,174 @@
       }
     }
 
+    function addAlignmentCustomRow(values) {
+      var host = el("alignmentCustomList");
+      var empty = host.querySelector(".empty-capabilities");
+      if (empty) { empty.remove(); }
+      var source = values || ["", "", "clarification", "", ""];
+      var row = document.createElement("div");
+      row.className = "extension-item alignment-extension";
+      var definitions = [
+        ["Binding ID", "team_tr3_review", "text", source[0]],
+        ["Skill 路径", "team://skills/idc-team-tr3-review/SKILL.md", "text", source[1]],
+        ["阶段", "", "select", source[2] || "clarification"],
+        ["触发 signals", "tr3_design_doc", "text", source[3]],
+        ["Step ID", "alignment-team-tr3-review", "text", source[4]]
+      ];
+      definitions.forEach(function (definition) {
+        var label = document.createElement("label");
+        label.textContent = definition[0];
+        var input;
+        if (definition[2] === "select") {
+          input = document.createElement("select");
+          ["discovery", "divergence", "clarification"].forEach(function (stage) {
+            var option = document.createElement("option");
+            option.value = stage; option.textContent = stage;
+            input.appendChild(option);
+          });
+        } else {
+          input = document.createElement("input"); input.type = "text"; input.placeholder = definition[1];
+        }
+        input.value = definition[3] || "";
+        input.addEventListener("input", render);
+        input.addEventListener("change", render);
+        label.appendChild(input); row.appendChild(label);
+      });
+      var remove = document.createElement("button");
+      remove.type = "button"; remove.className = "btn danger"; remove.textContent = "删除";
+      remove.onclick = function () {
+        row.remove();
+        renderAlignmentCustomEmpty();
+        delete skippedSteps[currentStep];
+        render();
+      };
+      row.appendChild(remove); host.appendChild(row);
+    }
+
+    function alignmentCustomRowsData() {
+      return Array.prototype.map.call(el("alignmentCustomList").querySelectorAll(".alignment-extension"), function (row) {
+        return Array.prototype.map.call(row.querySelectorAll("input, select"), function (input) { return input.value.trim(); });
+      });
+    }
+
+    function renderAlignmentCustomEmpty() {
+      if (!el("alignmentCustomList").querySelector(".alignment-extension")) {
+        el("alignmentCustomList").innerHTML = "<div class='empty-capabilities'>尚未添加团队 Alignment Skill。</div>";
+      }
+    }
+
     renderBindings({});
     renderExtensionEmpty();
+    renderAlignmentCustomEmpty();
 
     (function buildLaneProfiles() {
       var area = el("laneProfileArea");
       ["fast", "lite", "complex"].forEach(function (lane) {
         var box = document.createElement("details");
-        box.className = "binding-group";
+        box.className = "execution-frame";
         if (lane === "lite") { box.open = true; }
         box.innerHTML =
-          "<summary>" + lane.toUpperCase() + " · " + ({fast: "小改动，通常不新增测试", lite: "聚焦设计与验证", complex: "跨模块、高风险或多执行单元"})[lane] + "</summary>" +
-          "<div class='binding-content'>" +
-          "<div class='field'><label>执行方式</label><select data-path='lane." + lane + ".mode'><option value='autonomous'>由 Selector 选择最小充分能力</option><option value='ordered'>只按团队声明步骤执行</option></select></div>" +
-          "<div class='field-grid'>" +
+          "<summary>" + lane.toUpperCase() + " LANE · " + ({fast: "小改动，通常不新增测试", lite: "聚焦设计与验证", complex: "跨模块、高风险或多执行单元"})[lane] + "</summary>" +
+          "<div class='execution-frame-body'>" +
+          "<div class='flow-toolbar'><div class='field'><label>执行方式</label><select data-path='lane." + lane + ".mode'><option value='autonomous'>Selector 动态选择</option><option value='ordered'>按下列步骤顺序执行</option></select></div><button class='btn' type='button' data-add-flow-step='" + lane + "'>添加步骤</button></div>" +
+          "<textarea class='sr-only' data-path='lane." + lane + ".steps' aria-label='" + lane + " ordered steps'></textarea>" +
+          "<div class='flow-mode-note' data-flow-note='" + lane + "'>Autonomous 模式不固定顺序，由 Selector 按任务信号选择最小充分 Skills。</div>" +
+          "<div class='flow-envelope'><div class='flow-boundary'>Task Contract</div><div class='flow-step-list' data-flow-list='" + lane + "'></div><div class='flow-boundary'>Evidence Gate</div></div>" +
+          "<details class='binding-group'><summary>能力边界与预算</summary><div class='binding-content'><div class='field-grid'>" +
           "<div class='field'><label>允许使用的 Skill IDs</label><input type='text' data-path='lane." + lane + ".allow' placeholder='留空表示全部 eligible Skills' /></div>" +
           "<div class='field'><label>必须执行的 Skill IDs</label><input type='text' data-path='lane." + lane + ".required' /></div>" +
           "<div class='field'><label>禁止使用的 Skill IDs</label><input type='text' data-path='lane." + lane + ".deny' /></div>" +
           "<div class='field'><label>最多补充几个可选 Skill</label><input type='text' data-path='lane." + lane + ".max_optional_skills' placeholder='" + ({fast: "1", lite: "3", complex: "null"})[lane] + "' /></div>" +
-          "</div>" +
-          "<div class='field'><label>Ordered 步骤（每行：id | stage | skill IDs | trigger signals）</label><textarea data-path='lane." + lane + ".steps' placeholder='plan | planning | tech_design,phase_plan | focused_design_required'></textarea></div>" +
-          "</div>";
+          "</div></div></details></div>";
         area.appendChild(box);
       });
     })();
+
+    var FLOW_SCOPES = ["fast", "lite", "complex", "d3a", "custom"];
+    var FLOW_STAGES = ["planning", "knowledge", "dt_design", "dt_writing", "implementation", "review", "verification", "dt_build", "tran_build", "debugging", "fix", "finishing", "completion"];
+
+    function flowPath(scope, field) {
+      if (["fast", "lite", "complex"].indexOf(scope) >= 0) { return "lane." + scope + "." + field; }
+      return "domain." + scope + ".orchestration." + field;
+    }
+
+    function flowInput(scope, field) {
+      return document.querySelector('[data-path="' + flowPath(scope, field) + '"]');
+    }
+
+    function flowRowsData(scope) {
+      var host = document.querySelector('[data-flow-list="' + scope + '"]');
+      return Array.prototype.map.call(host.querySelectorAll(".flow-step-card"), function (row) {
+        return Array.prototype.map.call(row.querySelectorAll("input, select"), function (input) { return input.value.trim(); });
+      });
+    }
+
+    function setFlowRows(scope, rows) {
+      flowInput(scope, "steps").value = (rows || []).map(function (row) { return row.join(" | "); }).join("\n");
+      renderExecutionFlow(scope);
+    }
+
+    function syncFlowRows(scope) {
+      flowInput(scope, "steps").value = flowRowsData(scope).map(function (row) { return row.join(" | "); }).join("\n");
+    }
+
+    function defaultFlowText(scope) {
+      if (scope === "d3a") { return "固定范式：DT Design → DT Writer → Layer TDD → DT Build → Tran Build"; }
+      if (scope === "custom") { return "Workflow Skill 内部编排：" + ((document.querySelector('[data-path="domain.custom.workflow_skill_ref"]') || {}).value || "待绑定"); }
+      return "Selector 根据任务信号动态挑选 Skills，不声明固定运行顺序。";
+    }
+
+    function renderExecutionFlow(scope) {
+      var host = document.querySelector('[data-flow-list="' + scope + '"]');
+      if (!host) { return; }
+      host.innerHTML = "";
+      var rows = orchestrationRows(flowInput(scope, "steps").value);
+      var mode = flowInput(scope, "mode").value;
+      var ordered = mode === "ordered";
+      var addButton = document.querySelector('[data-add-flow-step="' + scope + '"]');
+      if (addButton) { addButton.disabled = !ordered; }
+      var note = document.querySelector('[data-flow-note="' + scope + '"]');
+      if (note) { note.style.display = ordered ? "none" : "block"; }
+      if (!ordered) {
+        host.innerHTML = "<div class='flow-empty'>" + escapeHtml(defaultFlowText(scope)) + "</div>";
+        return;
+      }
+      if (!rows.length) {
+        host.innerHTML = "<div class='flow-empty'>还没有步骤。点击“添加步骤”，从第一步开始设计。</div>";
+        return;
+      }
+      rows.forEach(function (source, index) {
+        var row = document.createElement("div");
+        row.className = "flow-step-card";
+        var number = document.createElement("span");
+        number.className = "step-number"; number.textContent = String(index + 1); row.appendChild(number);
+        [["步骤 ID", "plan"], ["阶段", "planning"], ["Skill IDs", "tech_design,phase_plan"], ["触发 signals", "focused_design_required"]].forEach(function (definition, fieldIndex) {
+          var label = document.createElement("label"); label.textContent = definition[0];
+          var input;
+          if (fieldIndex === 1) {
+            input = document.createElement("select");
+            FLOW_STAGES.forEach(function (stage) { var option = document.createElement("option"); option.value = stage; option.textContent = stage; input.appendChild(option); });
+          } else { input = document.createElement("input"); input.type = "text"; input.placeholder = definition[1]; }
+          input.value = source[fieldIndex] || (fieldIndex === 1 ? "implementation" : "");
+          input.addEventListener("input", function () { syncFlowRows(scope); delete skippedSteps[currentStep]; render(); });
+          input.addEventListener("change", function () { syncFlowRows(scope); delete skippedSteps[currentStep]; render(); });
+          label.appendChild(input); row.appendChild(label);
+        });
+        var actions = document.createElement("div"); actions.className = "flow-step-actions";
+        [["↑", -1, "上移"], ["↓", 1, "下移"]].forEach(function (action) {
+          var button = document.createElement("button"); button.type = "button"; button.className = "icon-btn"; button.textContent = action[0]; button.setAttribute("aria-label", action[2] + "步骤 " + (source[0] || index + 1));
+          button.disabled = index + action[1] < 0 || index + action[1] >= rows.length;
+          button.onclick = function () { var target = index + action[1]; var next = flowRowsData(scope); var item = next.splice(index, 1)[0]; next.splice(target, 0, item); setFlowRows(scope, next); render(); };
+          actions.appendChild(button);
+        });
+        var remove = document.createElement("button"); remove.type = "button"; remove.className = "icon-btn"; remove.textContent = "×"; remove.setAttribute("aria-label", "删除步骤 " + (source[0] || index + 1));
+        remove.onclick = function () { var next = flowRowsData(scope); next.splice(index, 1); setFlowRows(scope, next); render(); };
+        actions.appendChild(remove); row.appendChild(actions); host.appendChild(row);
+      });
+    }
+
+    function renderExecutionFlows() { FLOW_SCOPES.forEach(renderExecutionFlow); }
+    renderExecutionFlows();
 
     function renderAlignmentOrder() {
       var host = el("alignmentOrder");
@@ -1093,10 +1343,29 @@
       alignmentOrder.forEach(function (key, index) {
         var spec = ALIGNMENT_STEPS[key];
         var override = alignmentOverrides[key];
-        var detail = override ? override.stage + " · " + (override.trigger_signals.length ? override.trigger_signals.join(" + ") : "always") : spec.detail;
+        var step = override || { id: spec.id, stage: spec.stage, skill_ids: [spec.skill], trigger_signals: spec.signal ? [spec.signal] : [] };
         var row = document.createElement("div");
         row.className = "alignment-row";
-        row.innerHTML = "<span class='step-number'>" + (index + 1) + "</span><div><strong>" + spec.label + "</strong><span>" + detail + "</span></div>";
+        row.innerHTML = "<span class='step-number'>" + (index + 1) + "</span><div><strong>" + spec.label + "</strong><span>" + spec.detail + "</span></div>";
+        var trigger = document.createElement("label");
+        trigger.className = "alignment-trigger";
+        trigger.textContent = "触发 signals";
+        var triggerInput = document.createElement("input");
+        triggerInput.type = "text";
+        triggerInput.value = key === "check" ? "always" : (step.trigger_signals || []).join(", ");
+        triggerInput.placeholder = "留空表示 always";
+        triggerInput.disabled = key === "check";
+        triggerInput.addEventListener("input", function () {
+          alignmentOverrides[key] = {
+            id: step.id,
+            stage: step.stage,
+            skill_ids: step.skill_ids,
+            trigger_signals: triggerInput.value.split(/[,，]/).map(function (signal) { return signal.trim(); }).filter(Boolean)
+          };
+          delete skippedSteps[currentStep];
+          render();
+        });
+        trigger.appendChild(triggerInput);
         var actions = document.createElement("div");
         actions.className = "order-actions";
         var up = document.createElement("button");
@@ -1106,7 +1375,7 @@
         if (key === "check") { up.disabled = true; }
         up.addEventListener("click", function () { var tmp = alignmentOrder[index - 1]; alignmentOrder[index - 1] = key; alignmentOrder[index] = tmp; renderAlignmentOrder(); render(); });
         down.addEventListener("click", function () { var tmp = alignmentOrder[index + 1]; alignmentOrder[index + 1] = key; alignmentOrder[index] = tmp; renderAlignmentOrder(); render(); });
-        actions.appendChild(up); actions.appendChild(down); row.appendChild(actions); host.appendChild(row);
+        actions.appendChild(up); actions.appendChild(down); row.appendChild(trigger); row.appendChild(actions); host.appendChild(row);
       });
     }
     renderAlignmentOrder();
@@ -1132,6 +1401,7 @@
       data.customlayers = rowInputs(el("customlayers"));
       data.customtests = rowInputs(el("customtests"));
       data.layerdocs = rowInputs(el("layerdocs"));
+      data.alignmentCustom = alignmentCustomRowsData();
       data["adapter.extensions"] = extensionRowsData().map(function (row) { return row.join(" | "); }).join("\n");
       return data;
     }
@@ -1171,6 +1441,19 @@
       return out;
     }
 
+    function pushOrchestrationBlock(lines, indent, mode, rows) {
+      lines.push(indent + "orchestration:");
+      lines.push(indent + "  mode: " + mode);
+      if (!rows.length) { lines.push(indent + "  steps: []"); return; }
+      lines.push(indent + "  steps:");
+      rows.forEach(function (parts) {
+        lines.push(indent + "    - id: " + yv(parts[0] || null));
+        lines.push(indent + "      stage: " + yv(parts[1] || null));
+        lines.push(indent + "      skill_ids: " + yamlList(parts[2]));
+        lines.push(indent + "      trigger_signals: " + yamlList(parts[3]));
+      });
+    }
+
     function buildYaml(d) {
       var L = [];
       L.push("# team-config.yaml (generated by docs/team-config-generator.html)");
@@ -1192,6 +1475,7 @@
       var dtRows = listBlock(d.dt);
       if (dtRows.length) { L.push("    dt_domains:"); L = L.concat(dtRows.map(function (line) { return "  " + line; })); }
       else { L.push("    dt_domains: []"); }
+      pushOrchestrationBlock(L, "    ", d["domain.d3a.orchestration.mode"] || "framework_default", orchestrationRows(d["domain.d3a.orchestration.steps"]));
       L.push("  custom:");
       L.push("    id: " + yv(plain(d["domain.custom.id"])));
       L.push("    trigger_rules: " + yamlList(d["domain.custom.trigger_rules"]));
@@ -1206,6 +1490,7 @@
       L.push("    workflow_skill_ref: " + yv(plain(d["domain.custom.workflow_skill_ref"])));
       L.push("    planner_skill_ref: " + yv(plain(d["domain.custom.planner_skill_ref"])));
       L.push("    completion_skill_ref: " + yv(plain(d["domain.custom.completion_skill_ref"])));
+      pushOrchestrationBlock(L, "    ", d["domain.custom.orchestration.mode"] || "workflow_skill", orchestrationRows(d["domain.custom.orchestration.steps"]));
       L.push("");
       L.push("general:");
       var compRows = listBlock(d.comp);
@@ -1228,10 +1513,15 @@
           L.push("    " + key + ":");
           L.push("      skill_ref: " + yv(plain(d["alignment." + key]) || ALIGNMENT_DEFAULT_REFS[key]));
         });
+        d.alignmentCustom.forEach(function (row) {
+          if (!row[0] && !row[1]) { return; }
+          L.push("    " + yv(row[0] || null) + ":");
+          L.push("      skill_ref: " + yv(row[1] || null));
+        });
         L.push("  orchestration:");
         L.push("    mode: ordered");
         L.push("    steps:");
-        alignmentOrder.forEach(function (key) {
+        alignmentOrder.filter(function (key) { return key !== "check"; }).forEach(function (key) {
           var spec = ALIGNMENT_STEPS[key];
           var step = alignmentOverrides[key] || { id: spec.id, stage: spec.stage, skill_ids: [spec.skill], trigger_signals: spec.signal ? [spec.signal] : [] };
           L.push("      - id: " + yv(step.id));
@@ -1239,12 +1529,19 @@
           L.push("        skill_ids: " + yamlList(step.skill_ids.join(",")));
           L.push("        trigger_signals: " + yamlList(step.trigger_signals.join(",")));
         });
-        orchestrationRows(d["alignment.extra_steps"]).forEach(function (parts) {
-          L.push("      - id: " + yv(parts[0] || null));
-          L.push("        stage: " + yv(parts[1] || null));
-          L.push("        skill_ids: " + yamlList(parts[2]));
-          L.push("        trigger_signals: " + yamlList(parts[3]));
+        d.alignmentCustom.forEach(function (row) {
+          if (!row[0] && !row[1]) { return; }
+          L.push("      - id: " + yv(row[4] || ("alignment-" + row[0].replace(/_/g, "-"))));
+          L.push("        stage: " + yv(row[2] || null));
+          L.push("        skill_ids: " + yamlList(row[0]));
+          L.push("        trigger_signals: " + yamlList(row[3]));
         });
+        var checkSpec = ALIGNMENT_STEPS.check;
+        var checkStep = alignmentOverrides.check || { id: checkSpec.id, stage: checkSpec.stage, skill_ids: [checkSpec.skill], trigger_signals: [] };
+        L.push("      - id: " + yv(checkStep.id));
+        L.push("        stage: " + yv(checkStep.stage));
+        L.push("        skill_ids: " + yamlList(checkStep.skill_ids.join(",")));
+        L.push("        trigger_signals: []");
         L.push("");
       }
       var ext = plain(d["adapter.extensions"]);
@@ -1278,6 +1575,10 @@
         L.push("  layer_docs:");
         ld.forEach(function (r) { L.push("    " + (r[0] || "LAYER") + ": " + yv(r[1] || null)); });
       } else { L.push("  layer_docs: {}"); }
+      L.push("  lane_docs:");
+      ["fast", "lite", "complex"].forEach(function (lane) {
+        L.push("    " + lane + ": " + (enabledDomains(d).indexOf("general") >= 0 ? yamlList(d["knowledge.lane_docs." + lane]) : "[]"));
+      });
       L.push("  verification_mapping_ref: " + yv(plain(d["knowledge.verification_mapping_ref"])));
       L.push("  repo_context:");
       L.push("    provider_skill_ref: " + yv(plain(d["knowledge.repo_context.provider_skill_ref"])));
@@ -1376,6 +1677,18 @@
         group.items.forEach(function (key) { if (plain(d["binding." + key])) { availableSkillIds[key] = true; } });
       });
       orchestrationRows(d["adapter.extensions"]).forEach(function (parts) { if (parts[0]) { availableSkillIds[parts[0]] = true; } });
+      [["d3a", "framework_default"], ["custom", "workflow_skill"]].forEach(function (domainFlow) {
+        var domainId = domainFlow[0];
+        var domainMode = d["domain." + domainId + ".orchestration.mode"] || domainFlow[1];
+        var domainSteps = orchestrationRows(d["domain." + domainId + ".orchestration.steps"]);
+        var modeAllowed = domainId === "d3a" ? ["framework_default", "ordered"] : ["workflow_skill", "ordered"];
+        var shapeOk = domainSteps.every(function (parts) { return parts.length === 4 && parts.slice(0, 3).every(Boolean); });
+        var ids = domainSteps.map(function (parts) { return parts[0]; });
+        var refs = domainSteps.reduce(function (all, parts) { return all.concat((parts[2] || "").split(/[,，]/).map(function (id) { return id.trim(); }).filter(Boolean)); }, []);
+        var unavailable = refs.filter(function (id, index) { return !availableSkillIds[id] && refs.indexOf(id) === index; });
+        add(modeAllowed.indexOf(domainMode) >= 0 && shapeOk && (domainMode !== "ordered" || domainSteps.length > 0) && ids.length === new Set(ids).size, domainId.toUpperCase() + " 执行步骤顺序有效");
+        add(domainMode !== "ordered" || unavailable.length === 0, domainId.toUpperCase() + " ordered 步骤只引用已绑定能力" + (unavailable.length ? "：" + unavailable.join(", ") : ""));
+      });
       ["fast", "lite", "complex"].forEach(function (lane) {
         var referenced = [];
         ["allow", "deny", "required"].forEach(function (field) {
@@ -1398,10 +1711,21 @@
       });
       add(extensionRowsOk, "每条扩展能力都有 id / capability keys / stages / skill_ref");
 
-      var alignmentRowsOk = d["alignment.mode"] !== "custom" || orchestrationRows(d["alignment.extra_steps"]).every(function (parts) {
-        return parts.length === 4 && parts.slice(0, 3).every(Boolean);
+      var defaultAlignmentIds = Object.keys(ALIGNMENT_DEFAULT_REFS);
+      var customAlignmentIds = d.alignmentCustom.map(function (row) { return row[0]; }).filter(Boolean);
+      var customAlignmentUnique = customAlignmentIds.every(function (id, index) {
+        return customAlignmentIds.indexOf(id) === index && defaultAlignmentIds.indexOf(id) < 0;
       });
-      add(alignmentRowsOk, "团队 Alignment 扩展步骤格式有效");
+      var alignmentRowsOk = d["alignment.mode"] !== "custom" || d.alignmentCustom.every(function (row) {
+        return /^[a-z][a-z0-9_]*$/.test(row[0]) && Boolean(row[1]) && ["discovery", "divergence", "clarification"].indexOf(row[2]) >= 0;
+      });
+      add(alignmentRowsOk && customAlignmentUnique, "团队 Alignment Skill 有唯一 binding ID、有效路径和阶段");
+      var alignmentSignals = alignmentOrder.reduce(function (signals, key) {
+        var spec = ALIGNMENT_STEPS[key];
+        var step = alignmentOverrides[key] || { trigger_signals: spec.signal ? [spec.signal] : [] };
+        return signals.concat(step.trigger_signals || []);
+      }, []);
+      add(d["alignment.mode"] !== "custom" || (alignmentSignals.indexOf("raw_idea") >= 0 && alignmentSignals.indexOf("critical_gaps_remain") >= 0), "Alignment 保留 raw idea 与关键缺口的最低触发覆盖");
       add(alignmentOrder.length === 5 && alignmentOrder[alignmentOrder.length - 1] === "check", "Alignment Check 保持为最终批准门");
 
       add(true, "每个 skill_ref 的路径与执行角色由接入团队后的 Resolver 验证", true);
@@ -1420,13 +1744,13 @@
     }
 
     var GUIDE = [
-      ["先认识你的团队", "填写团队标识、代码仓位置，并勾选团队支持的全部开发场景。后续问题会根据组合自动变化。"],
-      ["描述这个开发场景", "只配置该场景真正拥有的结构。留空表示沿用框架默认，不会要求团队一次性补齐所有索引。"],
-      ["定义需求如何变清楚", "多数团队沿用默认 Alignment；有内部 brainstorming 或提问方法时，再替换对应 Skill 或调整顺序。"],
-      ["接入团队已有能力", "这里是能力目录，不是执行清单。绑定表示可用，实际是否执行仍由场景、Lane、stage 和 trigger 决定。"],
-      ["决定执行的自由度", "General 和部分 Custom Domain 会使用 Lane。可以让 Selector 自主选择，也可以对成熟 SOP 使用 ordered。"],
-      ["告诉 IDC 去哪里找知识", "只填写索引地址，不复制知识正文。执行单元只会加载当前 Layer、组件或测试域需要的内容。"],
-      ["确认团队接入结果", "检查关键选择和本地规则。下载后仍需运行 preflight，验证企业路径与 Skill 文件真实存在。"]
+      ["先理解 IDC Harness 如何工作", "先建立共同设计语言，再配置团队策略。这里不是字段生成器，而是把团队工作方式翻译成可执行契约。"],
+      ["设计 Human Alignment 策略", "先决定不同成熟度的输入如何变得可批准。多数团队沿用默认链，只替换真正属于团队的方法。"],
+      ["选择团队支持的 Domain", "Domain 是执行策略的第一处分流。可以多选，但每个任务只会进入一个最匹配的 Domain。"],
+      ["让 Domain 决定执行模型", "General 固定为动态 Lane，D3A 固定为范式流程，Custom 再由团队选择 dynamic、fixed 或不使用 Lane。"],
+      ["设计每条执行流程的运行顺序", "先在 General、D3A、Custom 流程框中安排先做什么、后做什么，再为步骤补充团队已有的 Skills。"],
+      ["让知识跟随执行单元", "D3A 按 DT/Layer，General 按 Lane/组件，Custom 按团队定义的执行单元加载知识；这里只保存地址。"],
+      ["查看最终运行策略", "从 Alignment、Domain、执行编排到 Knowledge 和 Completion 一次确认，再下载并运行 preflight。"]
     ];
     var currentStep = 0;
     var lastDomain = null;
@@ -1457,7 +1781,8 @@
       el("prevBtn").disabled = currentStep === 0;
       el("nextBtn").textContent = currentStep === 6 ? "下载配置" : "下一步";
       el("skipBtn").style.display = currentStep > 0 && currentStep < 6 ? "inline-block" : "none";
-      el("skipBtn").textContent = currentStep === 1 && enabledDomains(collect()).indexOf("custom") >= 0 ? "稍后补充" : "暂时跳过";
+      el("skipBtn").textContent = currentStep === 1 ? "沿用默认 Alignment" : (currentStep === 3 && enabledDomains(collect()).indexOf("custom") >= 0 ? "稍后补充" : "暂时跳过");
+      el("workspaceLayout").classList.toggle("focus-mode", currentStep !== 6);
       window.scrollTo({ top: 0, behavior: "smooth" });
       render();
     }
@@ -1477,24 +1802,23 @@
       Array.prototype.forEach.call(document.querySelectorAll("[data-d3a-knowledge]"), function (section) {
         section.classList.toggle("visible", enabled.indexOf("d3a") >= 0);
       });
+      Array.prototype.forEach.call(document.querySelectorAll("[data-general-knowledge]"), function (section) {
+        section.classList.toggle("visible", enabled.indexOf("general") >= 0);
+      });
+      Array.prototype.forEach.call(document.querySelectorAll("[data-custom-knowledge]"), function (section) {
+        section.classList.toggle("visible", enabled.indexOf("custom") >= 0);
+      });
 
       var customLaneMode = d["domain.custom.lane_policy.mode"] || "dynamic";
       el("customFixedLane").classList.toggle("visible", enabled.indexOf("custom") >= 0 && customLaneMode === "fixed");
-      var laneApplicable = enabled.indexOf("general") >= 0 || (enabled.indexOf("custom") >= 0 && customLaneMode !== "not_applicable");
-      Array.prototype.forEach.call(document.querySelectorAll("[data-lane-applicable]"), function (section) {
-        section.classList.toggle("visible", section.getAttribute("data-lane-applicable") === String(laneApplicable));
+      Array.prototype.forEach.call(document.querySelectorAll("[data-execution-domain]"), function (section) {
+        section.classList.toggle("visible", enabled.indexOf(section.getAttribute("data-execution-domain")) >= 0);
       });
 
       var alignmentMode = d["alignment.mode"] || "default";
       el("customAlignment").classList.toggle("visible", alignmentMode === "custom");
       Array.prototype.forEach.call(document.querySelectorAll("[data-alignment-mode]"), function (button) {
         button.classList.toggle("active", button.getAttribute("data-alignment-mode") === alignmentMode);
-      });
-
-      Array.prototype.forEach.call(document.querySelectorAll('[data-path^="lane."][data-path$=".mode"]'), function (select) {
-        var lane = select.getAttribute("data-path").split(".")[1];
-        var steps = document.querySelector('[data-path="lane.' + lane + '.steps"]');
-        if (steps) { steps.closest(".field").style.display = select.value === "ordered" ? "block" : "none"; }
       });
 
       var domainKey = enabled.join(",");
@@ -1515,13 +1839,20 @@
       }, 0);
       var extensionCount = extensionRowsData().filter(function (row) { return row[0] || row[3]; }).length;
       var capabilityCount = boundCount + extensionCount;
+      var knowledgeSummary = [];
+      if (enabled.indexOf("general") >= 0) {
+        var laneKnowledgeCount = ["fast", "lite", "complex"].filter(function (lane) { return plain(d["knowledge.lane_docs." + lane]); }).length;
+        knowledgeSummary.push(laneKnowledgeCount + " 条 Lane 策略");
+      }
+      if (enabled.indexOf("d3a") >= 0) { knowledgeSummary.push(d.layerdocs.filter(function (row) { return row[0] && row[1]; }).length + " 个 D3A Layer"); }
+      if (enabled.indexOf("custom") >= 0) { knowledgeSummary.push(d.customlayers.filter(function (row) { return row[0] && row[1]; }).length + " 个 Custom 单元"); }
       var rows = [
         ["团队", plain(d["team.id"]) || "尚未填写", plain(d["team.repo_path"]) ? "已定位代码仓" : "缺少代码仓"],
         ["开发场景", enabled.map(function (item) { return item === "custom" ? "Custom: " + (plain(d["domain.custom.id"]) || "尚未命名") : item.toUpperCase(); }).join(" + "), "默认 " + mode],
         ["Human Alignment", d["alignment.mode"] === "custom" ? "团队 Skills · 可配置顺序" : "IDC 默认五步链", "受 Core Gate 保护"],
         ["团队能力", capabilityCount ? boundCount + " 个标准 + " + extensionCount + " 个团队 Skill" : "暂不绑定，使用最小框架能力", capabilityCount ? "可增删" : "可后补"],
-        ["知识入口", enabled.indexOf("d3a") >= 0 ? d.layerdocs.filter(function (row) { return row[0] && row[1]; }).length + " 个 D3A Layer 文档" : "通用知识索引", enabled.indexOf("d3a") >= 0 ? "与 D3A 联动" : "按需加载"],
-        ["执行策略", enabled.length === 1 && enabled[0] === "d3a" ? "D3A fixed workflow" : "Lane 默认 " + (d["lane.default"] || "lite") + "；D3A 任务仍走固定范式", "已生成"],
+        ["知识设计", knowledgeSummary.join(" + ") || "使用框架默认知识", "跟随执行单元"],
+        ["执行策略", "General " + (d["lane.default"] || "lite") + " · D3A " + (d["domain.d3a.orchestration.mode"] || "framework_default") + " · Custom " + (d["domain.custom.orchestration.mode"] || "workflow_skill"), "已生成"],
         ["本地校验", checks.every(function (c) { return c.ok || c.warn; }) ? "当前表单规则通过" : "仍有字段需要处理", checks.every(function (c) { return c.ok || c.warn; }) ? "可下载" : "请检查"]
       ];
       var host = el("reviewBand");
@@ -1552,10 +1883,19 @@
 
     function renderStrategyOverview(d) {
       var enabled = enabledDomains(d);
-      var alignmentSteps = alignmentOrder.map(function (key) {
+      var coreAlignmentSteps = alignmentOrder.map(function (key) {
         var spec = ALIGNMENT_STEPS[key];
-        return alignmentOverrides[key] || { skill_ids: [spec.skill], trigger_signals: spec.signal ? [spec.signal] : [] };
+        var step = alignmentOverrides[key] || { skill_ids: [spec.skill], trigger_signals: spec.signal ? [spec.signal] : [] };
+        return { skill_ids: step.skill_ids || [spec.skill], trigger_signals: step.trigger_signals || [], isCheck: key === "check" };
       });
+      var alignmentCheck = coreAlignmentSteps.filter(function (step) { return step.isCheck; });
+      var alignmentSteps = coreAlignmentSteps.filter(function (step) { return !step.isCheck; });
+      if (d["alignment.mode"] === "custom") {
+        alignmentSteps = alignmentSteps.concat(d.alignmentCustom.filter(function (row) { return row[0] || row[1]; }).map(function (row) {
+          return { skill_ids: [row[0] || "未命名团队 Skill"], trigger_signals: (row[3] || "").split(/[,，]/).map(function (signal) { return signal.trim(); }).filter(Boolean) };
+        }));
+      }
+      alignmentSteps = alignmentSteps.concat(alignmentCheck);
       var alignmentFlow = strategyNode("User Intent", "raw idea / structured / TR3", "source");
       alignmentSteps.forEach(function (step, index) {
         alignmentFlow += "<div class='strategy-arrow'>→</div>" + strategyNode((step.skill_ids || []).join(" + "), (step.trigger_signals || []).join(" + ") || "always", index === alignmentSteps.length - 1 ? "gate" : "");
@@ -1573,8 +1913,23 @@
           execution += strategyNode(lane.toUpperCase(), (d["lane." + lane + ".mode"] || "autonomous") + (steps.length ? " · " + steps.length + " steps" : " · selector"), lane === (d["lane.default"] || "lite") ? "default" : "");
         });
       }
-      if (enabled.indexOf("d3a") >= 0) { execution += strategyNode("D3A Fixed", "planner → layer → TDD → DT/build", ""); }
-      if (enabled.indexOf("custom") >= 0) { execution += strategyNode("Custom Workflow", (d["domain.custom.lane_policy.mode"] || "dynamic") + " → workflow skill", ""); }
+      if (enabled.indexOf("d3a") >= 0) {
+        var d3aSteps = orchestrationRows(d["domain.d3a.orchestration.steps"]);
+        execution += strategyNode("D3A", (d["domain.d3a.orchestration.mode"] || "framework_default") + (d3aSteps.length ? " · " + d3aSteps.length + " steps" : " · fixed workflow"), "");
+      }
+      if (enabled.indexOf("custom") >= 0) {
+        var customSteps = orchestrationRows(d["domain.custom.orchestration.steps"]);
+        execution += strategyNode("Custom", (d["domain.custom.orchestration.mode"] || "workflow_skill") + (customSteps.length ? " · " + customSteps.length + " steps" : " · workflow skill"), "");
+      }
+      var knowledgeFlow = "";
+      if (enabled.indexOf("general") >= 0) {
+        ["fast", "lite", "complex"].forEach(function (lane) {
+          var refs = (d["knowledge.lane_docs." + lane] || "").split(/[,，]/).filter(function (ref) { return ref.trim(); });
+          knowledgeFlow += strategyNode(lane.toUpperCase() + " knowledge", refs.length ? refs.length + " team refs" : "framework + registry refs", "");
+        });
+      }
+      if (enabled.indexOf("d3a") >= 0) { knowledgeFlow += strategyNode("D3A knowledge", d.layerdocs.filter(function (row) { return row[0] && row[1]; }).length + " Layer refs", ""); }
+      if (enabled.indexOf("custom") >= 0) { knowledgeFlow += strategyNode("Custom knowledge", d.customlayers.filter(function (row) { return row[0] && row[1]; }).length + " units · " + d.customtests.filter(function (row) { return row[0] && row[1]; }).length + " tests", ""); }
       var completion = enabled.map(function (domain) {
         if (domain === "d3a") { return strategyNode("D3A Gate", "DT GREEN + tran_build PASS", "gate"); }
         if (domain === "custom") { return strategyNode("Custom Completion", plain(d["domain.custom.completion_skill_ref"]) || "待绑定", "gate"); }
@@ -1585,7 +1940,8 @@
         "<div class='strategy-stage'><div class='strategy-stage-label'>01 · Pre-alignment</div><div class='strategy-flow'>" + alignmentFlow + "</div></div>" +
         "<div class='strategy-stage'><div class='strategy-stage-label'>02 · Domain routing</div><div class='domain-strategy-grid'>" + domains + "</div></div>" +
         "<div class='strategy-stage'><div class='strategy-stage-label'>03 · Execution</div><div class='strategy-flow'>" + execution + "</div></div>" +
-        "<div class='strategy-stage'><div class='strategy-stage-label'>04 · Completion</div><div class='strategy-flow'>" + completion + "<div class='strategy-arrow'>→</div>" + strategyNode("DONE", "completion verified", "source") + "</div></div>";
+        "<div class='strategy-stage'><div class='strategy-stage-label'>04 · Progressive knowledge</div><div class='strategy-flow'>" + knowledgeFlow + "</div></div>" +
+        "<div class='strategy-stage'><div class='strategy-stage-label'>05 · Completion</div><div class='strategy-flow'>" + completion + "<div class='strategy-arrow'>→</div>" + strategyNode("DONE", "completion verified", "source") + "</div></div>";
       el("importState").innerHTML = importError ? "<div class='import-state' style='border-left-color:var(--red);background:var(--red-soft)'>导入失败：" + escapeHtml(importError) + "</div>" : (importedFileName ? "<div class='import-state'>已导入 <strong>" + escapeHtml(importedFileName) + "</strong>，以下是从文件还原的当前编排。</div>" : "");
     }
 
@@ -1615,6 +1971,7 @@
         snapshot[id] = rowInputs(el(id));
       });
       snapshot.extensionList = extensionRowsData();
+      snapshot.alignmentCustomList = alignmentCustomRowsData();
       return snapshot;
     }
 
@@ -1759,6 +2116,8 @@
       setImportedInput("domain.enabled", enabled);
       setImportedInput("domain.mode", mode);
       restoreList("dtlist", registryRows(importedValue(config, "domain.d3a.dt_domains", [])));
+      setImportedInput("domain.d3a.orchestration.mode", importedValue(config, "domain.d3a.orchestration.mode", "framework_default"));
+      setImportedInput("domain.d3a.orchestration.steps", importedStepsText(importedValue(config, "domain.d3a.orchestration.steps", [])));
       restoreList("complist", registryRows(importedValue(config, "general.components", [])));
       restoreList("tdlist", registryRows(importedValue(config, "general.test_domains", [])));
       restoreList("customlayers", registryRows(importedValue(config, "domain.custom.coding_layers", [])));
@@ -1766,6 +2125,8 @@
       ["id", "trigger_rules", "lane_policy.mode", "lane_policy.selected_lane", "workflow_skill_ref", "planner_skill_ref", "completion_skill_ref"].forEach(function (key) {
         setImportedInput("domain.custom." + key, importedValue(config, "domain.custom." + key, ""));
       });
+      setImportedInput("domain.custom.orchestration.mode", importedValue(config, "domain.custom.orchestration.mode", "workflow_skill"));
+      setImportedInput("domain.custom.orchestration.steps", importedStepsText(importedValue(config, "domain.custom.orchestration.steps", [])));
       removedBindings = {};
       var importedBindings = {};
       BINDING_GROUPS.forEach(function (group) {
@@ -1779,7 +2140,7 @@
       var alignment = config.alignment;
       alignmentOrder = ["discovery", "brainstorming", "grilling", "docs", "check"];
       alignmentOverrides = {};
-      setImportedInput("alignment.extra_steps", "");
+      el("alignmentCustomList").innerHTML = "";
       if (alignment && alignment.bindings && alignment.orchestration) {
         setImportedInput("alignment.mode", "custom");
         Object.keys(ALIGNMENT_DEFAULT_REFS).forEach(function (key) { setImportedInput("alignment." + key, importedValue(alignment, "bindings." + key + ".skill_ref", "")); });
@@ -1797,8 +2158,28 @@
         });
         alignmentOrder = identified.concat(alignmentOrder.filter(function (key) { return identified.indexOf(key) < 0 && key !== "check"; }));
         alignmentOrder = alignmentOrder.filter(function (key) { return key !== "check"; }).concat(["check"]);
-        setImportedInput("alignment.extra_steps", importedStepsText(extras));
+        var importedCustomIds = {};
+        extras.forEach(function (step) {
+          var skillIds = (step.skill_ids || []).filter(function (skillId) { return !ALIGNMENT_DEFAULT_REFS[skillId]; });
+          skillIds.forEach(function (skillId, index) {
+            var binding = alignment.bindings[skillId] || {};
+            addAlignmentCustomRow([
+              skillId,
+              binding.skill_ref || "",
+              step.stage || "clarification",
+              (step.trigger_signals || []).join(","),
+              (step.id || ("alignment-" + skillId.replace(/_/g, "-"))) + (skillIds.length > 1 ? "-" + (index + 1) : "")
+            ]);
+            importedCustomIds[skillId] = true;
+          });
+        });
+        Object.keys(alignment.bindings).forEach(function (skillId) {
+          if (!ALIGNMENT_DEFAULT_REFS[skillId] && !importedCustomIds[skillId]) {
+            addAlignmentCustomRow([skillId, (alignment.bindings[skillId] || {}).skill_ref || "", "clarification", "", "alignment-" + skillId.replace(/_/g, "-")]);
+          }
+        });
       } else { setImportedInput("alignment.mode", "default"); }
+      renderAlignmentCustomEmpty();
       renderAlignmentOrder();
 
       var extensions = Array.isArray(config.adapter_extensions) ? config.adapter_extensions : [];
@@ -1809,6 +2190,9 @@
       renderExtensionEmpty();
       setImportedInput("knowledge.architecture_doc_ref", importedValue(config, "knowledge.architecture_doc_ref", ""));
       setImportedInput("knowledge.feature_docs_root_ref", importedValue(config, "knowledge.feature_docs_root_ref", ""));
+      ["fast", "lite", "complex"].forEach(function (lane) {
+        setImportedInput("knowledge.lane_docs." + lane, importedValue(config, "knowledge.lane_docs." + lane, []));
+      });
       setImportedInput("knowledge.verification_mapping_ref", importedValue(config, "knowledge.verification_mapping_ref", ""));
       setImportedInput("knowledge.repo_context.provider_skill_ref", importedValue(config, "knowledge.repo_context.provider_skill_ref", ""));
       setImportedInput("knowledge.repo_context.policy_ref", importedValue(config, "knowledge.repo_context.policy_ref", ""));
@@ -1821,6 +2205,7 @@
         setImportedInput("lane." + lane + ".steps", importedStepsText(importedValue(config, "lane.profiles." + lane + ".orchestration.steps", [])));
         setImportedInput("lane." + lane + ".max_optional_skills", importedValue(config, "capability_selection.lane_profiles." + lane + ".max_optional_skills", ""));
       });
+      renderExecutionFlows();
       ["mode", "event_store_ref", "replay_cases_ref", "team_overlay_ref"].forEach(function (key) { setImportedInput("self." + key, importedValue(config, "self_optimization." + key, key === "mode" ? "disabled" : "")); });
       skippedSteps = {};
       importedFileName = fileName || "team-config.yaml";
@@ -1845,15 +2230,19 @@
         if (inp) { inp.value = snap[k]; }
       });
       Object.keys(stored.lists || {}).forEach(function (id) {
-        if (id !== "extensionList") { restoreList(id, stored.lists[id]); }
+        if (id !== "extensionList" && id !== "alignmentCustomList") { restoreList(id, stored.lists[id]); }
       });
       el("extensionList").innerHTML = "";
       ((stored.lists && stored.lists.extensionList) || []).forEach(addExtensionRow);
       renderExtensionEmpty();
+      el("alignmentCustomList").innerHTML = "";
+      ((stored.lists && stored.lists.alignmentCustomList) || []).forEach(addAlignmentCustomRow);
+      renderAlignmentCustomEmpty();
       if (stored.alignmentOrder && stored.alignmentOrder.length === 5) { alignmentOrder = stored.alignmentOrder; renderAlignmentOrder(); }
       if (stored.alignmentOverrides) { alignmentOverrides = stored.alignmentOverrides; renderAlignmentOrder(); }
       if (stored.skippedSteps) { skippedSteps = stored.skippedSteps; }
       if (typeof stored.currentStep === "number") { currentStep = stored.currentStep; }
+      renderExecutionFlows();
     }
 
     document.addEventListener("input", function (ev) {
@@ -1861,7 +2250,22 @@
     });
 
     document.addEventListener("change", function (ev) {
-      if (ev.target.matches("[data-path]")) { delete skippedSteps[currentStep]; render(); }
+      if (ev.target.matches("[data-path]")) {
+        var changedPath = ev.target.getAttribute("data-path");
+        FLOW_SCOPES.forEach(function (scope) { if (changedPath === flowPath(scope, "mode")) { renderExecutionFlow(scope); } });
+        delete skippedSteps[currentStep]; render();
+      }
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll("[data-add-flow-step]"), function (button) {
+      button.addEventListener("click", function () {
+        var scope = button.getAttribute("data-add-flow-step");
+        var rows = orchestrationRows(flowInput(scope, "steps").value);
+        rows.push(["step-" + (rows.length + 1), "implementation", "", ""]);
+        setFlowRows(scope, rows);
+        delete skippedSteps[currentStep];
+        render();
+      });
     });
 
     Array.prototype.forEach.call(document.querySelectorAll("[data-go]"), function (button) {
@@ -1903,6 +2307,15 @@
     el("addExtensionSkill").addEventListener("click", function () {
       addExtensionRow();
       var rows = el("extensionList").querySelectorAll(".extension-item");
+      var first = rows[rows.length - 1].querySelector("input");
+      if (first) { first.focus(); }
+      delete skippedSteps[currentStep];
+      render();
+    });
+
+    el("addAlignmentStep").addEventListener("click", function () {
+      addAlignmentCustomRow();
+      var rows = el("alignmentCustomList").querySelectorAll(".alignment-extension");
       var first = rows[rows.length - 1].querySelector("input");
       if (first) { first.focus(); }
       delete skippedSteps[currentStep];
@@ -1985,15 +2398,20 @@
       document.querySelector('[data-path="domain.enabled"]').value = "general";
       document.querySelector('[data-path="alignment.mode"]').value = "default";
       document.querySelector('[data-path="domain.custom.lane_policy.mode"]').value = "dynamic";
+      document.querySelector('[data-path="domain.d3a.orchestration.mode"]').value = "framework_default";
+      document.querySelector('[data-path="domain.custom.orchestration.mode"]').value = "workflow_skill";
       document.querySelector('[data-path="lane.default"]').value = "lite";
       document.querySelector('[data-path="self.mode"]').value = "disabled";
       Array.prototype.forEach.call(document.querySelectorAll('[data-path^="lane."][data-path$=".mode"]'), function (select) { select.value = "autonomous"; });
+      renderExecutionFlows();
       alignmentOrder = ["discovery", "brainstorming", "grilling", "docs", "check"];
       alignmentOverrides = {};
       removedBindings = {};
       renderBindings({});
       el("extensionList").innerHTML = "";
       renderExtensionEmpty();
+      el("alignmentCustomList").innerHTML = "";
+      renderAlignmentCustomEmpty();
       skippedSteps = {};
       importedFileName = "";
       importError = "";

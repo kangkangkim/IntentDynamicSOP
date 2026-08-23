@@ -6,6 +6,7 @@ domain:
   mode: d3a
   d3a:
     dt_domains: []
+    orchestration: {mode: framework_default, steps: []}
   custom:
     id: null
     trigger_rules: []
@@ -18,6 +19,7 @@ domain:
     workflow_skill_ref: null
     planner_skill_ref: null
     completion_skill_ref: null
+    orchestration: {mode: workflow_skill, steps: []}
 general:
   components: []
   test_domains: []
@@ -63,6 +65,10 @@ knowledge:
   feature_docs_root_ref: docs
   layer_docs:
     DO: .claude/skills/idc-workflow/references/knowledge/d3a/layers/DO.md
+  lane_docs:
+    fast: [QUICKSTART.md]
+    lite: [docs/atomic-skills.md]
+    complex: [docs/architecture.md]
   verification_mapping_ref: examples/e2e-tr3-d3a/execution-plan.yaml
   repo_context:
     provider_skill_ref: null

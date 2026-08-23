@@ -47,11 +47,26 @@ skill_policy = lane_profile["skills"] || {}
 allowed_skill_ids = Array(skill_policy["allow"])
 denied_skill_ids = Array(skill_policy["deny"])
 configured_required_ids = Array(skill_policy["required"])
-orchestration = lane_profile["orchestration"] || {}
-orchestration_mode = lane_applicability == "applicable" ? (orchestration["mode"] || "autonomous") : "execution_profile"
+domain_modules = effective.dig("domains", "modules") || {}
+selected_domain_id = demand["selected_domain"].to_s
+domain_module = domain_modules[selected_domain_id]
+if domain_module.nil? && domain_modules["custom"].is_a?(Hash) && domain_modules["custom"]["id"].to_s == selected_domain_id
+  domain_module = domain_modules["custom"]
+end
+domain_module ||= effective["domain"] if effective.dig("domain", "id").to_s == selected_domain_id
+domain_orchestration = domain_module.is_a?(Hash) ? (domain_module["orchestration"] || {}) : {}
+domain_ordered = domain_orchestration["mode"] == "ordered"
+orchestration = domain_ordered ? domain_orchestration : (lane_profile["orchestration"] || {})
+orchestration_mode = if domain_ordered
+                       "ordered"
+                     elsif lane_applicability == "applicable"
+                       orchestration["mode"] || "autonomous"
+                     else
+                       "execution_profile"
+                     end
 orchestration_steps = Array(orchestration["steps"])
 capability_signals = available.flat_map { |capability| Array(capability["trigger_signals"]) }
-step_signals = lane_applicability == "applicable" ? orchestration_steps.flat_map { |step| Array(step["trigger_signals"]) } : []
+step_signals = orchestration_mode == "ordered" || lane_applicability == "applicable" ? orchestration_steps.flat_map { |step| Array(step["trigger_signals"]) } : []
 known_signals = (capability_signals + step_signals).uniq
 unknown_signals = signals - known_signals
 
@@ -92,7 +107,7 @@ matching_steps = orchestration_steps.select do |step|
   (required_signals - signals).empty?
 end
 step_skill_ids = matching_steps.flat_map { |step| Array(step["skill_ids"]) }.uniq
-orchestration_missing = lane_applicability == "applicable" && orchestration_mode == "ordered" && matching_steps.empty?
+orchestration_missing = orchestration_mode == "ordered" && matching_steps.empty?
 
 available_by_id = available.each_with_object({}) { |capability, index| index[capability["id"]] = capability }
 configured_required_for_stage = configured_required_ids.select do |skill_id|
@@ -125,11 +140,11 @@ available.each do |capability|
       skipped << { "capability_id" => id, "reason" => "team_lane_not_allowed" }
       next
     end
-    if orchestration_mode == "ordered" && !step_skill_ids.include?(id)
-      skipped << { "capability_id" => id, "reason" => "orchestration_step_excluded" }
-      next
-    end
-  else
+  end
+  if orchestration_mode == "ordered" && !step_skill_ids.include?(id)
+    skipped << { "capability_id" => id, "reason" => "orchestration_step_excluded" }
+    next
+  elsif lane_applicability != "applicable"
     declared_profiles = Array(capability["execution_profiles"])
     unless declared_profiles.empty? || declared_profiles.include?(profile)
       skipped << { "capability_id" => id, "reason" => "profile_ineligible" }

@@ -45,6 +45,10 @@ For guided setup, open `docs/team-config-generator.html`. Optional steps can be
 skipped to keep framework defaults. Teams with an existing config can use
 **Import YAML** to restore the form and inspect the current Alignment, Domain,
 Lane, and Completion orchestration before downloading an updated file.
+In **Execution orchestration**, General Fast/Lite/Complex are independent flow
+frames. D3A and Custom also have Domain frames: keep their default implementation
+or switch the middle sequence to `ordered` and arrange bound Skill steps; IDC
+gates around that sequence remain fixed.
 
 ## Step 3: Configure Team And Domain
 
@@ -148,6 +152,10 @@ knowledge:
   feature_docs_root_ref: <ENTERPRISE_FEATURE_DOCS_ROOT>
   layer_docs:
     DO: <ENTERPRISE_D3A_DO_KNOWLEDGE_REF>
+  lane_docs:
+    fast: [<ENTERPRISE_FAST_LANE_KNOWLEDGE_REF>]
+    lite: [<ENTERPRISE_LITE_LANE_KNOWLEDGE_REF>]
+    complex: [<ENTERPRISE_COMPLEX_LANE_KNOWLEDGE_REF>]
   verification_mapping_ref: <ENTERPRISE_LAYER_TO_DT_MAPPING_REF>
   repo_context:
     provider_skill_ref: <ENTERPRISE_REPO_CONTEXT_SKILL_REF>
@@ -159,6 +167,8 @@ Only refs belong here. Knowledge bodies remain in enterprise storage and are
 loaded progressively for the current stage or execution unit. `layer_docs` is
 D3A-specific: configure only the fixed D3A Layers the team overrides; omit a
 Layer to keep using the built-in knowledge catalog.
+`lane_docs` is General-specific: Knowledge Planner loads only the refs for the
+selected fast/lite/complex Lane.
 
 ## Step 6: Configure Execution Profiles
 

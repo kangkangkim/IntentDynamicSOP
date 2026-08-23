@@ -59,6 +59,9 @@ NEED_TRIAGE
 - `fixed` module 的 `selected_lane` 固定生效：缺省 `--lane` 自动填充，显式冲突的 `--lane` 会被拒绝，且 fixed Lane 不再经过 Lane Resolver。
 - `not_applicable` 由 module execution profile 接管并跳过 Lane Resolver。
 - D3A module 使用 `not_applicable` 和 `d3a_fixed_workflow`，不输出 Lane。
+- D3A / Custom 可声明 `domain.<id>.orchestration.mode: ordered` 来调整
+  Domain 中间原子 Skill 顺序；它不转移 Planner、Knowledge、Contract 或
+  Completion Gate 所有权。
 - GC SOP atomic abilities 通过 Skill Adapter Router 复用，不写进 Domain Module Router。
 
 ## 输出形状

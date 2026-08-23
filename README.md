@@ -175,7 +175,7 @@ $idc-workflow <TASK_OR_TR3>
 | `docs/source-attribution.md` | 公开方法论来源和 license attribution。 |
 | `docs/deep-dive/` | Lane、约束加载、repo context、TR3 输入的专题深入。 |
 | `docs/enterprise-adoption-map.html` | 企业资产 ↔ team-config 插槽逐项匹配图 + 入区五步。 |
-| `docs/team-config-generator.html` | 七步引导式配置：可跳过可选步骤、增删团队 Skills、按 D3A 场景增删 Layer 知识映射、导入已有 YAML 并还原完整编排图。 |
+| `docs/team-config-generator.html` | 七步策略设计器：从 Harness 原则、Alignment、Domain 策略进入可视化执行画布；General 三条 Lane、D3A 与 Custom 均以可排序步骤框编排，再绑定对应知识并预览完整流程。 |
 | `docs/team-rollout-playbook.md` | 面向多团队推广的最小配置、路径规则、接入层级和验收清单。 |
 | `docs/*.html`（其余 4 个） | 输入分流、Discovery 触发、D3A/General 双路径、上下文运行视角的可视化。 |
 | `.claude/skills/idc-workflow/TEAM_CUSTOMIZATION.md` | 团队接入时优先看的定制指南。 |

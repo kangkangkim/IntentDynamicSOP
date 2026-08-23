@@ -1,6 +1,7 @@
 knowledge_demand:
   execution_unit_ref: fast-unit
   selected_domain: general
+  selected_lane: fast
   selected_layer: null
   selected_components: [GENERAL_COMPONENT_PLACEHOLDER]
   selected_test_domains: [GENERAL_TEST_PLACEHOLDER]

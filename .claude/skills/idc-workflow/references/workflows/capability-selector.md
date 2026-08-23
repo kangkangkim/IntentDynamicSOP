@@ -36,9 +36,13 @@ Planner capability demands
      a matching step returns `NEEDS_ORCHESTRATION_MAPPING`.
 7. For D3A, apply `d3a_fixed_workflow` eligibility and the current Layer Context
    Packet; do not manufacture a Lane.
-8. Select all required matches, then the smallest useful optional set within the
+8. When effective D3A or Custom Domain orchestration uses `mode: ordered`, run
+   its matching middle steps in declared order. Do not also invoke the D3A
+   default middle sequence or Custom `workflow_skill_ref`; framework Planner,
+   Knowledge, Contract, and Completion gates still wrap the declared steps.
+9. Select all required matches, then the smallest useful optional set within the
    profile budget.
-9. Emit execution order plus selected and skipped reasons before Skill Adapter
+10. Emit execution order plus selected and skipped reasons before Skill Adapter
    Router executes them.
 
 ## Lane behavior

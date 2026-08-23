@@ -13,6 +13,13 @@ team_config:
       dt_domains:
         - id: string
           knowledge_ref: ref
+      orchestration:
+        mode: framework_default | ordered
+        steps:
+          - id: string
+            stage: string
+            skill_ids: []
+            trigger_signals: []
     custom:
       id: string | null
       trigger_rules: []
@@ -29,6 +36,13 @@ team_config:
       workflow_skill_ref: skill_ref | null
       planner_skill_ref: skill_ref | null
       completion_skill_ref: skill_ref | null
+      orchestration:
+        mode: workflow_skill | ordered
+        steps:
+          - id: string
+            stage: string
+            skill_ids: []
+            trigger_signals: []
   general:
     components: []
     test_domains: []
@@ -55,6 +69,10 @@ team_config:
     architecture_doc_ref: ref | null
     feature_docs_root_ref: ref | null
     layer_docs: {}
+    lane_docs:
+      fast: [ref]
+      lite: [ref]
+      complex: [ref]
     verification_mapping_ref: ref | null
     repo_context:
       provider_skill_ref: skill_ref | null
@@ -122,6 +140,8 @@ rules:
   - A bound skill is only available; Capability Selector decides whether it runs.
   - Lane profiles are executable policy: allow/deny/required and matching orchestration steps must affect selection.
   - Ordered orchestration has no silent fallback when the active stage lacks a matching step.
+  - D3A and Custom ordered orchestration configures only the Domain's middle execution sequence; Core retains Planner/Knowledge/Contract/Completion gates.
+  - Missing domain.d3a.orchestration uses framework_default; missing domain.custom.orchestration uses workflow_skill.
   - The alignment section configures the pre-alignment pipeline only; Scenario Router, gate, and completion ownership are not configurable through it.
   - Missing alignment (or missing alignment.bindings / alignment.orchestration) materializes the framework default five-step chain with framework-owned trigger signals and no other output difference.
   - alignment.orchestration.mode is always ordered; every framework stage requires a step mapping, otherwise the resolver returns NEEDS_ORCHESTRATION_MAPPING.
