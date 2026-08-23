@@ -181,43 +181,59 @@ fail_plan("--knowledge-plan is required for execution") if options[:phase] == "e
 effective = load_yaml(options[:effective])
 fail_plan("effective config is not generated runtime state") unless effective["generated"] == true
 
-# Gate 2: an explicitly requested --domain must match the effective config's
-# domain, so a team that switched/unplugged a domain cannot still run sessions
-# of the other domain. A custom domain accepts both the literal `custom`
-# keyword and its declared domain.custom.id; both forms run the custom domain.
-# Bootstrap passes no --domain and stays exempt.
-effective_domain_id = effective.dig("domain", "id")
-effective_custom_domain = effective.dig("domain", "source") == "team-config-inline"
-accepted_domains = effective_custom_domain ? ["custom", effective_domain_id.to_s] : [effective_domain_id.to_s]
-accepted_domains = accepted_domains.reject(&:empty?).uniq
-if options[:domain] && effective_custom_domain && !accepted_domains.include?(options[:domain])
-  fail_plan(
-    "unknown domain: #{options[:domain]} (effective domain: custom/#{effective_domain_id}; " \
-    "accepted: #{accepted_domains.join(', ')})"
-  )
-end
-if options[:domain] && !effective_custom_domain
-  if !DOMAINS.include?(options[:domain])
-    fail_plan("unknown domain: #{options[:domain]} (accepted: #{accepted_domains.join(', ')})")
+# Gate 2: multi-domain configs accept any enabled module selected by Scenario
+# Router. Legacy configs remain single-domain and keep the original mismatch
+# error behavior. A custom domain accepts both `custom` and its declared id.
+domains_registry = effective["domains"]
+selected_domain = nil
+if domains_registry.is_a?(Hash) && domains_registry["modules"].is_a?(Hash)
+  enabled_domain_keys = Array(domains_registry["enabled"])
+  modules = domains_registry["modules"]
+  custom_domain_id = modules.dig("custom", "id").to_s
+  accepted_domains = enabled_domain_keys.dup
+  accepted_domains << custom_domain_id if enabled_domain_keys.include?("custom") && !custom_domain_id.empty?
+  accepted_domains = accepted_domains.uniq
+  selected_key = options[:domain]
+  selected_key = "custom" if !custom_domain_id.empty? && selected_key == custom_domain_id
+  if selected_key && !enabled_domain_keys.include?(selected_key)
+    fail_plan("unknown or disabled domain: #{options[:domain]} (enabled: #{accepted_domains.join(', ')})")
   end
-  if effective_domain_id != options[:domain]
+  selected_key ||= domains_registry["default"]
+  selected_domain = modules[selected_key] || effective["domain"]
+  options[:domain] = "custom" if selected_key == "custom" && options[:domain]
+else
+  effective_domain_id = effective.dig("domain", "id")
+  effective_custom_domain = effective.dig("domain", "source") == "team-config-inline"
+  accepted_domains = effective_custom_domain ? ["custom", effective_domain_id.to_s] : [effective_domain_id.to_s]
+  accepted_domains = accepted_domains.reject(&:empty?).uniq
+  if options[:domain] && effective_custom_domain && !accepted_domains.include?(options[:domain])
     fail_plan(
-      "--domain #{options[:domain]} does not match effective domain #{effective_domain_id || 'unknown'}; " \
-      "switch team-config domain.mode or use the effective domain"
+      "unknown domain: #{options[:domain]} (effective domain: custom/#{effective_domain_id}; " \
+      "accepted: #{accepted_domains.join(', ')})"
     )
   end
+  if options[:domain] && !effective_custom_domain
+    if !DOMAINS.include?(options[:domain])
+      fail_plan("unknown domain: #{options[:domain]} (accepted: #{accepted_domains.join(', ')})")
+    end
+    if effective_domain_id != options[:domain]
+      fail_plan(
+        "--domain #{options[:domain]} does not match effective domain #{effective_domain_id || 'unknown'}; " \
+        "switch team-config domain.mode or use the effective domain"
+      )
+    end
+  end
+  selected_domain = effective["domain"]
+  options[:domain] = "custom" if effective_custom_domain && options[:domain]
 end
-# The declared custom domain id and the `custom` keyword are the same domain;
-# normalize to the keyword the knowledge plans and output shape speak.
-options[:domain] = "custom" if effective_custom_domain && options[:domain]
 
 lane_applicable = options[:domain] == "general"
 custom_lane_mode = nil
 if options[:domain] == "custom"
-  custom_lane_mode = effective.dig("domain", "lane_policy", "mode")
+  custom_lane_mode = selected_domain.dig("lane_policy", "mode")
   lane_applicable = custom_lane_mode != "not_applicable"
   if custom_lane_mode == "fixed"
-    fixed_lane = effective.dig("domain", "lane_policy", "selected_lane")
+    fixed_lane = selected_domain.dig("lane_policy", "selected_lane")
     if options[:lane] && options[:lane] != fixed_lane
       fail_plan(
         "--lane #{options[:lane]} conflicts with domain.custom.lane_policy.mode fixed selected_lane #{fixed_lane}; " \
@@ -287,7 +303,7 @@ if options[:domain] == "custom"
     "execution" => "workflow_skill_ref",
     "completion" => "completion_skill_ref"
   }[options[:phase]]
-  custom_ref = effective.dig("domain", custom_ref_key) if custom_ref_key
+  custom_ref = selected_domain[custom_ref_key] if custom_ref_key
   fail_plan("custom domain is missing #{custom_ref_key}") if custom_ref_key && custom_ref.to_s.empty?
   refs << custom_ref if custom_ref
 end
@@ -295,7 +311,7 @@ end
 # Surface the effective domain's declared required contracts in the planning
 # plan so downstream contract gating sees them; the gate workflow ref rides
 # along so the plan is self-contained for contract enforcement.
-required_contracts = Array(effective.dig("domain", "required_contracts")).map(&:to_s)
+required_contracts = Array(selected_domain["required_contracts"]).map(&:to_s)
 if options[:phase] == "planning" && required_contracts.any?
   refs << ".claude/skills/idc-workflow/references/workflows/contract-gate.md"
 end

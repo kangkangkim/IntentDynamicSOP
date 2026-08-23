@@ -59,9 +59,9 @@ ignore it), and planning is INVALID only when neither `--lane` nor `lane.default
 is available. A custom domain with `lane_policy.mode: fixed` auto-fills its
 `selected_lane` and rejects an explicit conflicting `--lane`; fixed lanes skip
 the Lane Resolver, which only runs for `mode: dynamic`.
-`plan_context.rb` rejects a `--domain` that does not match the effective
-config's domain mode; fix `domain.mode` in `team-config.yaml` and regenerate
-the effective config:
+`plan_context.rb` rejects a `--domain` that is not listed in the effective
+config's enabled Domain set. Fix `domain.enabled` (or the legacy single
+`domain.mode`) in `team-config.yaml` and regenerate the effective config:
 
 ```sh
 ruby .claude/skills/idc-team-config/scripts/plan_context.rb \

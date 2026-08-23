@@ -11,10 +11,14 @@ team:
   repo_path: <REPO_PATH>
 
 domain:
+  # Team capability scope. Scenario Router selects one enabled Domain per task.
+  # Omit for legacy single-domain behavior; new teams should declare it.
+  enabled: [general]
   # d3a: built-in enterprise-defined D3A workflow
   # general: dynamic General Coding workflow
   # custom: inline team-owned Domain Module defined below
-  mode: d3a
+  # mode is the fallback/default and must be included in enabled.
+  mode: general
 
   d3a:
     # Non-empty replaces registries/dt-domains.yaml wholesale; never merge.

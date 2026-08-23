@@ -92,6 +92,13 @@ Alignment Context Plan 默认保守加载团队配置的完整链。只有调用
 精确选择（同一步骤的 triggers 为 AND）并始终保留 `alignment_check`；团队
 自定义 bindings、顺序和 trigger token 都是唯一 Skill 选择来源。
 
+Alignment 不是把所有意图 Skill 固定串行执行。Input Adapter 先区分
+`raw_idea`、`structured_requirement`、`tr3_design_doc` 和仍然有效的
+`approved_alignment`：raw idea 必须先经 Discovery；structured requirement
+默认跳过 Discovery / Brainstorming，只在关键缺口存在时进入 Grilling；TR3
+先由 TR3 Adapter 解析，再按缺口选择 Grilling / Grill With Docs；所有未批准
+路径最终都必须经过 `alignment_check`。Domain 选择不会改变这条成熟度策略。
+
 `team-config.yaml` 的可选顶层 `alignment` 段把 pre-alignment 意图加工链做成可配置管线（与 Lane 编排同形状）：
 
 ```yaml
@@ -107,7 +114,7 @@ alignment:
 推荐复用方式：
 
 1. 多团队共享 `IDC Core`，不要 fork 出不同 core。
-2. 新领域填写 `domain.mode: custom` 和内联 `domain.custom`，不要改共享 Domain registry。
+2. 用 `domain.enabled` 声明团队支持的全部 Domain；新领域加入 `custom` 并填写内联 `domain.custom`，不要改共享 Domain registry。
 3. 真实路径、内部 skill 和 knowledge index 只写在团队自己的 `team-config.yaml`；命令留在 Skill 内。
 4. Pre-alignment 同理：公司已有 Brainstorming 时通过 Team Binding 复用；公司没有 Grill Me 时，直接使用本仓库提供的 `idc-intent-grilling` 系列。
 
@@ -168,7 +175,7 @@ $idc-workflow <TASK_OR_TR3>
 | `docs/source-attribution.md` | 公开方法论来源和 license attribution。 |
 | `docs/deep-dive/` | Lane、约束加载、repo context、TR3 输入的专题深入。 |
 | `docs/enterprise-adoption-map.html` | 企业资产 ↔ team-config 插槽逐项匹配图 + 入区五步。 |
-| `docs/team-config-generator.html` | 交互式表单：填完即生成、即校验 `team-config.yaml`，可复制/下载。 |
+| `docs/team-config-generator.html` | 七步引导式配置：可跳过可选步骤、增删团队 Skills、按 D3A 场景增删 Layer 知识映射、导入已有 YAML 并还原完整编排图。 |
 | `docs/team-rollout-playbook.md` | 面向多团队推广的最小配置、路径规则、接入层级和验收清单。 |
 | `docs/*.html`（其余 4 个） | 输入分流、Discovery 触发、D3A/General 双路径、上下文运行视角的可视化。 |
 | `.claude/skills/idc-workflow/TEAM_CUSTOMIZATION.md` | 团队接入时优先看的定制指南。 |

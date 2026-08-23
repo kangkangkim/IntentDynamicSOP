@@ -12,6 +12,11 @@ effective_team_config:
     source: builtin | team-config-inline
     lane_applicability: applicable | not_applicable | null
     execution_profile: lane_driven | d3a_fixed_workflow | null
+  domains: # emitted when team-config declares domain.enabled
+    enabled: [general, d3a, custom]
+    default: general | d3a | custom
+    modules:
+      domain_key: {}
   bindings: {}
   adapter_extensions: []
   available_capabilities: []
@@ -61,4 +66,5 @@ alignment:
 rules:
   - This file is generated and must never be edited manually.
   - Runtime routing reads this file after team-config validation.
+  - Multi-domain routing selects exactly one module from domains.enabled per task; domain remains the default module for compatibility.
   - This file is checkpoint state, not completion evidence.

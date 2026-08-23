@@ -154,11 +154,23 @@ errors << "team.repo_path does not exist or is not a directory: #{team_repo_ref}
 
 mode = value_at(config, "domain", "mode")
 errors << "domain.mode must be d3a, general, or custom" unless %w[d3a general custom].include?(mode)
+configured_enabled_modes = value_at(config, "domain", "enabled")
+enabled_modes = configured_enabled_modes.nil? ? [mode] : configured_enabled_modes
+unless enabled_modes.is_a?(Array) && !enabled_modes.empty?
+  errors << "domain.enabled must be a non-empty list"
+  enabled_modes = [mode]
+end
+unknown_enabled_modes = enabled_modes - %w[d3a general custom]
+errors << "domain.enabled contains unknown mode(s): #{unknown_enabled_modes.join(', ')}" if unknown_enabled_modes.any?
+errors << "domain.enabled must not contain duplicates" if enabled_modes.uniq.length != enabled_modes.length
+errors << "domain.mode must be included in domain.enabled" unless enabled_modes.include?(mode)
 
-# Gate 1: a builtin domain.mode must be active-registered in the shared domain
-# module registry; `custom` domains are inline-registered via domain.custom.
+# Gate 1: every enabled builtin domain must be active-registered in the shared
+# domain module registry; `custom` domains are inline-registered via
+# domain.custom. Configs without domain.enabled remain single-domain.
 active_domain_ids = []
-if %w[d3a general].include?(mode)
+enabled_builtin_modes = enabled_modes & %w[d3a general]
+if enabled_builtin_modes.any?
   if domain_registry_path.file?
     begin
       domain_registry = IDCRubyCompat.safe_yaml_load(domain_registry_path.read) || {}
@@ -178,8 +190,10 @@ if %w[d3a general].include?(mode)
   else
     errors << "domain module registry is missing: #{domain_registry_path}"
   end
-  unless active_domain_ids.include?(mode)
-    errors << "domain.mode #{mode} is not registered in the domain module registry; register it or switch domain.mode"
+  enabled_builtin_modes.each do |enabled_mode|
+    unless active_domain_ids.include?(enabled_mode)
+      errors << "domain.mode #{enabled_mode} is not registered in the domain module registry; register it or switch domain.mode"
+    end
   end
 end
 
@@ -188,7 +202,7 @@ validate_registry(value_at(config, "general", "components") || [], "general.comp
 validate_registry(value_at(config, "general", "test_domains") || [], "general.test_domains", errors)
 
 custom = value_at(config, "domain", "custom") || {}
-if mode == "custom"
+if enabled_modes.include?("custom")
   errors << "domain.custom.id is required" unless present?(custom["id"])
   reserved_domain_keywords = %w[d3a general custom]
   if present?(custom["id"]) && reserved_domain_keywords.include?(custom["id"].to_s)
@@ -218,7 +232,7 @@ if mode == "custom"
 end
 
 lane_policy = custom["lane_policy"] || {}
-if mode == "custom"
+if enabled_modes.include?("custom")
   policy_mode = lane_policy["mode"]
   errors << "domain.custom.lane_policy.mode is invalid" unless %w[dynamic fixed not_applicable].include?(policy_mode)
   if policy_mode == "fixed" && !%w[fast lite complex].include?(lane_policy["selected_lane"])
@@ -671,43 +685,55 @@ knowledge_catalog = {
   }
 }
 
-domain_effective = case mode
-                   when "d3a"
-                     {
-                       "id" => "d3a",
-                       "source" => "builtin",
-                       "lane_applicability" => "not_applicable",
-                       "execution_profile" => "d3a_fixed_workflow",
-                       "coding_layers_source" => "registries/d3a-layers.yaml",
-                       "test_domains_source" => d3a_overrides.empty? ? "registries/dt-domains.yaml" : "team-config.yaml",
-                       "coding_layers" => builtin_d3a_layers,
-                       "test_domains" => d3a_test_domains
-                     }
-                   when "general"
-                     {
-                       "id" => "general",
-                       "source" => "builtin",
-                       "lane_applicability" => "applicable",
-                       "execution_profile" => "lane_driven",
-                       "components" => general_components,
-                       "test_domains" => general_test_domains
-                     }
-                   when "custom"
-                     {
-                       "id" => custom["id"],
-                       "source" => "team-config-inline",
-                       "lane_policy" => custom["lane_policy"],
-                       "trigger_rules" => custom["trigger_rules"],
-                       "coding_layers" => custom["coding_layers"],
-                       "test_domains" => custom["test_domains"],
-                       "required_contracts" => custom["required_contracts"],
-                       "workflow_skill_ref" => custom["workflow_skill_ref"],
-                       "planner_skill_ref" => custom["planner_skill_ref"],
-                       "completion_skill_ref" => custom["completion_skill_ref"]
-                     }
-                   else
-                     {}
-                   end
+build_effective_domain = lambda do |domain_mode|
+  case domain_mode
+  when "d3a"
+    {
+      "id" => "d3a",
+      "source" => "builtin",
+      "lane_applicability" => "not_applicable",
+      "execution_profile" => "d3a_fixed_workflow",
+      "coding_layers_source" => "registries/d3a-layers.yaml",
+      "test_domains_source" => d3a_overrides.empty? ? "registries/dt-domains.yaml" : "team-config.yaml",
+      "coding_layers" => builtin_d3a_layers,
+      "test_domains" => d3a_test_domains
+    }
+  when "general"
+    {
+      "id" => "general",
+      "source" => "builtin",
+      "lane_applicability" => "applicable",
+      "execution_profile" => "lane_driven",
+      "components" => general_components,
+      "test_domains" => general_test_domains
+    }
+  when "custom"
+    {
+      "id" => custom["id"],
+      "source" => "team-config-inline",
+      "lane_policy" => custom["lane_policy"],
+      "trigger_rules" => custom["trigger_rules"],
+      "coding_layers" => custom["coding_layers"],
+      "test_domains" => custom["test_domains"],
+      "required_contracts" => custom["required_contracts"],
+      "workflow_skill_ref" => custom["workflow_skill_ref"],
+      "planner_skill_ref" => custom["planner_skill_ref"],
+      "completion_skill_ref" => custom["completion_skill_ref"]
+    }
+  else
+    {}
+  end
+end
+
+domain_modules_effective = enabled_modes.each_with_object({}) do |enabled_mode, modules|
+  modules[enabled_mode] = build_effective_domain.call(enabled_mode)
+end
+domain_effective = build_effective_domain.call(mode)
+domains_effective = {
+  "enabled" => enabled_modes,
+  "default" => mode,
+  "modules" => domain_modules_effective
+}
 
 capability_registry_path = harness_root.join(".claude/skills/idc-workflow/references/registries/team-capabilities.yaml")
 capability_rows = []
@@ -846,6 +872,7 @@ effective = {
     "warnings" => warnings
   }
 }
+effective["domains"] = domains_effective unless configured_enabled_modes.nil?
 
 if errors.any?
   warn "INVALID team-config.yaml"

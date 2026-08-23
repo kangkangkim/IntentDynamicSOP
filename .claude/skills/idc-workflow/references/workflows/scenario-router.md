@@ -18,6 +18,8 @@ Scenario Router 只回答一个问题：
 ## 规则
 
 - 不要从模糊描述里猜企业 domain 细节。
+- 如果 Effective Config 含 `domains.enabled`，先用它过滤可选 module；每次任务只选择其中一个，`domains.default` 只在没有更强匹配时兜底。
+- Effective Config 的单数 `domain` 是兼容字段，代表默认 module，不得覆盖或隐藏其他 enabled modules。
 - 只有当任务匹配 `domains/registry.yaml` 中的某个 module 时，才进入 Domain Module Router。
 - D3A 只是一个 active Domain Module，不是 Core 特例。
 - 没有匹配 Domain Module 但需要动态编排的任务进入 `DYNAMIC_SCENARIO`。

@@ -8,8 +8,9 @@ Domain Module Router 是 Scenario Router 的插件化扩展。
 .idc/effective-team-config.yaml
 ```
 
-内置 `d3a` / `general` 再读取共享 module；`domain.mode: custom` 直接使用
-Resolver 从 `team-config.yaml.domain.custom` 生成的有效 module：
+内置 `d3a` / `general` 再读取共享 module；启用了 `custom` 时直接使用
+Resolver 从 `team-config.yaml.domain.custom` 生成的有效 module。团队可通过
+`domain.enabled` 同时启用多个 Domain，`domain.mode` 只作为默认兜底：
 
 ```text
 domains/<domain>/module.yaml
@@ -43,13 +44,14 @@ NEED_TRIAGE
 ## 关键约束
 
 - Router 只选择 module。
+- Router 只能从 `effective.domains.enabled` 中选择一个 module；多选表示团队能力范围，不表示一次任务并行执行多个 Domain。
 - Router 不选择 module 内部 Layer。
 - Router 不选择 module 内部 test domain。
 - Router 不读取真实企业知识。
 - D3A 的 `domain.d3a.dt_domains`、General 的 `general.components` / `general.test_domains` 非空时整体替换默认 registry；不合并两个来源。
 - Custom Domain 由 `domain.custom` 内联注册，不要求团队编辑共享 `domains/registry.yaml`。
-- 内置 `domain.mode`（`d3a` / `general`）必须在 `domains/registry.yaml` 中保持 `status: active`；Resolver 会拒绝未注册的内置 mode。拔掉内置 domain 意味着同时删除 registry 条目并切换 `domain.mode`。
-- `plan_context` 拒绝与 effective domain 不一致的 `--domain` 取值：`general` / `d3a` 只在 effective domain id 一致时可用，`custom` 只在 effective domain 来源为 `team-config-inline` 时可用；custom 域还接受声明的 `domain.custom.id`（与 `custom` 等价，都按该 custom 域处理，且 `domain.custom.id` 不得复用 `d3a` / `general` / `custom` 保留字）。
+- 所有启用的内置 Domain（`d3a` / `general`）必须在 `domains/registry.yaml` 中保持 `status: active`；Resolver 会拒绝未注册的 enabled mode。
+- `plan_context` 接受任意已启用的 `--domain`，拒绝未启用项；custom 域还接受声明的 `domain.custom.id`（与 `custom` 等价，且不得复用 `d3a` / `general` / `custom` 保留字）。旧配置未声明 `domain.enabled` 时仍保持单 Domain 匹配规则。
 - Module 内部规划由该 module 的 planner 负责。
 - D3A 是自定义 domain module，不是 Core 特例。
 - Domain Module 可以声明 `lane_policy.mode: dynamic | fixed | not_applicable`。

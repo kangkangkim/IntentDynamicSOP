@@ -7,6 +7,7 @@ team_config:
     id: string
     repo_path: path
   domain:
+    enabled: [d3a, general, custom] # non-empty subset; optional for legacy configs
     mode: d3a | general | custom
     d3a:
       dt_domains:
@@ -111,6 +112,9 @@ rules:
   - Commands and pass/fail logic live inside bound skills.
   - Registry overrides replace defaults wholesale and never merge sources.
   - Custom Domain definitions are registered from domain.custom without editing shared registries.
+  - domain.enabled declares the team capability scope; Scenario Router selects exactly one enabled Domain for each task.
+  - domain.mode is the default/fallback Domain and must appear in domain.enabled when that list is present.
+  - Missing domain.enabled preserves legacy single-domain behavior as if enabled contained only domain.mode.
   - domain.custom.required_contracts must be a list drawn from the allowed contract ids (task_contract, verification_contract, api_contract, d3a_specification); invalid shapes or unknown ids are rejected at resolve time and the effective list is surfaced in the domain's planning-phase context plan.
   - Adapter extensions cannot override Domain, Lane, Contract, Human Alignment, or Completion ownership.
   - Adapter extensions cannot register orchestration or Domain execution Skills as atomic capabilities.

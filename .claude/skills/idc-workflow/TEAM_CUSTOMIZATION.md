@@ -73,8 +73,10 @@ Shared registries (`dt-domains.yaml`, `general-components.yaml`,
 `team-config.yaml` replaces the corresponding registry wholesale (never merge).
 Do not edit shared registry files in the team copy.
 
-Custom domains are adoption configuration: use `domain.mode: custom` and fill
-the inline `domain.custom` contract. Do not edit the shared Domain registry.
+Domain capability is adoption configuration: list every supported route in
+`domain.enabled`, keep `domain.mode` as the fallback, and add `custom` plus the
+inline `domain.custom` contract for a team-owned Domain. Do not edit the shared
+Domain registry.
 
 For multi-team reuse, do not put concrete team paths or commands into the shared
 adapter registry. Keep `references/registries/skill-adapters.yaml` as the common

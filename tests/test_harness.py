@@ -371,13 +371,14 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "team:",
         "repo_path: <REPO_PATH>",
         "domain:",
-        "mode: d3a",
+        "mode: general",
         "dt_domains: []",
         "custom:",
         "workflow_skill_ref: null",
         "general:",
         "components: []",
         "test_domains: []",
+        "enabled: [general]",
         "bindings:",
         "brainstorming:",
         "dt_design:",
@@ -405,6 +406,16 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     assert_true("skill_ref: null" in bindings_block, "绑定槽必须用 skill_ref 绑定。")
     for fragment in [
         "domain.custom.lane_policy.mode",
+        "domain.enabled",
+        "yamlFile",
+        "parseTeamConfigYaml",
+        "strategyOverview",
+        "skipBtn",
+        "standardSkillPicker",
+        "addExtensionSkill",
+        "data-d3a-knowledge",
+        "addLayerMapping",
+        "refreshLayerMappingUI",
         "domain.custom.lane_policy.selected_lane",
         "laneProfileArea",
         "lane.\" + lane + \".allow",
@@ -418,6 +429,11 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
         "capability_selection:",
         "self_optimization:",
         "ext.split(/\\r?\\n/)",
+        'data-maturity="raw_idea"',
+        'data-maturity="structured_requirement"',
+        'data-maturity="tr3_design_doc"',
+        'data-maturity="approved_alignment"',
+        "这里配置的是各策略节点使用哪个 Skill，并不是让五个 Skill 每次串行执行",
     ]:
         assert_true(fragment in team_config_generator, f"team-config generator 缺少 V1 字段或多扩展能力支持：{fragment}")
     for legacy_field in ["skill_base_path", "use_d3a", "fast_skip_steps", "lite_skip_steps", "complex_skip_steps"]:
@@ -2180,6 +2196,75 @@ bindings: {}
         assert_true(
             matched.returncode == 0 and "status: READY" in matched.stdout,
             f"effective domain 为 general 时 --domain general 必须保持 READY：{matched.stdout}",
+        )
+
+
+def test_multi_domain_config_routes_each_enabled_domain():
+    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    workflow = (ROOT / ".claude/skills/idc-workflow/SKILL.md").read_text(encoding="utf-8")
+    scenario_router = (ROOT / ".claude/skills/idc-workflow/references/workflows/scenario-router.md").read_text(encoding="utf-8")
+    assert_true(
+        "domains.enabled" in workflow and "domains.default" in workflow and "domains.enabled" in scenario_router,
+        "主工作流和 Scenario Router 必须消费多 Domain routing scope，而不只是 Resolver 能解析。",
+    )
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Path(temp_dir) / "team-config.yaml"
+        config.write_text(
+            """config_version: 1
+
+team:
+  id: multi-domain-team
+  repo_path: .
+
+domain:
+  enabled: [general, d3a]
+  mode: general
+
+bindings: {}
+""",
+            encoding="utf-8",
+        )
+        effective = Path(temp_dir) / "effective.yaml"
+        preflighted = subprocess.run(
+            ["ruby", str(preflight), "--config", str(config), "--output", str(effective)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            preflighted.returncode == 0 and "status: READY" in preflighted.stdout,
+            f"General + D3A 多 Domain 配置必须 READY：{preflighted.stdout}\n{preflighted.stderr}",
+        )
+        effective_data = yaml.safe_load(effective.read_text(encoding="utf-8"))
+        assert_true(
+            effective_data["domains"]["enabled"] == ["general", "d3a"]
+            and set(effective_data["domains"]["modules"]) == {"general", "d3a"},
+            f"Resolver 必须物化全部 enabled Domain：{effective_data.get('domains')}",
+        )
+
+        for domain in ["general", "d3a"]:
+            planned = subprocess.run(
+                ["ruby", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", domain],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            assert_true(
+                planned.returncode == 0 and "status: READY" in planned.stdout and f"domain: {domain}" in planned.stdout,
+                f"启用的 {domain} 必须可独立生成 Context Plan：{planned.stdout}\n{planned.stderr}",
+            )
+
+        disabled = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "custom"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(
+            disabled.returncode != 0 and "unknown or disabled domain" in disabled.stdout,
+            f"未启用的 Domain 必须被拒绝：{disabled.stdout}",
         )
 
 
@@ -4023,6 +4108,7 @@ def run():
         test_official_entry_regenerates_effective_config_after_team_config_swap,
         test_filled_team_config_when_present,
         test_plan_context_rejects_domain_mode_mismatch,
+        test_multi_domain_config_routes_each_enabled_domain,
         test_custom_required_contracts_are_validated_and_consumed,
         test_plan_context_accepts_declared_custom_domain_id,
         test_fixed_lane_policy_conflicting_lane_is_rejected,

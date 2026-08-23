@@ -106,6 +106,9 @@ references/workflows/input-adapter.md
   -> references/human-views/
 ```
 
+For multi-Domain configs, route exactly one module from `domains.enabled` and
+use `domains.default` only as fallback; details: `references/workflows/domain-module-router.md`.
+
 The intent-processing steps come only from the effective `alignment:` pipeline
 (shape: `references/schemas/team-config.schema.yaml`). An absent or partial
 section uses the framework default chain. Teams may rebind/reorder intent

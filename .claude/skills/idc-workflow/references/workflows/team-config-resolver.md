@@ -25,17 +25,20 @@ team-config.yaml
 
 ## Domain materialization
 
-- `mode: d3a` selects the built-in D3A module. Non-empty DT domains replace the
+- `domain.enabled` declares every Domain this team can route to. Missing
+  `enabled` preserves legacy single-domain behavior using only `domain.mode`.
+- `domain.mode` is the default/fallback and must be included in `enabled`.
+- enabled `d3a` materializes the built-in D3A module. Non-empty DT domains replace the
   default DT registry wholesale.
-- `mode: general` selects the built-in General module. Non-empty component and
+- enabled `general` materializes the built-in General module. Non-empty component and
   test-domain lists replace their defaults wholesale.
-- `mode: custom` creates an effective Domain Module from `domain.custom`; the
+- enabled `custom` creates an effective Domain Module from `domain.custom`; the
   team does not edit `domains/registry.yaml` or create another config file.
-- `mode: d3a` and `mode: general` must be registered `status: active` in the
+- Enabled `d3a` and `general` must be registered `status: active` in the
   shared domain module registry (`domains/registry.yaml`; overridable with the
-  resolver's `--registry PATH`). An unregistered mode fails with
+  resolver's `--registry PATH`). An unregistered enabled mode fails with
   `domain.mode <mode> is not registered in the domain module registry; register
-  it or switch domain.mode`. `mode: custom` is exempt: it registers inline via
+  it or switch domain.mode`. `custom` is exempt: it registers inline via
   `domain.custom`.
 
 ## Adapter materialization

@@ -9,7 +9,7 @@ For a General Coding team, the smallest valid file is:
 ```yaml
 config_version: 1
 team: {id: my-team, repo_path: /repos/my-team}
-domain: {mode: general}
+domain: {enabled: [general], mode: general}
 bindings: {}
 ```
 
@@ -41,6 +41,11 @@ cp team-config.yaml.template team-config.yaml
 `team-config.yaml` is ignored by git. Files under `.idc/` are framework-owned,
 read-only runtime state, not another configuration entry.
 
+For guided setup, open `docs/team-config-generator.html`. Optional steps can be
+skipped to keep framework defaults. Teams with an existing config can use
+**Import YAML** to restore the form and inspect the current Alignment, Domain,
+Lane, and Completion orchestration before downloading an updated file.
+
 ## Step 3: Configure Team And Domain
 
 Fill the team identity and repository root:
@@ -52,14 +57,17 @@ team:
   repo_path: <REPO_PATH>
 ```
 
-Choose a built-in Domain:
+Declare every Domain the team supports, then choose the fallback used only when
+the Router cannot identify a stronger match:
 
 ```yaml
 domain:
-  mode: general # or d3a
+  enabled: [general, d3a]
+  mode: general # default; must be present in enabled
 ```
 
-General dynamically selects `fast`, `lite`, or `complex`. D3A never selects a
+Scenario Router selects exactly one enabled Domain for each task. General
+dynamically selects `fast`, `lite`, or `complex`. D3A never selects a
 Lane and always materializes:
 
 ```yaml
@@ -72,6 +80,7 @@ D3A DT domains may replace the public defaults wholesale:
 
 ```yaml
 domain:
+  enabled: [general, d3a]
   mode: d3a
   d3a:
     dt_domains:
@@ -79,7 +88,8 @@ domain:
         knowledge_ref: <ENTERPRISE_DT_KNOWLEDGE_REF>
 ```
 
-For a Custom Domain, fill `domain.custom` in the same file. Include trigger
+For a Custom Domain, add `custom` to `domain.enabled` and fill `domain.custom`
+in the same file. Include trigger
 rules, `dynamic | fixed | not_applicable` Lane policy, coding/test registries,
 required contracts, and workflow/planner/completion Skill refs. Do not edit the
 shared Domain registry.
@@ -146,7 +156,9 @@ knowledge:
 ```
 
 Only refs belong here. Knowledge bodies remain in enterprise storage and are
-loaded progressively for the current stage or execution unit.
+loaded progressively for the current stage or execution unit. `layer_docs` is
+D3A-specific: configure only the fixed D3A Layers the team overrides; omit a
+Layer to keep using the built-in knowledge catalog.
 
 ## Step 6: Configure Execution Profiles
 
