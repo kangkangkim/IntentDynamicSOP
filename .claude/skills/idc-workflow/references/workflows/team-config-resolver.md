@@ -28,6 +28,11 @@ team-config.yaml
 - `domain.enabled` declares every Domain this team can route to. Missing
   `enabled` preserves legacy single-domain behavior using only `domain.mode`.
 - `domain.mode` is the default/fallback and must be included in `enabled`.
+- A single-domain `enabled` set (e.g. `enabled: [d3a]`) means the team can route
+  to that Domain only: a task that does not match its trigger rules is never
+  forced into that workflow, but it also cannot route to General Coding — it
+  stops at the `plan_context` domain gate. Teams that take both D3A and general
+  tasks must list `general` in `domain.enabled`.
 - enabled `d3a` materializes the built-in D3A module. Non-empty DT domains replace the
   default DT registry wholesale.
 - enabled `general` materializes the built-in General module. Non-empty component and

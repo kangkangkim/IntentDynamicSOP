@@ -100,8 +100,8 @@ echo "exit=$?"
 ---
 context_load_plan:
   status: INVALID
-  reason: "--domain d3a does not match effective domain general; switch team-config
-    domain.mode or use the effective domain"
+  reason: "--domain d3a does not match effective domain general; use the effective
+    domain, or add d3a to domain.enabled (legacy single-domain configs: switch domain.mode)"
 ```
 
 这就是 Gate 2：团队已切到 general，就不允许再按 d3a 开 session。

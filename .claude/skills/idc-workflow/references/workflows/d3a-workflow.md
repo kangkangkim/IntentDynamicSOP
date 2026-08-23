@@ -39,6 +39,11 @@ lane_policy:
 不再调用通用 Lane Resolver。任务大小、Layer 数量和风险信号仍会影响流程内部的
 planning、DAG、execution unit、agent delegation 和 evidence plan，但不产生 Lane。
 
+命中 D3A 的前提是任务匹配 D3A module 的 trigger rules（或用户明确选择 d3a）。
+不匹配的任务要落到 General Coding 并经过 Lane Resolver，前提是 `general` 出现在
+team-config 的 `domain.enabled` 中；单域配置（只启用 `d3a`）下，这类任务不会
+被强塞进 D3A workflow，也无法路由到 General Coding，而是在 domain gate 处停止。
+
 ## 固定流程的起点
 
 命中 D3A 只确认 Domain 和 `lane_applicability: not_applicable`，不代表输入已经
