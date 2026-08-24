@@ -26,6 +26,8 @@ a Technical Plan Confirmation through `AskUserTool`. This is a narrow technical
 confirmation only; it must not re-open task direction or scope. If
 `AskUserTool` is unavailable, return `BLOCKED_NEEDS_ASK_USER_TOOL`.
 
+When the host supports PreToolUse hooks (e.g. Claude Code), the hook `.claude/hooks/verify_plan_confirmation_ask.py` machine-enforces this step: it verifies a real AskUserQuestion interaction referencing the plan file exists in the session transcript before allowing the authorize_execution.rb call. Self-attested `status: confirmed` without a real interaction is denied.
+
 It confirms exactly three artifacts:
 
 1. 计划件本体：`general-plan.yaml` 或 `d3a-plan.yaml`（execution units /
@@ -93,6 +95,33 @@ a `trigger_reason` of `d3a_fixed_workflow` or `lane=fast|lite|complex`, and
 block, an unconfirmed status, or a dangling ref returns
 `BLOCKED_PLAN_CONFIRMATION_REQUIRED` before any dispatch.
 
+### Capability Selection — mandatory pre-authorization artifact
+
+The request must carry `capability_selection_ref` pointing to the READY
+Capability Selection artifact produced by
+`scripts/select_capabilities.rb` for this execution unit. The script
+verifies:
+
+1. The file exists on disk at the declared path.
+2. Its `status` field equals `READY`.
+3. Its `execution_unit` matches the current authorization request's
+   `execution_unit_id`.
+4. Its `selected_skills` list is non-empty.
+5. For `orchestration.mode: ordered` lanes, the `stage_order` in the artifact
+   covers every configured stage without gaps or reordering.
+
+A missing field, a dangling ref, a non-READY status, an execution-unit
+mismatch, an empty `selected_skills`, or a broken stage order returns
+`BLOCKED_CAPABILITY_SELECTION_REQUIRED` — the gate never proceeds to dispatch
+until a valid artifact exists. This check is not configurable through
+team-config and cannot be disabled.
+
+The main agent must run Capability Selector via
+`scripts/select_capabilities.rb` and persist the output artifact **before**
+calling `authorize_execution.rb`. Constructing an authorization request that
+references a non-existent or hand-authored `capability_selection_ref` is
+treated as a fabricated artifact and rejected identically.
+
 Authorization also reads `knowledge_load_plan_ref` and verifies READY status,
 `knowledge_plan_id`, Domain, and execution-unit identity. A path string without
 a readable matching plan is not authorization evidence.
@@ -110,10 +139,24 @@ directly.
 
 ## Completion provenance
 
-Agent Result must include an Execution Receipt containing the authorization ID,
-dispatch tool-call ref, executor session ref, loaded Domain execution Skill,
-executed atomic skills, changed paths, and evidence refs. Completion Gate rejects
-changes without this provenance even if tests pass.
+Agent Result must include an Execution Receipt containing:
+
+- `authorization_id`
+- `dispatch_tool_call_ref`
+- `executor_session_ref`
+- `loaded_domain_execution_skill` (e.g. `idc-general-coding`)
+- `capability_selection_ref` — the same artifact verified at authorization
+- `executed_stage_skills` — ordered list of `{stage, skill_id, status}` entries
+  recording exactly which skills ran at each stage; must be non-empty
+- `executed_atomic_skills`
+- `changed_paths`
+- `evidence_refs`
+
+Completion Gate cross-checks `executed_stage_skills` against the
+`selected_skills` in `capability_selection_ref`. A stage present in the
+selection artifact but absent from the receipt returns
+`NEEDS_EXECUTION_EVIDENCE` — missing execution is not silently forgiven even
+if tests pass.
 
 The receipt also carries the authorized `knowledge_plan_id` and a
 `knowledge_consumption_result_ref`. Completion requires that result to be

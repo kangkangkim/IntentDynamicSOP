@@ -61,6 +61,25 @@ general_coding_result:
   completion_summary_ref: <COMPLETION_SUMMARY_REF>
 ```
 
+## Executor startup — capability selection verification
+
+Before writing any code, the dispatched executor must:
+
+1. Read the `capability_selection_ref` from the Delegation Contract.
+2. Verify the artifact exists on disk, `status: READY`, and
+   `execution_unit` matches.
+3. Extract `stage_order` and `selected_skills` — these define the exact
+   ordered sequence the executor must follow.
+4. If the artifact is missing, non-READY, or mismatched, return
+   `BLOCKED_CAPABILITY_SELECTION_REQUIRED` and stop; do not proceed to
+   implementation.
+
+The executor runs each stage by invoking only the skills listed in
+`selected_skills` for that stage, in the declared order. Skipping a
+configured stage or substituting an unlisted skill is a protocol violation.
+Each completed stage is recorded in `executed_stage_skills` for the
+Execution Receipt.
+
 ## Hard Rules
 
 - Do not write code before Human Alignment approval.
@@ -68,7 +87,10 @@ general_coding_result:
   Require Execution Authorization and a real general-coder subagent / coding
   agent-team dispatch, including Fast and Lite.
 - Return an Execution Receipt with authorization ID, dispatch tool-call ref,
-  executor session ref, changed paths, and evidence refs.
+  executor session ref, `capability_selection_ref`, `executed_stage_skills`
+  (ordered list of `{stage, skill_id, status}`), changed paths, and evidence
+  refs. A receipt missing `capability_selection_ref` or `executed_stage_skills`
+  is incomplete and will be rejected by Completion Gate.
 - Do not use D3A Layer or DT Domain registries.
 - Choose general components only from the effective registry: repo default `../idc-workflow/references/registries/general-components.yaml`, or replaced wholesale by `team-config.yaml.general.components` when non-empty (never merge).
 - Choose test domains only from the effective registry: repo default `../idc-workflow/references/registries/general-test-domains.yaml`, or replaced wholesale by `team-config.yaml.general.test_domains` when non-empty (never merge).

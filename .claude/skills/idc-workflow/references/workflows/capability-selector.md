@@ -92,6 +92,24 @@ outer-protocol boundary explicit so a configured lane profile cannot
 silently pull in a Domain execution Skill as if it were an atomic
 capability.
 
+## Selector output is a mandatory dispatch precondition
+
+The Capability Selection artifact (written to
+`.idc/runs/<task-id>/attempt-<n>/capability-selection-<execution-unit>.yaml`)
+is not optional documentation — it is the gating artifact that
+`authorize_execution.rb` requires before dispatch can proceed.
+
+- The main agent must call `scripts/select_capabilities.rb` and persist the
+  output artifact for every execution unit, including Fast and Lite.
+- A verbal or in-context summary of selected skills is not a substitute for
+  the on-disk artifact; `authorize_execution.rb` reads the file directly.
+- Skipping the Selector or bypassing its output returns
+  `BLOCKED_CAPABILITY_SELECTION_REQUIRED` at the Authorization Gate — the
+  dispatch never fires.
+- For `ordered` lanes, the artifact must carry `stage_order` listing every
+  configured stage in declared order. A gap or reordering is a Selector error,
+  not a discretionary abbreviation.
+
 ## Important distinction
 
 ```text
