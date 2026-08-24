@@ -81,6 +81,45 @@ when "d3a"
   errors << "d3a execution must load idc-d3a-coding" unless domain_skill.include?("idc-d3a-coding")
 end
 
+if present?(request["capability_selection_ref"])
+  cap_sel_path = Pathname.new(request["capability_selection_ref"].to_s).expand_path
+  begin
+    cap_doc = IDCRubyCompat.safe_yaml_load(cap_sel_path.read) || {}
+    cap_result = cap_doc["capability_selection_result"] || {}
+    errors << "capability selection status must be READY (got #{cap_result['status'].inspect})" unless cap_result["status"] == "READY"
+    errors << "capability selection execution_unit_ref does not match request" unless cap_result["execution_unit_ref"] == request["execution_unit_ref"]
+    errors << "capability selection selected_skills must not be empty" unless Array(cap_result["selected"]).any?
+  rescue Errno::ENOENT, Psych::Exception => e
+    errors << "capability_selection_ref cannot be read: #{e.message}"
+  end
+end
+
+harness_root = Pathname.new(__dir__).join("../../..").expand_path
+team_config_path = harness_root.join("team-config.yaml")
+# Allow the request to supply an explicit effective_config_ref (used in tests
+# and multi-repo setups where the effective config lives outside harness_root).
+effective_config_path = if present?(request["effective_config_ref"])
+                           Pathname.new(request["effective_config_ref"].to_s).expand_path
+                         else
+                           harness_root.join(".idc/effective-team-config.yaml")
+                         end
+if team_config_path.file? && effective_config_path.file?
+  begin
+    effective_doc = IDCRubyCompat.safe_yaml_load(effective_config_path.read) || {}
+    recorded_sha = effective_doc["source_sha256"].to_s
+    actual_sha = Digest::SHA256.hexdigest(team_config_path.read)
+    unless recorded_sha == actual_sha
+      errors << "BLOCKED_STALE_EFFECTIVE_CONFIG: team-config.yaml has changed since last prepare_runtime.rb " \
+                "(recorded=#{recorded_sha[0, 12]}… actual=#{actual_sha[0, 12]}…); " \
+                "re-run prepare_runtime.rb and verify status: READY before authorizing"
+    end
+  rescue Errno::ENOENT, Psych::Exception => e
+    errors << "effective config integrity check failed: #{e.message}"
+  end
+elsif team_config_path.file? && !effective_config_path.file?
+  errors << "BLOCKED_STALE_EFFECTIVE_CONFIG: .idc/effective-team-config.yaml does not exist; run prepare_runtime.rb first"
+end
+
 if present?(request["knowledge_load_plan_ref"])
   knowledge_plan_path = Pathname.new(request["knowledge_load_plan_ref"].to_s).expand_path
   begin

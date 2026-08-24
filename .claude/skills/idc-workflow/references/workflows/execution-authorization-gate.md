@@ -122,6 +122,21 @@ calling `authorize_execution.rb`. Constructing an authorization request that
 references a non-existent or hand-authored `capability_selection_ref` is
 treated as a fabricated artifact and rejected identically.
 
+### Effective config freshness — mandatory SHA check
+
+`authorize_execution.rb` reads `.idc/effective-team-config.yaml` and compares
+its `source_sha256` against the SHA256 of the current `team-config.yaml` on
+disk. A mismatch means `prepare_runtime.rb` was not run after the config
+changed, so the Capability Selector ran against stale policy.
+
+- Mismatch → `BLOCKED_STALE_EFFECTIVE_CONFIG`; re-run `prepare_runtime.rb`
+  and verify `status: READY` before retrying authorization.
+- Missing effective config → same error; `prepare_runtime.rb` must produce it
+  first.
+
+This check is machine-enforced inside the script, not model-discretionary. No
+team-config switch can disable it.
+
 Authorization also reads `knowledge_load_plan_ref` and verifies READY status,
 `knowledge_plan_id`, Domain, and execution-unit identity. A path string without
 a readable matching plan is not authorization evidence.

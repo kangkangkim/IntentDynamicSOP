@@ -927,6 +927,7 @@ def test_delegation_contract_keeps_main_agent_as_planner():
   context_packet_ref: context-1
   capability_selection_ref: selection-1
   capability_selection_status: READY
+  effective_config_ref: <EFFECTIVE_CONFIG_REF>
   knowledge_load_plan_ref: <KNOWLEDGE_PLAN_REF>
   knowledge_load_plan_status: READY
   knowledge_plan_id: <KNOWLEDGE_PLAN_ID>
@@ -974,7 +975,37 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         )
         assert_true(auth_knowledge.returncode == 0, f"Authorization 测试 Knowledge Plan 失败：{auth_knowledge.stderr}")
         knowledge_plan_id = re.search(r"knowledge_plan_id:\s+['\"]?(\w+)", knowledge_plan_path.read_text(encoding="utf-8")).group(1)
-        rendered_request = valid_request.replace("<KNOWLEDGE_PLAN_REF>", str(knowledge_plan_path)).replace("<KNOWLEDGE_PLAN_ID>", knowledge_plan_id).replace("<PLAN_CONFIRMATION_REF>", str(auth_plan))
+        # Build a real capability selection artifact so authorize_execution.rb can verify it.
+        cap_sel_demand = Path(temp_dir) / "auth-cap-demand.yaml"
+        cap_sel_demand.write_text(
+            "capability_demand:\n"
+            "  execution_unit_ref: unit-1\n"
+            "  selected_stage: planning\n"
+            "  selected_domain: general\n"
+            "  lane_applicability: applicable\n"
+            "  selected_lane: lite\n"
+            "  execution_profile: lane_driven\n"
+            "  required_capability_keys: [technical_design]\n"
+            "  optional_capability_keys: []\n"
+            "  observed_signals: [focused_design_required]\n"
+            "  contract_refs: []\n",
+            encoding="utf-8",
+        )
+        cap_sel_path = Path(temp_dir) / "capability-selection-unit-1.yaml"
+        auth_cap_sel = subprocess.run(
+            ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"),
+             "--effective", str(auth_effective), "--demand", str(cap_sel_demand), "--output", str(cap_sel_path)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(auth_cap_sel.returncode == 0, f"Authorization 测试 Capability Selection 失败：{auth_cap_sel.stderr}")
+        rendered_request = (valid_request
+            .replace("<KNOWLEDGE_PLAN_REF>", str(knowledge_plan_path))
+            .replace("<KNOWLEDGE_PLAN_ID>", knowledge_plan_id)
+            .replace("<PLAN_CONFIRMATION_REF>", str(auth_plan))
+            .replace("<EFFECTIVE_CONFIG_REF>", str(auth_effective))
+            .replace("selection-1", str(cap_sel_path)))
         valid_path = Path(temp_dir) / "valid-auth.yaml"
         valid_path.write_text(rendered_request, encoding="utf-8")
         valid = subprocess.run(["ruby", str(authorizer), "--request", str(valid_path)], cwd=ROOT, capture_output=True, text=True)
@@ -1023,6 +1054,31 @@ def test_plan_confirmation_gate_is_framework_floor():
             "      max_change_loc: 500\n",
             encoding="utf-8",
         )
+        # Build a real capability selection artifact for plan-confirmation tests.
+        pc_cap_demand = Path(temp_dir) / "pc-cap-demand.yaml"
+        pc_cap_demand.write_text(
+            "capability_demand:\n"
+            "  execution_unit_ref: unit-1\n"
+            "  selected_stage: implementation\n"
+            "  selected_domain: general\n"
+            "  lane_applicability: applicable\n"
+            "  selected_lane: fast\n"
+            "  execution_profile: lane_driven\n"
+            "  required_capability_keys: []\n"
+            "  optional_capability_keys: []\n"
+            "  observed_signals: []\n"
+            "  contract_refs: []\n",
+            encoding="utf-8",
+        )
+        pc_cap_sel_path = Path(temp_dir) / "pc-capability-selection-unit-1.yaml"
+        pc_cap_sel = subprocess.run(
+            ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"),
+             "--effective", str(effective), "--demand", str(pc_cap_demand), "--output", str(pc_cap_sel_path)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(pc_cap_sel.returncode == 0, f"Plan Confirmation 测试 Capability Selection 失败：{pc_cap_sel.stderr}")
 
         def request_with(confirmation_lines):
             return (
@@ -1035,7 +1091,7 @@ def test_plan_confirmation_gate_is_framework_floor():
                 "  approved_alignment_ref: alignment-1\n"
                 "  execution_unit_ref: unit-1\n"
                 "  context_packet_ref: context-1\n"
-                "  capability_selection_ref: selection-1\n"
+                f"  capability_selection_ref: {pc_cap_sel_path}\n"
                 "  capability_selection_status: READY\n"
                 f"  knowledge_load_plan_ref: {knowledge_plan_path}\n"
                 "  knowledge_load_plan_status: READY\n"
@@ -4585,6 +4641,143 @@ def test_placeholder_hygiene():
         assert_true(phrase not in lowered, f"发现疑似猜测的企业细节：{phrase}")
 
 
+def test_plan_confirmation_hook_enforces_real_ask_user_interaction():
+    import json as _json
+    import os as _os
+    import subprocess as _subprocess
+    import tempfile as _tempfile
+    import time as _time
+
+    hook_path = str(ROOT / ".claude/hooks/verify_plan_confirmation_ask.py")
+
+    with _tempfile.TemporaryDirectory() as tmpdir:
+        # Write minimal plan YAML
+        plan_path = _os.path.join(tmpdir, "hook-test-plan.yaml")
+        with open(plan_path, "w") as f:
+            f.write("name: hook-test-plan\n")
+        plan_basename = "hook-test-plan.yaml"
+        plan_mtime = _os.path.getmtime(plan_path)
+
+        # Write minimal request YAML
+        request_path = _os.path.join(tmpdir, "request.yaml")
+        request_yaml = f"""execution_authorization_request:
+  technical_plan_confirmation:
+    required: true
+    trigger_reason: lane=lite
+    status: confirmed
+    confirmation_ref: {plan_path}
+"""
+        with open(request_path, "w") as f:
+            f.write(request_yaml)
+
+        def make_transcript(entries, path):
+            with open(path, "w") as f:
+                for entry in entries:
+                    f.write(_json.dumps(entry) + "\n")
+
+        def run_hook(tool_name, command, transcript_path=None, env=None):
+            stdin_obj = {"tool_name": tool_name, "tool_input": {"command": command}, "session_id": "test"}
+            if transcript_path:
+                stdin_obj["transcript_path"] = transcript_path
+            extra_env = dict(_os.environ)
+            if env:
+                extra_env.update(env)
+            elif "CLAUDE_TRANSCRIPT_PATH" in extra_env:
+                del extra_env["CLAUDE_TRANSCRIPT_PATH"]
+            result = _subprocess.run(
+                ["python3", hook_path],
+                input=_json.dumps(stdin_obj).encode(),
+                capture_output=True,
+                env=extra_env,
+            )
+            stdout = result.stdout.decode().strip()
+            deny_decision = None
+            if stdout:
+                try:
+                    parsed = _json.loads(stdout)
+                    if parsed.get("decision") == "deny":
+                        deny_decision = parsed.get("reason", "")
+                except Exception:
+                    pass
+            return deny_decision
+
+        base_command = f"ruby .claude/skills/idc-workflow/scripts/authorize_execution.rb --request {request_path} --output /tmp/out.yaml"
+
+        # Case 1: Non-Bash tool_name -> no deny
+        deny = run_hook("Edit", base_command)
+        assert_true(deny is None, f"Case 1: Non-Bash should pass through, got deny: {deny}")
+
+        # Case 2: Bash command without authorize_execution.rb -> no deny
+        deny = run_hook("Bash", "git status")
+        assert_true(deny is None, f"Case 2: Non-authorize_execution command should pass, got deny: {deny}")
+
+        # Case 3: No --request in command -> deny
+        deny = run_hook("Bash", "ruby .claude/skills/idc-workflow/scripts/authorize_execution.rb --output /tmp/out.yaml")
+        assert_true(deny is not None and "BLOCKED_PLAN_CONFIRMATION_REQUIRED" in deny,
+                    f"Case 3: Missing --request should deny, got: {deny}")
+
+        # Case 4: status != confirmed in request -> passthrough (exit 0, no deny)
+        unconfirmed_request = _os.path.join(tmpdir, "unconfirmed_request.yaml")
+        with open(unconfirmed_request, "w") as f:
+            f.write(f"""execution_authorization_request:
+  technical_plan_confirmation:
+    required: true
+    trigger_reason: lane=lite
+    status: pending
+    confirmation_ref: {plan_path}
+""")
+        cmd_unconfirmed = f"ruby .claude/skills/idc-workflow/scripts/authorize_execution.rb --request {unconfirmed_request} --output /tmp/out.yaml"
+        deny = run_hook("Bash", cmd_unconfirmed)
+        assert_true(deny is None, f"Case 4: status != confirmed should passthrough, got deny: {deny}")
+
+        # Case 5: No transcript available -> deny
+        deny = run_hook("Bash", base_command, transcript_path=None, env={"CLAUDE_TRANSCRIPT_PATH": ""})
+        assert_true(deny is not None and "BLOCKED_PLAN_CONFIRMATION_REQUIRED" in deny,
+                    f"Case 5: No transcript should deny, got: {deny}")
+
+        # Build a valid after-plan timestamp
+        after_ts = plan_mtime + 10.0
+
+        # Case 6: Valid ask+result in transcript after plan mtime -> no deny
+        transcript_path_6 = _os.path.join(tmpdir, "transcript_6.jsonl")
+        make_transcript([
+            {"type": "tool_use", "name": "AskUserQuestion", "id": "tu-1",
+             "tool_use_id": "tu-1", "input": {"prompt": f"confirm plan {plan_path}"},
+             "timestamp": after_ts},
+            {"type": "tool_result", "tool_use_id": "tu-1",
+             "content": [{"type": "text", "text": "confirmed"}],
+             "timestamp": after_ts + 1},
+        ], transcript_path_6)
+        deny = run_hook("Bash", base_command, transcript_path=transcript_path_6)
+        assert_true(deny is None, f"Case 6: Valid ask+result should pass, got deny: {deny}")
+
+        # Case 7: Ask present but no tool_result -> deny
+        transcript_path_7 = _os.path.join(tmpdir, "transcript_7.jsonl")
+        make_transcript([
+            {"type": "tool_use", "name": "AskUserQuestion", "id": "tu-2",
+             "tool_use_id": "tu-2", "input": {"prompt": f"confirm plan {plan_basename}"},
+             "timestamp": after_ts},
+        ], transcript_path_7)
+        deny = run_hook("Bash", base_command, transcript_path=transcript_path_7)
+        assert_true(deny is not None and "BLOCKED_PLAN_CONFIRMATION_REQUIRED" in deny,
+                    f"Case 7: Unanswered ask should deny, got: {deny}")
+
+        # Case 8: Ask+result but BEFORE plan file mtime -> deny
+        before_ts = plan_mtime - 20.0
+        transcript_path_8 = _os.path.join(tmpdir, "transcript_8.jsonl")
+        make_transcript([
+            {"type": "tool_use", "name": "AskUserQuestion", "id": "tu-3",
+             "tool_use_id": "tu-3", "input": {"prompt": f"confirm plan {plan_basename}"},
+             "timestamp": before_ts},
+            {"type": "tool_result", "tool_use_id": "tu-3",
+             "content": [{"type": "text", "text": "confirmed"}],
+             "timestamp": before_ts + 1},
+        ], transcript_path_8)
+        deny = run_hook("Bash", base_command, transcript_path=transcript_path_8)
+        assert_true(deny is not None and "BLOCKED_PLAN_CONFIRMATION_REQUIRED" in deny,
+                    f"Case 8: Pre-plan-mtime result should deny, got: {deny}")
+
+
 def run():
     tests = [
         test_registry_files_match_fixed_architecture,
@@ -4660,6 +4853,7 @@ def run():
         test_unpassed_dt_blocks_all_layers_green,
         test_tran_build_must_pass_before_done,
         test_placeholder_hygiene,
+        test_plan_confirmation_hook_enforces_real_ask_user_interaction,
     ]
     failures = []
     for test in tests:
