@@ -11,7 +11,7 @@ IDC 所有面向用户的问题都必须通过 `AskUserTool` 发出。
 - Discovery Provider 需要用户补充 raw idea、选择方向或确认 draft direction。
 - Clarification Provider 生成 Grill Me / Grill With Docs / builtin critical question cards。
 - Human Alignment 请求 approve、request clarification、request reclassify 或 reject。
-- Plan Confirmation 请求确认技术方案三件（计划件本体、API Contract、DT 设计）；这是框架 floor，d3a 与全部 lane 都适用。
+- Plan Confirmation 请求确认技术方案三件（计划件本体、API Contract、DT 设计）；这是框架 floor，d3a 与全部 lane 都适用。The AskUserQuestion input for plan confirmation must include the plan file path (used by the PreToolUse hook to bind the interaction to the specific plan artifact).
 - Resume Policy 需要用户选择从哪个 checkpoint / stage 恢复。
 - Escalation View 需要用户决定修改 scope、修改 contract、允许重新规划或停止任务。
 

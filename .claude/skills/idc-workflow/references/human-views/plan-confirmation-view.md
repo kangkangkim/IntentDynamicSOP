@@ -60,7 +60,7 @@ workflows/execution-authorization-gate.md
 2. required API Contract 是否正确？
 3. DT 设计与 RED/GREEN plan 是否正确？
 
-回复 `confirm plan` 后，我才生成 execution authorization 并 dispatch。
+通过 AskUserTool 确认后，我才生成 execution authorization 并 dispatch。
 ```
 
 ## 规则

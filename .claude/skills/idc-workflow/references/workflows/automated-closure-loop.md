@@ -36,6 +36,28 @@ Plan Check 以 Technical Plan Confirmation 的形式按框架 floor 恢复：d3a
 
 这些检查由 workflow gate 和工具证据自动完成。
 
+## Pre-execution Gap Check
+
+Before entering the Knowledge Gate, if `effective.self_optimization.mode != disabled`:
+
+```
+scan event_store_ref for adaptation-events matching:
+  - domain == current domain
+  - selected_lane == current lane
+  - execution_unit_ref == current execution unit
+  - gap_class == knowledge_gap
+
+if matching_event_count >= 2:
+  emit AskUserTool:
+    title: "Pre-execution Warning: Repeated Knowledge Gap Detected"
+    body: |
+      This execution unit has triggered knowledge_gap events N times in prior runs.
+      Recommended: add knowledge_hints to team-config.yaml before proceeding.
+    options:
+      - "Continue execution"
+      - "Pause to update team-config knowledge_hints first"
+```
+
 ## 自动闭环要求
 
 - Planner 必须遵守已批准的 scope / contract / completion gate。
@@ -56,6 +78,53 @@ Plan Check 以 Technical Plan Confirmation 的形式按框架 floor 恢复：d3a
 - Verification Gate 必须检查 authorization ID、dispatch tool-call ref 和 executor session ref。
 - Domain Module 可以追加自己的 completion gate。
 - 失败时先进入 Error Analyzer / Targeted Fix / Re-plan。
+
+## Error Pattern Library Hook
+
+When `build-error-analyzer` processes a build failure, and
+`effective.self_optimization.mode != disabled`:
+
+```
+1. Query error-patterns library:
+   load: references/knowledge/error-patterns.md
+   match: current error signature against known patterns
+   if match found:
+     apply fast-fix path from matched pattern
+     write adaptation-event:
+       event_type: verification_failed
+       gap_class: verification_gap
+       observed_summary: "known pattern matched: <pattern_id>, fast-fix applied"
+   if no match:
+     proceed with normal build-error-analyzer analysis
+     after fix is identified, append new pattern entry to error-patterns.md:
+       pattern_id: auto-generated from run_id + error hash
+       error_signature: bounded redacted error fingerprint
+       fast_fix_hint: the fix approach identified
+       first_seen_run: current run_id
+       occurrence_count: 1
+
+2. Hard rules:
+   - Error signatures must be redacted (no private paths, internal APIs, real symbols).
+   - Pattern library is append-only from automation; human may edit or remove entries.
+   - Fast-fix hints are suggestions only; executor must still verify GREEN evidence.
+```
+
+## Routing Gap Hook
+
+When a re-plan is triggered or escalation signal `domain_or_lane_reclassification_required`
+fires, and `effective.self_optimization.mode != disabled`, write a routing gap event:
+
+```
+if re_plan_triggered OR escalation == domain_or_lane_reclassification_required:
+  if effective.self_optimization.mode != disabled:
+    write adaptation-event to event_store_ref:
+      event_type: route_corrected
+      gap_class: routing_gap
+      original_decision_ref: the original route/lane decision ref
+      corrected_decision_ref: the corrected route/lane decision ref
+      observed_summary: bounded redacted summary of what changed and why
+      evidence_refs: link to current run's alignment pack ref
+```
 
 ## 异常回流
 
@@ -83,4 +152,41 @@ automated_closure_result:
   evidence: []
   completion_summary: string
   escalation_trigger: null
+```
+
+## Post-DONE: Self-Optimization Observe Hook
+
+After `verify_completion.rb` returns `DONE`, run the following conditional block
+before returning `automated_closure_result`:
+
+```
+if effective.self_optimization.mode != disabled:
+  1. Write one adaptation-event to `effective.self_optimization.event_store_ref`
+     using the schema at:
+     references/schemas/adaptation-event.schema.yaml
+     Fields to populate:
+       - run_id: current run_id
+       - execution_unit_ref: current execution unit
+       - domain / lane_applicability / selected_lane: from current context
+       - event_type: set based on any routing corrections, knowledge gaps,
+           verification failures, or workflow deviations observed in this run
+       - gap_class: classify from the 7 gap classes defined in self-optimization.md
+       - observed_summary: bounded, redacted, portable summary
+       - evidence_refs: link to any RED/GREEN/build evidence from this run
+
+  2. Count adaptation-events with matching gap_class in the event_store.
+     If count >= effective.self_optimization.pattern_threshold (default: 3):
+       Emit proposal via AskUserTool:
+         - Title: "Self-Optimization Proposal Available"
+         - Body: gap_class, supporting_event_refs count, proposed team-overlay
+           change (per optimization-proposal.schema.yaml)
+         - Options: [Generate Proposal, Skip]
+       If user selects "Generate Proposal":
+         invoke idc-self-optimization in propose_only mode.
+
+  3. Hard rules (always enforced):
+     - Never modify team-config.yaml, IDC Core, or any completion gate automatically.
+     - Never infer enterprise facts from model guesses.
+     - Redact private code, logs, paths, APIs from event summaries.
+     - promotion_requires_human_alignment: true (always).
 ```
