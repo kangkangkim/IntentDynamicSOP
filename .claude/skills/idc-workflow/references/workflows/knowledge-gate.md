@@ -6,11 +6,11 @@ Knowledge Gate 的职责是：只加载当前 execution unit 需要的知识。
 
 ```text
 Knowledge Demand
-  -> plan_knowledge.rb
+  -> plan_knowledge.py
   -> Knowledge Load Plan READY
   -> Execution Authorization 绑定 knowledge_plan_id
   -> executor 产出 Knowledge Consumption Receipt
-  -> verify_knowledge_consumption.rb
+  -> verify_knowledge_consumption.py
   -> VERIFIED 才能进入 Completion Gate
 ```
 

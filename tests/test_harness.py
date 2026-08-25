@@ -255,7 +255,7 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     adapter_schema = read_text(".claude/skills/idc-workflow/references/schemas/skill-adapter.schema.yaml")
     adapter_registry = read_text(".claude/skills/idc-workflow/references/registries/skill-adapters.yaml")
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
-    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.rb")
+    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.py")
     architecture = read_text("docs/architecture.md")
     README = read_text("README.md")
     team_config = read_text("team-config.yaml.template")
@@ -349,7 +349,7 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     assert_true(".claude/skills/idc-skill-adapter-router/SKILL.md" in context_planner, "Execution Context Plan 必须加载 Skill Adapter Router。")
     assert_true((ROOT / ".claude/skills/idc-workflow/references/schemas/skill-adapter.schema.yaml").exists(), "Skill Adapter schema 必须保留为 Resolver 契约。")
     assert_true((ROOT / ".claude/skills/idc-workflow/references/registries/skill-adapters.yaml").exists(), "Skill Adapter registry 必须保留为被动配置。")
-    assert_true("ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb" in id_workflow, "idc-workflow 每次入口必须自动执行 Team Config preflight。")
+    assert_true("python3 .claude/skills/idc-team-config/scripts/prepare_runtime.py" in id_workflow, "idc-workflow 每次入口必须自动执行 Team Config preflight。")
     assert_true("Run this on every `idc-workflow` invocation" in id_workflow, "运行时不得复用陈旧 effective config。")
     assert_true("the template is never executed" in id_workflow, "生产运行不得把 template 当作配置 fallback。")
     assert_true("Dynamic Scenario Coding" in README, "README 必须把 Dynamic Scenario 作为顶层路径。")
@@ -834,7 +834,7 @@ def test_delegation_contract_keeps_main_agent_as_planner():
     authorization_schema = read_text(".claude/skills/idc-workflow/references/schemas/execution-authorization.schema.yaml")
     general_skill = read_text(".claude/skills/idc-general-coding/SKILL.md")
     gc_adapter = read_text(".claude/skills/idc-gc-sop-adapter/SKILL.md")
-    authorizer = ROOT / ".claude/skills/idc-workflow/scripts/authorize_execution.rb"
+    authorizer = ROOT / ".claude/skills/idc-workflow/scripts/authorize_execution.py"
 
     for text, name in [
         (router, "delegation router"),
@@ -958,7 +958,7 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         )
         auth_effective = Path(temp_dir) / "auth-effective.yaml"
         auth_resolved = subprocess.run(
-            ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"), "--config", str(ROOT / "examples/team-config.full-bindings.yaml"), "--output", str(auth_effective)],
+            ["python3", str(ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"), "--config", str(ROOT / "examples/team-config.full-bindings.yaml"), "--output", str(auth_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -968,14 +968,14 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         auth_demand.write_text((ROOT / "examples/knowledge-demands/fast.yaml").read_text(encoding="utf-8").replace("fast-unit", "unit-1"), encoding="utf-8")
         knowledge_plan_path = Path(temp_dir) / "knowledge-plan.yaml"
         auth_knowledge = subprocess.run(
-            ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"), "--effective", str(auth_effective), "--demand", str(auth_demand), "--output", str(knowledge_plan_path)],
+            ["python3", str(ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.py"), "--effective", str(auth_effective), "--demand", str(auth_demand), "--output", str(knowledge_plan_path)],
             cwd=ROOT,
             capture_output=True,
             text=True,
         )
         assert_true(auth_knowledge.returncode == 0, f"Authorization 测试 Knowledge Plan 失败：{auth_knowledge.stderr}")
         knowledge_plan_id = re.search(r"knowledge_plan_id:\s+['\"]?(\w+)", knowledge_plan_path.read_text(encoding="utf-8")).group(1)
-        # Build a real capability selection artifact so authorize_execution.rb can verify it.
+        # Build a real capability selection artifact so authorize_execution.py can verify it.
         cap_sel_demand = Path(temp_dir) / "auth-cap-demand.yaml"
         cap_sel_demand.write_text(
             "capability_demand:\n"
@@ -993,7 +993,7 @@ def test_delegation_contract_keeps_main_agent_as_planner():
         )
         cap_sel_path = Path(temp_dir) / "capability-selection-unit-1.yaml"
         auth_cap_sel = subprocess.run(
-            ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"),
+            ["python3", str(ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"),
              "--effective", str(auth_effective), "--demand", str(cap_sel_demand), "--output", str(cap_sel_path)],
             cwd=ROOT,
             capture_output=True,
@@ -1008,24 +1008,24 @@ def test_delegation_contract_keeps_main_agent_as_planner():
             .replace("selection-1", str(cap_sel_path)))
         valid_path = Path(temp_dir) / "valid-auth.yaml"
         valid_path.write_text(rendered_request, encoding="utf-8")
-        valid = subprocess.run(["ruby", str(authorizer), "--request", str(valid_path)], cwd=ROOT, capture_output=True, text=True)
+        valid = subprocess.run(["python3", str(authorizer), "--request", str(valid_path)], cwd=ROOT, capture_output=True, text=True)
         assert_true(valid.returncode == 0 and "status: AUTHORIZED" in valid.stdout and "authorization_id:" in valid.stdout, "合法 subagent execution 必须获得授权。")
 
         invalid_path = Path(temp_dir) / "invalid-main-auth.yaml"
         invalid_path.write_text(rendered_request.replace("agent_id: general-coder", "agent_id: main_agent"), encoding="utf-8")
-        invalid = subprocess.run(["ruby", str(authorizer), "--request", str(invalid_path)], cwd=ROOT, capture_output=True, text=True)
+        invalid = subprocess.run(["python3", str(authorizer), "--request", str(invalid_path)], cwd=ROOT, capture_output=True, text=True)
         assert_true(invalid.returncode == 3 and "BLOCKED_DELEGATION_REQUIRED" in invalid.stdout and "main_agent cannot be execution owner" in invalid.stdout, "Main agent 作为 executor 必须被机器 Gate 拒绝。")
 
 
 def test_plan_confirmation_gate_is_framework_floor():
-    authorizer = ROOT / ".claude/skills/idc-workflow/scripts/authorize_execution.rb"
-    assert_true(authorizer.exists(), "缺少 authorize_execution.rb。")
+    authorizer = ROOT / ".claude/skills/idc-workflow/scripts/authorize_execution.py"
+    assert_true(authorizer.exists(), "缺少 authorize_execution.py。")
 
     # 机器行为：三种 BLOCKED_PLAN_CONFIRMATION_REQUIRED + 一种 AUTHORIZED。
     with tempfile.TemporaryDirectory() as temp_dir:
         effective = Path(temp_dir) / "plan-confirm-effective.yaml"
         resolved = subprocess.run(
-            ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"), "--config", str(ROOT / "examples/team-config.full-bindings.yaml"), "--output", str(effective)],
+            ["python3", str(ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"), "--config", str(ROOT / "examples/team-config.full-bindings.yaml"), "--output", str(effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -1035,7 +1035,7 @@ def test_plan_confirmation_gate_is_framework_floor():
         demand.write_text((ROOT / "examples/knowledge-demands/fast.yaml").read_text(encoding="utf-8").replace("fast-unit", "unit-1"), encoding="utf-8")
         knowledge_plan_path = Path(temp_dir) / "plan-confirm-knowledge-plan.yaml"
         planned = subprocess.run(
-            ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"), "--effective", str(effective), "--demand", str(demand), "--output", str(knowledge_plan_path)],
+            ["python3", str(ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.py"), "--effective", str(effective), "--demand", str(demand), "--output", str(knowledge_plan_path)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -1072,7 +1072,7 @@ def test_plan_confirmation_gate_is_framework_floor():
         )
         pc_cap_sel_path = Path(temp_dir) / "pc-capability-selection-unit-1.yaml"
         pc_cap_sel = subprocess.run(
-            ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"),
+            ["python3", str(ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"),
              "--effective", str(effective), "--demand", str(pc_cap_demand), "--output", str(pc_cap_sel_path)],
             cwd=ROOT,
             capture_output=True,
@@ -1134,7 +1134,7 @@ def test_plan_confirmation_gate_is_framework_floor():
         for case_name, (request_text, expected_error) in blocked_cases.items():
             request_path = Path(temp_dir) / f"{case_name}.yaml"
             request_path.write_text(request_text, encoding="utf-8")
-            blocked = subprocess.run(["ruby", str(authorizer), "--request", str(request_path)], cwd=ROOT, capture_output=True, text=True)
+            blocked = subprocess.run(["python3", str(authorizer), "--request", str(request_path)], cwd=ROOT, capture_output=True, text=True)
             assert_true(
                 blocked.returncode == 3 and "BLOCKED_PLAN_CONFIRMATION_REQUIRED" in blocked.stdout and expected_error in blocked.stdout,
                 f"{case_name} 必须被机器 Gate 以 BLOCKED_PLAN_CONFIRMATION_REQUIRED 阻断（含原因 {expected_error}）：{blocked.stdout}\n{blocked.stderr}",
@@ -1151,7 +1151,7 @@ def test_plan_confirmation_gate_is_framework_floor():
             ),
             encoding="utf-8",
         )
-        authorized = subprocess.run(["ruby", str(authorizer), "--request", str(authorized_path)], cwd=ROOT, capture_output=True, text=True)
+        authorized = subprocess.run(["python3", str(authorizer), "--request", str(authorized_path)], cwd=ROOT, capture_output=True, text=True)
         assert_true(
             authorized.returncode == 0 and "status: AUTHORIZED" in authorized.stdout and "authorization_id:" in authorized.stdout,
             f"confirmed + 落盘计划件必须 AUTHORIZED：{authorized.stdout}\n{authorized.stderr}",
@@ -1227,7 +1227,7 @@ def test_resume_policy_supports_interruption_recovery():
     policy = resume_policy_path.read_text()
     schema = runtime_schema_path.read_text()
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
-    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.rb")
+    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.py")
     delegation = read_text(".claude/skills/idc-workflow/references/workflows/delegation-router.md")
     README = read_text("README.md")
 
@@ -1270,7 +1270,7 @@ def test_confidential_vertical_slice_readiness_gate_exists():
     workflow = read_text(".claude/skills/idc-workflow/references/workflows/vertical-slice-readiness-gate.md")
     checklist = read_text("docs/confidential-migration-checklist.md")
     skill = read_text(".claude/skills/idc-workflow/SKILL.md")
-    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.rb")
+    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.py")
     example = read_text("examples/confidential-vertical-slice-readiness.yaml")
 
     for fragment in [
@@ -1564,7 +1564,7 @@ def test_id_workflow_skill_exists_and_has_triggers():
     skill_path = ROOT / ".claude/skills/idc-workflow/SKILL.md"
     assert_true(skill_path.exists(), "缺少 ID workflow skill。")
     text = skill_path.read_text()
-    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.rb")
+    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.py")
     routed_resources = text + context_planner
     commands_dir = ROOT / ".claude/commands"
     command_files = sorted(commands_dir.glob("**/*")) if commands_dir.exists() else []
@@ -2096,7 +2096,7 @@ def test_clarification_provider_uses_grill_me_method_with_fallback():
     docs_method = read_text(".claude/skills/idc-intent-grilling-with-docs/references/grill-with-docs-method.md")
     template = read_text(".claude/skills/idc-intent-grilling/assets/question-card-template.md")
     id_workflow = read_text(".claude/skills/idc-workflow/SKILL.md")
-    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.rb")
+    context_planner = read_text(".claude/skills/idc-team-config/scripts/plan_context.py")
 
     assert_true("mattpocock/skills" in workflow, "Clarification Provider 必须标注 Grill Me 方法论来源。")
     assert_true("grill-me-method" in workflow, "Clarification Provider 必须声明 grill-me-method。")
@@ -2400,9 +2400,9 @@ def test_filled_team_config_when_present():
     text = config_file.read_text(encoding="utf-8")
     for leftover in ["<TEAM_ID>", "<REPO_PATH>", "<DT_ID>", "<ENTERPRISE_"]:
         assert_true(leftover not in text, f"team-config.yaml 仍有未填占位符：{leftover}")
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
     checked = subprocess.run(
-        ["ruby", str(resolver), "--config", str(config_file), "--check"],
+        ["python3", str(resolver), "--config", str(config_file), "--check"],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -2414,8 +2414,8 @@ def test_filled_team_config_when_present():
 
 
 def test_plan_context_rejects_domain_mode_mismatch():
-    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
 
     with tempfile.TemporaryDirectory() as temp_dir:
         general_config = Path(temp_dir) / "team-config.yaml"
@@ -2435,7 +2435,7 @@ bindings: {}
         )
         effective = Path(temp_dir) / "effective.yaml"
         preflighted = subprocess.run(
-            ["ruby", str(preflight), "--config", str(general_config), "--output", str(effective)],
+            ["python3", str(preflight), "--config", str(general_config), "--output", str(effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2446,7 +2446,7 @@ bindings: {}
         )
 
         mismatched = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "d3a"],
+            ["python3", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "d3a"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2457,7 +2457,7 @@ bindings: {}
         )
 
         matched = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "general"],
+            ["python3", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "general"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2469,8 +2469,8 @@ bindings: {}
 
 
 def test_multi_domain_config_routes_each_enabled_domain():
-    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
     workflow = (ROOT / ".claude/skills/idc-workflow/SKILL.md").read_text(encoding="utf-8")
     scenario_router = (ROOT / ".claude/skills/idc-workflow/references/workflows/scenario-router.md").read_text(encoding="utf-8")
     assert_true(
@@ -2497,7 +2497,7 @@ bindings: {}
         )
         effective = Path(temp_dir) / "effective.yaml"
         preflighted = subprocess.run(
-            ["ruby", str(preflight), "--config", str(config), "--output", str(effective)],
+            ["python3", str(preflight), "--config", str(config), "--output", str(effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2515,7 +2515,7 @@ bindings: {}
 
         for domain in ["general", "d3a"]:
             planned = subprocess.run(
-                ["ruby", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", domain],
+                ["python3", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", domain],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
@@ -2526,7 +2526,7 @@ bindings: {}
             )
 
         disabled = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "custom"],
+            ["python3", str(context_planner), "--effective", str(effective), "--phase", "decision", "--domain", "custom"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2538,8 +2538,8 @@ bindings: {}
 
 
 def test_custom_required_contracts_are_validated_and_consumed():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
     base = (ROOT / "examples/team-config.custom-domain.yaml").read_text(encoding="utf-8")
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -2553,7 +2553,7 @@ def test_custom_required_contracts_are_validated_and_consumed():
             encoding="utf-8",
         )
         shape_checked = subprocess.run(
-            ["ruby", str(resolver), "--config", str(bad_shape), "--check"],
+            ["python3", str(resolver), "--config", str(bad_shape), "--check"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2577,7 +2577,7 @@ def test_custom_required_contracts_are_validated_and_consumed():
             encoding="utf-8",
         )
         unknown_checked = subprocess.run(
-            ["ruby", str(resolver), "--config", str(unknown_id), "--check"],
+            ["python3", str(resolver), "--config", str(unknown_id), "--check"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2602,7 +2602,7 @@ def test_custom_required_contracts_are_validated_and_consumed():
         )
         effective = Path(temp_dir) / "contracts-effective.yaml"
         resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(valid), "--output", str(effective)],
+            ["python3", str(resolver), "--config", str(valid), "--output", str(effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2610,7 +2610,7 @@ def test_custom_required_contracts_are_validated_and_consumed():
         assert_true(resolved.returncode == 0, f"合法 required_contracts 必须 READY：{resolved.stderr}")
         planned = subprocess.run(
             [
-                "ruby", str(context_planner),
+                "python3", str(context_planner),
                 "--effective", str(effective),
                 "--phase", "planning",
                 "--domain", "custom",
@@ -2630,8 +2630,8 @@ def test_custom_required_contracts_are_validated_and_consumed():
 
 
 def test_plan_context_accepts_declared_custom_domain_id():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
     base = (ROOT / "examples/team-config.custom-domain.yaml").read_text(encoding="utf-8")
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -2639,7 +2639,7 @@ def test_plan_context_accepts_declared_custom_domain_id():
         config.write_text(base, encoding="utf-8")
         effective = Path(temp_dir) / "custom-domain-effective.yaml"
         resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            ["python3", str(resolver), "--config", str(config), "--output", str(effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2648,7 +2648,7 @@ def test_plan_context_accepts_declared_custom_domain_id():
 
         keyword_form = subprocess.run(
             [
-                "ruby", str(context_planner),
+                "python3", str(context_planner),
                 "--effective", str(effective),
                 "--phase", "planning",
                 "--domain", "custom",
@@ -2665,7 +2665,7 @@ def test_plan_context_accepts_declared_custom_domain_id():
 
         declared_form = subprocess.run(
             [
-                "ruby", str(context_planner),
+                "python3", str(context_planner),
                 "--effective", str(effective),
                 "--phase", "planning",
                 "--domain", "demo-payment",
@@ -2689,7 +2689,7 @@ def test_plan_context_accepts_declared_custom_domain_id():
 
         unknown = subprocess.run(
             [
-                "ruby", str(context_planner),
+                "python3", str(context_planner),
                 "--effective", str(effective),
                 "--phase", "planning",
                 "--domain", "payment-unknown",
@@ -2711,7 +2711,7 @@ def test_plan_context_accepts_declared_custom_domain_id():
         reserved_id = Path(temp_dir) / "reserved-domain-id.yaml"
         reserved_id.write_text(base.replace("id: demo-payment", "id: d3a", 1), encoding="utf-8")
         reserved_checked = subprocess.run(
-            ["ruby", str(resolver), "--config", str(reserved_id), "--check"],
+            ["python3", str(resolver), "--config", str(reserved_id), "--check"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2727,8 +2727,8 @@ def test_plan_context_accepts_declared_custom_domain_id():
 
 
 def test_fixed_lane_policy_conflicting_lane_is_rejected():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
     base = (ROOT / "examples/team-config.custom-domain.yaml").read_text(encoding="utf-8")
     fixed_text = base.replace("mode: dynamic", "mode: fixed", 1).replace("selected_lane: null", "selected_lane: lite", 1)
 
@@ -2737,7 +2737,7 @@ def test_fixed_lane_policy_conflicting_lane_is_rejected():
         config.write_text(fixed_text, encoding="utf-8")
         effective = Path(temp_dir) / "fixed-lane-effective.yaml"
         resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            ["python3", str(resolver), "--config", str(config), "--output", str(effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2746,7 +2746,7 @@ def test_fixed_lane_policy_conflicting_lane_is_rejected():
 
         conflicting = subprocess.run(
             [
-                "ruby", str(context_planner),
+                "python3", str(context_planner),
                 "--effective", str(effective),
                 "--phase", "planning",
                 "--domain", "custom",
@@ -2767,7 +2767,7 @@ def test_fixed_lane_policy_conflicting_lane_is_rejected():
 
         autofilled = subprocess.run(
             [
-                "ruby", str(context_planner),
+                "python3", str(context_planner),
                 "--effective", str(effective),
                 "--phase", "planning",
                 "--domain", "custom",
@@ -2784,8 +2784,8 @@ def test_fixed_lane_policy_conflicting_lane_is_rejected():
 
 
 def test_fixed_lane_policy_skips_lane_resolver_dynamic_keeps_it():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
     base = (ROOT / "examples/team-config.custom-domain.yaml").read_text(encoding="utf-8")
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -2796,7 +2796,7 @@ def test_fixed_lane_policy_skips_lane_resolver_dynamic_keeps_it():
         )
         fixed_effective = Path(temp_dir) / "fixed-decision-effective.yaml"
         fixed_resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(fixed_config), "--output", str(fixed_effective)],
+            ["python3", str(resolver), "--config", str(fixed_config), "--output", str(fixed_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2804,7 +2804,7 @@ def test_fixed_lane_policy_skips_lane_resolver_dynamic_keeps_it():
         assert_true(fixed_resolved.returncode == 0, f"fixed lane 配置解析失败：{fixed_resolved.stderr}")
         fixed_plan = subprocess.run(
             [
-                "ruby", str(context_planner),
+                "python3", str(context_planner),
                 "--effective", str(fixed_effective),
                 "--phase", "decision",
                 "--domain", "custom",
@@ -2821,7 +2821,7 @@ def test_fixed_lane_policy_skips_lane_resolver_dynamic_keeps_it():
 
         dynamic_effective = Path(temp_dir) / "dynamic-decision-effective.yaml"
         dynamic_resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(ROOT / "examples/team-config.custom-domain.yaml"), "--output", str(dynamic_effective)],
+            ["python3", str(resolver), "--config", str(ROOT / "examples/team-config.custom-domain.yaml"), "--output", str(dynamic_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2829,7 +2829,7 @@ def test_fixed_lane_policy_skips_lane_resolver_dynamic_keeps_it():
         assert_true(dynamic_resolved.returncode == 0, f"dynamic custom 配置解析失败：{dynamic_resolved.stderr}")
         dynamic_plan = subprocess.run(
             [
-                "ruby", str(context_planner),
+                "python3", str(context_planner),
                 "--effective", str(dynamic_effective),
                 "--phase", "decision",
                 "--domain", "custom",
@@ -2846,13 +2846,13 @@ def test_fixed_lane_policy_skips_lane_resolver_dynamic_keeps_it():
 
 
 def test_missing_lane_falls_back_to_lane_default():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
 
     with tempfile.TemporaryDirectory() as temp_dir:
         effective = Path(temp_dir) / "lane-default-effective.yaml"
         resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(ROOT / "examples/team-config.custom-domain.yaml"), "--output", str(effective)],
+            ["python3", str(resolver), "--config", str(ROOT / "examples/team-config.custom-domain.yaml"), "--output", str(effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2861,7 +2861,7 @@ def test_missing_lane_falls_back_to_lane_default():
 
         defaulted = subprocess.run(
             [
-                "ruby", str(context_planner),
+                "python3", str(context_planner),
                 "--effective", str(effective),
                 "--phase", "planning",
                 "--domain", "custom",
@@ -2883,7 +2883,7 @@ def test_missing_lane_falls_back_to_lane_default():
         no_default.write_text(yaml.safe_dump(effective_data), encoding="utf-8")
         invalid = subprocess.run(
             [
-                "ruby", str(context_planner),
+                "python3", str(context_planner),
                 "--effective", str(no_default),
                 "--phase", "planning",
                 "--domain", "custom",
@@ -2899,7 +2899,7 @@ def test_missing_lane_falls_back_to_lane_default():
 
 
 def test_domain_mode_requires_registered_builtin_module():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
 
     with tempfile.TemporaryDirectory() as temp_dir:
         registry = Path(temp_dir) / "registry.yaml"
@@ -2930,7 +2930,7 @@ bindings: {}
             encoding="utf-8",
         )
         checked = subprocess.run(
-            ["ruby", str(resolver), "--config", str(d3a_config), "--registry", str(registry), "--check"],
+            ["python3", str(resolver), "--config", str(d3a_config), "--registry", str(registry), "--check"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2946,7 +2946,7 @@ bindings: {}
 
 
 def test_domain_mode_general_with_d3a_unplugged_stays_ready():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
 
     with tempfile.TemporaryDirectory() as temp_dir:
         registry = Path(temp_dir) / "registry.yaml"
@@ -2977,7 +2977,7 @@ bindings: {}
             encoding="utf-8",
         )
         checked = subprocess.run(
-            ["ruby", str(resolver), "--config", str(general_config), "--registry", str(registry), "--check"],
+            ["python3", str(resolver), "--config", str(general_config), "--registry", str(registry), "--check"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -2989,15 +2989,15 @@ bindings: {}
 
 
 def test_select_capabilities_rejects_unknown_signal():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"
     config = ROOT / "examples/team-config.full-bindings.yaml"
     assert_true(resolver.exists() and selector.exists() and config.exists(), "Resolver / Selector / full-bindings 配置缺失。")
 
     with tempfile.TemporaryDirectory() as temp_dir:
         effective = Path(temp_dir) / "effective.yaml"
         resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            ["python3", str(resolver), "--config", str(config), "--output", str(effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3021,7 +3021,7 @@ def test_select_capabilities_rejects_unknown_signal():
             encoding="utf-8",
         )
         bad = subprocess.run(
-            ["ruby", str(selector), "--effective", str(effective), "--demand", str(bad_demand)],
+            ["python3", str(selector), "--effective", str(effective), "--demand", str(bad_demand)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3047,7 +3047,7 @@ def test_select_capabilities_rejects_unknown_signal():
             encoding="utf-8",
         )
         good = subprocess.run(
-            ["ruby", str(selector), "--effective", str(effective), "--demand", str(good_demand)],
+            ["python3", str(selector), "--effective", str(effective), "--demand", str(good_demand)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3144,7 +3144,7 @@ def write_alignment_config(temp_dir, name, section_text):
 
 
 def run_alignment_resolver(config_path, output_path=None):
-    command = ["ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"), "--config", str(config_path)]
+    command = ["python3", str(ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"), "--config", str(config_path)]
     command += ["--output", str(output_path)] if output_path is not None else ["--check"]
     return subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
 
@@ -3191,7 +3191,7 @@ def test_alignment_pipeline_config_shape_mirrors_lane_profiles():
 
 
 def test_alignment_pipeline_framework_invariants_are_enforced():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
     assert_true(resolver.exists(), "缺少 Team Config Resolver。")
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -3291,9 +3291,9 @@ def test_alignment_pipeline_framework_invariants_are_enforced():
 
 
 def test_alignment_pipeline_runtime_consumption_is_materialized():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
     config = ROOT / "examples/team-config.full-bindings.yaml"
     effective_schema = read_text(".claude/skills/idc-workflow/references/schemas/effective-team-config.schema.yaml")
 
@@ -3312,7 +3312,7 @@ def test_alignment_pipeline_runtime_consumption_is_materialized():
 
         preflight_effective = Path(temp_dir) / "alignment-preflight-effective.yaml"
         preflight_run = subprocess.run(
-            ["ruby", str(preflight), "--config", str(config), "--output", str(preflight_effective)],
+            ["python3", str(preflight), "--config", str(config), "--output", str(preflight_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3323,7 +3323,7 @@ def test_alignment_pipeline_runtime_consumption_is_materialized():
         assert_true(alignment_checks.count("status: PASS") == 5, "每个 alignment step 的 dry-run（绑定解析、序 emitted、信号下限）必须 PASS。")
 
         decision_default = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(default_effective), "--phase", "decision", "--domain", "general"],
+            ["python3", str(context_planner), "--effective", str(default_effective), "--phase", "decision", "--domain", "general"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3340,7 +3340,7 @@ def test_alignment_pipeline_runtime_consumption_is_materialized():
         configured_resolved = run_alignment_resolver(configured, configured_effective)
         assert_true(configured_resolved.returncode == 0, f"显式 alignment 配置解析失败：{configured_resolved.stderr}")
         decision_configured = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(configured_effective), "--phase", "decision", "--domain", "general"],
+            ["python3", str(context_planner), "--effective", str(configured_effective), "--phase", "decision", "--domain", "general"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3368,7 +3368,7 @@ def test_alignment_pipeline_runtime_consumption_is_materialized():
         assert_true(custom_resolved.returncode == 0, f"团队自定义 Alignment Skill 解析失败：{custom_resolved.stderr}")
         custom_decision = subprocess.run(
             [
-                "ruby", str(context_planner), "--effective", str(custom_effective), "--phase", "decision", "--domain", "general",
+                "python3", str(context_planner), "--effective", str(custom_effective), "--phase", "decision", "--domain", "general",
                 "--signal", "tr3_design_doc", "--signals-complete",
             ],
             cwd=ROOT,
@@ -3428,7 +3428,7 @@ def test_alignment_pipeline_execution_defers_to_config_not_hardcoded():
 
 def run_decision_context_plan(effective_path, signals=None):
     command = [
-        "ruby", str(ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"),
+        "python3", str(ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"),
         "--effective", str(effective_path), "--phase", "decision", "--domain", "d3a",
     ]
     if signals is not None:
@@ -3439,7 +3439,7 @@ def run_decision_context_plan(effective_path, signals=None):
 
 
 def test_raw_idea_decision_plan_pins_pre_alignment_reachability():
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
     assert_true(context_planner.exists(), "缺少 Context Planner 脚本。")
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -3483,7 +3483,7 @@ def test_input_maturity_signal_matrix_matches_expected_semantics():
     # raw_idea 必须点亮 discovery + brainstorming（grill 可达）；structured / TR3 输入
     # （clarification_required / tr3_input）必须点亮 grill、不默认点亮 brainstorming；
     # docs_clarification_required 只点亮 grilling-with-docs；alignment-check 恒 always_run。
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
     assert_true(context_planner.exists(), "缺少 Context Planner 脚本。")
 
     expected_matrix = [
@@ -3566,7 +3566,7 @@ def test_input_maturity_signal_matrix_matches_expected_semantics():
 
 
 def test_raw_idea_signal_must_light_brainstorming_step():
-    # GREEN：曾是 RED 缺陷证据；plan_context.rb 信号匹配修复（any-of + 双触发信号）后转 GREEN。
+    # GREEN：曾是 RED 缺陷证据；plan_context.py 信号匹配修复（any-of + 双触发信号）后转 GREEN。
     with tempfile.TemporaryDirectory() as temp_dir:
         config = write_alignment_config(temp_dir, "raw-idea-brainstorming.yaml", build_alignment_section())
         effective = Path(temp_dir) / "raw-idea-brainstorming-effective.yaml"
@@ -3588,18 +3588,18 @@ def test_raw_idea_signal_must_light_brainstorming_step():
 
 
 def test_team_config_resolver_and_lane_capability_selection_execute():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
-    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
-    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"
+    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
+    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.py"
     config = ROOT / "examples/team-config.full-bindings.yaml"
     assert_true(resolver.exists() and selector.exists() and preflight.exists() and context_planner.exists() and knowledge_planner.exists(), "单配置 Preflight / Resolver / Capability Selector / Knowledge / Context Planner 脚本缺失。")
 
     with tempfile.TemporaryDirectory() as temp_dir:
         effective = Path(temp_dir) / "effective.yaml"
         resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            ["python3", str(resolver), "--config", str(config), "--output", str(effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3620,7 +3620,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         )
         general_effective = Path(temp_dir) / "general-effective.yaml"
         general_resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(general_config), "--output", str(general_effective)],
+            ["python3", str(resolver), "--config", str(general_config), "--output", str(general_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3628,7 +3628,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true(general_resolved.returncode == 0, f"General 模式变体解析失败：{general_resolved.stderr}")
 
         decision_without_lane = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(general_effective), "--phase", "decision", "--domain", "general"],
+            ["python3", str(context_planner), "--effective", str(general_effective), "--phase", "decision", "--domain", "general"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3636,7 +3636,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true(decision_without_lane.returncode == 0 and "status: READY" in decision_without_lane.stdout, f"decision 阶段不应强制 --lane：{decision_without_lane.stdout}")
         assert_true("lane-resolver.md" in decision_without_lane.stdout, "decision 阶段必须加载 Lane Resolver。")
         planning_without_lane = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(general_effective), "--phase", "planning", "--domain", "general"],
+            ["python3", str(context_planner), "--effective", str(general_effective), "--phase", "planning", "--domain", "general"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3656,7 +3656,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         }
         for name, (count, ids) in expected.items():
             result = subprocess.run(
-                ["ruby", str(selector), "--effective", str(effective), "--demand", str(ROOT / f"examples/capability-demands/{name}.yaml")],
+                ["python3", str(selector), "--effective", str(effective), "--demand", str(ROOT / f"examples/capability-demands/{name}.yaml")],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
@@ -3670,7 +3670,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
             assert_true("status: READY" in result.stdout, f"{name} selection 必须 READY。")
 
         fast_result = subprocess.run(
-            ["ruby", str(selector), "--effective", str(effective), "--demand", str(ROOT / "examples/capability-demands/fast.yaml")],
+            ["python3", str(selector), "--effective", str(effective), "--demand", str(ROOT / "examples/capability-demands/fast.yaml")],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3694,7 +3694,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
             encoding="utf-8",
         )
         missing_stage = subprocess.run(
-            ["ruby", str(selector), "--effective", str(effective), "--demand", str(missing_stage_demand)],
+            ["python3", str(selector), "--effective", str(effective), "--demand", str(missing_stage_demand)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3717,7 +3717,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
             encoding="utf-8",
         )
         denied = subprocess.run(
-            ["ruby", str(selector), "--effective", str(effective), "--demand", str(denied_demand)],
+            ["python3", str(selector), "--effective", str(effective), "--demand", str(denied_demand)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3728,7 +3728,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         invalid = Path(temp_dir) / "invalid.yaml"
         invalid.write_text(config.read_text(encoding="utf-8") + "\ncommand: forbidden\n", encoding="utf-8")
         rejected = subprocess.run(
-            ["ruby", str(resolver), "--config", str(invalid), "--check"],
+            ["python3", str(resolver), "--config", str(invalid), "--check"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3738,7 +3738,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         unknown_lane_skill = Path(temp_dir) / "unknown-lane-skill.yaml"
         unknown_lane_skill.write_text(config.read_text(encoding="utf-8").replace("allow: [coding_standard, static_scan, defect_fix]", "allow: [coding_standard, idc-not-bound]", 1), encoding="utf-8")
         unknown_rejected = subprocess.run(
-            ["ruby", str(resolver), "--config", str(unknown_lane_skill), "--check"],
+            ["python3", str(resolver), "--config", str(unknown_lane_skill), "--check"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3755,7 +3755,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
             encoding="utf-8",
         )
         protected_rejected = subprocess.run(
-            ["ruby", str(resolver), "--config", str(protected_binding), "--check"],
+            ["python3", str(resolver), "--config", str(protected_binding), "--check"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3777,7 +3777,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         ambiguous_config = Path(temp_dir) / "ambiguous-registration.yaml"
         ambiguous_config.write_text(config.read_text(encoding="utf-8").replace("adapter_extensions:\n", "adapter_extensions:\n" + overlap_row, 1), encoding="utf-8")
         ambiguous = subprocess.run(
-            ["ruby", str(resolver), "--config", str(ambiguous_config), "--check"],
+            ["python3", str(resolver), "--config", str(ambiguous_config), "--check"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3793,7 +3793,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         pre_alignment_config = Path(temp_dir) / "ambiguous-pre-alignment.yaml"
         pre_alignment_config.write_text(config.read_text(encoding="utf-8").replace("adapter_extensions:\n", "adapter_extensions:\n" + pre_alignment_overlap, 1), encoding="utf-8")
         pre_alignment_rejected = subprocess.run(
-            ["ruby", str(resolver), "--config", str(pre_alignment_config), "--check"],
+            ["python3", str(resolver), "--config", str(pre_alignment_config), "--check"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3804,7 +3804,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         composed_config.write_text(ambiguous_config.read_text(encoding="utf-8").replace("composes_with: []", "composes_with: [coding_standard]", 1), encoding="utf-8")
         composed_effective = Path(temp_dir) / "composed-effective.yaml"
         composed = subprocess.run(
-            ["ruby", str(resolver), "--config", str(composed_config), "--output", str(composed_effective)],
+            ["python3", str(resolver), "--config", str(composed_config), "--output", str(composed_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3815,7 +3815,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         superseding_config.write_text(ambiguous_config.read_text(encoding="utf-8").replace("supersedes: []", "supersedes: [coding_standard]", 1), encoding="utf-8")
         superseding_effective = Path(temp_dir) / "superseding-effective.yaml"
         superseding = subprocess.run(
-            ["ruby", str(resolver), "--config", str(superseding_config), "--output", str(superseding_effective)],
+            ["python3", str(resolver), "--config", str(superseding_config), "--output", str(superseding_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3837,7 +3837,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
             encoding="utf-8",
         )
         superseded_selection = subprocess.run(
-            ["ruby", str(selector), "--effective", str(superseding_effective), "--demand", str(complex_impl_demand)],
+            ["python3", str(selector), "--effective", str(superseding_effective), "--demand", str(complex_impl_demand)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3849,14 +3849,14 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         zero_budget_config.write_text(config.read_text(encoding="utf-8").replace("lite: {max_optional_skills: 3}", "lite: {max_optional_skills: 0}"), encoding="utf-8")
         zero_budget_effective = Path(temp_dir) / "zero-lite-budget-effective.yaml"
         zero_budget_resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(zero_budget_config), "--output", str(zero_budget_effective)],
+            ["python3", str(resolver), "--config", str(zero_budget_config), "--output", str(zero_budget_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
         )
         assert_true(zero_budget_resolved.returncode == 0, "团队必须能够调整任意 Lane 的 optional Skill budget。")
         zero_budget_selected = subprocess.run(
-            ["ruby", str(selector), "--effective", str(zero_budget_effective), "--demand", str(ROOT / "examples/capability-demands/lite.yaml")],
+            ["python3", str(selector), "--effective", str(zero_budget_effective), "--demand", str(ROOT / "examples/capability-demands/lite.yaml")],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3870,7 +3870,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         legacy_config.write_text(legacy_text, encoding="utf-8")
         legacy_effective = Path(temp_dir) / "legacy-effective.yaml"
         legacy_resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(legacy_config), "--output", str(legacy_effective)],
+            ["python3", str(resolver), "--config", str(legacy_config), "--output", str(legacy_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3898,7 +3898,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         portable_config.write_text(portable_text, encoding="utf-8")
         portable_effective = Path(temp_dir) / "portable-effective.yaml"
         portable_preflight = subprocess.run(
-            ["ruby", str(preflight), "--config", str(portable_config), "--output", str(portable_effective)],
+            ["python3", str(preflight), "--config", str(portable_config), "--output", str(portable_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3919,7 +3919,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true(str(harness_skill) in portable_effective_text, "harness:// Skill 必须按 IDC Core root 解析为绝对路径。")
         assert_true(not list(portable_effective.parent.glob(".*effective*.tmp-*")), "Resolver 原子写入后不得残留临时配置。")
         portable_selection = subprocess.run(
-            ["ruby", str(selector), "--effective", str(portable_effective), "--demand", str(ROOT / "examples/capability-demands/fast.yaml")],
+            ["python3", str(selector), "--effective", str(portable_effective), "--demand", str(ROOT / "examples/capability-demands/fast.yaml")],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3927,7 +3927,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true(portable_selection.returncode == 0 and str(team_skill) in portable_selection.stdout, "跨团队 Skill 绝对路径必须进入真实选择结果。")
 
         missing_preflight = subprocess.run(
-            ["ruby", str(preflight), "--config", str(Path(temp_dir) / "missing.yaml"), "--output", str(Path(temp_dir) / "missing-effective.yaml")],
+            ["python3", str(preflight), "--config", str(Path(temp_dir) / "missing.yaml"), "--output", str(Path(temp_dir) / "missing-effective.yaml")],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3940,7 +3940,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
             encoding="utf-8",
         )
         missing_knowledge = subprocess.run(
-            ["ruby", str(preflight), "--config", str(missing_knowledge_config), "--output", str(Path(temp_dir) / "missing-knowledge-effective.yaml")],
+            ["python3", str(preflight), "--config", str(missing_knowledge_config), "--output", str(Path(temp_dir) / "missing-knowledge-effective.yaml")],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3949,7 +3949,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
 
         minimal_effective = Path(temp_dir) / "minimal-effective.yaml"
         minimal_preflight = subprocess.run(
-            ["ruby", str(preflight), "--config", str(ROOT / "examples/team-config.minimal.yaml"), "--output", str(minimal_effective)],
+            ["python3", str(preflight), "--config", str(ROOT / "examples/team-config.minimal.yaml"), "--output", str(minimal_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3961,7 +3961,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
 
         custom_effective = Path(temp_dir) / "custom-effective.yaml"
         custom = subprocess.run(
-            ["ruby", str(resolver), "--config", str(ROOT / "examples/team-config.custom-domain.yaml"), "--output", str(custom_effective)],
+            ["python3", str(resolver), "--config", str(ROOT / "examples/team-config.custom-domain.yaml"), "--output", str(custom_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3971,7 +3971,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true("source: team-config-inline" in custom_text and "id: demo-payment" in custom_text, "Custom Domain 必须从 team-config 内联物化。")
 
         decision_plan = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(general_effective), "--phase", "decision", "--domain", "general", "--lane", "fast"],
+            ["python3", str(context_planner), "--effective", str(general_effective), "--phase", "decision", "--domain", "general", "--lane", "fast"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3981,7 +3981,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true("domains/d3a/module.yaml" not in decision_plan.stdout and "idc-gc-sop-adapter/SKILL.md" not in decision_plan.stdout, "Decision 阶段不得预加载 D3A 或执行 adapter。")
 
         d3a_plan = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective), "--phase", "planning", "--domain", "d3a"],
+            ["python3", str(context_planner), "--effective", str(effective), "--phase", "planning", "--domain", "d3a"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3991,7 +3991,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
 
         selection_file = Path(temp_dir) / "fast-selection.yaml"
         selected = subprocess.run(
-            ["ruby", str(selector), "--effective", str(general_effective), "--demand", str(ROOT / "examples/capability-demands/fast.yaml"), "--output", str(selection_file)],
+            ["python3", str(selector), "--effective", str(general_effective), "--demand", str(ROOT / "examples/capability-demands/fast.yaml"), "--output", str(selection_file)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -3999,14 +3999,14 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true(selected.returncode == 0, f"Context Planner 测试准备 selection 失败：{selected.stderr}")
         knowledge_plan_file = Path(temp_dir) / "fast-knowledge-plan.yaml"
         knowledge_planned = subprocess.run(
-            ["ruby", str(knowledge_planner), "--effective", str(general_effective), "--demand", str(ROOT / "examples/knowledge-demands/fast.yaml"), "--output", str(knowledge_plan_file)],
+            ["python3", str(knowledge_planner), "--effective", str(general_effective), "--demand", str(ROOT / "examples/knowledge-demands/fast.yaml"), "--output", str(knowledge_plan_file)],
             cwd=ROOT,
             capture_output=True,
             text=True,
         )
         assert_true(knowledge_planned.returncode == 0, f"Context Planner 测试准备 Knowledge Plan 失败：{knowledge_planned.stderr}")
         execution_plan = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(general_effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--selection", str(selection_file), "--knowledge-plan", str(knowledge_plan_file)],
+            ["python3", str(context_planner), "--effective", str(general_effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--selection", str(selection_file), "--knowledge-plan", str(knowledge_plan_file)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -4017,7 +4017,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true("capability_id: dt_build" not in execution_plan.stdout and "idc-d3a-coding/SKILL.md" not in execution_plan.stdout, "Fast General execution 不得加载未选中的 DT/D3A Skill。")
 
         missing_selection = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(general_effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--knowledge-plan", str(knowledge_plan_file)],
+            ["python3", str(context_planner), "--effective", str(general_effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--knowledge-plan", str(knowledge_plan_file)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -4025,7 +4025,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true(missing_selection.returncode != 0 and "--selection is required for execution" in missing_selection.stdout, "Execution 不得绕过 Capability Selector 直接生成加载计划。")
 
         missing_knowledge_plan = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(general_effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--selection", str(selection_file)],
+            ["python3", str(context_planner), "--effective", str(general_effective), "--phase", "execution", "--domain", "general", "--lane", "fast", "--selection", str(selection_file)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -4033,7 +4033,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
         assert_true(missing_knowledge_plan.returncode != 0 and "--knowledge-plan is required for execution" in missing_knowledge_plan.stdout, "Execution 不得绕过 Knowledge Planner 直接生成加载计划。")
 
         custom_plan = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(custom_effective), "--phase", "planning", "--domain", "custom", "--lane", "lite"],
+            ["python3", str(context_planner), "--effective", str(custom_effective), "--phase", "planning", "--domain", "custom", "--lane", "lite"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -4055,7 +4055,7 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
             encoding="utf-8",
         )
         custom_knowledge_plan = subprocess.run(
-            ["ruby", str(knowledge_planner), "--effective", str(custom_effective), "--demand", str(custom_knowledge_demand)],
+            ["python3", str(knowledge_planner), "--effective", str(custom_effective), "--demand", str(custom_knowledge_demand)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -4073,8 +4073,8 @@ def can_enter_all_layers_green(required_domains, green_domains):
 
 
 def test_domain_ordered_orchestration_controls_real_selection_order():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"
     base = yaml.safe_load((ROOT / "examples/team-config.full-bindings.yaml").read_text(encoding="utf-8"))
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -4089,10 +4089,10 @@ def test_domain_ordered_orchestration_controls_real_selection_order():
         d3a_path = Path(temp_dir) / "d3a-ordered.yaml"
         d3a_path.write_text(yaml.safe_dump(d3a_config, sort_keys=False, allow_unicode=True), encoding="utf-8")
         d3a_effective = Path(temp_dir) / "d3a-effective.yaml"
-        d3a_resolved = subprocess.run(["ruby", str(resolver), "--config", str(d3a_path), "--output", str(d3a_effective)], cwd=ROOT, capture_output=True, text=True)
+        d3a_resolved = subprocess.run(["python3", str(resolver), "--config", str(d3a_path), "--output", str(d3a_effective)], cwd=ROOT, capture_output=True, text=True)
         assert_true(d3a_resolved.returncode == 0, f"D3A ordered orchestration 解析失败：{d3a_resolved.stderr}")
         d3a_selection = Path(temp_dir) / "d3a-selection.yaml"
-        d3a_selected = subprocess.run(["ruby", str(selector), "--effective", str(d3a_effective), "--demand", str(ROOT / "examples/capability-demands/d3a.yaml"), "--output", str(d3a_selection)], cwd=ROOT, capture_output=True, text=True)
+        d3a_selected = subprocess.run(["python3", str(selector), "--effective", str(d3a_effective), "--demand", str(ROOT / "examples/capability-demands/d3a.yaml"), "--output", str(d3a_selection)], cwd=ROOT, capture_output=True, text=True)
         assert_true(d3a_selected.returncode == 0, f"D3A ordered orchestration 执行失败：{d3a_selected.stdout}\n{d3a_selected.stderr}")
         d3a_result = yaml.safe_load(d3a_selection.read_text(encoding="utf-8"))["capability_selection_result"]
         assert_true(d3a_result["orchestration"]["matched_step_ids"] == ["design-tests-first", "design-dt-second"], "D3A 必须按 team-config 声明顺序命中步骤。")
@@ -4121,7 +4121,7 @@ def test_domain_ordered_orchestration_controls_real_selection_order():
         custom_path = Path(temp_dir) / "custom-ordered.yaml"
         custom_path.write_text(yaml.safe_dump(custom_config, sort_keys=False, allow_unicode=True), encoding="utf-8")
         custom_effective = Path(temp_dir) / "custom-effective.yaml"
-        custom_resolved = subprocess.run(["ruby", str(resolver), "--config", str(custom_path), "--output", str(custom_effective)], cwd=ROOT, capture_output=True, text=True)
+        custom_resolved = subprocess.run(["python3", str(resolver), "--config", str(custom_path), "--output", str(custom_effective)], cwd=ROOT, capture_output=True, text=True)
         assert_true(custom_resolved.returncode == 0, f"Custom ordered orchestration 解析失败：{custom_resolved.stderr}")
         custom_demand = Path(temp_dir) / "custom-demand.yaml"
         custom_demand.write_text("""capability_demand:
@@ -4137,7 +4137,7 @@ def test_domain_ordered_orchestration_controls_real_selection_order():
   contract_refs: [task_contract, verification_contract]
 """, encoding="utf-8")
         custom_selection = Path(temp_dir) / "custom-selection.yaml"
-        custom_selected = subprocess.run(["ruby", str(selector), "--effective", str(custom_effective), "--demand", str(custom_demand), "--output", str(custom_selection)], cwd=ROOT, capture_output=True, text=True)
+        custom_selected = subprocess.run(["python3", str(selector), "--effective", str(custom_effective), "--demand", str(custom_demand), "--output", str(custom_selection)], cwd=ROOT, capture_output=True, text=True)
         assert_true(custom_selected.returncode == 0, f"Custom ordered orchestration 执行失败：{custom_selected.stdout}\n{custom_selected.stderr}")
         custom_result = yaml.safe_load(custom_selection.read_text(encoding="utf-8"))["capability_selection_result"]
         assert_true(custom_result["orchestration"]["matched_step_ids"] == ["team-implementation"], "Custom ordered step 必须被真实 Selector 消费。")
@@ -4145,12 +4145,12 @@ def test_domain_ordered_orchestration_controls_real_selection_order():
 
 
 def test_d3a_and_general_lane_runtime_matrix_execute():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
-    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"
-    knowledge_verifier = ROOT / ".claude/skills/idc-team-config/scripts/verify_knowledge_consumption.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
-    authorizer = ROOT / ".claude/skills/idc-workflow/scripts/authorize_execution.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"
+    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.py"
+    knowledge_verifier = ROOT / ".claude/skills/idc-team-config/scripts/verify_knowledge_consumption.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
+    authorizer = ROOT / ".claude/skills/idc-workflow/scripts/authorize_execution.py"
     matrix = {
         "fast": {"domain": "general", "lane": "fast", "unit": "fast-unit", "selected": 1, "domain_skill": ".claude/skills/idc-general-coding/SKILL.md"},
         "lite": {"domain": "general", "lane": "lite", "unit": "lite-unit", "selected": 4, "domain_skill": ".claude/skills/idc-general-coding/SKILL.md"},
@@ -4161,7 +4161,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
     with tempfile.TemporaryDirectory() as temp_dir:
         effective = Path(temp_dir) / "effective.yaml"
         resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(ROOT / "examples/team-config.full-bindings.yaml"), "--output", str(effective)],
+            ["python3", str(resolver), "--config", str(ROOT / "examples/team-config.full-bindings.yaml"), "--output", str(effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -4175,7 +4175,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
         )
         general_effective = Path(temp_dir) / "general-effective.yaml"
         general_resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(general_config), "--output", str(general_effective)],
+            ["python3", str(resolver), "--config", str(general_config), "--output", str(general_effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -4188,7 +4188,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
             scenario_effective = general_effective if expected["domain"] == "general" else effective
             selection = Path(temp_dir) / f"{scenario}-selection.yaml"
             selected = subprocess.run(
-                ["ruby", str(selector), "--effective", str(scenario_effective), "--demand", str(ROOT / f"examples/capability-demands/{scenario}.yaml"), "--output", str(selection)],
+                ["python3", str(selector), "--effective", str(scenario_effective), "--demand", str(ROOT / f"examples/capability-demands/{scenario}.yaml"), "--output", str(selection)],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
@@ -4201,7 +4201,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
 
             knowledge_plan = Path(temp_dir) / f"{scenario}-knowledge-plan.yaml"
             knowledge_planned = subprocess.run(
-                ["ruby", str(knowledge_planner), "--effective", str(scenario_effective), "--demand", str(ROOT / f"examples/knowledge-demands/{scenario}.yaml"), "--output", str(knowledge_plan)],
+                ["python3", str(knowledge_planner), "--effective", str(scenario_effective), "--demand", str(ROOT / f"examples/knowledge-demands/{scenario}.yaml"), "--output", str(knowledge_plan)],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
@@ -4218,7 +4218,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
             phase_outputs = {}
             for phase in ["decision", "planning", "execution", "completion"]:
                 command = [
-                    "ruby", str(context_planner),
+                    "python3", str(context_planner),
                     "--effective", str(scenario_effective),
                     "--phase", phase,
                     "--domain", expected["domain"],
@@ -4309,7 +4309,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
                 encoding="utf-8",
             )
             authorized = subprocess.run(
-                ["ruby", str(authorizer), "--request", str(authorization)],
+                ["python3", str(authorizer), "--request", str(authorization)],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
@@ -4333,7 +4333,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
                 encoding="utf-8",
             )
             verified = subprocess.run(
-                ["ruby", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(receipt)],
+                ["python3", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(receipt)],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
@@ -4347,7 +4347,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
                 encoding="utf-8",
             )
             relative_verified = subprocess.run(
-                ["ruby", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(relative_receipt)],
+                ["python3", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(relative_receipt)],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
@@ -4365,7 +4365,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
                     encoding="utf-8",
                 )
                 cross_layer = subprocess.run(
-                    ["ruby", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(cross_layer_receipt)],
+                    ["python3", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(cross_layer_receipt)],
                     cwd=ROOT,
                     capture_output=True,
                     text=True,
@@ -4375,7 +4375,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
                 missing_static_receipt = Path(temp_dir) / "d3a-missing-static-receipt.yaml"
                 missing_static_receipt.write_text(receipt.read_text(encoding="utf-8").replace(f'    - "{required_refs[0]}"\n', "", 1), encoding="utf-8")
                 missing_static = subprocess.run(
-                    ["ruby", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(missing_static_receipt)],
+                    ["python3", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(missing_static_receipt)],
                     cwd=ROOT,
                     capture_output=True,
                     text=True,
@@ -4387,7 +4387,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
                 tampered_authorization = Path(temp_dir) / "d3a-tampered-authorization.yaml"
                 tampered_authorization.write_text(authorization.read_text(encoding="utf-8").replace(str(knowledge_plan), str(tampered_plan), 1), encoding="utf-8")
                 tampered = subprocess.run(
-                    ["ruby", str(authorizer), "--request", str(tampered_authorization)],
+                    ["python3", str(authorizer), "--request", str(tampered_authorization)],
                     cwd=ROOT,
                     capture_output=True,
                     text=True,
@@ -4398,7 +4398,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
                 missing_provider_receipt = Path(temp_dir) / f"{scenario}-missing-provider-receipt.yaml"
                 missing_provider_receipt.write_text(receipt.read_text(encoding="utf-8").replace("provider_result_refs: [provider-result]", "provider_result_refs: []"), encoding="utf-8")
                 missing_provider = subprocess.run(
-                    ["ruby", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(missing_provider_receipt)],
+                    ["python3", str(knowledge_verifier), "--plan", str(knowledge_plan), "--receipt", str(missing_provider_receipt)],
                     cwd=ROOT,
                     capture_output=True,
                     text=True,
@@ -4408,7 +4408,7 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
         invalid_demand = Path(temp_dir) / "invalid-d3a-knowledge-demand.yaml"
         invalid_demand.write_text((ROOT / "examples/knowledge-demands/d3a.yaml").read_text(encoding="utf-8").replace("selected_layer: DO", "selected_layer: UNKNOWN_LAYER"), encoding="utf-8")
         missing_mapping = subprocess.run(
-            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(invalid_demand)],
+            ["python3", str(knowledge_planner), "--effective", str(effective), "--demand", str(invalid_demand)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -4422,10 +4422,10 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
 
 
 def test_d3a_team_dt_domain_override_takes_effect():
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
-    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"
+    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
     team_config = ROOT / "examples/team-config.d3a-team-dt.yaml"
     team_demand = ROOT / "examples/knowledge-demands/d3a-team-dt.yaml"
     for required in [resolver, selector, knowledge_planner, context_planner, team_config, team_demand]:
@@ -4434,7 +4434,7 @@ def test_d3a_team_dt_domain_override_takes_effect():
     with tempfile.TemporaryDirectory() as temp_dir:
         effective = Path(temp_dir) / "effective.yaml"
         resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(team_config), "--output", str(effective)],
+            ["python3", str(resolver), "--config", str(team_config), "--output", str(effective)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -4450,7 +4450,7 @@ def test_d3a_team_dt_domain_override_takes_effect():
 
         team_knowledge_plan = Path(temp_dir) / "team-knowledge-plan.yaml"
         team_planned = subprocess.run(
-            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(team_demand), "--output", str(team_knowledge_plan)],
+            ["python3", str(knowledge_planner), "--effective", str(effective), "--demand", str(team_demand), "--output", str(team_knowledge_plan)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -4473,7 +4473,7 @@ def test_d3a_team_dt_domain_override_takes_effect():
             encoding="utf-8",
         )
         builtin_planned = subprocess.run(
-            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(builtin_dt_demand)],
+            ["python3", str(knowledge_planner), "--effective", str(effective), "--demand", str(builtin_dt_demand)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -4483,7 +4483,7 @@ def test_d3a_team_dt_domain_override_takes_effect():
 
         selection = Path(temp_dir) / "team-dt-selection.yaml"
         selected = subprocess.run(
-            ["ruby", str(selector), "--effective", str(effective), "--demand", str(ROOT / "examples/capability-demands/d3a.yaml"), "--output", str(selection)],
+            ["python3", str(selector), "--effective", str(effective), "--demand", str(ROOT / "examples/capability-demands/d3a.yaml"), "--output", str(selection)],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -4492,7 +4492,7 @@ def test_d3a_team_dt_domain_override_takes_effect():
 
         executed = subprocess.run(
             [
-                "ruby", str(context_planner),
+                "python3", str(context_planner),
                 "--effective", str(effective),
                 "--phase", "execution",
                 "--domain", "d3a",
@@ -4520,8 +4520,8 @@ def test_d3a_team_dt_domain_override_takes_effect():
 
 
 def test_official_entry_regenerates_effective_config_after_team_config_swap():
-    prepare_runtime = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    prepare_runtime = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
     minimal_config = ROOT / "examples/team-config.minimal.yaml"
     team_dt_config = ROOT / "examples/team-config.d3a-team-dt.yaml"
     for required in [prepare_runtime, context_planner, minimal_config, team_dt_config]:
@@ -4530,15 +4530,15 @@ def test_official_entry_regenerates_effective_config_after_team_config_swap():
     with tempfile.TemporaryDirectory() as temp_dir:
         sandbox = Path(temp_dir) / "harness"
         shutil.copytree(ROOT, sandbox, ignore=shutil.ignore_patterns(".git", ".idc", "__pycache__"))
-        sandbox_prepare = sandbox / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
-        sandbox_planner = sandbox / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+        sandbox_prepare = sandbox / ".claude/skills/idc-team-config/scripts/prepare_runtime.py"
+        sandbox_planner = sandbox / ".claude/skills/idc-team-config/scripts/plan_context.py"
         sandbox_config = sandbox / "team-config.yaml"
         effective = sandbox / ".idc/effective-team-config.yaml"
 
         # 第一轮：minimal general 配置经无参正式入口生成 effective。
         shutil.copyfile(minimal_config, sandbox_config)
         first = subprocess.run(
-            ["ruby", str(sandbox_prepare)],
+            ["python3", str(sandbox_prepare)],
             cwd=sandbox,
             capture_output=True,
             text=True,
@@ -4558,7 +4558,7 @@ def test_official_entry_regenerates_effective_config_after_team_config_swap():
         # 第二轮：根目录 team-config.yaml 被替换后，同一条无参命令必须覆盖旧 effective。
         shutil.copyfile(team_dt_config, sandbox_config)
         second = subprocess.run(
-            ["ruby", str(sandbox_prepare)],
+            ["python3", str(sandbox_prepare)],
             cwd=sandbox,
             capture_output=True,
             text=True,
@@ -4588,7 +4588,7 @@ def test_official_entry_regenerates_effective_config_after_team_config_swap():
 
         # 第三轮：下游 plan_context 消费再生成产物，证明生效的是新配置。
         planned = subprocess.run(
-            ["ruby", str(sandbox_planner), "--effective", str(effective), "--phase", "planning", "--domain", "d3a"],
+            ["python3", str(sandbox_planner), "--effective", str(effective), "--phase", "planning", "--domain", "d3a"],
             cwd=sandbox,
             capture_output=True,
             text=True,
@@ -4598,7 +4598,7 @@ def test_official_entry_regenerates_effective_config_after_team_config_swap():
             f"下游 plan_context 消费再生成产物必须保持 READY：{planned.stdout}\n{planned.stderr}",
         )
         mismatched = subprocess.run(
-            ["ruby", str(sandbox_planner), "--effective", str(effective), "--phase", "planning", "--domain", "general"],
+            ["python3", str(sandbox_planner), "--effective", str(effective), "--phase", "planning", "--domain", "general"],
             cwd=sandbox,
             capture_output=True,
             text=True,
@@ -4701,18 +4701,18 @@ def test_plan_confirmation_hook_enforces_real_ask_user_interaction():
                     pass
             return deny_decision
 
-        base_command = f"ruby .claude/skills/idc-workflow/scripts/authorize_execution.rb --request {request_path} --output /tmp/out.yaml"
+        base_command = f"python3 .claude/skills/idc-workflow/scripts/authorize_execution.py --request {request_path} --output /tmp/out.yaml"
 
         # Case 1: Non-Bash tool_name -> no deny
         deny = run_hook("Edit", base_command)
         assert_true(deny is None, f"Case 1: Non-Bash should pass through, got deny: {deny}")
 
-        # Case 2: Bash command without authorize_execution.rb -> no deny
+        # Case 2: Bash command without authorize_execution.py -> no deny
         deny = run_hook("Bash", "git status")
         assert_true(deny is None, f"Case 2: Non-authorize_execution command should pass, got deny: {deny}")
 
         # Case 3: No --request in command -> deny
-        deny = run_hook("Bash", "ruby .claude/skills/idc-workflow/scripts/authorize_execution.rb --output /tmp/out.yaml")
+        deny = run_hook("Bash", "python3 .claude/skills/idc-workflow/scripts/authorize_execution.py --output /tmp/out.yaml")
         assert_true(deny is not None and "BLOCKED_PLAN_CONFIRMATION_REQUIRED" in deny,
                     f"Case 3: Missing --request should deny, got: {deny}")
 
@@ -4726,7 +4726,7 @@ def test_plan_confirmation_hook_enforces_real_ask_user_interaction():
     status: pending
     confirmation_ref: {plan_path}
 """)
-        cmd_unconfirmed = f"ruby .claude/skills/idc-workflow/scripts/authorize_execution.rb --request {unconfirmed_request} --output /tmp/out.yaml"
+        cmd_unconfirmed = f"python3 .claude/skills/idc-workflow/scripts/authorize_execution.py --request {unconfirmed_request} --output /tmp/out.yaml"
         deny = run_hook("Bash", cmd_unconfirmed)
         assert_true(deny is None, f"Case 4: status != confirmed should passthrough, got deny: {deny}")
 
@@ -4789,8 +4789,8 @@ def test_lane_ordered_all_stages_coverage_and_mapping():
       fix             → defect_fix    (allowed: debugging, fix)
       completion      → knowledge_archive (allowed: completion)
     """
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"
 
     # stage → skill_id that is allowed for that stage
     STAGE_SKILL = {
@@ -4859,7 +4859,7 @@ lane:
             config.write_text(config_text, encoding="utf-8")
             effective = Path(temp_dir) / f"ordered-{lane_id}-effective.yaml"
             resolved = subprocess.run(
-                ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+                ["python3", str(resolver), "--config", str(config), "--output", str(effective)],
                 cwd=ROOT, capture_output=True, text=True,
             )
             assert_true(resolved.returncode == 0, f"ordered {lane_id} full-coverage config 解析失败：{resolved.stderr}")
@@ -4880,7 +4880,7 @@ lane:
   contract_refs: []
 """, encoding="utf-8")
                 result = subprocess.run(
-                    ["ruby", str(selector), "--effective", str(effective), "--demand", str(demand)],
+                    ["python3", str(selector), "--effective", str(effective), "--demand", str(demand)],
                     cwd=ROOT, capture_output=True, text=True,
                 )
                 assert_true(
@@ -4904,7 +4904,7 @@ lane:
   contract_refs: []
 """, encoding="utf-8")
             result_missing = subprocess.run(
-                ["ruby", str(selector), "--effective", str(effective), "--demand", str(demand_missing)],
+                ["python3", str(selector), "--effective", str(effective), "--demand", str(demand_missing)],
                 cwd=ROOT, capture_output=True, text=True,
             )
             assert_true(
@@ -4917,8 +4917,8 @@ lane:
 
 def test_lane_docs_isolation_per_lane_in_knowledge_plan():
     """lane_docs: each lane's docs appear only in that lane's knowledge plan; other lanes don't bleed."""
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.py"
 
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Path(temp_dir) / "lane-docs-isolation.yaml"
@@ -4957,7 +4957,7 @@ lane:
 """, encoding="utf-8")
         effective = Path(temp_dir) / "lane-docs-effective.yaml"
         resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            ["python3", str(resolver), "--config", str(config), "--output", str(effective)],
             cwd=ROOT, capture_output=True, text=True,
         )
         assert_true(resolved.returncode == 0, f"lane_docs 配置解析失败：{resolved.stderr}")
@@ -4987,7 +4987,7 @@ lane:
   repo_context_required: false
 """, encoding="utf-8")
             result = subprocess.run(
-                ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(demand)],
+                ["python3", str(knowledge_planner), "--effective", str(effective), "--demand", str(demand)],
                 cwd=ROOT, capture_output=True, text=True,
             )
             assert_true(
@@ -5007,8 +5007,8 @@ lane:
 
 def test_lane_docs_empty_fast_produces_no_lane_knowledge():
     """lane_docs.fast: [] → fast plan has no lane entries; lite with docs has them."""
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.py"
 
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Path(temp_dir) / "empty-fast-docs.yaml"
@@ -5047,7 +5047,7 @@ lane:
 """, encoding="utf-8")
         effective = Path(temp_dir) / "empty-fast-effective.yaml"
         resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            ["python3", str(resolver), "--config", str(config), "--output", str(effective)],
             cwd=ROOT, capture_output=True, text=True,
         )
         assert_true(resolved.returncode == 0, f"empty-fast-docs 配置解析失败：{resolved.stderr}")
@@ -5065,7 +5065,7 @@ lane:
   repo_context_required: false
 """, encoding="utf-8")
         fast_result = subprocess.run(
-            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(fast_demand)],
+            ["python3", str(knowledge_planner), "--effective", str(effective), "--demand", str(fast_demand)],
             cwd=ROOT, capture_output=True, text=True,
         )
         assert_true(
@@ -5090,7 +5090,7 @@ lane:
   repo_context_required: false
 """, encoding="utf-8")
         lite_result = subprocess.run(
-            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(lite_demand)],
+            ["python3", str(knowledge_planner), "--effective", str(effective), "--demand", str(lite_demand)],
             cwd=ROOT, capture_output=True, text=True,
         )
         assert_true(
@@ -5105,7 +5105,7 @@ lane:
 
 def test_pre_alignment_custom_skill_binding_routes_via_plan_context():
     """Team rebinds brainstorming step to a custom skill; plan_context routes the custom skill ref."""
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
 
     custom_skill_ref = ".claude/skills/idc-gc-sop-adapter/SKILL.md"
     custom_bindings = {
@@ -5128,7 +5128,7 @@ def test_pre_alignment_custom_skill_binding_routes_via_plan_context():
         # Signal alternatives_needed should fire the brainstorming step and route the custom skill.
         plan = subprocess.run(
             [
-                "ruby", str(context_planner),
+                "python3", str(context_planner),
                 "--effective", str(effective),
                 "--phase", "decision",
                 "--domain", "general",
@@ -5184,7 +5184,7 @@ def test_pre_alignment_custom_alignment_check_rebinding_accepted():
 
 def test_lane_required_skill_unbound_blocks_preflight():
     """lane.profiles.fast.skills.required lists an unbound skill ID → preflight status not READY."""
-    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
+    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.py"
 
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Path(temp_dir) / "required-unbound.yaml"
@@ -5216,7 +5216,7 @@ lane:
 """, encoding="utf-8")
         effective = Path(temp_dir) / "required-unbound-effective.yaml"
         result = subprocess.run(
-            ["ruby", str(preflight), "--config", str(config), "--output", str(effective)],
+            ["python3", str(preflight), "--config", str(config), "--output", str(effective)],
             cwd=ROOT, capture_output=True, text=True,
         )
         # Preflight must not be READY when a required skill has no binding.
@@ -5233,8 +5233,8 @@ lane:
 
 def test_lane_ordered_signal_gated_steps_fire_only_on_matching_signals():
     """ordered lane steps with trigger_signals only fire when those signals are present."""
-    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
-    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # coding_standard: lanes=[fast,lite,complex] stages=[planning,implementation,review]
@@ -5276,7 +5276,7 @@ lane:
 """, encoding="utf-8")
         effective = Path(temp_dir) / "signal-gated-effective.yaml"
         resolved = subprocess.run(
-            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            ["python3", str(resolver), "--config", str(config), "--output", str(effective)],
             cwd=ROOT, capture_output=True, text=True,
         )
         assert_true(resolved.returncode == 0, f"signal-gated 配置解析失败：{resolved.stderr}")
@@ -5296,7 +5296,7 @@ lane:
   contract_refs: []
 """, encoding="utf-8")
         result_no_signal = subprocess.run(
-            ["ruby", str(selector), "--effective", str(effective), "--demand", str(demand_no_signal)],
+            ["python3", str(selector), "--effective", str(effective), "--demand", str(demand_no_signal)],
             cwd=ROOT, capture_output=True, text=True,
         )
         assert_true(
@@ -5330,7 +5330,7 @@ lane:
   contract_refs: []
 """, encoding="utf-8")
         result_with_signal = subprocess.run(
-            ["ruby", str(selector), "--effective", str(effective), "--demand", str(demand_with_signal)],
+            ["python3", str(selector), "--effective", str(effective), "--demand", str(demand_with_signal)],
             cwd=ROOT, capture_output=True, text=True,
         )
         assert_true(
@@ -5348,10 +5348,10 @@ lane:
 def test_second_team_full_e2e_via_team_config_only():
     """Brand-new team config (different lane profiles + alignment skills) resolves, preflights READY,
     plans context correctly, selects capabilities, and plans knowledge — without touching any framework file."""
-    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
-    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
-    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
-    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"
+    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.py"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"
+    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.py"
 
     # Custom alignment: swap brainstorming to the gc-sop-adapter and add a team-specific step.
     custom_alignment_bindings = {
@@ -5466,7 +5466,7 @@ self_optimization:
         # 1. Preflight must be READY.
         effective = Path(temp_dir) / "second-team-effective.yaml"
         pf = subprocess.run(
-            ["ruby", str(preflight), "--config", str(config), "--output", str(effective)],
+            ["python3", str(preflight), "--config", str(config), "--output", str(effective)],
             cwd=ROOT, capture_output=True, text=True,
         )
         assert_true(
@@ -5476,7 +5476,7 @@ self_optimization:
 
         # 2. Decision context plan for general domain must include custom alignment skill refs.
         decision_plan = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective),
+            ["python3", str(context_planner), "--effective", str(effective),
              "--phase", "decision", "--domain", "general"],
             cwd=ROOT, capture_output=True, text=True,
         )
@@ -5492,7 +5492,7 @@ self_optimization:
 
         # 3. Planning context plan for lite lane must be READY.
         planning_plan = subprocess.run(
-            ["ruby", str(context_planner), "--effective", str(effective),
+            ["python3", str(context_planner), "--effective", str(effective),
              "--phase", "planning", "--domain", "general", "--lane", "lite"],
             cwd=ROOT, capture_output=True, text=True,
         )
@@ -5516,7 +5516,7 @@ self_optimization:
   contract_refs: []
 """, encoding="utf-8")
         sel = subprocess.run(
-            ["ruby", str(selector), "--effective", str(effective), "--demand", str(demand)],
+            ["python3", str(selector), "--effective", str(effective), "--demand", str(demand)],
             cwd=ROOT, capture_output=True, text=True,
         )
         assert_true(
@@ -5543,7 +5543,7 @@ self_optimization:
   repo_context_required: false
 """, encoding="utf-8")
         kp_fast = subprocess.run(
-            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(kd_fast)],
+            ["python3", str(knowledge_planner), "--effective", str(effective), "--demand", str(kd_fast)],
             cwd=ROOT, capture_output=True, text=True,
         )
         assert_true(
@@ -5574,7 +5574,7 @@ self_optimization:
   contract_refs: []
 """, encoding="utf-8")
         sel_fast = subprocess.run(
-            ["ruby", str(selector), "--effective", str(effective), "--demand", str(demand_fast)],
+            ["python3", str(selector), "--effective", str(effective), "--demand", str(demand_fast)],
             cwd=ROOT, capture_output=True, text=True,
         )
         assert_true(

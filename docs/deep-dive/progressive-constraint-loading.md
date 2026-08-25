@@ -47,10 +47,10 @@ constraints/execution/<team-domain>-execution-constraints.yaml
 
 ## 可执行闭环
 
-`plan_context.rb` 负责生成阶段指令加载清单；`plan_knowledge.rb` 根据有效团队配置
+`plan_context.py` 负责生成阶段指令加载清单；`plan_knowledge.py` 根据有效团队配置
 和当前 Knowledge Demand 生成不可跨单元复用的 Knowledge Load Plan。Execution
 Authorization 同时绑定 Capability Selection 与 `knowledge_plan_id`。
 
 执行者完成后提交 Knowledge Consumption Receipt。只有
-`verify_knowledge_consumption.rb` 确认所有 required refs 已加载、没有计划外知识，
+`verify_knowledge_consumption.py` 确认所有 required refs 已加载、没有计划外知识，
 且所需 search/provider result refs 与摘要证据齐全，Completion Gate 才能通过。

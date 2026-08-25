@@ -2,8 +2,8 @@
 
 约束不是一次性全塞进上下文，而是分阶段加载。
 
-`prepare_runtime.rb` 输出 bootstrap plan。其余阶段必须调用
-`idc-team-config/scripts/plan_context.rb`，并只读取
+`prepare_runtime.py` 输出 bootstrap plan。其余阶段必须调用
+`idc-team-config/scripts/plan_context.py`，并只读取
 `context_load_plan.required_refs`。自然语言中的文件示例不是额外的默认加载清单。
 
 ```text

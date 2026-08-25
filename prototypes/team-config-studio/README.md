@@ -43,7 +43,7 @@ The page supports:
 The browser checks are advisory. The authoritative validation remains:
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py \
   --config team-config.yaml --check
 ```
 

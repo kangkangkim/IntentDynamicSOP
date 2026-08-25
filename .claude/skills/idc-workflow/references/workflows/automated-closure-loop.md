@@ -16,7 +16,7 @@ Planner
   -> Knowledge Consumption Verification
   -> Verification
   -> Error Analyzer / Targeted Fix / Re-plan
-  -> verify_completion.rb
+  -> verify_completion.py
   -> DONE
 ```
 
@@ -156,7 +156,7 @@ automated_closure_result:
 
 ## Post-DONE: Self-Optimization Observe Hook
 
-After `verify_completion.rb` returns `DONE`, run the following conditional block
+After `verify_completion.py` returns `DONE`, run the following conditional block
 before returning `automated_closure_result`:
 
 ```

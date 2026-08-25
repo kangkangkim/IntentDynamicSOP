@@ -149,7 +149,7 @@ Domain Module 决定领域差异、required contracts 和 Lane applicability。G
 
 ```sh
 cp team-config.yaml.template team-config.yaml   # 团队配置内填写
-ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb
+python3 .claude/skills/idc-team-config/scripts/prepare_runtime.py
 python3 tests/test_harness.py
 ```
 
@@ -179,7 +179,7 @@ $idc-workflow <TASK_OR_TR3>
 | `docs/team-rollout-playbook.md` | 面向多团队推广的最小配置、路径规则、接入层级和验收清单。 |
 | `docs/*.html`（其余 4 个） | 输入分流、Discovery 触发、D3A/General 双路径、上下文运行视角的可视化。 |
 | `.claude/skills/idc-workflow/TEAM_CUSTOMIZATION.md` | 团队接入时优先看的定制指南。 |
-| `.claude/skills/idc-workflow/CONTEXT_ENGINEERING.md` | 渐进式上下文加载策略；preflight 与 `plan_context.rb` 按阶段生成最小 `required_refs`。 |
+| `.claude/skills/idc-workflow/CONTEXT_ENGINEERING.md` | 渐进式上下文加载策略；preflight 与 `plan_context.py` 按阶段生成最小 `required_refs`。 |
 
 ## 目录结构
 

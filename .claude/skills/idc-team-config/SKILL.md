@@ -26,7 +26,7 @@ run. Teams do not manually maintain `.idc/effective-team-config.yaml`.
 3. Validate the filled configuration:
 
    ```sh
-   ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb --config team-config.yaml --check
+   python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py --config team-config.yaml --check
    ```
 
    `--registry PATH` overrides the shared domain module registry
@@ -35,7 +35,7 @@ run. Teams do not manually maintain `.idc/effective-team-config.yaml`.
 4. Materialize the read-only effective configuration when validation passes:
 
    ```sh
-   ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+   python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py \
      --config team-config.yaml \
      --output .idc/effective-team-config.yaml
    ```
@@ -47,7 +47,7 @@ Normal workflow entry uses the no-argument bootstrap below; the explicit
 Resolver commands above are for diagnosis and CI:
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb
+python3 .claude/skills/idc-team-config/scripts/prepare_runtime.py
 ```
 
 The preflight includes a three-reference `bootstrap_load_plan`. After Domain,
@@ -59,12 +59,12 @@ ignore it), and planning is INVALID only when neither `--lane` nor `lane.default
 is available. A custom domain with `lane_policy.mode: fixed` auto-fills its
 `selected_lane` and rejects an explicit conflicting `--lane`; fixed lanes skip
 the Lane Resolver, which only runs for `mode: dynamic`.
-`plan_context.rb` rejects a `--domain` that is not listed in the effective
+`plan_context.py` rejects a `--domain` that is not listed in the effective
 config's enabled Domain set. Fix `domain.enabled` (or the legacy single
 `domain.mode`) in `team-config.yaml` and regenerate the effective config:
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
+python3 .claude/skills/idc-team-config/scripts/plan_context.py \
   --effective .idc/effective-team-config.yaml \
   --phase decision \
   --domain general
@@ -90,7 +90,7 @@ Alignment approval, and completion ownership cannot be configured through it.
 For each planned execution unit, run Capability Selector with a demand contract:
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/select_capabilities.rb \
+python3 .claude/skills/idc-team-config/scripts/select_capabilities.py \
   --effective .idc/effective-team-config.yaml \
   --demand <CAPABILITY_DEMAND_YAML> \
   --output .idc/runs/<task-id>/attempt-<n>/capability-selection-<execution-unit>.yaml
@@ -99,7 +99,7 @@ ruby .claude/skills/idc-team-config/scripts/select_capabilities.rb \
 Build a Knowledge Load Plan for the same execution unit:
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/plan_knowledge.rb \
+python3 .claude/skills/idc-team-config/scripts/plan_knowledge.py \
   --effective .idc/effective-team-config.yaml \
   --demand <KNOWLEDGE_DEMAND_YAML> \
   --output .idc/runs/<task-id>/attempt-<n>/knowledge-load-plan-<execution-unit>.yaml
@@ -109,7 +109,7 @@ Execution context planning requires both READY plans. After execution, verify
 the executor's knowledge receipt before Completion:
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/verify_knowledge_consumption.rb \
+python3 .claude/skills/idc-team-config/scripts/verify_knowledge_consumption.py \
   --plan .idc/runs/<task-id>/attempt-<n>/knowledge-load-plan-<execution-unit>.yaml \
   --receipt <KNOWLEDGE_CONSUMPTION_RECEIPT>
 ```
@@ -120,7 +120,7 @@ the D3A RED/GREEN/`tran_build` requirements or Custom Domain completion
 evidence when applicable:
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/verify_completion.rb \
+python3 .claude/skills/idc-team-config/scripts/verify_completion.py \
   --request <COMPLETION_VERIFICATION_REQUEST> \
   --output .idc/runs/<task-id>/attempt-<n>/completion-result.yaml
 ```
@@ -159,7 +159,7 @@ team_config_result:
 - Preflight dry-runs every configured Lane step and required Skill through the
   real Capability Selector. Return `NEEDS_TEAM_CONFIG` if selection or order
   differs from the YAML policy.
-- Completion is not a prose decision: require `verify_completion.rb` to return
+- Completion is not a prose decision: require `verify_completion.py` to return
   `DONE` for each execution unit before the workflow reports completion.
 - Context Load Plan is the runtime loading authority. Read only
   `required_refs`; do not preload all available capabilities or schemas.

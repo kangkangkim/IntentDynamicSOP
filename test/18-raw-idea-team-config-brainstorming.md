@@ -57,7 +57,7 @@ idc-workflow
 
 ```sh
 cd "<仓库根目录>"
-ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py \
   --config team-config.yaml --output /tmp/effective.yaml
 echo "exit=$?"
 ```
@@ -68,7 +68,7 @@ exit=0。
 ### 2. raw_idea 诚实信号检查（修复前缺陷（历史）已修复）
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
+python3 .claude/skills/idc-team-config/scripts/plan_context.py \
   --effective /tmp/effective.yaml --phase decision --domain d3a \
   --signal raw_idea --signals-complete
 ```
@@ -92,7 +92,7 @@ ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
 ### 3. uncertain fallback 检查（不传 signal）
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
+python3 .claude/skills/idc-team-config/scripts/plan_context.py \
   --effective /tmp/effective.yaml --phase decision --domain d3a
 ```
 
@@ -106,6 +106,6 @@ uncertain 时全量加载，没有 must-execute 区分。
 
 步骤 2 的 brainstorming 缺失即 `tests/test_harness.py` 中
 `test_raw_idea_signal_must_light_brainstorming_step` 的 RED 证据：
-修复 `plan_context.rb` 的信号匹配前，该测试保持失败（GREEN 部分
+修复 `plan_context.py` 的信号匹配前，该测试保持失败（GREEN 部分
 `test_raw_idea_decision_plan_pins_pre_alignment_reachability` 钉住的是当前正确行为，
 两条互相独立）。验证完 `rm -f /tmp/effective.yaml` 即可。

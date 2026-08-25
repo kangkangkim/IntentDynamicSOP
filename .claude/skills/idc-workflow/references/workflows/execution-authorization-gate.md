@@ -26,7 +26,7 @@ a Technical Plan Confirmation through `AskUserTool`. This is a narrow technical
 confirmation only; it must not re-open task direction or scope. If
 `AskUserTool` is unavailable, return `BLOCKED_NEEDS_ASK_USER_TOOL`.
 
-When the host supports PreToolUse hooks (e.g. Claude Code), the hook `.claude/hooks/verify_plan_confirmation_ask.py` machine-enforces this step: it verifies a real AskUserQuestion interaction referencing the plan file exists in the session transcript before allowing the authorize_execution.rb call. Self-attested `status: confirmed` without a real interaction is denied.
+When the host supports PreToolUse hooks (e.g. Claude Code), the hook `.claude/hooks/verify_plan_confirmation_ask.py` machine-enforces this step: it verifies a real AskUserQuestion interaction referencing the plan file exists in the session transcript before allowing the authorize_execution.py call. Self-attested `status: confirmed` without a real interaction is denied.
 
 It confirms exactly three artifacts:
 
@@ -38,7 +38,7 @@ It confirms exactly three artifacts:
 
 Plan artifacts are mandatory on disk: `technical_plan_confirmation.confirmation_ref`
 must point to a real file conforming to `references/schemas/general-plan.schema.yaml`
-or `references/schemas/d3a-plan.schema.yaml`. `authorize_execution.rb` rejects a
+or `references/schemas/d3a-plan.schema.yaml`. `authorize_execution.py` rejects a
 missing file, so an on-disk plan is a hard precondition of every authorization.
 
 This gate is a framework floor: `technical_plan_confirmation.required` is always
@@ -80,7 +80,7 @@ or DT adapters remain inner abilities constrained by the fixed D3A workflow.
 Before any repository mutation, run:
 
 ```sh
-ruby .claude/skills/idc-workflow/scripts/authorize_execution.rb \
+python3 .claude/skills/idc-workflow/scripts/authorize_execution.py \
   --request <EXECUTION_AUTHORIZATION_REQUEST> \
   --output <EXECUTION_AUTHORIZATION_RESULT>
 ```
@@ -99,7 +99,7 @@ block, an unconfirmed status, or a dangling ref returns
 
 The request must carry `capability_selection_ref` pointing to the READY
 Capability Selection artifact produced by
-`scripts/select_capabilities.rb` for this execution unit. The script
+`scripts/select_capabilities.py` for this execution unit. The script
 verifies:
 
 1. The file exists on disk at the declared path.
@@ -117,21 +117,21 @@ until a valid artifact exists. This check is not configurable through
 team-config and cannot be disabled.
 
 The main agent must run Capability Selector via
-`scripts/select_capabilities.rb` and persist the output artifact **before**
-calling `authorize_execution.rb`. Constructing an authorization request that
+`scripts/select_capabilities.py` and persist the output artifact **before**
+calling `authorize_execution.py`. Constructing an authorization request that
 references a non-existent or hand-authored `capability_selection_ref` is
 treated as a fabricated artifact and rejected identically.
 
 ### Effective config freshness — mandatory SHA check
 
-`authorize_execution.rb` reads `.idc/effective-team-config.yaml` and compares
+`authorize_execution.py` reads `.idc/effective-team-config.yaml` and compares
 its `source_sha256` against the SHA256 of the current `team-config.yaml` on
-disk. A mismatch means `prepare_runtime.rb` was not run after the config
+disk. A mismatch means `prepare_runtime.py` was not run after the config
 changed, so the Capability Selector ran against stale policy.
 
-- Mismatch → `BLOCKED_STALE_EFFECTIVE_CONFIG`; re-run `prepare_runtime.rb`
+- Mismatch → `BLOCKED_STALE_EFFECTIVE_CONFIG`; re-run `prepare_runtime.py`
   and verify `status: READY` before retrying authorization.
-- Missing effective config → same error; `prepare_runtime.rb` must produce it
+- Missing effective config → same error; `prepare_runtime.py` must produce it
   first.
 
 This check is machine-enforced inside the script, not model-discretionary. No

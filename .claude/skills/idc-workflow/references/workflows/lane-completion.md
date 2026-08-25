@@ -61,7 +61,7 @@ completion_summary_exists
 运行时使用以下可执行 Gate，不由 main agent 凭 prose 自行判断：
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/verify_completion.rb \
+python3 .claude/skills/idc-team-config/scripts/verify_completion.py \
   --request <COMPLETION_VERIFICATION_REQUEST>
 ```
 

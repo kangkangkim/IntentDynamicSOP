@@ -97,12 +97,12 @@ capability.
 The Capability Selection artifact (written to
 `.idc/runs/<task-id>/attempt-<n>/capability-selection-<execution-unit>.yaml`)
 is not optional documentation — it is the gating artifact that
-`authorize_execution.rb` requires before dispatch can proceed.
+`authorize_execution.py` requires before dispatch can proceed.
 
-- The main agent must call `scripts/select_capabilities.rb` and persist the
+- The main agent must call `scripts/select_capabilities.py` and persist the
   output artifact for every execution unit, including Fast and Lite.
 - A verbal or in-context summary of selected skills is not a substitute for
-  the on-disk artifact; `authorize_execution.rb` reads the file directly.
+  the on-disk artifact; `authorize_execution.py` reads the file directly.
 - Skipping the Selector or bypassing its output returns
   `BLOCKED_CAPABILITY_SELECTION_REQUIRED` at the Authorization Gate — the
   dispatch never fires.

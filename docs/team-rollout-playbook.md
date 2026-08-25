@@ -50,12 +50,12 @@ Resolver 把文件引用绝对化后才交给 Selector 和 Adapter Router，因�
 5. deny 的 Skill 不会被默认 Registry 补回。
 6. Execution Context Load Plan 只包含 Domain protocol、共享 gate 和 Selector 实际选中的 Skill。
 7. 一个最小 vertical slice 产生真实 test/build evidence，并由
-   `verify_completion.rb` 返回 `completion_verification_result.status: DONE`。
+   `verify_completion.py` 返回 `completion_verification_result.status: DONE`。
 
 CI 可额外执行：
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb
+python3 .claude/skills/idc-team-config/scripts/prepare_runtime.py
 python3 tests/test_harness.py
 ```
 

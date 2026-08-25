@@ -4,8 +4,8 @@
 
 不用 Claude、直接跑脚本，亲手验证 domain 可插拔是真实被工具强制的，而不是文档口号：
 
-1. builtin domain（d3a / general）必须在 domain module registry 里 active 注册，否则 preflight 直接 INVALID（Gate 1，`resolve_team_config.rb`）。
-2. `--domain` 显式指定时必须与 effective config 的 domain 一致，否则 context load plan 直接 INVALID（Gate 2，`plan_context.rb`）。
+1. builtin domain（d3a / general）必须在 domain module registry 里 active 注册，否则 preflight 直接 INVALID（Gate 1，`resolve_team_config.py`）。
+2. `--domain` 显式指定时必须与 effective config 的 domain 一致，否则 context load plan 直接 INVALID（Gate 2，`plan_context.py`）。
 3. `domain.d3a.dt_domains` 是整体替换（不是合并）：换成 TDEMO_A/TDEMO_B 后内置 TPRINT/FW/DPF 彻底消失。
 4. `mode: custom` 走 `domain.custom` 内联注册，不受 registry gate 影响。
 
@@ -48,7 +48,7 @@ domain:
 bindings: {}
 YAML
 
-ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py \
   --config "$TMP/team-config.yaml" --registry "$TMP/registry.yaml" --check
 echo "exit=$?"
 ```
@@ -79,16 +79,16 @@ bindings: {}
 YAML
 
 # 拔掉 d3a 不影响 general 团队
-ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py \
   --config "$TMP/team-config-general.yaml" --registry "$TMP/registry.yaml" --check
 echo "exit=$?"
 
 # 生成 effective config，然后故意用 --domain d3a 去 plan
-ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py \
   --config "$TMP/team-config-general.yaml" --registry "$TMP/registry.yaml" \
   --output "$TMP/effective.yaml" >/dev/null
 
-ruby .claude/skills/idc-team-config/scripts/plan_context.rb \
+python3 .claude/skills/idc-team-config/scripts/plan_context.py \
   --effective "$TMP/effective.yaml" --phase decision --domain d3a
 echo "exit=$?"
 ```
@@ -132,11 +132,11 @@ bindings: {}
 YAML
 
 # 这次用默认 registry（d3a 仍在），preflight 应 READY
-ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py \
   --config "$TMP/team-config.yaml" --check
 echo "exit=$?"
 
-ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py \
   --config "$TMP/team-config.yaml" --output "$TMP/effective.yaml" >/dev/null
 
 grep -e "id: TDEMO_A" -e "id: TDEMO_B" "$TMP/effective.yaml"
@@ -198,7 +198,7 @@ domain:
 bindings: {}
 YAML
 
-ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py \
   --config "$TMP/team-config.yaml" --registry "$TMP/registry.yaml" --check
 echo "exit=$?"
 ```
@@ -221,7 +221,7 @@ cd "$SB"
 #    sed -i '' '/- id: d3a$/,/^    status: active$/d' .claude/skills/idc-workflow/references/domains/registry.yaml
 
 # 此时 team-config.yaml 仍是 mode: d3a，跑正式入口：
-ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb
+python3 .claude/skills/idc-team-config/scripts/prepare_runtime.py
 echo "exit=$?"
 # 期望 status: NEEDS_TEAM_CONFIG、exit=1，reason 里能看到
 #   INVALID team-config.yaml
@@ -229,7 +229,7 @@ echo "exit=$?"
 # （reason 里混进来的 Ignoring <gem> 行同样是本机噪音）
 
 # 2) 把 team-config.yaml 的 mode: d3a 改成 mode: general，再跑：
-ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb | grep "status: READY"
+python3 .claude/skills/idc-team-config/scripts/prepare_runtime.py | grep "status: READY"
 # 期望命中 status: READY —— 拔掉 d3a + 切 mode 两步做完，runtime 才恢复
 
 # 3) 在沙箱里跑全量 harness：

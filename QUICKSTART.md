@@ -23,14 +23,14 @@ Copy this repository into the team environment. Do not add enterprise
 paths, commands, logs, APIs, knowledge bodies, or internal Skill names to the
 public harness.
 
-Runtime scripts support Ruby 2.1.9 and newer. Check the team host before the
-first preflight:
+Runtime scripts require Python 3.8+ (with PyYAML). Check the team host before
+the first preflight:
 
 ```sh
-ruby --version
+python3 --version && python3 -c "import yaml"
 ```
 
-No additional Ruby gems are required by IDC runtime scripts.
+No other third-party packages are required by IDC runtime scripts.
 
 ## Step 2: Create Team Config
 
@@ -218,7 +218,7 @@ Packets drive selection, while `d3a_profile` only limits optional atomic Skills.
 Run the same preflight that `$idc-workflow` executes automatically:
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/prepare_runtime.rb
+python3 .claude/skills/idc-team-config/scripts/prepare_runtime.py
 ```
 
 Continue only when it reports:
@@ -245,7 +245,7 @@ Teams that need a fixed internal SOP can switch an individual Lane to
 For diagnosis or CI, the lower-level checks remain available:
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py \
   --config team-config.yaml \
   --check
 
@@ -334,7 +334,7 @@ Execution Receipt and Completion Summary
 For every execution unit, finish with the executable Completion Gate:
 
 ```sh
-ruby .claude/skills/idc-team-config/scripts/verify_completion.rb \
+python3 .claude/skills/idc-team-config/scripts/verify_completion.py \
   --request .idc/runs/<task-id>/attempt-<n>/completion-request-<execution-unit>.yaml \
   --output .idc/runs/<task-id>/attempt-<n>/completion-result-<execution-unit>.yaml
 ```

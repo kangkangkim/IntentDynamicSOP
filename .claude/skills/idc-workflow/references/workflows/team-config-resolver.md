@@ -3,7 +3,7 @@
 Team Config Resolver turns the single team-authored `team-config.yaml` into a
 validated, read-only `.idc/effective-team-config.yaml`.
 
-`idc-workflow` must call `idc-team-config/scripts/prepare_runtime.rb` before
+`idc-workflow` must call `idc-team-config/scripts/prepare_runtime.py` before
 request routing. The preflight regenerates effective config atomically on every
 invocation and records `source_sha256`; stale generated state is never trusted.
 

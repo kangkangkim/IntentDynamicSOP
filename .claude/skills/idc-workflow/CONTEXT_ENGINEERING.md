@@ -6,8 +6,8 @@ Context Engineering 定义 Claude Code 运行 `id-workflow` 时如何渐进式�
 
 ## 总原则
 
-- `prepare_runtime.rb` 生成最小 bootstrap plan；后续阶段由
-  `plan_context.rb` 生成 `required_refs`，该清单是加载依据。
+- `prepare_runtime.py` 生成最小 bootstrap plan；后续阶段由
+  `plan_context.py` 生成 `required_refs`，该清单是加载依据。
 - Alignment signal 默认视为不完整并加载团队配置的全链；只有调用方确认当前
   trigger 集合完整时才使用 `--signals-complete` 精确匹配（同一步骤声明的
   trigger 必须全部出现）。始终保留 `alignment_check`，发现新 signal 后必须
@@ -129,7 +129,7 @@ Subagent / agent team 返回给 main 的内容只能包含：
 运行 completion plan。只有当前单元实际要求 TDD 时添加 `tdd_required`；需要
 重新定位仓库上下文时添加 `repo_context_required`，不得把这些引用提前加载。
 executor 必须提交 Knowledge Consumption Receipt；
-`verify_knowledge_consumption.rb` 返回 `VERIFIED` 后，当前 execution unit 才能进入
+`verify_knowledge_consumption.py` 返回 `VERIFIED` 后，当前 execution unit 才能进入
 Completion Gate。遗漏 required static ref、缺少 search/provider result ref、加载
 计划外 domain knowledge，或 Knowledge Plan 被修改，均阻断闭环。
 

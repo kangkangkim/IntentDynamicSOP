@@ -28,7 +28,7 @@ idc-workflow
   -> AskUserTool 确认（confirm plan）
   -> API Contract 确认后冻结（freeze）
   -> create Delegation Contract
-  -> Execution Authorization Gate（authorize_execution.rb 校验
+  -> Execution Authorization Gate（authorize_execution.py 校验
      technical_plan_confirmation.status=confirmed 且 confirmation_ref 文件存在）
   -> dispatch subagent / agent team
 ```
@@ -61,10 +61,10 @@ idc-workflow
 ```sh
 cd "<仓库根目录>"
 TMP=$(mktemp -d)
-ruby .claude/skills/idc-team-config/scripts/resolve_team_config.rb \
+python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py \
   --config examples/team-config.full-bindings.yaml --output "$TMP/effective.yaml"
 sed 's/fast-unit/unit-1/' examples/knowledge-demands/fast.yaml > "$TMP/demand.yaml"
-ruby .claude/skills/idc-team-config/scripts/plan_knowledge.rb \
+python3 .claude/skills/idc-team-config/scripts/plan_knowledge.py \
   --effective "$TMP/effective.yaml" --demand "$TMP/demand.yaml" \
   --output "$TMP/knowledge-plan.yaml"
 KP_ID=$(ruby -e 'require "yaml"; puts YAML.load_file(ARGV[0])["knowledge_load_plan"]["knowledge_plan_id"]' "$TMP/knowledge-plan.yaml")
@@ -78,7 +78,7 @@ for CASE in missing unconfirmed dangling confirmed; do
     confirmed)   printf '  technical_plan_confirmation:\n    required: true\n    trigger_reason: lane=fast\n    confirmation_ref: %s\n    status: confirmed\n' "$TMP/general-plan.yaml" >> "$TMP/$CASE.yaml";;
   esac
   echo "=== $CASE ==="
-  ruby .claude/skills/idc-workflow/scripts/authorize_execution.rb \
+  python3 .claude/skills/idc-workflow/scripts/authorize_execution.py \
     --request "$TMP/$CASE.yaml" --output "$TMP/$CASE-result.yaml"
   echo "authorize_exit=$?"
   grep -E "status:|errors:|technical_plan_confirmation is required|status must be confirmed|file does not exist" "$TMP/$CASE-result.yaml"
