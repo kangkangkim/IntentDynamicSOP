@@ -115,18 +115,20 @@ function defaultConfig() {
     team: { id: "new-team", repo_path: "." },
     domain: {
       mode: "general",
-      d3a: { dt_domains: [] },
+      d3a: { dt_domains: [], orchestration: { mode: "framework_default", steps: [] } },
       custom: {
         id: null, trigger_rules: [], lane_policy: { mode: "dynamic", selected_lane: null },
         coding_layers: [], test_domains: [], required_contracts: ["task_contract", "verification_contract"],
-        workflow_skill_ref: null, planner_skill_ref: null, completion_skill_ref: null
+        workflow_skill_ref: null, planner_skill_ref: null, completion_skill_ref: null,
+        orchestration: { mode: "workflow_skill", steps: [] }
       }
     },
     general: { components: [], test_domains: [] },
     bindings,
     adapter_extensions: [],
     knowledge: {
-      architecture_doc_ref: null, feature_docs_root_ref: null, layer_docs: {}, verification_mapping_ref: null,
+      architecture_doc_ref: null, feature_docs_root_ref: null, layer_docs: {},
+      lane_docs: { fast: [], lite: [], complex: [] }, verification_mapping_ref: null,
       repo_context: { provider_skill_ref: null, policy_ref: null, fallback: "bounded_grep" }
     },
     lane: {
@@ -870,10 +872,15 @@ function buildYaml(config) {
   if (Array.isArray(config.domain.enabled) && config.domain.enabled.length) lines.push(`  enabled: ${flow(config.domain.enabled)}`);
   lines.push(`  mode: ${config.domain.mode}`, "  d3a:");
   pushRegistry(lines, "    dt_domains", config.domain.d3a.dt_domains, 4);
+  const d3aOrchestration = config.domain.d3a.orchestration || { mode: "framework_default", steps: [] };
+  lines.push("    orchestration:", `      mode: ${d3aOrchestration.mode}`);
+  pushSteps(lines, "      steps", d3aOrchestration.steps, 6);
   lines.push("  custom:", `    id: ${yamlScalar(config.domain.custom.id)}`, `    trigger_rules: ${flow(config.domain.custom.trigger_rules)}`, "    lane_policy:", `      mode: ${config.domain.custom.lane_policy.mode}`, `      selected_lane: ${yamlScalar(config.domain.custom.lane_policy.selected_lane)}`);
   pushRegistry(lines, "    coding_layers", config.domain.custom.coding_layers, 4);
   pushRegistry(lines, "    test_domains", config.domain.custom.test_domains, 4);
-  lines.push(`    required_contracts: ${flow(config.domain.custom.required_contracts)}`, `    workflow_skill_ref: ${yamlScalar(config.domain.custom.workflow_skill_ref)}`, `    planner_skill_ref: ${yamlScalar(config.domain.custom.planner_skill_ref)}`, `    completion_skill_ref: ${yamlScalar(config.domain.custom.completion_skill_ref)}`, "general:");
+  lines.push(`    required_contracts: ${flow(config.domain.custom.required_contracts)}`, `    workflow_skill_ref: ${yamlScalar(config.domain.custom.workflow_skill_ref)}`, `    planner_skill_ref: ${yamlScalar(config.domain.custom.planner_skill_ref)}`, `    completion_skill_ref: ${yamlScalar(config.domain.custom.completion_skill_ref)}`, "    orchestration:", `      mode: ${(config.domain.custom.orchestration || {}).mode || "workflow_skill"}`);
+  pushSteps(lines, "      steps", (config.domain.custom.orchestration || {}).steps || [], 6);
+  lines.push("general:");
   pushRegistry(lines, "  components", config.general.components, 2);
   pushRegistry(lines, "  test_domains", config.general.test_domains, 2);
   lines.push("bindings:");
@@ -890,6 +897,8 @@ function buildYaml(config) {
   const docs = Object.entries(knowledge.layer_docs || {});
   if (!docs.length) lines.push("  layer_docs: {}");
   else { lines.push("  layer_docs:"); docs.forEach(([key, value]) => lines.push(`    ${key}: ${yamlScalar(value)}`)); }
+  lines.push("  lane_docs:");
+  ["fast", "lite", "complex"].forEach((lane) => lines.push(`    ${lane}: ${flow((knowledge.lane_docs || {})[lane] || [])}`));
   lines.push(`  verification_mapping_ref: ${yamlScalar(knowledge.verification_mapping_ref)}`, "  repo_context:", `    provider_skill_ref: ${yamlScalar(knowledge.repo_context.provider_skill_ref)}`, `    policy_ref: ${yamlScalar(knowledge.repo_context.policy_ref)}`, `    fallback: ${knowledge.repo_context.fallback || "bounded_grep"}`, "lane:", `  default: ${config.lane.default}`, "  profiles:");
   ["fast", "lite", "complex"].forEach((lane) => {
     const profile = config.lane.profiles[lane];

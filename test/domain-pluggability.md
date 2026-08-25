@@ -12,11 +12,8 @@
 ## 前置
 
 - 全部命令在仓库根目录执行（resolver 从 cwd 向上找 `.claude/skills/idc-workflow` 定位 harness root）。
-- 本机需要 `ruby` 和 `python3`。
-- ruby 启动时可能打印一串
-  `Ignoring commonmarker-0.23.6 because its extensions are not built. Try: gem pristine ...`
-  之类的 gem 警告：这是本机 gem 环境噪音，与结果无关，可忽略。注意 Gate 1 的报错本身走
-  stderr，不要无脑 `2>/dev/null`。
+- 本机需要 `python3` 和 PyYAML。注意 Gate 1 的报错本身走 stderr，
+  不要无脑 `2>/dev/null`。
 - 实验全部在 `mktemp -d` 临时目录里做，靠 `--registry` 覆盖注入假 registry；
   不要直接改仓库里的 `registry.yaml` / `team-config.yaml`（想动真实文件用文末沙箱版）。
 

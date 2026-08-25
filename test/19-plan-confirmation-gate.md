@@ -54,7 +54,7 @@ idc-workflow
 
 ## 机械自检（不依赖 Claude 行为）
 
-在仓库根目录执行；ruby 启动时的 `Ignoring <gem>` gem 警告是本机噪音，可忽略。
+在仓库根目录执行；需要 `python3` 与 PyYAML。
 以下脚本在临时目录构造最小 authorization request（knowledge plan 用真实工具链生成），
 分别演示 BLOCKED 与 AUTHORIZED 两种输出。
 
@@ -67,7 +67,7 @@ sed 's/fast-unit/unit-1/' examples/knowledge-demands/fast.yaml > "$TMP/demand.ya
 python3 .claude/skills/idc-team-config/scripts/plan_knowledge.py \
   --effective "$TMP/effective.yaml" --demand "$TMP/demand.yaml" \
   --output "$TMP/knowledge-plan.yaml"
-KP_ID=$(ruby -e 'require "yaml"; puts YAML.load_file(ARGV[0])["knowledge_load_plan"]["knowledge_plan_id"]' "$TMP/knowledge-plan.yaml")
+KP_ID=$(python3 -c 'import sys, yaml; print(yaml.safe_load(open(sys.argv[1]))["knowledge_load_plan"]["knowledge_plan_id"])' "$TMP/knowledge-plan.yaml")
 printf 'general_plan:\n  task_id: t19\n  selected_components: [GENERAL_COMPONENT_PLACEHOLDER]\n  execution_units:\n    - id: unit-1\n      summary: placeholder\n      max_change_loc: 500\n' > "$TMP/general-plan.yaml"
 BASE='execution_authorization_request:\n  task_id: t19\n  workflow_id: general_execution\n  selected_domain: general\n  selected_lane: fast\n  human_alignment_status: approved\n  approved_alignment_ref: alignment-1\n  execution_unit_ref: unit-1\n  context_packet_ref: context-1\n  capability_selection_ref: selection-1\n  capability_selection_status: READY\n  knowledge_load_plan_ref: '"$TMP"'/knowledge-plan.yaml\n  knowledge_load_plan_status: READY\n  knowledge_plan_id: '"$KP_ID"'\n  domain_execution_skill_ref: .claude/skills/idc-general-coding/SKILL.md\n  selected_atomic_skill_refs: []\n  delegation_contract_ref: delegation-1\n  main_agent_role: planning_and_delegation_only\n  executor: {kind: subagent, agent_id: general-coder}\n  allowed_paths: [src/example.rb]\n  expected_outputs: [changed_paths, evidence_refs, execution_receipt]\n'
 for CASE in missing unconfirmed dangling confirmed; do

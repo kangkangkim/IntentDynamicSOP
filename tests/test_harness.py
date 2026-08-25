@@ -456,9 +456,9 @@ def test_framework_supports_dynamic_scenarios_and_skill_adapters():
     for legacy_field in ["skill_base_path", "use_d3a", "fast_skip_steps", "lite_skip_steps", "complex_skip_steps"]:
         assert_true(legacy_field not in team_config_generator, f"team-config generator 仍含旧字段：{legacy_field}")
     for fragment in [
-        "Step 1: Copy The Harness",
-        "Step 2: Create Team Config",
-        "cp team-config.yaml.template team-config.yaml",
+        "Step 1: Install The Harness",
+        "Step 2: Create Or Complete Team Config",
+        "npx idc-harness init --team my-team",
         "Step 3: Configure Team And Domain",
         "Step 4: Bind Skills And Resolve Ownership",
         "Step 5: Fill Knowledge Indexes",
@@ -793,8 +793,12 @@ def test_repo_rules_are_canonical_in_claude_md():
     context = read_text(".claude/skills/idc-workflow/CONTEXT_ENGINEERING.md")
     README = read_text("README.md")
 
-    assert_true(not agents_path.exists(), "AGENTS.md 不应继续存在；repo rules 只保留 CLAUDE.md。")
     assert_true(claude_path.exists(), "CLAUDE.md 应该作为 repo rules canonical 文件保留。")
+    assert_true(agents_path.is_symlink(), "AGENTS.md 应通过软链接兼容 CAC agent。")
+    assert_true(agents_path.readlink() == Path("CLAUDE.md"), "AGENTS.md 必须指向 canonical CLAUDE.md。")
+    cac_path = ROOT / ".cac"
+    assert_true(cac_path.is_symlink(), ".cac 应通过软链接兼容 CAC agent。")
+    assert_true(cac_path.readlink() == Path(".claude"), ".cac 必须指向 canonical .claude。")
     for fragment in [
         "# Intent-Driven Coding Harness",
         "仓库内不得包含真实企业细节",
@@ -4695,8 +4699,12 @@ def test_plan_confirmation_hook_enforces_real_ask_user_interaction():
             if stdout:
                 try:
                     parsed = _json.loads(stdout)
-                    if parsed.get("decision") == "deny":
-                        deny_decision = parsed.get("reason", "")
+                    hook_output = parsed.get("hookSpecificOutput") or {}
+                    if (
+                        hook_output.get("hookEventName") == "PreToolUse"
+                        and hook_output.get("permissionDecision") == "deny"
+                    ):
+                        deny_decision = hook_output.get("permissionDecisionReason", "")
                 except Exception:
                     pass
             return deny_decision
@@ -4741,12 +4749,14 @@ def test_plan_confirmation_hook_enforces_real_ask_user_interaction():
         # Case 6: Valid ask+result in transcript after plan mtime -> no deny
         transcript_path_6 = _os.path.join(tmpdir, "transcript_6.jsonl")
         make_transcript([
-            {"type": "tool_use", "name": "AskUserQuestion", "id": "tu-1",
-             "tool_use_id": "tu-1", "input": {"prompt": f"confirm plan {plan_path}"},
-             "timestamp": after_ts},
-            {"type": "tool_result", "tool_use_id": "tu-1",
-             "content": [{"type": "text", "text": "confirmed"}],
-             "timestamp": after_ts + 1},
+            {"type": "assistant", "timestamp": after_ts, "message": {"content": [
+                {"type": "tool_use", "name": "AskUserQuestion", "id": "tu-1",
+                 "input": {"prompt": f"confirm plan {plan_path}"}}
+            ]}},
+            {"type": "user", "timestamp": after_ts + 1, "message": {"content": [
+                {"type": "tool_result", "tool_use_id": "tu-1",
+                 "content": [{"type": "text", "text": "confirmed"}]}
+            ]}},
         ], transcript_path_6)
         deny = run_hook("Bash", base_command, transcript_path=transcript_path_6)
         assert_true(deny is None, f"Case 6: Valid ask+result should pass, got deny: {deny}")

@@ -2,7 +2,7 @@
 //
 // 验证策略：
 //   1. 在 Node 中以 DOM stub 加载真实 script.js（测的是线上文件，不是副本）
-//   2. 生成的 YAML 必须通过仓库权威校验器 resolve_team_config.rb --check
+//   2. 生成的 YAML 必须通过仓库权威校验器 resolve_team_config.py --check
 //   3. parseYaml 对仓库 5 份真实配置做 round-trip 保真校验
 //   4. validateConfig 故障注入 + 禁止键扫描
 //   5. Chrome headless 冒烟测试（真实浏览器渲染）+ 截图
@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..", "..");
-const resolver = join(root, ".claude", "skills", "idc-team-config", "scripts", "resolve_team_config.rb");
+const resolver = join(root, ".claude", "skills", "idc-team-config", "scripts", "resolve_team_config.py");
 const tempDir = mkdtempSync(join(tmpdir(), "idc-studio-test-"));
 
 let passed = 0;
@@ -74,7 +74,7 @@ function runResolver(yamlText, label) {
   const file = join(tempDir, `${label}.yaml`);
   writeFileSync(file, yamlText);
   try {
-    const output = execFileSync("ruby", [resolver, "--config", file, "--check"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    const output = execFileSync("python3", [resolver, "--config", file, "--check"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
     return { ok: true, output };
   } catch (error) {
     return { ok: false, output: `${error.stdout || ""}${error.stderr || ""}`.trim() };

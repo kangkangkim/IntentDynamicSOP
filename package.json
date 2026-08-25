@@ -1,0 +1,34 @@
+{
+  "name": "idc-harness",
+  "version": "0.1.0",
+  "description": "Install and manage the Intent-Driven Coding harness for Claude and CAC code agents.",
+  "type": "module",
+  "bin": {
+    "idc": "dist/bin/idc.js"
+  },
+  "files": [
+    ".claude/agents/",
+    ".claude/hooks/",
+    ".claude/skills/",
+    ".claude/workflows/",
+    ".claude/settings.json",
+    "CLAUDE.md",
+    "team-config.yaml.template",
+    "dist/",
+    "!**/__pycache__/",
+    "!**/*.pyc"
+  ],
+  "scripts": {
+    "test": "python3 tests/test_harness.py && node prototypes/team-config-studio/studio.test.mjs && node tests/test_package_contract.mjs && node tests/test_installer.mjs",
+    "test:installer": "node tests/test_installer.mjs",
+    "test:package": "node tests/test_package_contract.mjs",
+    "pack:check": "npm pack --dry-run"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "commander": "^13.1.0"
+  },
+  "license": "UNLICENSED"
+}

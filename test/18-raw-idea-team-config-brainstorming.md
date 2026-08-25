@@ -51,7 +51,7 @@ idc-workflow
 
 ## 机械自检（不依赖 Claude 行为）
 
-在仓库根目录执行；ruby 启动时的 `Ignoring <gem>` gem 警告是本机噪音，可忽略。
+在仓库根目录执行；需要 `python3` 与 PyYAML。
 
 ### 1. team config 接入确认（READY）
 

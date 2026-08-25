@@ -17,11 +17,19 @@ Lane defaults, autonomous profiles, capability budgets, and disabled
 self-optimization are materialized safely. Bind only Skills and knowledge that
 the team can really execute.
 
-## Step 1: Copy The Harness
+## Step 1: Install The Harness
 
-Copy this repository into the team environment. Do not add enterprise
-paths, commands, logs, APIs, knowledge bodies, or internal Skill names to the
-public harness.
+From the target repository, install the enterprise npm package:
+
+```sh
+npx idc-harness install --team my-team
+```
+
+The installer copies the managed IDC assets, merges the shared hook settings,
+creates `.cac -> .claude` and `AGENTS.md -> CLAUDE.md`, initializes
+`team-config.yaml` only when it is absent, and runs the runtime preflight. It
+never overwrites an existing team config. Source checkouts may still copy the
+harness manually when developing IDC itself.
 
 Runtime scripts require Python 3.8+ (with PyYAML). Check the team host before
 the first preflight:
@@ -32,10 +40,10 @@ python3 --version && python3 -c "import yaml"
 
 No other third-party packages are required by IDC runtime scripts.
 
-## Step 2: Create Team Config
+## Step 2: Create Or Complete Team Config
 
 ```sh
-cp team-config.yaml.template team-config.yaml
+npx idc-harness init --team my-team
 ```
 
 `team-config.yaml` is ignored by git. Files under `.idc/` are framework-owned,

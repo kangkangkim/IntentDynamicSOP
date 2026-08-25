@@ -7,3 +7,5 @@ demo-project/
 desktop-pet/
 __pycache__/
 *.pyc
+node_modules/
+*.tgz

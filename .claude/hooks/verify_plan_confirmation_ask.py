@@ -6,6 +6,7 @@ authorize_execution.py call. Fail-closed: any parse/IO error -> deny."""
 import json
 import os
 import re
+import shlex
 import sys
 
 # PyYAML is optional. If unavailable, fall back to a simple regex extraction
@@ -24,7 +25,13 @@ except ImportError:
 
 
 def _deny(reason):
-    print(json.dumps({"decision": "deny", "reason": reason}))
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }))
     sys.exit(0)
 
 
@@ -67,12 +74,21 @@ def main():
     if "authorize_execution.py" not in command:
         sys.exit(0)
 
-    # Step 3: extract --request PATH
-    m = re.search(r"--request\s+(\S+)", command)
-    if not m:
+    # Step 3: extract --request PATH without breaking quoted paths.
+    try:
+        command_args = shlex.split(command)
+    except ValueError:
+        command_args = []
+    request_path = None
+    for index, argument in enumerate(command_args):
+        if argument == "--request" and index + 1 < len(command_args):
+            request_path = command_args[index + 1]
+            break
+        if argument.startswith("--request="):
+            request_path = argument.split("=", 1)[1]
+            break
+    if not request_path:
         _deny("BLOCKED_PLAN_CONFIRMATION_REQUIRED: --request path not found in authorize_execution.py command")
-
-    request_path = m.group(1)
 
     # Step 4: read and parse request YAML; check status
     try:
@@ -117,9 +133,22 @@ def main():
     except Exception:
         _deny(f"BLOCKED_PLAN_CONFIRMATION_REQUIRED: cannot read transcript at {transcript_path}")
 
-    ask_tool_use_id = None
+    matching_asks = {}
     ask_timestamp = None
     result_timestamp = None
+
+    def content_blocks(entry):
+        """Yield both legacy flat fixture blocks and real transcript blocks."""
+        if entry.get("type") in ("tool_use", "tool_result"):
+            yield entry
+        message = entry.get("message")
+        if not isinstance(message, dict):
+            return
+        content = message.get("content")
+        if isinstance(content, list):
+            for block in content:
+                if isinstance(block, dict):
+                    yield block
 
     for line in lines:
         try:
@@ -127,38 +156,37 @@ def main():
         except Exception:
             continue
 
-        if ask_tool_use_id is None:
-            # Looking for the AskUserQuestion tool_use
-            if (entry.get("type") == "tool_use"
-                    and entry.get("name") == "AskUserQuestion"):
-                input_str = json.dumps(entry.get("input", ""))
+        entry_timestamp = entry.get("timestamp")
+        for block in content_blocks(entry):
+            if (block.get("type") == "tool_use"
+                    and block.get("name") == "AskUserQuestion"):
+                input_str = json.dumps(block.get("input", ""))
                 if plan_basename in input_str or confirmation_ref in input_str:
-                    ask_tool_use_id = entry.get("tool_use_id") or entry.get("id")
-                    ask_timestamp = entry.get("timestamp")
-        else:
-            # Looking for the matching tool_result
-            if (entry.get("type") == "tool_result"
-                    and entry.get("tool_use_id") == ask_tool_use_id):
-                if entry.get("is_error") is True:
-                    # Error result — reset and keep scanning
-                    ask_tool_use_id = None
-                    ask_timestamp = None
+                    tool_use_id = block.get("tool_use_id") or block.get("id")
+                    if tool_use_id:
+                        matching_asks[tool_use_id] = block.get("timestamp") or entry_timestamp
+            elif (block.get("type") == "tool_result"
+                    and block.get("tool_use_id") in matching_asks):
+                tool_use_id = block.get("tool_use_id")
+                if block.get("is_error") is True:
+                    matching_asks.pop(tool_use_id, None)
                     continue
-                # Check content list for error
-                content = entry.get("content", [])
+                content = block.get("content", [])
                 if isinstance(content, list):
                     has_err = any(
                         isinstance(c, dict) and c.get("is_error") is True
                         for c in content
                     )
                     if has_err:
-                        ask_tool_use_id = None
-                        ask_timestamp = None
+                        matching_asks.pop(tool_use_id, None)
                         continue
-                result_timestamp = entry.get("timestamp")
+                ask_timestamp = matching_asks[tool_use_id]
+                result_timestamp = block.get("timestamp") or entry_timestamp
                 break
+        if result_timestamp is not None:
+            break
 
-    if ask_tool_use_id is None or result_timestamp is None:
+    if result_timestamp is None:
         _deny(
             f"BLOCKED_PLAN_CONFIRMATION_REQUIRED: no AskUserQuestion interaction found in transcript that references plan file '{plan_basename}'"
         )
@@ -173,7 +201,7 @@ def main():
         _deny("BLOCKED_PLAN_CONFIRMATION_REQUIRED: timestamp missing in transcript, cannot verify ask occurred after plan was written")
 
     try:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         def _parse_ts(ts):
             if isinstance(ts, (int, float)):
