@@ -4778,6 +4778,817 @@ def test_plan_confirmation_hook_enforces_real_ask_user_interaction():
                     f"Case 8: Pre-plan-mtime result should deny, got: {deny}")
 
 
+def test_lane_ordered_all_stages_coverage_and_mapping():
+    """ordered lane: each declared stage resolves READY; an undeclared stage returns NEEDS_ORCHESTRATION_MAPPING.
+
+    Uses one binding per stage respecting allowed_stages constraints:
+      planning        → tech_design   (allowed: planning)
+      implementation  → coding_standard (allowed: planning, implementation, review)
+      review          → impl_review   (allowed: review)
+      verification    → static_scan   (allowed: verification)
+      fix             → defect_fix    (allowed: debugging, fix)
+      completion      → knowledge_archive (allowed: completion)
+    """
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+
+    # stage → skill_id that is allowed for that stage
+    STAGE_SKILL = {
+        "planning": "tech_design",
+        "implementation": "coding_standard",
+        "review": "impl_review",
+        "verification": "static_scan",
+        "fix": "defect_fix",
+        "completion": "knowledge_archive",
+    }
+
+    ORDERED_FULL_STAGES = {
+        "lite": ["planning", "implementation", "review", "verification", "fix"],
+        "complex": ["planning", "implementation", "review", "verification", "fix", "completion"],
+    }
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        for lane_id, required_stages in ORDERED_FULL_STAGES.items():
+            # Build ordered steps: each stage uses a skill allowed for that stage.
+            steps_yaml_lines = []
+            for stage in required_stages:
+                skill = STAGE_SKILL[stage]
+                steps_yaml_lines.append(
+                    f"          - id: {lane_id}-{stage}\n"
+                    f"            stage: {stage}\n"
+                    f"            skill_ids: [{skill}]\n"
+                    f"            trigger_signals: []"
+                )
+            steps_yaml = "\n".join(steps_yaml_lines)
+
+            config_text = f"""config_version: 1
+team:
+  id: ordered-coverage-team
+  repo_path: .
+domain:
+  mode: general
+bindings:
+  coding_standard: {{skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}}
+  tech_design: {{skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}}
+  impl_review: {{skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}}
+  static_scan: {{skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}}
+  defect_fix: {{skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}}
+  knowledge_archive: {{skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}}
+lane:
+  default: {lane_id}
+  profiles:
+    fast:
+      skills: {{allow: [], deny: [], required: []}}
+      orchestration:
+        mode: autonomous
+        steps: []
+    lite:
+      skills: {{allow: [], deny: [], required: []}}
+      orchestration:
+        mode: {"ordered" if lane_id == "lite" else "autonomous"}
+        steps:
+{steps_yaml if lane_id == "lite" else "          []"}
+    complex:
+      skills: {{allow: [], deny: [], required: []}}
+      orchestration:
+        mode: {"ordered" if lane_id == "complex" else "autonomous"}
+        steps:
+{steps_yaml if lane_id == "complex" else "          []"}
+"""
+            config = Path(temp_dir) / f"ordered-{lane_id}.yaml"
+            config.write_text(config_text, encoding="utf-8")
+            effective = Path(temp_dir) / f"ordered-{lane_id}-effective.yaml"
+            resolved = subprocess.run(
+                ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+                cwd=ROOT, capture_output=True, text=True,
+            )
+            assert_true(resolved.returncode == 0, f"ordered {lane_id} full-coverage config 解析失败：{resolved.stderr}")
+
+            # For each required stage, demand should resolve READY (matching step found).
+            for stage in required_stages:
+                demand = Path(temp_dir) / f"demand-{lane_id}-{stage}.yaml"
+                demand.write_text(f"""capability_demand:
+  execution_unit_ref: coverage-{lane_id}-{stage}
+  selected_stage: {stage}
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: {lane_id}
+  execution_profile: lane_driven
+  required_capability_keys: []
+  optional_capability_keys: []
+  observed_signals: []
+  contract_refs: []
+""", encoding="utf-8")
+                result = subprocess.run(
+                    ["ruby", str(selector), "--effective", str(effective), "--demand", str(demand)],
+                    cwd=ROOT, capture_output=True, text=True,
+                )
+                assert_true(
+                    result.returncode == 0 and "status: READY" in result.stdout,
+                    f"ordered {lane_id} stage={stage} 应 READY，实际：{result.stdout}{result.stderr}",
+                )
+
+            # A stage NOT in the declared steps must return NEEDS_ORCHESTRATION_MAPPING.
+            missing_stage = "dt_design"
+            demand_missing = Path(temp_dir) / f"demand-{lane_id}-missing.yaml"
+            demand_missing.write_text(f"""capability_demand:
+  execution_unit_ref: missing-{lane_id}
+  selected_stage: {missing_stage}
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: {lane_id}
+  execution_profile: lane_driven
+  required_capability_keys: []
+  optional_capability_keys: []
+  observed_signals: []
+  contract_refs: []
+""", encoding="utf-8")
+            result_missing = subprocess.run(
+                ["ruby", str(selector), "--effective", str(effective), "--demand", str(demand_missing)],
+                cwd=ROOT, capture_output=True, text=True,
+            )
+            assert_true(
+                result_missing.returncode != 0
+                and "NEEDS_ORCHESTRATION_MAPPING" in (result_missing.stdout + result_missing.stderr),
+                f"ordered {lane_id} 缺失 stage={missing_stage} 必须返回 NEEDS_ORCHESTRATION_MAPPING："
+                f"{result_missing.stdout}{result_missing.stderr}",
+            )
+
+
+def test_lane_docs_isolation_per_lane_in_knowledge_plan():
+    """lane_docs: each lane's docs appear only in that lane's knowledge plan; other lanes don't bleed."""
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Path(temp_dir) / "lane-docs-isolation.yaml"
+        config.write_text("""config_version: 1
+team:
+  id: lane-docs-team
+  repo_path: .
+domain:
+  mode: general
+bindings: {}
+knowledge:
+  architecture_doc_ref: null
+  feature_docs_root_ref: null
+  layer_docs: {}
+  lane_docs:
+    fast: [QUICKSTART.md]
+    lite: [docs/atomic-skills.md]
+    complex: [docs/architecture.md, docs/adoption-guide.md]
+  verification_mapping_ref: null
+  repo_context:
+    provider_skill_ref: null
+    policy_ref: null
+    fallback: bounded_grep
+lane:
+  default: lite
+  profiles:
+    fast:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+    lite:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+    complex:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+""", encoding="utf-8")
+        effective = Path(temp_dir) / "lane-docs-effective.yaml"
+        resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(resolved.returncode == 0, f"lane_docs 配置解析失败：{resolved.stderr}")
+
+        lane_doc_map = {
+            "fast": "QUICKSTART.md",
+            "lite": "docs/atomic-skills.md",
+            "complex": "docs/architecture.md",
+        }
+        other_doc_map = {
+            "fast": ["docs/atomic-skills.md", "docs/architecture.md", "docs/adoption-guide.md"],
+            "lite": ["QUICKSTART.md", "docs/architecture.md", "docs/adoption-guide.md"],
+            "complex": ["QUICKSTART.md", "docs/atomic-skills.md"],
+        }
+
+        for lane_id, own_doc in lane_doc_map.items():
+            demand = Path(temp_dir) / f"knowledge-demand-{lane_id}.yaml"
+            demand.write_text(f"""knowledge_demand:
+  execution_unit_ref: lane-docs-{lane_id}
+  selected_domain: general
+  selected_lane: {lane_id}
+  selected_components: []
+  selected_test_domains: []
+  include_architecture: false
+  include_verification_mapping: false
+  include_feature_docs_scope: false
+  repo_context_required: false
+""", encoding="utf-8")
+            result = subprocess.run(
+                ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(demand)],
+                cwd=ROOT, capture_output=True, text=True,
+            )
+            assert_true(
+                result.returncode == 0 and "status: READY" in result.stdout,
+                f"{lane_id} Knowledge Plan 失败：{result.stdout}{result.stderr}",
+            )
+            assert_true(
+                own_doc in result.stdout,
+                f"{lane_id} Knowledge Plan 必须包含本 lane 的 lane_doc {own_doc}：{result.stdout}",
+            )
+            for other_doc in other_doc_map[lane_id]:
+                assert_true(
+                    other_doc not in result.stdout,
+                    f"{lane_id} Knowledge Plan 不得渗入其他 lane 的 doc {other_doc}：{result.stdout}",
+                )
+
+
+def test_lane_docs_empty_fast_produces_no_lane_knowledge():
+    """lane_docs.fast: [] → fast plan has no lane entries; lite with docs has them."""
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Path(temp_dir) / "empty-fast-docs.yaml"
+        config.write_text("""config_version: 1
+team:
+  id: empty-fast-docs-team
+  repo_path: .
+domain:
+  mode: general
+bindings: {}
+knowledge:
+  architecture_doc_ref: null
+  feature_docs_root_ref: null
+  layer_docs: {}
+  lane_docs:
+    fast: []
+    lite: [docs/atomic-skills.md]
+    complex: []
+  verification_mapping_ref: null
+  repo_context:
+    provider_skill_ref: null
+    policy_ref: null
+    fallback: bounded_grep
+lane:
+  default: lite
+  profiles:
+    fast:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+    lite:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+    complex:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+""", encoding="utf-8")
+        effective = Path(temp_dir) / "empty-fast-effective.yaml"
+        resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(resolved.returncode == 0, f"empty-fast-docs 配置解析失败：{resolved.stderr}")
+
+        fast_demand = Path(temp_dir) / "demand-fast.yaml"
+        fast_demand.write_text("""knowledge_demand:
+  execution_unit_ref: empty-fast
+  selected_domain: general
+  selected_lane: fast
+  selected_components: []
+  selected_test_domains: []
+  include_architecture: false
+  include_verification_mapping: false
+  include_feature_docs_scope: false
+  repo_context_required: false
+""", encoding="utf-8")
+        fast_result = subprocess.run(
+            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(fast_demand)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(
+            fast_result.returncode == 0 and "status: READY" in fast_result.stdout,
+            f"fast (empty lane_docs) Knowledge Plan 应 READY：{fast_result.stdout}{fast_result.stderr}",
+        )
+        assert_true(
+            "lane_docs.fast" not in fast_result.stdout,
+            f"lane_docs.fast 为空时，fast Knowledge Plan 不得含 lane 条目：{fast_result.stdout}",
+        )
+
+        lite_demand = Path(temp_dir) / "demand-lite.yaml"
+        lite_demand.write_text("""knowledge_demand:
+  execution_unit_ref: lite-with-docs
+  selected_domain: general
+  selected_lane: lite
+  selected_components: []
+  selected_test_domains: []
+  include_architecture: false
+  include_verification_mapping: false
+  include_feature_docs_scope: false
+  repo_context_required: false
+""", encoding="utf-8")
+        lite_result = subprocess.run(
+            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(lite_demand)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(
+            lite_result.returncode == 0 and "status: READY" in lite_result.stdout,
+            f"lite Knowledge Plan 失败：{lite_result.stdout}{lite_result.stderr}",
+        )
+        assert_true(
+            "docs/atomic-skills.md" in lite_result.stdout,
+            f"lite Knowledge Plan 必须包含 lane_docs.lite 条目：{lite_result.stdout}",
+        )
+
+
+def test_pre_alignment_custom_skill_binding_routes_via_plan_context():
+    """Team rebinds brainstorming step to a custom skill; plan_context routes the custom skill ref."""
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+
+    custom_skill_ref = ".claude/skills/idc-gc-sop-adapter/SKILL.md"
+    custom_bindings = {
+        **ALIGNMENT_SKILL_REFS,
+        "brainstorming": custom_skill_ref,
+    }
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = write_alignment_config(
+            temp_dir, "custom-brainstorm-binding.yaml",
+            build_alignment_section(bindings=custom_bindings),
+        )
+        config.write_text(
+            config.read_text(encoding="utf-8").replace("mode: d3a", "mode: general", 1),
+            encoding="utf-8",
+        )
+        effective = Path(temp_dir) / "custom-brainstorm-effective.yaml"
+        resolved = run_alignment_resolver(config, effective)
+        assert_true(resolved.returncode == 0, f"自定义 brainstorming 绑定解析失败：{resolved.stderr}")
+
+        # Signal alternatives_needed should fire the brainstorming step and route the custom skill.
+        plan = subprocess.run(
+            [
+                "ruby", str(context_planner),
+                "--effective", str(effective),
+                "--phase", "decision",
+                "--domain", "general",
+                "--signal", "alternatives_needed",
+                "--signals-complete",
+            ],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(plan.returncode == 0, f"自定义 brainstorming binding decision plan 失败：{plan.stdout}{plan.stderr}")
+        assert_true(
+            custom_skill_ref in plan.stdout,
+            f"alternatives_needed 信号必须路由到团队绑定的自定义 brainstorming skill {custom_skill_ref}：{plan.stdout}",
+        )
+        # The default brainstorming skill must NOT appear (it was replaced).
+        default_ref = ALIGNMENT_SKILL_REFS["brainstorming"]
+        assert_true(
+            default_ref not in plan.stdout,
+            f"自定义绑定后，默认 brainstorming skill {default_ref} 不应出现在 decision plan：{plan.stdout}",
+        )
+
+
+def test_pre_alignment_custom_alignment_check_rebinding_accepted():
+    """Team rebinds alignment_check (Human Alignment gate) to a custom skill; resolver accepts it."""
+    custom_skill_ref = ".claude/skills/idc-gc-sop-adapter/SKILL.md"
+    custom_bindings = {
+        **ALIGNMENT_SKILL_REFS,
+        "intent_alignment": custom_skill_ref,
+    }
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = write_alignment_config(
+            temp_dir, "custom-alignment-check-binding.yaml",
+            build_alignment_section(bindings=custom_bindings),
+        )
+        resolved = run_alignment_resolver(config)
+        assert_true(
+            resolved.returncode == 0,
+            f"alignment_check step rebind（不可删除，但可 rebind）必须被接受：{resolved.stderr}",
+        )
+        # Verify it is materialized correctly in effective config.
+        effective = Path(temp_dir) / "custom-alignment-check-effective.yaml"
+        resolved_with_output = run_alignment_resolver(config, effective)
+        assert_true(resolved_with_output.returncode == 0, f"有 output 时解析失败：{resolved_with_output.stderr}")
+        effective_text = effective.read_text(encoding="utf-8")
+        assert_true(
+            custom_skill_ref in effective_text,
+            f"自定义 alignment_check skill ref 必须物化进 effective config：{effective_text[:500]}",
+        )
+        assert_true(
+            "alignment-check" in effective_text,
+            "alignment_check step 必须保留（rebind 不删除 step）。",
+        )
+
+
+def test_lane_required_skill_unbound_blocks_preflight():
+    """lane.profiles.fast.skills.required lists an unbound skill ID → preflight status not READY."""
+    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Path(temp_dir) / "required-unbound.yaml"
+        config.write_text("""config_version: 1
+team:
+  id: required-unbound-team
+  repo_path: .
+domain:
+  mode: general
+bindings:
+  coding_standard: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+lane:
+  default: fast
+  profiles:
+    fast:
+      skills:
+        allow: [coding_standard]
+        deny: []
+        required: [nonexistent_unbound_skill]
+      orchestration:
+        mode: autonomous
+        steps: []
+    lite:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+    complex:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+""", encoding="utf-8")
+        effective = Path(temp_dir) / "required-unbound-effective.yaml"
+        result = subprocess.run(
+            ["ruby", str(preflight), "--config", str(config), "--output", str(effective)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        # Preflight must not be READY when a required skill has no binding.
+        assert_true(
+            result.returncode != 0 or "status: READY" not in result.stdout,
+            f"lane.required 含未绑定 skill 时 preflight 不得 READY：{result.stdout}",
+        )
+        error_output = result.stdout + result.stderr
+        assert_true(
+            "nonexistent_unbound_skill" in error_output,
+            f"preflight 错误必须指出未绑定的 required skill ID：{error_output}",
+        )
+
+
+def test_lane_ordered_signal_gated_steps_fire_only_on_matching_signals():
+    """ordered lane steps with trigger_signals only fire when those signals are present."""
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.rb"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # coding_standard: lanes=[fast,lite,complex] stages=[planning,implementation,review]
+        # tdd_workflow:    lanes=[lite,complex]      stages=[implementation,verification]
+        # Use lite ordered: unconditional coding_standard step + signal-gated tdd_workflow step
+        # both at implementation stage (both eligible for lite/implementation).
+        config = Path(temp_dir) / "signal-gated.yaml"
+        config.write_text("""config_version: 1
+team:
+  id: signal-gated-team
+  repo_path: .
+domain:
+  mode: general
+bindings:
+  coding_standard: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+  tdd_workflow: {skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}
+lane:
+  default: lite
+  profiles:
+    fast:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+    lite:
+      skills: {allow: [], deny: [], required: []}
+      orchestration:
+        mode: ordered
+        steps:
+          - id: lite-implement
+            stage: implementation
+            skill_ids: [coding_standard]
+            trigger_signals: []
+          - id: lite-tdd-gated
+            stage: implementation
+            skill_ids: [tdd_workflow]
+            trigger_signals: [tdd_required]
+    complex:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+""", encoding="utf-8")
+        effective = Path(temp_dir) / "signal-gated-effective.yaml"
+        resolved = subprocess.run(
+            ["ruby", str(resolver), "--config", str(config), "--output", str(effective)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(resolved.returncode == 0, f"signal-gated 配置解析失败：{resolved.stderr}")
+
+        # Without tdd_required signal: only fast-implement step matches, static_scan excluded.
+        demand_no_signal = Path(temp_dir) / "demand-no-signal.yaml"
+        demand_no_signal.write_text("""capability_demand:
+  execution_unit_ref: gated-no-signal
+  selected_stage: implementation
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: lite
+  execution_profile: lane_driven
+  required_capability_keys: []
+  optional_capability_keys: []
+  observed_signals: []
+  contract_refs: []
+""", encoding="utf-8")
+        result_no_signal = subprocess.run(
+            ["ruby", str(selector), "--effective", str(effective), "--demand", str(demand_no_signal)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(
+            result_no_signal.returncode == 0 and "status: READY" in result_no_signal.stdout,
+            f"无 tdd_required 信号时 lite implementation 应 READY：{result_no_signal.stdout}{result_no_signal.stderr}",
+        )
+        # signal-gated step's skill must not be selected when signal absent.
+        result_data_no_signal = yaml.safe_load(result_no_signal.stdout)["capability_selection_result"]
+        selected_ids_no_signal = {item["capability_id"] for item in result_data_no_signal.get("selected", [])}
+        assert_true(
+            "coding_standard" in selected_ids_no_signal,
+            f"无 tdd_required 时 coding_standard（unconditional step）必须被选中：{selected_ids_no_signal}",
+        )
+        assert_true(
+            "tdd_workflow" not in selected_ids_no_signal,
+            f"无 tdd_required 信号时 signal-gated step skill tdd_workflow 不得被选中：{selected_ids_no_signal}",
+        )
+
+        # With tdd_required signal: both steps match, both skills selected.
+        demand_with_signal = Path(temp_dir) / "demand-with-signal.yaml"
+        demand_with_signal.write_text("""capability_demand:
+  execution_unit_ref: gated-with-signal
+  selected_stage: implementation
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: lite
+  execution_profile: lane_driven
+  required_capability_keys: []
+  optional_capability_keys: []
+  observed_signals: [tdd_required]
+  contract_refs: []
+""", encoding="utf-8")
+        result_with_signal = subprocess.run(
+            ["ruby", str(selector), "--effective", str(effective), "--demand", str(demand_with_signal)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(
+            result_with_signal.returncode == 0 and "status: READY" in result_with_signal.stdout,
+            f"有 tdd_required 信号时 lite implementation 应 READY：{result_with_signal.stdout}{result_with_signal.stderr}",
+        )
+        result_data_with_signal = yaml.safe_load(result_with_signal.stdout)["capability_selection_result"]
+        selected_ids_with_signal = {item["capability_id"] for item in result_data_with_signal.get("selected", [])}
+        assert_true(
+            "tdd_workflow" in selected_ids_with_signal,
+            f"有 tdd_required 信号时 signal-gated step skill tdd_workflow 必须被选中：{selected_ids_with_signal}",
+        )
+
+
+def test_second_team_full_e2e_via_team_config_only():
+    """Brand-new team config (different lane profiles + alignment skills) resolves, preflights READY,
+    plans context correctly, selects capabilities, and plans knowledge — without touching any framework file."""
+    preflight = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.rb"
+    context_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.rb"
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.rb"
+    knowledge_planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.rb"
+
+    # Custom alignment: swap brainstorming to the gc-sop-adapter and add a team-specific step.
+    custom_alignment_bindings = {
+        **ALIGNMENT_SKILL_REFS,
+        "brainstorming": ".claude/skills/idc-gc-sop-adapter/SKILL.md",
+        "team_grilling_alt": ".claude/skills/idc-gc-sop-adapter/SKILL.md",
+    }
+    custom_alignment_steps = list(ALIGNMENT_PIPELINE_STEPS[:-1]) + [
+        ("alignment-team-alt-grilling", "clarification", "team_grilling_alt", "docs_clarification_required"),
+        ALIGNMENT_PIPELINE_STEPS[-1],
+    ]
+    alignment_section = build_alignment_section(
+        bindings=custom_alignment_bindings,
+        steps=custom_alignment_steps,
+    )
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Path(temp_dir) / "second-team-config.yaml"
+        config.write_text(f"""config_version: 1
+team:
+  id: second-team
+  repo_path: .
+domain:
+  enabled: [general]
+  mode: general
+bindings:
+  coding_standard: {{skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}}
+  tech_design: {{skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}}
+  ut_design: {{skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}}
+  impl_review: {{skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md}}
+adapter_extensions:
+  - id: idc-second-team-security-scan
+    execution_role: atomic_capability
+    capability_keys: [security_review]
+    allowed_stages: [review]
+    eligible_lanes: [lite, complex]
+    execution_profiles: []
+    trigger_signals: [security_review_required]
+    skill_ref: .claude/skills/idc-gc-sop-adapter/SKILL.md
+    input_contract_ref: null
+    output_contract_ref: null
+    evidence_required: true
+    requires: []
+    blocks_when: []
+    composes_with: []
+    supersedes: []
+knowledge:
+  architecture_doc_ref: null
+  feature_docs_root_ref: null
+  layer_docs: {{}}
+  lane_docs:
+    fast: [QUICKSTART.md]
+    lite: [docs/atomic-skills.md]
+    complex: []
+  verification_mapping_ref: null
+  repo_context:
+    provider_skill_ref: null
+    policy_ref: null
+    fallback: bounded_grep
+lane:
+  default: lite
+  profiles:
+    fast:
+      skills:
+        allow: [coding_standard]
+        deny: []
+        required: [coding_standard]
+      orchestration:
+        mode: ordered
+        steps:
+          - id: second-team-fast-impl
+            stage: implementation
+            skill_ids: [coding_standard]
+            trigger_signals: []
+    lite:
+      skills:
+        allow: [coding_standard, tech_design, ut_design, impl_review]
+        deny: []
+        required: [tech_design]
+      orchestration:
+        mode: autonomous
+        steps:
+          - id: second-team-lite-plan
+            stage: planning
+            skill_ids: [tech_design, ut_design]
+            trigger_signals: []
+    complex:
+      skills:
+        allow: []
+        deny: []
+        required: [tech_design]
+      orchestration:
+        mode: autonomous
+        steps: []
+capability_selection:
+  mode: autonomous_minimal_sufficient
+  lane_profiles:
+    fast: {{max_optional_skills: 0}}
+    lite: {{max_optional_skills: 2}}
+    complex: {{max_optional_skills: null}}
+  d3a_profile: {{max_optional_skills: null}}
+  require_selected_and_skipped_reasons: true
+self_optimization:
+  mode: disabled
+  event_store_ref: null
+  replay_cases_ref: null
+  team_overlay_ref: null
+  promotion_requires_human_alignment: true
+  auto_modify_core: false
+{alignment_section}""", encoding="utf-8")
+
+        # 1. Preflight must be READY.
+        effective = Path(temp_dir) / "second-team-effective.yaml"
+        pf = subprocess.run(
+            ["ruby", str(preflight), "--config", str(config), "--output", str(effective)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(
+            pf.returncode == 0 and "status: READY" in pf.stdout,
+            f"第二团队配置 preflight 必须 READY：{pf.stdout}\n{pf.stderr}",
+        )
+
+        # 2. Decision context plan for general domain must include custom alignment skill refs.
+        decision_plan = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(effective),
+             "--phase", "decision", "--domain", "general"],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(
+            decision_plan.returncode == 0 and "status: READY" in decision_plan.stdout,
+            f"第二团队 decision Context Plan 失败：{decision_plan.stdout}{decision_plan.stderr}",
+        )
+        # Custom brainstorming binding must appear; default must not.
+        assert_true(
+            ".claude/skills/idc-gc-sop-adapter/SKILL.md" in decision_plan.stdout,
+            "第二团队 decision plan 必须含自定义 brainstorming skill ref。",
+        )
+
+        # 3. Planning context plan for lite lane must be READY.
+        planning_plan = subprocess.run(
+            ["ruby", str(context_planner), "--effective", str(effective),
+             "--phase", "planning", "--domain", "general", "--lane", "lite"],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(
+            planning_plan.returncode == 0 and "status: READY" in planning_plan.stdout,
+            f"第二团队 lite planning Context Plan 失败：{planning_plan.stdout}{planning_plan.stderr}",
+        )
+
+        # 4. Capability selection for lite/planning stage must return READY.
+        demand = Path(temp_dir) / "demand-lite-planning.yaml"
+        demand.write_text("""capability_demand:
+  execution_unit_ref: second-team-lite
+  selected_stage: planning
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: lite
+  execution_profile: lane_driven
+  required_capability_keys: []
+  optional_capability_keys: []
+  observed_signals: []
+  contract_refs: []
+""", encoding="utf-8")
+        sel = subprocess.run(
+            ["ruby", str(selector), "--effective", str(effective), "--demand", str(demand)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(
+            sel.returncode == 0 and "status: READY" in sel.stdout,
+            f"第二团队 lite planning capability selection 必须 READY：{sel.stdout}{sel.stderr}",
+        )
+        # tech_design must be selected (it's in the lite-plan step and required).
+        assert_true(
+            "tech_design" in sel.stdout,
+            f"第二团队 lite planning 必须选中 tech_design：{sel.stdout}",
+        )
+
+        # 5. Knowledge plan for fast lane must include QUICKSTART.md, not lite doc.
+        kd_fast = Path(temp_dir) / "kd-fast.yaml"
+        kd_fast.write_text("""knowledge_demand:
+  execution_unit_ref: second-team-fast
+  selected_domain: general
+  selected_lane: fast
+  selected_components: []
+  selected_test_domains: []
+  include_architecture: false
+  include_verification_mapping: false
+  include_feature_docs_scope: false
+  repo_context_required: false
+""", encoding="utf-8")
+        kp_fast = subprocess.run(
+            ["ruby", str(knowledge_planner), "--effective", str(effective), "--demand", str(kd_fast)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(
+            kp_fast.returncode == 0 and "status: READY" in kp_fast.stdout,
+            f"第二团队 fast Knowledge Plan 失败：{kp_fast.stdout}{kp_fast.stderr}",
+        )
+        assert_true(
+            "QUICKSTART.md" in kp_fast.stdout,
+            f"第二团队 fast Knowledge Plan 必须含 QUICKSTART.md：{kp_fast.stdout}",
+        )
+        assert_true(
+            "docs/atomic-skills.md" not in kp_fast.stdout,
+            f"第二团队 fast Knowledge Plan 不得渗入 lite 的 lane_docs：{kp_fast.stdout}",
+        )
+
+        # 6. Ordered fast lane with signal-absent demand must select coding_standard only.
+        demand_fast = Path(temp_dir) / "demand-fast-impl.yaml"
+        demand_fast.write_text("""capability_demand:
+  execution_unit_ref: second-team-fast-impl
+  selected_stage: implementation
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: fast
+  execution_profile: lane_driven
+  required_capability_keys: []
+  optional_capability_keys: []
+  observed_signals: []
+  contract_refs: []
+""", encoding="utf-8")
+        sel_fast = subprocess.run(
+            ["ruby", str(selector), "--effective", str(effective), "--demand", str(demand_fast)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(
+            sel_fast.returncode == 0 and "status: READY" in sel_fast.stdout,
+            f"第二团队 ordered fast implementation 必须 READY：{sel_fast.stdout}{sel_fast.stderr}",
+        )
+        fast_data = yaml.safe_load(sel_fast.stdout)["capability_selection_result"]
+        selected_fast_ids = {item["capability_id"] for item in fast_data.get("selected", [])}
+        assert_true(
+            "coding_standard" in selected_fast_ids,
+            f"第二团队 fast ordered step 必须选中 coding_standard：{selected_fast_ids}",
+        )
+
+
 def run():
     tests = [
         test_registry_files_match_fixed_architecture,
@@ -4854,6 +5665,14 @@ def run():
         test_tran_build_must_pass_before_done,
         test_placeholder_hygiene,
         test_plan_confirmation_hook_enforces_real_ask_user_interaction,
+        test_lane_ordered_all_stages_coverage_and_mapping,
+        test_lane_docs_isolation_per_lane_in_knowledge_plan,
+        test_lane_docs_empty_fast_produces_no_lane_knowledge,
+        test_pre_alignment_custom_skill_binding_routes_via_plan_context,
+        test_pre_alignment_custom_alignment_check_rebinding_accepted,
+        test_lane_required_skill_unbound_blocks_preflight,
+        test_lane_ordered_signal_gated_steps_fire_only_on_matching_signals,
+        test_second_team_full_e2e_via_team_config_only,
     ]
     failures = []
     for test in tests:
