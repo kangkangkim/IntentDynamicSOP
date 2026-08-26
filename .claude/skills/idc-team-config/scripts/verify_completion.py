@@ -15,6 +15,13 @@ def present(value):
     return value is not None and value != "" and value != [] and value != {}
 
 
+def normalized_ref(value):
+    text = str(value or "")
+    if "://" in text:
+        return text
+    return str(Path(text).expanduser().resolve())
+
+
 def load_yaml(path):
     try:
         return safe_yaml_load(Path(path).resolve().read_text()) or {}
@@ -59,6 +66,33 @@ authorization = authorization_document.get("execution_authorization_result") or 
 if authorization.get("status") != "AUTHORIZED":
     errors.append("authorization result must be AUTHORIZED")
 
+selection_ref = authorization.get("capability_selection_ref")
+selection_document = load_yaml(selection_ref) if present(selection_ref) else {}
+selection = selection_document.get("capability_selection_result") or {}
+if selection.get("status") != "READY":
+    errors.append("authorized capability selection must remain READY")
+if selection.get("execution_unit_ref") != execution_unit_ref:
+    errors.append("capability selection execution_unit_ref does not match")
+if selection.get("config_identity") != authorization.get("capability_config_identity"):
+    errors.append("capability selection config identity changed after authorization")
+
+selected_stage_skills = [
+    {
+        "step_id": item.get("step_id"),
+        "stage": item.get("stage") or selection.get("selected_stage"),
+        "capability_id": item.get("capability_id"),
+        "skill_ref": item.get("skill_ref"),
+        "execution_order": item.get("execution_order"),
+    }
+    for item in (selection.get("selected") or [])
+]
+if (selection.get("orchestration") or {}).get("mode") == "ordered":
+    selection_stage_skills = list(selection.get("ordered_execution") or [])
+else:
+    selection_stage_skills = selected_stage_skills
+if selection_stage_skills != list(authorization.get("authorized_stage_skills") or []):
+    errors.append("capability selection skills changed after authorization")
+
 knowledge_ref = request.get("knowledge_consumption_result_ref")
 knowledge_document = load_yaml(knowledge_ref) if present(knowledge_ref) else {}
 knowledge = knowledge_document.get("knowledge_consumption_result") or {}
@@ -72,6 +106,9 @@ for key in [
     "executor_session_ref",
     "executor_kind",
     "loaded_domain_execution_skill_ref",
+    "capability_selection_ref",
+    "executed_stage_skills",
+    "executed_atomic_skill_refs",
     "knowledge_plan_id",
     "knowledge_consumption_result_ref",
 ]:
@@ -90,8 +127,35 @@ if receipt.get("executor_kind") != authorization.get("executor_kind"):
     errors.append("execution receipt executor_kind does not match authorization")
 if receipt.get("loaded_domain_execution_skill_ref") != authorization.get("domain_execution_skill_ref"):
     errors.append("execution receipt Domain Skill does not match authorization")
+if normalized_ref(receipt.get("capability_selection_ref")) != normalized_ref(selection_ref):
+    errors.append("execution receipt capability_selection_ref does not match authorization")
 if list(receipt.get("executed_atomic_skill_refs") or []) != list(authorization.get("selected_atomic_skill_refs") or []):
     errors.append("execution receipt atomic Skills do not match authorization")
+
+executed_stage_skills = list(receipt.get("executed_stage_skills") or [])
+if len(executed_stage_skills) != len(selection_stage_skills):
+    errors.append("execution receipt stage Skills are missing or contain unselected entries")
+for index, selected_skill in enumerate(selection_stage_skills):
+    if index >= len(executed_stage_skills):
+        break
+    executed_skill = executed_stage_skills[index] or {}
+    for key in ["stage", "step_id", "capability_id", "execution_order"]:
+        if executed_skill.get(key) != selected_skill.get(key):
+            errors.append(
+                f"execution receipt stage Skill order/identity mismatch at position {index + 1}: {key}"
+            )
+    if normalized_ref(executed_skill.get("skill_ref")) != normalized_ref(selected_skill.get("skill_ref")):
+        errors.append(
+            f"execution receipt stage Skill order/identity mismatch at position {index + 1}: skill_ref"
+        )
+    if str(executed_skill.get("status") or "").lower() not in ("completed", "succeeded"):
+        errors.append(
+            f"execution receipt stage Skill did not succeed at position {index + 1}"
+        )
+    if not present(executed_skill.get("evidence_refs")):
+        errors.append(
+            f"execution receipt stage Skill evidence_refs missing at position {index + 1}"
+        )
 if receipt.get("knowledge_plan_id") != authorization.get("knowledge_plan_id"):
     errors.append("execution receipt knowledge_plan_id does not match authorization")
 if knowledge.get("knowledge_plan_id") != receipt.get("knowledge_plan_id"):

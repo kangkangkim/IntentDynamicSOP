@@ -18,9 +18,17 @@ capability_selection_result:
   selected_domain: string
   selected_stage: string
   strategy: autonomous_minimal_sufficient
+  config_identity:
+    source_ref: ref
+    source_sha256: sha256
+    orchestration_sha256: sha256
   selected:
     - capability_id: string
       skill_ref: string
+      stage: string
+      step_id: string | null
+      step_order: integer | null
+      skill_order: integer | null
       requirement: configured | required | optional
       execution_order: integer
       reason: string
@@ -30,15 +38,30 @@ capability_selection_result:
   unresolved_required_capabilities: []
   orchestration:
     mode: autonomous | ordered | execution_profile
+    stage_order: []
+    execution_plan:
+      - step_id: string
+        stage: string
+        step_order: integer
+        skill_ids: []
+        trigger_signals: []
     matched_step_ids: []
-  status: READY | NEEDS_ADAPTER_MAPPING | NEEDS_TEAM_CONFIG | NEEDS_ORCHESTRATION_MAPPING
+    configured_skill_ids: []
+  ordered_execution:
+    - step_id: string
+      stage: string
+      capability_id: string
+      skill_ref: string
+      execution_order: integer
+  status: READY | NEEDS_ADAPTER_MAPPING | NEEDS_TEAM_CONFIG | NEEDS_ORCHESTRATION_MAPPING | NEEDS_SIGNAL_MAPPING
 
 rules:
   - Configured does not mean selected.
   - Every selected and skipped bound capability has an explicit reason.
   - Required demands cannot be dropped because of an optional budget.
-  - Fast, Lite, and Complex use their own Lane capability profile.
+  - Fast, Lite, and Complex all support ordered with the same mandatory ordering and evidence semantics; no Lane has a weaker ordered contract.
   - Lane allow/deny/required lists and orchestration steps are runtime inputs, not documentation.
   - Autonomous mode runs configured step skills first and may add the minimal sufficient set.
   - Ordered mode runs only the matching step skills in configured order and never silently falls back.
+  - Ordered mode emits ordered_execution as the canonical dispatch list; it exactly projects selected capabilities into step/stage execution order.
   - D3A uses d3a_fixed_workflow eligibility and does not invent a Lane.

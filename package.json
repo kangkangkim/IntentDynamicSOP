@@ -19,8 +19,9 @@
     "!**/*.pyc"
   ],
   "scripts": {
-    "test": "python3 tests/test_harness.py && node prototypes/team-config-studio/studio.test.mjs && node tests/test_package_contract.mjs && node tests/test_installer.mjs",
+    "test": "python3 tests/test_harness.py && node prototypes/team-config-studio/studio.test.mjs && node tests/test_package_contract.mjs && node tests/test_installer.mjs && node tests/test_new_repo_scenarios.mjs",
     "test:installer": "node tests/test_installer.mjs",
+    "test:new-repo": "node tests/test_new_repo_scenarios.mjs",
     "test:package": "node tests/test_package_contract.mjs",
     "pack:check": "npm pack --dry-run"
   },

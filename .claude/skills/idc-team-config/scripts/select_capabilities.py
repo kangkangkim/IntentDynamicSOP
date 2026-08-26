@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import hashlib
+import json
 import sys
 from pathlib import Path
 
@@ -84,6 +86,37 @@ else:
     orchestration_mode = "execution_profile"
 
 orchestration_steps = list(orchestration.get("steps") or [])
+stage_order = list(dict.fromkeys(
+    step.get("stage") for step in orchestration_steps
+    if isinstance(step, dict) and step.get("stage")
+))
+configured_execution_plan = [
+    {
+        "step_id": step.get("id"),
+        "stage": step.get("stage"),
+        "step_order": step_index + 1,
+        "skill_ids": list(step.get("skill_ids") or []),
+        "trigger_signals": list(step.get("trigger_signals") or []),
+    }
+    for step_index, step in enumerate(orchestration_steps)
+    if isinstance(step, dict)
+]
+config_identity = {
+    "source_ref": effective.get("source_ref"),
+    "source_sha256": effective.get("source_sha256"),
+}
+config_identity["orchestration_sha256"] = hashlib.sha256(
+    json.dumps(
+        {
+            "selected_domain": demand.get("selected_domain"),
+            "selected_lane": lane,
+            "mode": orchestration_mode,
+            "steps": configured_execution_plan,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+).hexdigest()
 capability_signals = [s for cap in available for s in (cap.get("trigger_signals") or [])]
 step_signals = []
 if orchestration_mode == "ordered" or lane_applicability == "applicable":
@@ -101,9 +134,13 @@ if unknown_signals:
             "strategy": "autonomous_minimal_sufficient",
             "orchestration": {
                 "mode": orchestration_mode,
+                "stage_order": stage_order,
+                "execution_plan": configured_execution_plan,
                 "matched_step_ids": [],
                 "configured_skill_ids": [],
             },
+            "config_identity": config_identity,
+            "ordered_execution": [],
             "selected": [],
             "skipped": [],
             "unresolved_required_capabilities": list(required_keys),
@@ -136,6 +173,18 @@ for step in orchestration_steps:
 step_skill_ids = list(
     dict.fromkeys(sid for step in matching_steps for sid in (step.get("skill_ids") or []))
 )
+skill_step = {}
+for step_index, step in enumerate(matching_steps):
+    for skill_index, skill_id in enumerate(step.get("skill_ids") or []):
+        skill_step.setdefault(skill_id, {
+            "stage": step.get("stage"),
+            "step_id": step.get("id"),
+            "step_order": next(
+                (idx + 1 for idx, configured in enumerate(orchestration_steps) if configured is step),
+                step_index + 1,
+            ),
+            "skill_order": skill_index + 1,
+        })
 orchestration_missing = orchestration_mode == "ordered" and not matching_steps
 
 available_by_id = {cap["id"]: cap for cap in available if isinstance(cap, dict)}
@@ -262,6 +311,31 @@ elif not uncovered:
 else:
     final_status = "NEEDS_ADAPTER_MAPPING"
 
+selected_output = [
+    {
+        "capability_id": item["id"],
+        "skill_ref": item.get("skill_ref"),
+        "stage": (skill_step.get(item["id"]) or {}).get("stage", stage),
+        "step_id": (skill_step.get(item["id"]) or {}).get("step_id"),
+        "step_order": (skill_step.get(item["id"]) or {}).get("step_order"),
+        "skill_order": (skill_step.get(item["id"]) or {}).get("skill_order"),
+        "requirement": item["requirement"],
+        "execution_order": idx + 1,
+        "reason": item["selection_reason"],
+    }
+    for idx, item in enumerate(selected)
+]
+ordered_execution = [
+    {
+        "step_id": item.get("step_id"),
+        "stage": item.get("stage"),
+        "capability_id": item.get("capability_id"),
+        "skill_ref": item.get("skill_ref"),
+        "execution_order": item.get("execution_order"),
+    }
+    for item in selected_output
+] if orchestration_mode == "ordered" else []
+
 result = {
     "capability_selection_result": {
         "execution_unit_ref": demand.get("execution_unit_ref"),
@@ -270,20 +344,15 @@ result = {
         "strategy": "autonomous_minimal_sufficient",
         "orchestration": {
             "mode": orchestration_mode,
+            "stage_order": stage_order,
+            "execution_plan": configured_execution_plan,
             "matched_step_ids": [step.get("id") for step in matching_steps],
             "configured_skill_ids": forced_skill_ids,
         },
-        "selected": [
-            {
-                "capability_id": item["id"],
-                "skill_ref": item.get("skill_ref"),
-                "requirement": item["requirement"],
-                "execution_order": idx + 1,
-                "reason": item["selection_reason"],
-            }
-            for idx, item in enumerate(selected)
-        ],
+        "config_identity": config_identity,
+        "selected": selected_output,
         "skipped": list({(s["capability_id"], s["reason"]): s for s in skipped}.values()),
+        "ordered_execution": ordered_execution,
         "unresolved_required_capabilities": uncovered,
         "unresolved_configured_skill_ids": unresolved_configured,
         "status": final_status,

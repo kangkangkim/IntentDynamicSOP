@@ -65,7 +65,10 @@ silently fall back to the shared registry.
 
 ## Ordered-first lane policy
 
-Lanes use `ordered` orchestration by default. The declared `steps` are the
+Fast, Lite, and Complex all support `ordered` with the same mandatory
+selection, authorization, receipt, and completion semantics. Lane evidence
+strength may differ, but ordered Skill execution is never advisory or weaker
+in Fast/Lite. Lanes use `ordered` orchestration by default. The declared `steps` are the
 fixed mandatory backbone: a step with no `trigger_signals` fires whenever
 its `stage` is active; a step with `trigger_signals` fires only when all its
 signals are observed (signal-gated optional, fixed order — not AI-discretionary
@@ -75,6 +78,11 @@ filled. Under `ordered`, `skills.allow` no longer bounds free selection —
 only step skills are eligible (`orchestration_step_excluded` removes the
 rest), so an empty `allow` (complex) is safe. `max_optional_skills` is inert
 under `ordered` (no autonomous budget); it only matters under `autonomous`.
+
+Every READY ordered selection emits `ordered_execution` as the canonical
+dispatch list. Each entry contains `step_id`, `stage`, `capability_id`,
+`skill_ref`, and contiguous `execution_order`. It is a strict projection of
+the matching `selected` entries, not a second caller-editable plan.
 
 ## Outer execution protocols are not lane-selected
 
@@ -109,6 +117,9 @@ is not optional documentation — it is the gating artifact that
 - For `ordered` lanes, the artifact must carry `stage_order` listing every
   configured stage in declared order. A gap or reordering is a Selector error,
   not a discretionary abbreviation.
+- For `ordered` lanes, `ordered_execution` must preserve the exact configured
+  step/Skill order for the active stage. This applies equally to Fast, Lite,
+  and Complex.
 
 ## Important distinction
 

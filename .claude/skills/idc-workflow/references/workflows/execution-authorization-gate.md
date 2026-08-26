@@ -109,12 +109,22 @@ verifies:
 4. Its `selected_skills` list is non-empty.
 5. For `orchestration.mode: ordered` lanes, the `stage_order` in the artifact
    covers every configured stage without gaps or reordering.
+6. For ordered execution, `ordered_execution` exactly projects the selected
+   Skill identities and order. The gate derives `authorized_stage_skills` and
+   `selected_atomic_skill_refs` from it. For autonomous execution, it derives
+   the same authorization fields directly from `selected`.
 
 A missing field, a dangling ref, a non-READY status, an execution-unit
 mismatch, an empty `selected_skills`, or a broken stage order returns
 `BLOCKED_CAPABILITY_SELECTION_REQUIRED` — the gate never proceeds to dispatch
 until a valid artifact exists. This check is not configurable through
 team-config and cannot be disabled.
+
+`selected_atomic_skill_refs` in an authorization request is only an optional
+consistency assertion. If supplied, it must exactly equal the derived list,
+including duplicates and order. A caller-supplied subset, superset, or
+reordered list is blocked. Fast, Lite, and Complex use this same rule when
+configured as ordered.
 
 The main agent must run Capability Selector via
 `scripts/select_capabilities.py` and persist the output artifact **before**
@@ -161,17 +171,19 @@ Agent Result must include an Execution Receipt containing:
 - `executor_session_ref`
 - `loaded_domain_execution_skill` (e.g. `idc-general-coding`)
 - `capability_selection_ref` — the same artifact verified at authorization
-- `executed_stage_skills` — ordered list of `{stage, skill_id, status}` entries
-  recording exactly which skills ran at each stage; must be non-empty
+- `executed_stage_skills` — ordered list of `{step_id, stage, capability_id,
+  skill_ref, execution_order, status, evidence_refs}` entries recording exactly
+  which Skills ran; must be non-empty, each status must be `completed` or
+  `succeeded`, and each item must carry evidence
 - `executed_atomic_skills`
 - `changed_paths`
 - `evidence_refs`
 
 Completion Gate cross-checks `executed_stage_skills` against the
-`selected_skills` in `capability_selection_ref`. A stage present in the
-selection artifact but absent from the receipt returns
+authorization's derived `authorized_stage_skills` and re-reads the same
+`capability_selection_ref`. Missing, extra, failed, or reordered Skills return
 `NEEDS_EXECUTION_EVIDENCE` — missing execution is not silently forgiven even
-if tests pass.
+if tests pass. Enforcement is identical for ordered Fast, Lite, and Complex.
 
 The receipt also carries the authorized `knowledge_plan_id` and a
 `knowledge_consumption_result_ref`. Completion requires that result to be

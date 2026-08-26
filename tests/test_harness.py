@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import copy
+import hashlib
+import json
 import re
 import shutil
 import subprocess
@@ -936,7 +938,6 @@ def test_delegation_contract_keeps_main_agent_as_planner():
   knowledge_load_plan_status: READY
   knowledge_plan_id: <KNOWLEDGE_PLAN_ID>
   domain_execution_skill_ref: .claude/skills/idc-general-coding/SKILL.md
-  selected_atomic_skill_refs: [.claude/skills/idc-gc-sop-adapter/SKILL.md]
   delegation_contract_ref: delegation-1
   main_agent_role: planning_and_delegation_only
   technical_plan_confirmation:
@@ -1101,7 +1102,6 @@ def test_plan_confirmation_gate_is_framework_floor():
                 "  knowledge_load_plan_status: READY\n"
                 f"  knowledge_plan_id: {knowledge_plan_id}\n"
                 "  domain_execution_skill_ref: .claude/skills/idc-general-coding/SKILL.md\n"
-                "  selected_atomic_skill_refs: []\n"
                 "  delegation_contract_ref: delegation-1\n"
                 "  main_agent_role: planning_and_delegation_only\n"
                 + (confirmation_lines or "")
@@ -3667,8 +3667,9 @@ def test_team_config_resolver_and_lane_capability_selection_execute():
             )
             assert_true(result.returncode == 0, f"{name} Capability Selection 失败：{result.stderr}")
             assert_true(result.stdout.count("capability_id:") >= count, f"{name} 没有输出足够的 selection/skip decision。")
-            selected_block = result.stdout.split("skipped:", 1)[0]
-            assert_true(selected_block.count("capability_id:") == count, f"{name} 选择数量错误，期望 {count}。")
+            selected_result = yaml.safe_load(result.stdout)["capability_selection_result"]
+            selected_block = yaml.safe_dump({"selected": selected_result.get("selected") or []}, sort_keys=False)
+            assert_true(len(selected_result.get("selected") or []) == count, f"{name} 选择数量错误，期望 {count}。")
             for capability_id in ids:
                 assert_true(f"capability_id: {capability_id}" in selected_block, f"{name} 应选择 {capability_id}。")
             assert_true("status: READY" in result.stdout, f"{name} selection 必须 READY。")
@@ -4199,9 +4200,10 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
             )
             assert_true(selected.returncode == 0, f"{scenario} Selector 失败：{selected.stdout}\n{selected.stderr}")
             selection_text = selection.read_text(encoding="utf-8")
-            selected_block = selection_text.split("skipped:", 1)[0]
+            selected_result = yaml.safe_load(selection_text)["capability_selection_result"]
+            selected_block = yaml.safe_dump({"selected": selected_result.get("selected") or []}, sort_keys=False)
             assert_true("status: READY" in selection_text, f"{scenario} Selector 未 READY。")
-            assert_true(selected_block.count("capability_id:") == expected["selected"], f"{scenario} 选择数量错误。")
+            assert_true(len(selected_result.get("selected") or []) == expected["selected"], f"{scenario} 选择数量错误。")
 
             knowledge_plan = Path(temp_dir) / f"{scenario}-knowledge-plan.yaml"
             knowledge_planned = subprocess.run(
@@ -4298,7 +4300,6 @@ def test_d3a_and_general_lane_runtime_matrix_execute():
   knowledge_load_plan_status: READY
   knowledge_plan_id: {knowledge_plan_id}
   domain_execution_skill_ref: {expected['domain_skill']}
-  selected_atomic_skill_refs: [selected-by-capability-selector]
   delegation_contract_ref: delegation-{scenario}
   main_agent_role: planning_and_delegation_only
   technical_plan_confirmation:
@@ -5599,6 +5600,253 @@ self_optimization:
         )
 
 
+def test_ordered_lane_selection_authorization_and_completion_are_enforced():
+    selector = ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"
+    authorizer = ROOT / ".claude/skills/idc-workflow/scripts/authorize_execution.py"
+    completion = ROOT / ".claude/skills/idc-team-config/scripts/verify_completion.py"
+    capability_schema = read_text(".claude/skills/idc-workflow/references/schemas/capability-selection.schema.yaml")
+    authorization_schema = read_text(".claude/skills/idc-workflow/references/schemas/execution-authorization.schema.yaml")
+    completion_schema = read_text(".claude/skills/idc-workflow/references/schemas/completion-verification.schema.yaml")
+    selector_policy = read_text(".claude/skills/idc-workflow/references/workflows/capability-selector.md")
+    authorization_policy = read_text(".claude/skills/idc-workflow/references/workflows/execution-authorization-gate.md")
+    for fragment, text in [
+        ("ordered_execution:", capability_schema),
+        ("authorized_stage_skills:", authorization_schema),
+        ("executed_stage_skills:", authorization_schema),
+        ("capability_selection_ref: ref", completion_schema),
+        ("executed_stage_skills:", completion_schema),
+        ("Fast, Lite, and Complex all support `ordered`", selector_policy),
+        ("Fast, Lite, and Complex use this same rule", authorization_policy),
+    ]:
+        assert_true(fragment in text, f"ordered 强制链路契约缺少：{fragment}")
+    skill_ref = str(ROOT / ".claude/skills/idc-gc-sop-adapter/SKILL.md")
+    source_sha = hashlib.sha256((ROOT / "team-config.yaml").read_bytes()).hexdigest()
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        effective = {
+            "source_ref": str(ROOT / "team-config.yaml"),
+            "source_sha256": source_sha,
+            "available_capabilities": [
+                {
+                    "id": capability_id,
+                    "capability_keys": [],
+                    "allowed_stages": ["implementation"],
+                    "eligible_lanes": ["fast", "lite", "complex"],
+                    "execution_profiles": [],
+                    "trigger_signals": [],
+                    "skill_ref": skill_ref,
+                    "supersedes": [],
+                }
+                for capability_id in ["coding_standard", "impl_review"]
+            ],
+            "lane": {
+                "profiles": {
+                    lane: {
+                        "skills": {"allow": [], "deny": [], "required": []},
+                        "orchestration": {
+                            "mode": "ordered",
+                            "steps": [
+                                {
+                                    "id": f"{lane}-implementation",
+                                    "stage": "implementation",
+                                    "skill_ids": ["coding_standard", "impl_review"],
+                                    "trigger_signals": [],
+                                }
+                            ],
+                        },
+                    }
+                    for lane in ["fast", "lite", "complex"]
+                }
+            },
+            "capability_selection": {
+                "lane_profiles": {
+                    lane: {"max_optional_skills": None}
+                    for lane in ["fast", "lite", "complex"]
+                }
+            },
+        }
+        effective_path = temp / "effective.yaml"
+        effective_path.write_text(yaml.safe_dump(effective, sort_keys=False), encoding="utf-8")
+
+        selections = {}
+        for lane in ["fast", "lite", "complex"]:
+            demand_path = temp / f"{lane}-demand.yaml"
+            demand_path.write_text(yaml.safe_dump({"capability_demand": {
+                "execution_unit_ref": f"{lane}-unit",
+                "selected_stage": "implementation",
+                "selected_domain": "general",
+                "lane_applicability": "applicable",
+                "selected_lane": lane,
+                "execution_profile": "lane_driven",
+                "required_capability_keys": [],
+                "optional_capability_keys": [],
+                "observed_signals": [],
+            }}, sort_keys=False), encoding="utf-8")
+            selection_path = temp / f"{lane}-selection.yaml"
+            selected = subprocess.run(
+                ["python3", str(selector), "--effective", str(effective_path), "--demand", str(demand_path), "--output", str(selection_path)],
+                cwd=ROOT, capture_output=True, text=True,
+            )
+            assert_true(selected.returncode == 0, f"{lane} ordered Selector 失败：{selected.stderr}")
+            result = yaml.safe_load(selection_path.read_text(encoding="utf-8"))["capability_selection_result"]
+            ordered = result.get("ordered_execution") or []
+            assert_true(
+                [(item["step_id"], item["stage"], item["capability_id"], item["execution_order"]) for item in ordered]
+                == [
+                    (f"{lane}-implementation", "implementation", "coding_standard", 1),
+                    (f"{lane}-implementation", "implementation", "impl_review", 2),
+                ],
+                f"{lane} 必须产出确定性 ordered_execution：{ordered}",
+            )
+            selections[lane] = selection_path
+
+        lane = "lite"
+        unit = "lite-unit"
+        knowledge_body = {
+            "status": "READY",
+            "execution_unit_ref": unit,
+            "selected_domain": "general",
+        }
+        knowledge_id = hashlib.sha256(
+            json.dumps(knowledge_body, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        knowledge_plan = temp / "knowledge-plan.yaml"
+        knowledge_plan.write_text(yaml.safe_dump({"knowledge_load_plan": {
+            **knowledge_body,
+            "knowledge_plan_id": knowledge_id,
+        }}, sort_keys=False), encoding="utf-8")
+        plan = temp / "general-plan.yaml"
+        plan.write_text("general_plan:\n  execution_units: [{id: lite-unit}]\n", encoding="utf-8")
+        auth_request = {
+            "execution_authorization_request": {
+                "task_id": "ordered-enforcement",
+                "workflow_id": "general_execution",
+                "selected_domain": "general",
+                "selected_lane": lane,
+                "human_alignment_status": "approved",
+                "approved_alignment_ref": "alignment",
+                "execution_unit_ref": unit,
+                "context_packet_ref": "context",
+                "capability_selection_ref": str(selections[lane]),
+                "capability_selection_status": "READY",
+                "effective_config_ref": str(effective_path),
+                "knowledge_load_plan_ref": str(knowledge_plan),
+                "knowledge_load_plan_status": "READY",
+                "knowledge_plan_id": knowledge_id,
+                "domain_execution_skill_ref": str(ROOT / ".claude/skills/idc-general-coding/SKILL.md"),
+                "delegation_contract_ref": "delegation",
+                "main_agent_role": "planning_and_delegation_only",
+                "technical_plan_confirmation": {
+                    "required": True,
+                    "trigger_reason": "lane=lite",
+                    "confirmation_ref": str(plan),
+                    "status": "confirmed",
+                },
+                "executor": {"kind": "subagent", "agent_id": "general-coder"},
+                "allowed_paths": ["src/example"],
+                "expected_outputs": ["execution_receipt"],
+            }
+        }
+        auth_request_path = temp / "authorization-request.yaml"
+        auth_request_path.write_text(yaml.safe_dump(auth_request, sort_keys=False), encoding="utf-8")
+        auth_result_path = temp / "authorization-result.yaml"
+        authorized = subprocess.run(
+            ["python3", str(authorizer), "--request", str(auth_request_path), "--output", str(auth_result_path)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(authorized.returncode == 0, f"ordered authorization 应成功：{authorized.stdout}{authorized.stderr}")
+        auth_result = yaml.safe_load(auth_result_path.read_text(encoding="utf-8"))["execution_authorization_result"]
+        assert_true(
+            [item["capability_id"] for item in auth_result["authorized_stage_skills"]]
+            == ["coding_standard", "impl_review"],
+            "Authorization 必须从 selection 派生 authorized_stage_skills。",
+        )
+
+        tampered_request = copy.deepcopy(auth_request)
+        tampered_request["execution_authorization_request"]["selected_atomic_skill_refs"] = [skill_ref]
+        tampered_path = temp / "tampered-authorization-request.yaml"
+        tampered_path.write_text(yaml.safe_dump(tampered_request, sort_keys=False), encoding="utf-8")
+        tampered = subprocess.run(
+            ["python3", str(authorizer), "--request", str(tampered_path)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        assert_true(
+            tampered.returncode == 3 and "must exactly match capability selection artifact order" in tampered.stdout,
+            "Authorization 必须拒绝 request 篡改 selected_atomic_skill_refs。",
+        )
+
+        knowledge_result = temp / "knowledge-result.yaml"
+        knowledge_result.write_text(yaml.safe_dump({"knowledge_consumption_result": {
+            "status": "VERIFIED",
+            "knowledge_plan_id": knowledge_id,
+            "execution_unit_ref": unit,
+        }}, sort_keys=False), encoding="utf-8")
+        executed_stage_skills = [
+            {**item, "status": "succeeded", "evidence_refs": [f"evidence-{index + 1}"]}
+            for index, item in enumerate(auth_result["authorized_stage_skills"])
+        ]
+        completion_request = {
+            "completion_verification_request": {
+                "task_id": "ordered-enforcement",
+                "selected_domain": "general",
+                "selected_lane": "lite",
+                "execution_unit_ref": unit,
+                "authorization_result_ref": str(auth_result_path),
+                "knowledge_consumption_result_ref": str(knowledge_result),
+                "test_based_verification": False,
+                "execution_receipt": {
+                    "authorization_id": auth_result["authorization_id"],
+                    "dispatch_tool_call_ref": "dispatch-call",
+                    "executor_session_ref": "executor-session",
+                    "executor_kind": "subagent",
+                    "loaded_domain_execution_skill_ref": auth_result["domain_execution_skill_ref"],
+                    "capability_selection_ref": str(selections[lane]),
+                    "executed_stage_skills": executed_stage_skills,
+                    "executed_atomic_skill_refs": auth_result["selected_atomic_skill_refs"],
+                    "knowledge_plan_id": knowledge_id,
+                    "knowledge_consumption_result_ref": str(knowledge_result),
+                    "changed_paths": ["src/example"],
+                    "evidence_refs": ["execution-evidence"],
+                },
+                "evidence": {
+                    "task_contract_ref": "task-contract",
+                    "acceptance_criteria_ref": "acceptance",
+                    "focused_plan_ref": "plan",
+                    "relevant_context_refs": ["context"],
+                    "verification_evidence_refs": ["verification"],
+                    "completion_summary_ref": "summary",
+                },
+            }
+        }
+
+        def verify_case(name, request_doc):
+            path = temp / f"completion-{name}.yaml"
+            path.write_text(yaml.safe_dump(request_doc, sort_keys=False), encoding="utf-8")
+            return subprocess.run(
+                ["python3", str(completion), "--request", str(path)],
+                cwd=ROOT, capture_output=True, text=True,
+            )
+
+        done = verify_case("done", completion_request)
+        assert_true(done.returncode == 0 and "status: DONE" in done.stdout, f"完整 ordered receipt 应 DONE：{done.stdout}")
+
+        missing = copy.deepcopy(completion_request)
+        missing["completion_verification_request"]["execution_receipt"]["executed_stage_skills"].pop()
+        missing_result = verify_case("missing", missing)
+        assert_true(missing_result.returncode == 4 and "stage Skills are missing" in missing_result.stdout, "漏 skill 必须阻断 Completion。")
+
+        reordered = copy.deepcopy(completion_request)
+        reordered["completion_verification_request"]["execution_receipt"]["executed_stage_skills"].reverse()
+        reordered_result = verify_case("reordered", reordered)
+        assert_true(reordered_result.returncode == 4 and "order/identity mismatch" in reordered_result.stdout, "skill 乱序必须阻断 Completion。")
+
+        failed = copy.deepcopy(completion_request)
+        failed["completion_verification_request"]["execution_receipt"]["executed_stage_skills"][0]["status"] = "failed"
+        failed_result = verify_case("failed", failed)
+        assert_true(failed_result.returncode == 4 and "did not succeed" in failed_result.stdout, "skill 失败必须阻断 Completion。")
+
+
 def run():
     tests = [
         test_registry_files_match_fixed_architecture,
@@ -5683,6 +5931,7 @@ def run():
         test_lane_required_skill_unbound_blocks_preflight,
         test_lane_ordered_signal_gated_steps_fire_only_on_matching_signals,
         test_second_team_full_e2e_via_team_config_only,
+        test_ordered_lane_selection_authorization_and_completion_are_enforced,
     ]
     failures = []
     for test in tests:

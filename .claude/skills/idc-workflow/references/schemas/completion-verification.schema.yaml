@@ -12,6 +12,15 @@ completion_verification_request:
     executor_session_ref: ref
     executor_kind: subagent | agent_team | official_dynamic_workflow
     loaded_domain_execution_skill_ref: skill_ref
+    capability_selection_ref: ref
+    executed_stage_skills:
+      - step_id: string | null
+        stage: string
+        capability_id: string
+        skill_ref: string
+        execution_order: integer
+        status: completed | succeeded
+        evidence_refs: []
     executed_atomic_skill_refs: []
     knowledge_plan_id: sha256
     knowledge_consumption_result_ref: ref
@@ -56,3 +65,5 @@ rules:
   - A lane-applicable Custom Domain applies the selected Lane evidence requirements; a not-applicable Custom Domain requires custom completion evidence.
   - Test-based Lite and Complex completion requires coverage evidence or a reasoned exemption.
   - D3A completion requires RED and GREEN evidence for every required DT domain plus tran_build PASS evidence.
+  - Completion requires capability_selection_ref to match Authorization and executed_stage_skills to match authorized_stage_skills exactly in identity and order.
+  - Every executed stage Skill must report completed or succeeded and provide evidence_refs; this rule is identical for Fast, Lite, and Complex ordered lanes.

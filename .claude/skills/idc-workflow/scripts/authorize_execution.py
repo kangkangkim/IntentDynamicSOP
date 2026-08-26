@@ -18,6 +18,13 @@ def present(value):
     return value is not None and value != "" and value != [] and value != {}
 
 
+def normalize_ref(value):
+    text = str(value or "")
+    if "://" in text:
+        return text
+    return str(Path(text).expanduser().resolve())
+
+
 parser = argparse.ArgumentParser(
     description="Usage: authorize_execution.py --request PATH [--output PATH]"
 )
@@ -123,6 +130,9 @@ elif selected_domain == "d3a":
     if "idc-d3a-coding" not in domain_skill:
         errors.append("d3a execution must load idc-d3a-coding")
 
+cap_result = {}
+authorized_stage_skills = []
+derived_atomic_skill_refs = []
 if present(request.get("capability_selection_ref")):
     cap_sel_path = Path(str(request["capability_selection_ref"])).resolve()
     try:
@@ -138,6 +148,51 @@ if present(request.get("capability_selection_ref")):
             )
         if not any(True for _ in cap_result.get("selected") or []):
             errors.append("capability selection selected_skills must not be empty")
+        selected_entries = list(cap_result.get("selected") or [])
+        execution_orders = [item.get("execution_order") for item in selected_entries]
+        if execution_orders != list(range(1, len(selected_entries) + 1)):
+            errors.append("capability selection execution_order must be contiguous and deterministic")
+        orchestration = cap_result.get("orchestration") or {}
+        selected_stage_skills = [
+            {
+                "step_id": item.get("step_id"),
+                "stage": item.get("stage") or cap_result.get("selected_stage"),
+                "capability_id": item.get("capability_id"),
+                "skill_ref": item.get("skill_ref"),
+                "execution_order": item.get("execution_order"),
+            }
+            for item in selected_entries
+        ]
+        if orchestration.get("mode") == "ordered":
+            execution_plan = list(orchestration.get("execution_plan") or [])
+            stage_order = list(orchestration.get("stage_order") or [])
+            expected_stage_order = list(dict.fromkeys(
+                step.get("stage") for step in execution_plan
+                if isinstance(step, dict) and step.get("stage")
+            ))
+            if not execution_plan or stage_order != expected_stage_order:
+                errors.append(
+                    "ordered capability selection stage_order must cover configured stages without gaps or reordering"
+                )
+            matched_step_ids = set(orchestration.get("matched_step_ids") or [])
+            for item in selected_entries:
+                if item.get("step_id") not in matched_step_ids:
+                    errors.append(
+                        f"ordered selected capability is not bound to a matched step: {item.get('capability_id')}"
+                    )
+            ordered_execution = list(cap_result.get("ordered_execution") or [])
+            if ordered_execution != selected_stage_skills:
+                errors.append("ordered_execution must exactly match selected capabilities and order")
+            authorized_stage_skills = ordered_execution
+        else:
+            authorized_stage_skills = selected_stage_skills
+        derived_atomic_skill_refs = [item.get("skill_ref") for item in authorized_stage_skills]
+        if "selected_atomic_skill_refs" in request:
+            reported_refs = list(request.get("selected_atomic_skill_refs") or [])
+            if [normalize_ref(ref) for ref in reported_refs] != [normalize_ref(ref) for ref in derived_atomic_skill_refs]:
+                errors.append(
+                    "selected_atomic_skill_refs must exactly match capability selection artifact order"
+                )
     except (FileNotFoundError, yaml.YAMLError) as e:
         errors.append(f"capability_selection_ref cannot be read: {e}")
 
@@ -158,6 +213,11 @@ if team_config_path.is_file() and effective_config_path.is_file():
                 f"BLOCKED_STALE_EFFECTIVE_CONFIG: team-config.yaml has changed since last prepare_runtime.py "
                 f"(recorded={recorded_sha[:12]}… actual={actual_sha[:12]}…); "
                 f"re-run prepare_runtime.py and verify status: READY before authorizing"
+            )
+        selection_identity = cap_result.get("config_identity") or {}
+        if cap_result and selection_identity.get("source_sha256") != recorded_sha:
+            errors.append(
+                "capability selection config identity does not match effective config source_sha256"
             )
     except (FileNotFoundError, yaml.YAMLError) as e:
         errors.append(f"effective config integrity check failed: {e}")
@@ -188,7 +248,10 @@ if present(request.get("knowledge_load_plan_ref")):
     except (FileNotFoundError, yaml.YAMLError) as e:
         errors.append(f"knowledge load plan cannot be read: {e}")
 
-canonical = json.dumps(dict(sorted(request.items())), separators=(",", ":"))
+authorization_payload = dict(request)
+authorization_payload["selected_atomic_skill_refs"] = derived_atomic_skill_refs
+authorization_payload["authorized_stage_skills"] = authorized_stage_skills
+canonical = json.dumps(dict(sorted(authorization_payload.items())), separators=(",", ":"))
 authorization_id = hashlib.sha256(canonical.encode()).hexdigest() if not errors else None
 if plan_confirmation_errors:
     status = "BLOCKED_PLAN_CONFIRMATION_REQUIRED"
@@ -209,7 +272,11 @@ result = {
         "knowledge_load_plan_ref": request.get("knowledge_load_plan_ref") if not errors else None,
         "knowledge_plan_id": request.get("knowledge_plan_id") if not errors else None,
         "technical_plan_confirmation": plan_confirmation if not errors else None,
-        "selected_atomic_skill_refs": list(request.get("selected_atomic_skill_refs") or []) if not errors else [],
+        "capability_selection_ref": request.get("capability_selection_ref") if not errors else None,
+        "capability_config_identity": cap_result.get("config_identity") if not errors else None,
+        "orchestration": cap_result.get("orchestration") if not errors else None,
+        "authorized_stage_skills": authorized_stage_skills if not errors else [],
+        "selected_atomic_skill_refs": derived_atomic_skill_refs if not errors else [],
         "allowed_paths": list(request.get("allowed_paths") or []) if not errors else [],
         "expected_outputs": list(request.get("expected_outputs") or []) if not errors else [],
         "errors": errors,
