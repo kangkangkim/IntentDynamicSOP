@@ -1,0 +1,24 @@
+schema: optimization_proposal
+version: 1
+
+optimization_proposal:
+  proposal_id: string
+  gap_class: string
+  supporting_event_refs: []
+  target_scope: team_overlay
+  proposed_change: {}
+  expected_effect: string
+  protected_invariants: []
+  replay_cases_ref: string
+  replay_result:
+    status: PASS | FAIL | NOT_RUN
+    regressions: []
+  rollback_plan: string
+  promotion:
+    status: pending | approved | rejected
+    human_alignment_ref: string | null
+
+rules:
+  - Proposals cannot target active IDC Core automatically.
+  - PASS replay does not replace Human Alignment.
+  - A proposal cannot weaken contracts, TDD evidence, or Completion Gate requirements.

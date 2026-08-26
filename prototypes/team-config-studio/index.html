@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IDC Harness Setup</title>
+  <link rel="stylesheet" href="./styles.css?v=4" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">IDC</span>
+        <div>
+          <h1>IDC HARNESS SETUP</h1>
+          <p>把团队工作方式接入 IDC harness，最终只生成一个 <code>team-config.yaml</code></p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <label class="button secondary" for="yamlFile">导入 YAML</label>
+        <input id="yamlFile" type="file" accept=".yaml,.yml,text/yaml" hidden />
+        <button class="button secondary" id="resetBtn" type="button">恢复示例</button>
+        <button class="button primary" id="downloadBtn" type="button">下载 team-config.yaml</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar">
+        <div class="team-summary">
+          <span class="eyebrow">CURRENT TEAM</span>
+          <strong id="teamSummary">new-team</strong>
+          <span id="domainSummary">General Domain</span>
+        </div>
+        <nav id="sectionNav" aria-label="配置分区"></nav>
+        <div class="sidebar-note">
+          <strong>唯一配置源</strong>
+          <span>页面不会生成另一套运行时协议。Harness 仍然读取 team-config.yaml。</span>
+        </div>
+      </aside>
+
+      <section class="editor-shell">
+        <div class="editor-head">
+          <div>
+            <span class="eyebrow" id="sectionEyebrow">01 / SETUP</span>
+            <h2 id="sectionTitle">团队与领域</h2>
+            <p id="sectionDescription"></p>
+          </div>
+          <div class="status-cluster">
+            <span class="status neutral" id="saveStatus">草稿已保存</span>
+            <span class="status good" id="validationBadge">Ready</span>
+          </div>
+        </div>
+        <div class="editor-content" id="editorContent"></div>
+        <div class="wizard-bar" id="wizardBar"></div>
+      </section>
+
+      <aside class="yaml-panel">
+        <div class="yaml-head">
+          <div>
+            <span class="eyebrow">GENERATED OUTPUT</span>
+            <h2>team-config.yaml</h2>
+          </div>
+          <button class="icon-button" id="copyBtn" type="button" title="复制 YAML" aria-label="复制 YAML">Copy</button>
+        </div>
+        <pre id="yamlOutput" tabindex="0"></pre>
+        <div class="validation-panel">
+          <div class="validation-head">
+            <strong>配置检查</strong>
+            <span id="checkCount">0 checks</span>
+          </div>
+          <div id="validationList"></div>
+        </div>
+        <div class="resolver-note">
+          <strong>真实生效前</strong>
+          <code>python3 .claude/skills/idc-team-config/scripts/resolve_team_config.py --config team-config.yaml --check</code>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="./script.js?v=13"></script>
+</body>
+</html>

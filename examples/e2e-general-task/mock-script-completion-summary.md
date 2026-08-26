@@ -11,7 +11,7 @@ Status: DONE
 ## 执行单元
 
 - EU-GEN-SCRIPT-001 — component: GENERAL_COMPONENT_PLACEHOLDER
-- 产出文件全部位于 `examples/e2e-general-task/`，未触碰 `.claude/skills/id-workflow/references/domains/d3a/`。
+- 产出文件全部位于 `examples/e2e-general-task/`，未触碰 `.claude/skills/idc-workflow/references/domains/d3a/`。
 - 未覆盖任何 GENERAL-MOCK-001 已有 fixture 文件。
 
 ## 验证证据

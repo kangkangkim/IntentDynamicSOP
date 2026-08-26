@@ -11,6 +11,10 @@ IDC Workflow Router = 根据输入和状态选择普通生命周期流程
 Official Dynamic Workflow = 大规模、脚本化、可复跑的 subagent 编排
 ```
 
+任何 repository mutation 都必须经过 Execution Authorization Gate。Fast 和
+Lite 也不允许 main agent 直接实现；无法调用 delegation tool 时返回
+`BLOCKED_DELEGATION_REQUIRED`。
+
 main agent 长期持有：
 
 - 用户意图。
@@ -54,8 +58,8 @@ Coding Team
   -> dt-test-writer
 
 Verification Team
-  -> dt-build
-  -> tran-build
+  -> idc-dt-build
+  -> idc-tran-build
   -> build-error-analyzer
   -> evidence summarizer
 ```
@@ -238,7 +242,10 @@ TR3 文档
 General Coding
   -> Planning Team
   -> Knowledge Team as needed
-  -> general-coder
+  -> Capability Selector
+  -> Execution Authorization Gate
+  -> general-coder loads idc-general-coding
+  -> selected GC atoms run inside general-coder
   -> Verification Team
 
 D3A Coding
@@ -246,7 +253,7 @@ D3A Coding
   -> Knowledge Team as needed
   -> d3a-layer-coder per Layer Context Packet
   -> dt-test-writer
-  -> tran-build
+  -> idc-tran-build
 
 失败修复
   -> build-error-analyzer
@@ -265,6 +272,9 @@ delegation_contract:
   selected_agents:
     - d3a-layer-coder
   main_agent_role: planning_and_delegation_only
+  domain_execution_skill_ref: .claude/skills/idc-d3a-coding/SKILL.md
+  capability_selection_ref: capability-selection-result
+  execution_authorization_request_ref: execution-authorization-request
   context_packet_ref: layer-context-packet-do
   expected_return:
     - summary
@@ -315,3 +325,5 @@ DONE 只能由 main agent 根据以下证据判断：
 - D3A required DT GREEN。
 - D3A `tran_build PASS`。
 - General required tests / build / static checks。
+- Execution Receipt 中的 authorization ID、dispatch tool-call ref、executor
+  session ref 和 loaded Domain execution Skill。

@@ -1,0 +1,92 @@
+schema: execution_authorization
+version: 1
+
+execution_authorization_request:
+  task_id: string
+  workflow_id: general_execution | d3a_execution | verification_fix | build_fix
+  selected_domain: general | d3a | string
+  selected_lane: fast | lite | complex | null
+  human_alignment_status: approved
+  approved_alignment_ref: ref
+  execution_unit_ref: ref
+  context_packet_ref: ref
+  capability_selection_ref: ref
+  capability_selection_status: READY
+  knowledge_load_plan_ref: ref
+  knowledge_load_plan_status: READY
+  knowledge_plan_id: sha256
+  domain_execution_skill_ref: skill_ref
+  selected_atomic_skill_refs: [] # optional assertion only; when supplied it must exactly equal the selection-derived list
+  delegation_contract_ref: ref
+  main_agent_role: planning_and_delegation_only
+  executor:
+    kind: subagent | agent_team | official_dynamic_workflow
+    agent_id: string
+  technical_plan_confirmation:
+    required: true | false
+    trigger_reason: d3a_fixed_workflow | lane=fast | lane=lite | lane=complex
+    confirmation_ref: ref
+    status: confirmed | not_required
+  allowed_paths: []
+  expected_outputs: []
+
+execution_authorization_result:
+  status: AUTHORIZED | BLOCKED_DELEGATION_REQUIRED | BLOCKED_INVALID_EXECUTOR | BLOCKED_PLAN_CONFIRMATION_REQUIRED
+  authorization_id: sha256 | null
+  execution_unit_ref: ref | null
+  selected_domain: general | d3a | string | null
+  selected_lane: fast | lite | complex | null
+  executor_kind: subagent | agent_team | official_dynamic_workflow | null
+  domain_execution_skill_ref: skill_ref | null
+  knowledge_load_plan_ref: ref | null
+  knowledge_plan_id: sha256 | null
+  technical_plan_confirmation: echo | null
+  capability_selection_ref: ref | null
+  capability_config_identity: {} | null
+  orchestration: {} | null
+  authorized_stage_skills:
+    - step_id: string | null
+      stage: string
+      capability_id: string
+      skill_ref: string
+      execution_order: integer
+  selected_atomic_skill_refs: []
+  allowed_paths: []
+  expected_outputs: []
+  errors: []
+
+execution_receipt:
+  authorization_id: sha256
+  dispatch_tool_call_ref: ref
+  executor_session_ref: ref
+  executor_kind: subagent | agent_team | official_dynamic_workflow
+  loaded_domain_execution_skill_ref: skill_ref
+  capability_selection_ref: ref
+  executed_stage_skills:
+    - step_id: string | null
+      stage: string
+      capability_id: string
+      skill_ref: string
+      execution_order: integer
+      status: completed | succeeded
+      evidence_refs: []
+  executed_atomic_skill_refs: []
+  knowledge_plan_id: sha256
+  knowledge_consumption_result_ref: ref
+  changed_paths: []
+  evidence_refs: []
+
+rules:
+  - Every repository mutation in IDC execution, verification, or fix states requires AUTHORIZED.
+  - technical_plan_confirmation.required is a framework floor and is always true for d3a and every lane (fast / lite / complex); it is not configurable through team-config.
+  - Every execution authorization request must carry technical_plan_confirmation with status=confirmed before dispatch; otherwise the gate returns BLOCKED_PLAN_CONFIRMATION_REQUIRED.
+  - technical_plan_confirmation.confirmation_ref must point to an on-disk plan artifact conforming to general-plan.schema.yaml or d3a-plan.schema.yaml; a missing file blocks authorization.
+  - If plan check finds the plan exceeds the approved Alignment Pack scope, return NEEDS_RE_ALIGNMENT back to Human Alignment instead of confirming in-gate.
+  - main_agent is never a valid executor, including Fast and Lite.
+  - General execution loads idc-general-coding as the outer execution protocol.
+  - GC SOP adapters are inner selected atomic abilities and cannot replace the Domain execution skill.
+  - Execution authorization requires a READY Knowledge Load Plan for the same execution unit and Domain.
+  - Completion requires VERIFIED knowledge consumption bound to the authorized knowledge_plan_id.
+  - Completion requires an execution receipt tied to the authorization and dispatch tool call.
+  - Authorization derives selected_atomic_skill_refs and authorized_stage_skills from capability_selection_ref; callers cannot weaken or reorder them.
+  - Fast, Lite, and Complex ordered lanes use the same authorization rule and exact ordered Skill list.

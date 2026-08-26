@@ -1,0 +1,12 @@
+config_version: 1
+
+team:
+  id: minimal-general-team
+  repo_path: .
+
+domain:
+  mode: general
+
+# Add only the capabilities this team can actually execute. The full template
+# documents all fixed slots; teams do not need to copy null bindings here.
+bindings: {}

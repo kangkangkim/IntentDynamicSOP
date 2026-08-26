@@ -1,0 +1,41 @@
+domain_module:
+  id: general
+  name: General Coding
+  status: active
+  route:
+    route_id: GENERAL_CODING
+    trigger_rules:
+      - 任务不属于已注册专用 domain module。
+      - 用户明确要求普通 coding / general coding。
+      - 输入包含通用 feature、bugfix、refactor、documentation 需求。
+    fallback: GENERAL_CODING
+  lane_policy:
+    mode: dynamic
+    resolver: workflows/lane-resolver.md
+  registries:
+    # Both are repo defaults; non-empty team-config.yaml general.components /
+    # general.test_domains replace them wholesale (never merge).
+    coding_layers: registries/general-components.yaml
+    test_domains: registries/general-test-domains.yaml
+  workflow:
+    entrypoint: workflows/general-coding.md
+    requirement_assessor: workflows/requirement-assessor.md
+    planner_schema: schemas/general-plan.schema.yaml
+    tdd_state_machine: workflows/tdd-state-machine.md
+    completion_gate:
+      - required_tests_or_builds_pass
+      - coverage_evidence_or_exemption
+    required_contracts:
+      - task_contract
+      - verification_contract
+  knowledge:
+    root: knowledge/general
+    loading_policy: progressive
+  execution:
+    agents:
+      - agents/general-coder.md
+      - agents/build-error-analyzer.md
+    skills:
+      - skills/idc-general-coding/SKILL.md
+  examples:
+    - examples/e2e-general-task

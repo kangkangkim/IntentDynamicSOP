@@ -1,0 +1,66 @@
+normalized_request:
+  input_type: natural_language_intent | tr3_design_doc
+  input_maturity: raw_idea | structured_requirement | tr3_design_doc
+  source_ref: string
+  extracted_requirement: string
+  extracted_api_semantics: string
+  extracted_dt_design: string
+  extracted_acceptance: []
+  explicit_domain_hints: []
+  open_questions: []
+
+classification:
+  domain_candidates: []
+  change_type: new_capability | behavior_change | bugfix | refactor | documentation | unknown
+  change_shape: single_unit_change | cross_layer_change | shotgun_change | unknown
+  lane_signals:
+    critical_ambiguity: true | false | unknown
+    high_risk: true | false | unknown
+    cross_module_or_layer_impact: true | false | unknown
+    api_semantic_change: true | false | unknown
+    state_machine_or_concurrency_or_security_or_performance: true | false | unknown
+    data_migration: true | false | unknown
+    needs_dependency_dag: true | false | unknown
+    needs_multiple_subagents: true | false | unknown
+    multiple_test_domains: true | false | unknown
+    high_failure_impact: true | false | unknown
+    production_code_change: true | false | unknown
+    behavior_change: true | false | unknown
+    new_capability: true | false | unknown
+    bugfix_or_refactor: true | false | unknown
+    behavior_contract_change: true | false | unknown
+    new_or_changed_test_required: true | false | unknown
+    multi_file_or_multi_component_change: true | false | unknown
+    focused_design_required: true | false | unknown
+    broad_repo_exploration_required: true | false | unknown
+    affected_scope_unknown: true | false | unknown
+    goal_clear: true | false | unknown
+    tiny_scope: true | false | unknown
+    low_risk: true | false | unknown
+    no_behavior_contract_change: true | false | unknown
+    no_core_logic_change: true | false | unknown
+    no_cross_module_impact: true | false | unknown
+    no_new_test_required: true | false | unknown
+    existing_verification_available: true | false | unknown
+    simple_verification: true | false | unknown
+    localized_change: true | false | unknown
+    fast_scope_evidence_present: true | false | unknown
+  lane_signal_evidence: {}
+  missing_information: []
+  next_pre_alignment_step: Discovery Provider | Clarification Provider
+
+rules:
+  - TR3 是高级输入源，不是 completion evidence。
+  - raw_idea 必须先进入 Discovery Provider。
+  - structured_requirement 默认进入 Clarification Provider。
+  - tr3_design_doc 默认跳过 Discovery Provider。
+  - TR3 可以减少澄清和 contract 生成成本，但不能替代 RED/GREEN/build evidence。
+  - Input Adapter 只抽取事实和分类信号，不执行 planner。
+  - Lane signal 未提及或未经事实确认时必须为 unknown，不能默认 false。
+  - Fast conditions 只有显式 true 且 lane_signal_evidence 可追溯时才算满足。
+  - 极小、局部、低风险、无需新增测试代码且已有验证可闭环的 production code 修改可以为 fast。
+  - new capability、behavior contract change、需要新增/修改测试、多个相关文件/组件、focused design 或 broad repo exploration 的任务至少为 lite。
+  - no_new_test_required 必须有事实依据，不能从用户未要求测试推断；Fast 仍需执行已有验证。
+  - Domain Resolver 根据 domain_candidates 和 module trigger_rules 选择 module。
+  - Domain hint 不改变 maturity route；D3A raw_idea 仍须 Discovery/Brainstorming，D3A critical gaps 仍须 Clarification Provider。
+  - Lane Resolver 根据 lane_signals 选择 fast/lite/complex。

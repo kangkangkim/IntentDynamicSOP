@@ -1,0 +1,11 @@
+capability_demand:
+  execution_unit_ref: fast-unit
+  selected_stage: implementation
+  selected_domain: general
+  lane_applicability: applicable
+  selected_lane: fast
+  execution_profile: lane_driven
+  required_capability_keys: []
+  optional_capability_keys: [coding_standard, red_green_execution]
+  observed_signals: [production_code_change, implementation_required]
+  contract_refs: [task_contract]

@@ -13,6 +13,23 @@ d3a_plan:
       required_dt_domains: [TPRINT, FW]
     DRV:
       required_dt_domains: [FW]
+  knowledge_requirements:
+    DO: [layer_rules, api_contract, repo_anchors]
+    TFE: [layer_rules, dependency_contracts, repo_anchors]
+    DRV: [layer_rules, dt_constraints, repo_anchors]
+  layer_context_packets:
+    - coding_layer: DO
+      knowledge_refs: [knowledge/d3a/layers/DO.md]
+      required_dt_domains: [TPRINT]
+      execution_unit_refs: [do-unit-1]
+    - coding_layer: TFE
+      knowledge_refs: [knowledge/d3a/layers/TFE.md]
+      required_dt_domains: [TPRINT, FW]
+      execution_unit_refs: [tfe-unit-1]
+    - coding_layer: DRV
+      knowledge_refs: [knowledge/d3a/layers/DRV.md]
+      required_dt_domains: [FW]
+      execution_unit_refs: [drv-unit-1]
   execution_strategy: Serial
   execution_units:
     - id: do-unit-1

@@ -4,19 +4,16 @@ domain_resolution:
   reason: TR3 显式包含 D3A layer 和 DT domain。
 
 lane_decision:
-  selected_lane: complex
-  hard_triggers:
-    - api_semantic_change
-    - cross_module_or_layer_impact
-    - multiple_test_domains
-    - needs_dependency_dag
-  fast_disqualified_by:
-    - no_behavior_contract_change
-    - no_cross_module_impact
-    - no_new_test_required
-  decision_rule: hard_trigger
+  applicability: not_applicable
+  selected_lane: null
+  execution_profile: d3a_fixed_workflow
+  source: domains/d3a/module.yaml
+  policy_mode: not_applicable
+  lane_resolver_bypassed: true
+  hard_triggers: []
+  fast_disqualified_by: []
+  decision_rule: domain_workflow_owns_execution
   confidence: high
   reasons:
-    - TR3 描述新增 API 行为。
-    - 影响多个 D3A Layer。
-    - 涉及多个 DT Domain。
+    - D3A 是用户设计的固定范式场景，Lane 分类不适用。
+    - TR3 风险信号用于 D3A 内部 planning，不用于选择 Lane。

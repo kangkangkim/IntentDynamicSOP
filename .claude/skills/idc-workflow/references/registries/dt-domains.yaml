@@ -1,0 +1,7 @@
+domains:
+  - id: TPRINT
+    knowledge_file: .claude/skills/idc-workflow/references/knowledge/d3a/dt/TPRINT.md
+  - id: FW
+    knowledge_file: .claude/skills/idc-workflow/references/knowledge/d3a/dt/FW.md
+  - id: DPF
+    knowledge_file: .claude/skills/idc-workflow/references/knowledge/d3a/dt/DPF.md

@@ -20,7 +20,7 @@ Verification contract:
 - 需要 completion summary。
 Scope:
 - in scope: examples/e2e-general-task/
-- out of scope: .claude/skills/id-workflow/references/domains/d3a/
+- out of scope: .claude/skills/idc-workflow/references/domains/d3a/
 ```
 
 ## Expected route

@@ -1,0 +1,9 @@
+coverage:
+  id: general-coverage
+  domain: GENERAL_TEST_PLACEHOLDER
+  status: COVERED
+  measure: simplified
+  scope: changed_files
+  summary: "Mock simplified coverage: changed mock files are fully exercised by GREEN tests."
+  tool_ref: <ENTERPRISE_COVERAGE_TOOL_PLACEHOLDER>
+  log_ref: <ENTERPRISE_PLACEHOLDER>

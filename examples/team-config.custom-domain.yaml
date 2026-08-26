@@ -1,0 +1,65 @@
+config_version: 1
+team:
+  id: custom-domain-self-test
+  repo_path: .
+domain:
+  mode: custom
+  d3a:
+    dt_domains: []
+  custom:
+    id: demo-payment
+    trigger_rules: [payment_change]
+    lane_policy:
+      mode: dynamic
+      selected_lane: null
+    coding_layers:
+      - id: PAYMENT_API
+        knowledge_ref: docs/architecture.md
+    test_domains:
+      - id: PAYMENT_TEST
+        knowledge_ref: docs/deep-dive/lane-and-completion.md
+    required_contracts: [task_contract, verification_contract]
+    workflow_skill_ref: .claude/skills/idc-general-coding/SKILL.md
+    planner_skill_ref: .claude/skills/idc-general-coding/SKILL.md
+    completion_skill_ref: .claude/skills/idc-general-coding/SKILL.md
+general:
+  components: []
+  test_domains: []
+bindings: {}
+adapter_extensions: []
+knowledge:
+  architecture_doc_ref: docs/architecture.md
+  feature_docs_root_ref: docs
+  layer_docs: {}
+  verification_mapping_ref: null
+  repo_context:
+    provider_skill_ref: null
+    policy_ref: null
+    fallback: bounded_grep
+lane:
+  default: lite
+  profiles:
+    fast:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+    lite:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+    complex:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+capability_selection:
+  mode: autonomous_minimal_sufficient
+  lane_profiles:
+    fast: {max_optional_skills: 1}
+    lite: {max_optional_skills: 3}
+    complex: {max_optional_skills: null}
+  d3a_profile: {max_optional_skills: null}
+  require_selected_and_skipped_reasons: true
+self_optimization:
+  mode: disabled
+  event_store_ref: null
+  replay_cases_ref: null
+  team_overlay_ref: null
+  promotion_requires_human_alignment: true
+  auto_modify_core: false

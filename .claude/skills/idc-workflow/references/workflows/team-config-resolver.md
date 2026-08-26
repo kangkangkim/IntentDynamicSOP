@@ -1,0 +1,118 @@
+# Team Config Resolver
+
+Team Config Resolver turns the single team-authored `team-config.yaml` into a
+validated, read-only `.idc/effective-team-config.yaml`.
+
+`idc-workflow` must call `idc-team-config/scripts/prepare_runtime.py` before
+request routing. The preflight regenerates effective config atomically on every
+invocation and records `source_sha256`; stale generated state is never trusted.
+
+```text
+team-config.yaml
+  -> schema validation
+  -> prohibited command-key check
+  -> skill/ref resolution
+  -> Domain materialization
+  -> registry replacement
+  -> adapter-extension composition
+  -> Lane skill-policy and orchestration validation
+  -> capability-selection profile materialization
+  -> Knowledge binding
+  -> self-optimization policy check
+  -> readiness result
+  -> .idc/effective-team-config.yaml
+```
+
+## Domain materialization
+
+- `domain.enabled` declares every Domain this team can route to. Missing
+  `enabled` preserves legacy single-domain behavior using only `domain.mode`.
+- `domain.mode` is the default/fallback and must be included in `enabled`.
+- A single-domain `enabled` set (e.g. `enabled: [d3a]`) means the team can route
+  to that Domain only: a task that does not match its trigger rules is never
+  forced into that workflow, but it also cannot route to General Coding — it
+  stops at the `plan_context` domain gate. Teams that take both D3A and general
+  tasks must list `general` in `domain.enabled`.
+- enabled `d3a` materializes the built-in D3A module. Non-empty DT domains replace the
+  default DT registry wholesale.
+- enabled `general` materializes the built-in General module. Non-empty component and
+  test-domain lists replace their defaults wholesale.
+- enabled `custom` creates an effective Domain Module from `domain.custom`; the
+  team does not edit `domains/registry.yaml` or create another config file.
+- Enabled `d3a` and `general` must be registered `status: active` in the
+  shared domain module registry (`domains/registry.yaml`; overridable with the
+  resolver's `--registry PATH`). An unregistered enabled mode fails with
+  `domain.mode <mode> is not registered in the domain module registry; register
+  it or switch domain.mode`. `custom` is exempt: it registers inline via
+  `domain.custom`.
+
+## Adapter materialization
+
+The shared adapter registry remains the Core eligibility baseline. Resolver:
+
+1. Binds its known capability rows from `bindings.*.skill_ref`.
+2. Appends validated `adapter_extensions` for team-specific GC atoms and
+   original-repository skills.
+3. Rejects extensions that attempt to own Domain, Lane, Contract Gate, Human
+   Alignment, or Completion Gate.
+4. Runs registration conflict audit. Two Skills that overlap on capability key,
+   stage, Lane/profile, and trigger are rejected unless the extension declares
+   `composes_with` or `supersedes`.
+
+The runtime router reads only the effective adapter set; no second team-authored
+binding source exists.
+
+Bindings only declare availability. `workflows/capability-selector.md` decides
+which bound capabilities run for each stage and execution unit.
+
+`composes_with` means both abilities may be selected. `supersedes` means the
+eligible extension removes the listed capability before selection. Domain
+execution and orchestration Skills cannot be registered as atomic extensions.
+
+## Lane materialization
+
+Each `lane.profiles.fast|lite|complex` block is validated against the effective
+capability pool. Resolver rejects unknown or unbound Skill IDs, Lane-ineligible
+references, ordered orchestration without steps, and steps that place a Skill in
+an unsupported stage. The validated profile is copied into effective config and
+is consumed directly by Capability Selector; it is never treated as a comment.
+
+`domain.d3a.orchestration` and `domain.custom.orchestration` use the same step
+contract. Ordered Domain steps must resolve to available, stage-compatible
+capability IDs and are materialized into the selected Domain module. Missing
+configuration keeps `framework_default` for D3A and `workflow_skill` for Custom.
+
+## Knowledge materialization
+
+Every configured knowledge field has one consumer:
+
+| Field | Consumer |
+|---|---|
+| `architecture_doc_ref` | Planner and Knowledge Gate |
+| `feature_docs_root_ref` | Discovery and Knowledge Gate |
+| `layer_docs` | Layer/Component Context Packet builder |
+| `lane_docs.<lane>` | General Knowledge Planner for the selected Lane only |
+| `verification_mapping_ref` | Planner and Verification Mapping Gate |
+| `repo_context.provider_skill_ref` | Repo Context Provider |
+| `repo_context.policy_ref` | Provider Selection Matrix overlay |
+
+## Failure behavior
+
+Return `NEEDS_TEAM_CONFIG` with field-level errors. Do not fall back to a second
+team binding file, edit shared registries, or guess a missing enterprise fact.
+
+## Portable references
+
+- Absolute Skill paths remain absolute.
+- `team://path` resolves from `team.repo_path`.
+- `harness://path` resolves from the IDC Core root.
+- Plain relative paths try `team.repo_path` first, then IDC Core for built-in
+  skills.
+- Effective config stores resolved absolute file paths so later routers do not
+  depend on the process working directory.
+
+## Ownership
+
+`team-config.yaml` is authored. `.idc/effective-team-config.yaml` is generated.
+Team overlays proposed by self-optimization remain proposals until Human
+Alignment approves promotion; they never mutate the source config automatically.
