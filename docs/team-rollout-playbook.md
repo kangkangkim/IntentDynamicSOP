@@ -5,9 +5,13 @@
 ## 最小接入
 
 ```yaml
-config_version: 1
+config_version: 2
 team: {id: payment-team, repo_path: /repos/payment}
-domain: {mode: general}
+domains:
+  enabled: [general]
+  default: general
+  definitions:
+    general: {pack_ref: harness://.claude/skills/idc-workflow/references/domains/general/domain-pack.yaml}
 bindings: {}
 ```
 
@@ -25,6 +29,9 @@ Preflight 还会把每个 Lane step 和 required Skill 送入真实 Capability S
 3. **Level 3 - Domain**：选择 D3A，或在同一 YAML 内定义 Custom Domain、知识索引和 completion skills。
 
 每一级都仍然只有一个团队配置文件；未启用能力不需要填 `null` 槽位。
+
+字段与运行细节以 [Team Config v2](../.claude/skills/idc-team-config/references/team-config-v2.md)
+和 [Runtime lifecycle](../.claude/skills/idc-team-config/references/runtime-lifecycle.md) 为准。
 
 ## 可移植路径
 

@@ -209,6 +209,46 @@ def assert_true(condition, message):
         raise AssertionError(message)
 
 
+def find_d3a_runtime_asset_leaks(runtime):
+    """Return behavioral D3A references without treating digest bytes as assets."""
+    leaks = []
+    domains = runtime.get("domains") or {}
+    enabled = domains.get("enabled") or runtime.get("enabled_domains") or []
+    modules = domains.get("modules") or {}
+    if "d3a" in enabled:
+        leaks.append("domains.enabled:d3a")
+    if "d3a" in modules:
+        leaks.append("domains.modules:d3a")
+
+    def visit(value, location):
+        if isinstance(value, dict):
+            for key, child in value.items():
+                child_location = f"{location}.{key}" if location else str(key)
+                normalized_key = str(key).lower()
+                if normalized_key.endswith(("sha256", "_hash", "_digest")):
+                    continue
+                if normalized_key == "runtime_dependency_files":
+                    for dependency_path in child if isinstance(child, dict) else []:
+                        if "d3a" in str(dependency_path).lower():
+                            leaks.append(f"{child_location}:{dependency_path}")
+                    continue
+                visit(child, child_location)
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                visit(child, f"{location}[{index}]")
+        elif isinstance(value, str) and "d3a" in value.lower():
+            leaks.append(f"{location}:{value}")
+
+    # These are the effective runtime's behavioral module/asset surfaces. Team
+    # identity and source-file metadata are deliberately outside this scope.
+    for field in ["domain", "domains", "knowledge_catalog", "available_capabilities"]:
+        visit(runtime.get(field), field)
+    for dependency_path in (runtime.get("runtime_dependency_files") or {}):
+        if "d3a" in str(dependency_path).lower():
+            leaks.append(f"runtime_dependency_files:{dependency_path}")
+    return sorted(set(leaks))
+
+
 def test_registry_files_match_fixed_architecture():
     layers = extract_registry_ids(".claude/skills/idc-workflow/references/registries/d3a-layers.yaml")
     domains = extract_registry_ids(".claude/skills/idc-workflow/references/registries/dt-domains.yaml")
@@ -2075,12 +2115,15 @@ def test_user_questions_must_use_ask_user_tool():
         ".claude/skills/idc-intent-alignment/SKILL.md",
     ]
 
-    assert_true("所有问用户的问题" in claude and "AskUserTool" in claude, "CLAUDE.md 必须声明 AskUserTool 统一提问约束。")
+    assert_true("所有用户问题" in claude and "结构化确认工具" in claude, "CLAUDE.md 必须声明宿主结构化确认优先约束。")
+    assert_true("Codex Default" in claude and "approval record" in claude, "CLAUDE.md 必须保留 Codex Default 文本批准与落盘约束。")
     assert_true("AskUserTool Policy" in policy, "必须存在 AskUserTool policy。")
     assert_true("BLOCKED_NEEDS_ASK_USER_TOOL" in policy, "AskUserTool 不可用时必须阻塞。")
     assert_true("AskUserQuestion" in policy and "宿主工具名映射" in policy, "AskUserTool policy 必须提供宿主工具名映射，不得按字面名找不到就阻塞。")
     assert_true("references/workflows/ask-user-tool-policy.md" in id_workflow, "idc-workflow 必须加载 AskUserTool policy。")
-    assert_true("do not ask the user by plain text" in id_workflow, "idc-workflow 必须禁止普通文本追问。")
+    assert_true("prefer a structured host" in id_workflow, "idc-workflow 必须优先使用结构化宿主确认工具。")
+    assert_true("explicit user text approval" in id_workflow, "Codex Default 必须保留无结构化工具时的显式文本批准 fallback。")
+    assert_true("真实用户消息" in policy and "approval record" in policy, "文本批准必须来自真实用户并落盘 approval record。")
 
     for file_name in files:
         text = read_text(file_name)
@@ -5847,6 +5890,2398 @@ def test_ordered_lane_selection_authorization_and_completion_are_enforced():
         assert_true(failed_result.returncode == 4 and "did not succeed" in failed_result.stdout, "skill 失败必须阻断 Completion。")
 
 
+def test_d3a_only_runtime_marks_all_lane_profiles_unreachable():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config_path = Path(temp_dir) / "team-config.yaml"
+        config_path.write_text(
+            """config_version: 1
+team:
+  id: reachability-placeholder-team
+  repo_path: .
+domain:
+  enabled: [d3a]
+  mode: d3a
+bindings: {}
+lane:
+  default: lite
+  profiles:
+    fast:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+    lite:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+    complex:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+""",
+            encoding="utf-8",
+        )
+        effective_path = Path(temp_dir) / "effective.yaml"
+        resolved = subprocess.run(
+            ["python3", str(resolver), "--config", str(config_path), "--output", str(effective_path)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(resolved.returncode == 0, f"D3A-only fixture 应先成功编译：{resolved.stderr}")
+        effective = yaml.safe_load(effective_path.read_text(encoding="utf-8")) or {}
+        runtime = effective.get("effective_runtime") or effective
+        diagnostics = runtime.get("diagnostics") or []
+        unreachable_paths = {
+            item.get("path")
+            for item in diagnostics
+            if isinstance(item, dict) and item.get("status") == "UNREACHABLE"
+        }
+        expected_paths = {f"lane.profiles.{lane}" for lane in ["fast", "lite", "complex"]}
+        assert_true(
+            expected_paths <= unreachable_paths,
+            f"仅启用 lane-not-applicable Domain 时三个 Lane 必须标记 UNREACHABLE：{diagnostics}",
+        )
+
+
+def test_completion_graph_rejects_ordered_node_omission_and_reorder():
+    verifier = ROOT / ".claude/skills/idc-team-config/scripts/verify_completion.py"
+    nodes = [
+        {"node_id": "design", "execution_order": 1},
+        {"node_id": "coding", "execution_order": 2},
+        {"node_id": "verify", "execution_order": 3},
+    ]
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        graph_path = temp / "run-graph.yaml"
+        graph_path.write_text(
+            yaml.safe_dump({"run_graph": {
+                "status": "READY",
+                "graph_id": "ordered-placeholder-graph",
+                "config_sha256": "placeholder-config-sha256",
+                "graph_sha256": "placeholder-graph-sha256",
+                "selected_domain": "general",
+                "selected_lane": "lite",
+                "nodes": nodes,
+                "edges": [
+                    {"from": "design", "to": "coding"},
+                    {"from": "coding", "to": "verify"},
+                ],
+            }}, sort_keys=False),
+            encoding="utf-8",
+        )
+        authorization_path = temp / "authorization.yaml"
+        authorization_path.write_text(
+            yaml.safe_dump({"execution_authorization_result": {
+                "status": "AUTHORIZED",
+                "authorization_id": "placeholder-authorization",
+                "execution_unit_ref": "ordered-placeholder-unit",
+                "selected_domain": "general",
+                "selected_lane": "lite",
+                "run_graph_ref": str(graph_path),
+                "graph_sha256": "placeholder-graph-sha256",
+                "allowed_paths": ["src/placeholder"],
+            }}, sort_keys=False),
+            encoding="utf-8",
+        )
+        knowledge_path = temp / "knowledge.yaml"
+        knowledge_path.write_text(
+            yaml.safe_dump({"knowledge_consumption_result": {
+                "status": "VERIFIED",
+                "knowledge_plan_id": "placeholder-knowledge-plan",
+                "execution_unit_ref": "ordered-placeholder-unit",
+            }}, sort_keys=False),
+            encoding="utf-8",
+        )
+
+        observed = {}
+        for case_name, executed_nodes in {
+            "omitted": [nodes[0], nodes[2]],
+            "reordered": [nodes[1], nodes[0], nodes[2]],
+        }.items():
+            receipt = {
+                "run_id": "placeholder-run",
+                "graph_sha256": "placeholder-graph-sha256",
+                "authorization_id": "placeholder-authorization",
+                "dispatch_tool_call_ref": "placeholder-dispatch",
+                "executor_session_ref": "placeholder-session",
+                "executed_nodes": executed_nodes,
+                "evidence_refs": ["placeholder-evidence"],
+            }
+            request_path = temp / f"completion-{case_name}.yaml"
+            request_path.write_text(
+                yaml.safe_dump({"completion_verification_request": {
+                    "task_id": "ordered-placeholder-task",
+                    "selected_domain": "general",
+                    "selected_lane": "lite",
+                    "execution_unit_ref": "ordered-placeholder-unit",
+                    "authorization_result_ref": str(authorization_path),
+                    "run_graph_ref": str(graph_path),
+                    "knowledge_consumption_result_ref": str(knowledge_path),
+                    "execution_receipt": receipt,
+                    "predicate_results": [{"id": "placeholder-predicate", "status": "PASS"}],
+                }}, sort_keys=False),
+                encoding="utf-8",
+            )
+            completed = subprocess.run(
+                ["python3", str(verifier), "--request", str(request_path)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            output = yaml.safe_load(completed.stdout) or {}
+            observed[case_name] = output.get("completion_result") or output.get("completion_verification_result") or {}
+
+        omission_blocked = (
+            observed["omitted"].get("status") == "BLOCKED"
+            and observed["omitted"].get("graph_match") == "FAIL"
+            and observed["omitted"].get("order_match") == "FAIL"
+        )
+        reorder_blocked = (
+            observed["reordered"].get("status") == "BLOCKED"
+            and observed["reordered"].get("graph_match") == "PASS"
+            and observed["reordered"].get("order_match") == "FAIL"
+        )
+        assert_true(
+            omission_blocked and reorder_blocked,
+            "ordered graph 漏节点或换序必须按通用 completion contract 阻断："
+            f"omitted={observed['omitted']}; reordered={observed['reordered']}",
+        )
+
+
+def test_general_only_effective_runtime_contains_no_d3a_runtime_assets():
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config_path = Path(temp_dir) / "team-config.yaml"
+        config_path.write_text(
+            """config_version: 1
+team:
+  id: general-only-placeholder-team
+  repo_path: .
+domain:
+  enabled: [general]
+  mode: general
+general:
+  components: []
+  test_domains: []
+bindings: {}
+""",
+            encoding="utf-8",
+        )
+        effective_path = Path(temp_dir) / "effective.yaml"
+        resolved = subprocess.run(
+            ["python3", str(resolver), "--config", str(config_path), "--output", str(effective_path)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        assert_true(resolved.returncode == 0, f"general-only fixture 应成功编译：{resolved.stderr}")
+        effective = yaml.safe_load(effective_path.read_text(encoding="utf-8")) or {}
+        runtime = effective.get("effective_runtime") or effective
+        leaked = find_d3a_runtime_asset_leaks(runtime)
+        assert_true(
+            not leaked,
+            f"D3A 未启用时 effective runtime 不得物化 D3A workflow/Layer/DT 资产：{leaked}",
+        )
+
+
+def test_d3a_runtime_isolation_ignores_hash_metadata_but_detects_behavior_refs():
+    runtime = {
+        "source_sha256": "0000d3a00000",
+        "runtime_dependency_sha256": "1111d3a11111",
+        "runtime_dependency_files": {
+            "/placeholder/general/workflow-profile.yaml": "2222d3a22222",
+        },
+        "domain": {
+            "id": "placeholder_ops",
+            "workflow_profile_ref": "/placeholder/general/workflow-profile.yaml",
+        },
+        "domains": {
+            "enabled": ["placeholder_ops"],
+            "modules": {
+                "placeholder_ops": {
+                    "id": "placeholder_ops",
+                    "runtime_policy_sha256": "3333d3a33333",
+                    "workflow_profile_ref": "/placeholder/general/workflow-profile.yaml",
+                },
+            },
+        },
+    }
+    assert_true(
+        not find_d3a_runtime_asset_leaks(runtime),
+        "digest metadata containing d3a bytes must not create a runtime asset leak",
+    )
+    runtime["domains"]["modules"]["placeholder_ops"]["workflow_profile_ref"] = (
+        "/placeholder/domains/d3a/workflow-profile.yaml"
+    )
+    leaks = find_d3a_runtime_asset_leaks(runtime)
+    assert_true(
+        any("workflow_profile_ref" in leak for leak in leaks),
+        f"a real D3A asset reference must still be detected: {leaks}",
+    )
+
+
+def test_generic_runtime_contract_schemas_are_public_and_placeholder_safe():
+    schema_root = ROOT / ".claude/skills/idc-workflow/references/schemas"
+    contracts = {
+        "domain-pack.schema.yaml": {
+            "root": "domain_pack",
+            "required": [
+                "id",
+                "trigger_rules",
+                "lane_policy",
+                "workflow_profile_ref",
+                "capability_policy_ref",
+                "completion_predicate_ref",
+            ],
+            "placeholders": [
+                "<DOMAIN_ID>",
+                "<WORKFLOW_REF>",
+                "<CAPABILITY_POLICY_REF>",
+                "<COMPLETION_REF>",
+            ],
+        },
+        "workflow-graph.schema.yaml": {
+            "root": "workflow_graph",
+            "required": ["workflow_id", "nodes", "edges"],
+            "node_required": [
+                "node_id",
+                "execution_order",
+                "stage",
+                "skill_id",
+                "skill_ref",
+                "required",
+                "trigger_signals",
+            ],
+            "placeholders": ["<WORKFLOW_ID>", "<SKILL_ID>", "<SKILL_REF>"],
+        },
+        "execution-event.schema.yaml": {
+            "root": "execution_event",
+            "required": [
+                "run_id",
+                "sequence",
+                "previous_event_hash",
+                "graph_sha256",
+                "authorization_id",
+                "node_id",
+                "event_type",
+                "dispatch_tool_call_ref",
+                "executor_session_ref",
+                "evidence_refs",
+            ],
+            "placeholders": ["<RUN_ID>", "<NODE_ID>", "<EVIDENCE_REF>"],
+        },
+        "completion-predicate.schema.yaml": {
+            "root": "completion_predicate",
+            "required": ["predicate_id", "required", "evidence_refs", "status"],
+            "placeholders": ["<PREDICATE_ID>", "<EVIDENCE_REF>"],
+        },
+    }
+
+    missing = [name for name in contracts if not (schema_root / name).is_file()]
+    assert_true(not missing, f"generic runtime public schemas are missing: {missing}")
+
+    for name, contract in contracts.items():
+        path = schema_root / name
+        text = path.read_text(encoding="utf-8")
+        document = yaml.safe_load(text) or {}
+        assert_true(
+            document.get("schema") and document.get("version"),
+            f"{name} must declare stable schema and version metadata",
+        )
+        body = document.get(contract["root"])
+        assert_true(isinstance(body, dict), f"{name} must define {contract['root']}")
+        missing_fields = [field for field in contract["required"] if field not in body]
+        assert_true(not missing_fields, f"{name} contract fields missing: {missing_fields}")
+
+        node_required = contract.get("node_required") or []
+        if node_required:
+            nodes = body.get("nodes") or []
+            assert_true(nodes and isinstance(nodes[0], dict), f"{name} must define a node shape")
+            missing_node_fields = [field for field in node_required if field not in nodes[0]]
+            assert_true(
+                not missing_node_fields,
+                f"{name} node contract fields missing: {missing_node_fields}",
+            )
+
+        missing_placeholders = [
+            placeholder for placeholder in contract["placeholders"] if placeholder not in text
+        ]
+        assert_true(
+            not missing_placeholders,
+            f"{name} must remain enterprise-neutral with explicit placeholders: "
+            f"{missing_placeholders}",
+        )
+
+    execution_event_text = (
+        schema_root / "execution-event.schema.yaml"
+    ).read_text(encoding="utf-8")
+    for event_type in [
+        "NODE_READY",
+        "NODE_DISPATCHED",
+        "NODE_SUCCEEDED",
+        "NODE_FAILED",
+        "NODE_VERIFIED",
+    ]:
+        assert_true(event_type in execution_event_text, f"execution event enum missing {event_type}")
+
+
+def test_run_graph_compiler_is_deterministic_ordered_and_fail_closed():
+    compiler = ROOT / ".claude/skills/idc-team-config/scripts/compile_run_graph.py"
+    assert_true(compiler.is_file(), "compile_run_graph.py is required for deterministic Run Graphs")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        skill_ref = str(ROOT / ".claude/skills/idc-gc-sop-adapter/SKILL.md")
+        expected_skill_ids = ["design-placeholder", "coding-placeholder", "verify-placeholder"]
+        effective = {
+            "source_ref": "<TEAM_CONFIG_REF>",
+            "source_sha256": "placeholder-config-sha256",
+            "domains": {
+                "enabled": ["general"],
+                "default": "general",
+                "modules": {"general": {"lane_applicability": "applicable"}},
+            },
+            "lane": {
+                "default": "lite",
+                "profiles": {
+                    "lite": {
+                        "orchestration": {
+                            "mode": "ordered",
+                            "steps": [{
+                                "id": "ordered-placeholder-step",
+                                "stage": "implementation",
+                                "skill_ids": expected_skill_ids,
+                                "trigger_signals": [],
+                            }],
+                        }
+                    }
+                },
+            },
+            "available_capabilities": [
+                {
+                    "id": skill_id,
+                    "skill_ref": skill_ref,
+                    "allowed_stages": ["implementation"],
+                    "eligible_lanes": ["lite"],
+                    "trigger_signals": ["placeholder_signal"],
+                }
+                for skill_id in expected_skill_ids
+            ],
+        }
+        selection = {
+            "capability_selection_result": {
+                "status": "READY",
+                "execution_unit_ref": "ordered-placeholder-unit",
+                "selected_domain": "general",
+                "selected_stage": "implementation",
+                "config_identity": {
+                    "source_ref": "<TEAM_CONFIG_REF>",
+                    "source_sha256": "placeholder-config-sha256",
+                    "orchestration_sha256": "placeholder-orchestration-sha256",
+                },
+                "orchestration": {"mode": "ordered"},
+                "ordered_execution": [
+                    {
+                        "step_id": "ordered-placeholder-step",
+                        "stage": "implementation",
+                        "capability_id": skill_id,
+                        "skill_ref": skill_ref,
+                        "execution_order": index,
+                    }
+                    for index, skill_id in enumerate(expected_skill_ids, start=1)
+                ],
+            }
+        }
+        request = {
+            "run_graph_compile_request": {
+                "selected_domain": "general",
+                "selected_lane": "lite",
+                "observed_signals": [],
+            }
+        }
+
+        effective_path = temp / "effective.yaml"
+        selection_path = temp / "selection.yaml"
+        request_path = temp / "request.yaml"
+        effective_path.write_text(yaml.safe_dump(effective, sort_keys=False), encoding="utf-8")
+        selection_path.write_text(yaml.safe_dump(selection, sort_keys=False), encoding="utf-8")
+        request_path.write_text(yaml.safe_dump(request, sort_keys=False), encoding="utf-8")
+
+        def compile_case(name, request_ref=request_path, selection_ref=selection_path):
+            output_path = temp / f"{name}.yaml"
+            completed = subprocess.run(
+                [
+                    "python3",
+                    str(compiler),
+                    "--effective",
+                    str(effective_path),
+                    "--selection",
+                    str(selection_ref),
+                    "--request",
+                    str(request_ref),
+                    "--output",
+                    str(output_path),
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            document = yaml.safe_load(output_path.read_text(encoding="utf-8")) if output_path.is_file() else {}
+            return completed, (document or {}).get("run_graph") or {}
+
+        first_completed, first_graph = compile_case("first")
+        second_completed, second_graph = compile_case("second")
+        assert_true(
+            first_completed.returncode == 0 and second_completed.returncode == 0,
+            f"identical Run Graph inputs must compile: {first_completed.stderr}{second_completed.stderr}",
+        )
+        assert_true(first_graph == second_graph, "identical inputs must produce canonical graph semantics")
+        assert_true(first_graph.get("status") == "READY", f"compiled graph must be READY: {first_graph}")
+        assert_true(
+            re.fullmatch(r"[0-9a-f]{64}", str(first_graph.get("graph_sha256") or "")) is not None,
+            f"graph_sha256 must be a canonical SHA-256: {first_graph.get('graph_sha256')}",
+        )
+        observed_skill_ids = [node.get("skill_id") for node in first_graph.get("nodes") or []]
+        observed_orders = [node.get("execution_order") for node in first_graph.get("nodes") or []]
+        assert_true(
+            observed_skill_ids == expected_skill_ids and observed_orders == [1, 2, 3],
+            f"ordered Skill order must be preserved: {first_graph.get('nodes')}",
+        )
+
+        unknown_request = copy.deepcopy(request)
+        unknown_request["run_graph_compile_request"]["observed_signals"] = [
+            "unknown-placeholder-signal"
+        ]
+        unknown_path = temp / "unknown-request.yaml"
+        unknown_path.write_text(yaml.safe_dump(unknown_request, sort_keys=False), encoding="utf-8")
+        unknown_completed, unknown_graph = compile_case("unknown", request_ref=unknown_path)
+        unknown_text = f"{unknown_completed.stdout}\n{unknown_completed.stderr}".upper()
+        assert_true(
+            unknown_completed.returncode != 0
+            and unknown_graph.get("status") == "INVALID"
+            and "UNKNOWN_SIGNAL" in unknown_text,
+            f"unknown signals must fail closed with UNKNOWN_SIGNAL: {unknown_graph}; {unknown_text}",
+        )
+
+        drifted_selection = copy.deepcopy(selection)
+        drifted_selection["capability_selection_result"]["config_identity"][
+            "source_sha256"
+        ] = "different-placeholder-config-sha256"
+        drifted_selection_path = temp / "drifted-selection.yaml"
+        drifted_selection_path.write_text(
+            yaml.safe_dump(drifted_selection, sort_keys=False), encoding="utf-8"
+        )
+        drift_completed, drift_graph = compile_case(
+            "drift", selection_ref=drifted_selection_path
+        )
+        drift_text = f"{drift_completed.stdout}\n{drift_completed.stderr}".upper()
+        assert_true(
+            drift_completed.returncode != 0
+            and drift_graph.get("status") == "INVALID"
+            and "CONFIG_DRIFT" in drift_text,
+            f"config drift must fail closed with CONFIG_DRIFT: {drift_graph}; {drift_text}",
+        )
+
+
+def placeholder_ordered_run_graph():
+    nodes = [
+        {
+            "node_id": "0001-design-placeholder",
+            "execution_order": 1,
+            "stage": "implementation",
+            "skill_id": "design-placeholder",
+            "skill_ref": "<SKILL_REF>",
+            "required": True,
+            "trigger_signals": [],
+        },
+        {
+            "node_id": "0002-coding-placeholder",
+            "execution_order": 2,
+            "stage": "implementation",
+            "skill_id": "coding-placeholder",
+            "skill_ref": "<SKILL_REF>",
+            "required": True,
+            "trigger_signals": [],
+        },
+    ]
+    return {
+        "run_graph": {
+            "status": "READY",
+            "graph_id": "placeholder-event-ledger-graph",
+            "config_sha256": "placeholder-config-sha256",
+            "graph_sha256": "placeholder-graph-sha256",
+            "selected_domain": "general",
+            "selected_lane": "lite",
+            "nodes": nodes,
+            "edges": [{"from": nodes[0]["node_id"], "to": nodes[1]["node_id"]}],
+            "errors": [],
+        }
+    }
+
+
+def placeholder_node_events(node_id, prefix):
+    return [
+        {
+            "node_id": node_id,
+            "event_type": "NODE_DISPATCHED",
+            "idempotency_key": f"{prefix}-dispatch",
+            "dispatch_tool_call_ref": "<DISPATCH_TOOL_CALL_REF>",
+            "executor_session_ref": "<EXECUTOR_SESSION_REF>",
+            "evidence_refs": [],
+        },
+        {
+            "node_id": node_id,
+            "event_type": "NODE_SUCCEEDED",
+            "idempotency_key": f"{prefix}-success",
+            "dispatch_tool_call_ref": "<DISPATCH_TOOL_CALL_REF>",
+            "executor_session_ref": "<EXECUTOR_SESSION_REF>",
+            "evidence_refs": ["<EVIDENCE_REF>"],
+        },
+    ]
+
+
+def test_event_ledger_replay_is_deterministic_and_tamper_evident():
+    runtime = ROOT / ".claude/skills/idc-team-config/scripts/run_event_ledger.py"
+    assert_true(runtime.is_file(), "run_event_ledger.py is required for deterministic replay")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        graph = placeholder_ordered_run_graph()
+        graph_path = temp / "run-graph.yaml"
+        graph_path.write_text(yaml.safe_dump(graph, sort_keys=False), encoding="utf-8")
+        node_ids = [node["node_id"] for node in graph["run_graph"]["nodes"]]
+        events = (
+            placeholder_node_events(node_ids[0], "design-placeholder")
+            + placeholder_node_events(node_ids[1], "coding-placeholder")
+        )
+
+        def run_case(name, event_rows):
+            request_path = temp / f"{name}-request.yaml"
+            output_path = temp / f"{name}-result.yaml"
+            request_path.write_text(
+                yaml.safe_dump(
+                    {
+                        "event_ledger_request": {
+                            "run_id": "placeholder-run",
+                            "graph_sha256": "placeholder-graph-sha256",
+                            "authorization_id": "placeholder-authorization",
+                            "events": event_rows,
+                        }
+                    },
+                    sort_keys=False,
+                ),
+                encoding="utf-8",
+            )
+            completed = subprocess.run(
+                [
+                    "python3",
+                    str(runtime),
+                    "--graph",
+                    str(graph_path),
+                    "--request",
+                    str(request_path),
+                    "--output",
+                    str(output_path),
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            document = (
+                yaml.safe_load(output_path.read_text(encoding="utf-8"))
+                if output_path.is_file()
+                else {}
+            )
+            result = (document or {}).get("run_event_ledger_result") or {}
+            return completed, result
+
+        first_completed, first_result = run_case("first", events)
+        second_completed, second_result = run_case("second", events)
+        assert_true(
+            first_completed.returncode == 0 and second_completed.returncode == 0,
+            f"identical ledger replay must succeed: {first_completed.stderr}{second_completed.stderr}",
+        )
+        assert_true(
+            first_result.get("status") == "COMPLETE"
+            and first_result.get("state") == second_result.get("state")
+            and first_result.get("proof") == second_result.get("proof")
+            and first_result.get("ledger_hash") == second_result.get("ledger_hash"),
+            f"same graph/events must replay to identical state/proof/hash: "
+            f"first={first_result}; second={second_result}",
+        )
+        assert_true(
+            re.fullmatch(r"[0-9a-f]{64}", str(first_result.get("ledger_hash") or ""))
+            is not None,
+            f"ledger_hash must be canonical SHA-256: {first_result.get('ledger_hash')}",
+        )
+
+        persisted_events = copy.deepcopy(first_result.get("events") or [])
+        assert_true(len(persisted_events) == len(events), "successful replay must emit hashed events")
+        persisted_events[1]["evidence_refs"] = ["<TAMPERED_EVIDENCE_REF>"]
+        tampered_completed, tampered_result = run_case("tampered", persisted_events)
+        tampered_text = f"{tampered_completed.stdout}\n{tampered_completed.stderr}".upper()
+        assert_true(
+            tampered_completed.returncode != 0
+            and tampered_result.get("status") == "INVALID"
+            and "HASH_CHAIN_INVALID" in tampered_text,
+            f"historical event tampering must fail closed: {tampered_result}; {tampered_text}",
+        )
+
+
+def test_ordered_dispatch_and_idempotency_are_enforced():
+    runtime = ROOT / ".claude/skills/idc-team-config/scripts/run_event_ledger.py"
+    assert_true(runtime.is_file(), "run_event_ledger.py is required for ordered dispatch")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        graph = placeholder_ordered_run_graph()
+        graph_path = temp / "run-graph.yaml"
+        graph_path.write_text(yaml.safe_dump(graph, sort_keys=False), encoding="utf-8")
+        first_node, second_node = [node["node_id"] for node in graph["run_graph"]["nodes"]]
+
+        def dispatch_event(node_id, key):
+            return {
+                "node_id": node_id,
+                "event_type": "NODE_DISPATCHED",
+                "idempotency_key": key,
+                "dispatch_tool_call_ref": "<DISPATCH_TOOL_CALL_REF>",
+                "executor_session_ref": "<EXECUTOR_SESSION_REF>",
+                "evidence_refs": [],
+            }
+
+        def run_case(name, event_rows):
+            request_path = temp / f"{name}-request.yaml"
+            output_path = temp / f"{name}-result.yaml"
+            request_path.write_text(
+                yaml.safe_dump(
+                    {
+                        "event_ledger_request": {
+                            "run_id": "placeholder-run",
+                            "graph_sha256": "placeholder-graph-sha256",
+                            "authorization_id": "placeholder-authorization",
+                            "events": event_rows,
+                        }
+                    },
+                    sort_keys=False,
+                ),
+                encoding="utf-8",
+            )
+            completed = subprocess.run(
+                [
+                    "python3",
+                    str(runtime),
+                    "--graph",
+                    str(graph_path),
+                    "--request",
+                    str(request_path),
+                    "--output",
+                    str(output_path),
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            document = (
+                yaml.safe_load(output_path.read_text(encoding="utf-8"))
+                if output_path.is_file()
+                else {}
+            )
+            result = (document or {}).get("run_event_ledger_result") or {}
+            diagnostic_text = f"{completed.stdout}\n{completed.stderr}".upper()
+            return completed, result, diagnostic_text
+
+        out_of_order = [dispatch_event(second_node, "placeholder-out-of-order")]
+        blocked, blocked_result, blocked_text = run_case("out-of-order", out_of_order)
+        assert_true(
+            blocked.returncode != 0
+            and blocked_result.get("status") == "INVALID"
+            and "ORDER_VIOLATION" in blocked_text,
+            f"out-of-order dispatch must fail closed: {blocked_result}; {blocked_text}",
+        )
+
+        successor_early = [
+            dispatch_event(first_node, "placeholder-first-dispatch"),
+            dispatch_event(second_node, "placeholder-successor-dispatch"),
+        ]
+        early, early_result, early_text = run_case("successor-early", successor_early)
+        assert_true(
+            early.returncode != 0
+            and early_result.get("status") == "INVALID"
+            and "ORDER_VIOLATION" in early_text,
+            f"successor dispatch before current completion must fail closed: "
+            f"{early_result}; {early_text}",
+        )
+
+        original = dispatch_event(first_node, "placeholder-idempotency-key")
+        duplicate, duplicate_result, duplicate_text = run_case(
+            "duplicate", [original, copy.deepcopy(original)]
+        )
+        assert_true(
+            duplicate.returncode == 0
+            and duplicate_result.get("status") == "IN_PROGRESS"
+            and duplicate_result.get("applied_event_count") == 1
+            and duplicate_result.get("deduplicated_event_count") == 1,
+            f"same idempotency key/content must advance once: "
+            f"{duplicate_result}; {duplicate_text}",
+        )
+
+        conflicting = copy.deepcopy(original)
+        conflicting["event_type"] = "NODE_SUCCEEDED"
+        conflict, conflict_result, conflict_text = run_case(
+            "conflict", [original, conflicting]
+        )
+        assert_true(
+            conflict.returncode != 0
+            and conflict_result.get("status") == "INVALID"
+            and "IDEMPOTENCY_CONFLICT" in conflict_text,
+            f"same idempotency key with different content must fail closed: "
+            f"{conflict_result}; {conflict_text}",
+        )
+
+
+def placeholder_generic_completion_fixture(temp):
+    unit = "placeholder-generic-completion-unit"
+    authorization_id = "placeholder-generic-authorization"
+    knowledge_plan_id = "placeholder-generic-knowledge-plan"
+    graph = placeholder_ordered_run_graph()
+    graph_body = graph["run_graph"]
+    graph_path = temp / "generic-run-graph.yaml"
+    graph_path.write_text(yaml.safe_dump(graph, sort_keys=False), encoding="utf-8")
+
+    node_ids = [node["node_id"] for node in graph_body["nodes"]]
+    ledger_request_path = temp / "generic-ledger-request.yaml"
+    ledger_result_path = temp / "generic-ledger-result.yaml"
+    ledger_request_path.write_text(
+        yaml.safe_dump(
+            {
+                "event_ledger_request": {
+                    "run_id": "placeholder-generic-run",
+                    "graph_sha256": graph_body["graph_sha256"],
+                    "authorization_id": authorization_id,
+                    "events": (
+                        placeholder_node_events(node_ids[0], "placeholder-design")
+                        + placeholder_node_events(node_ids[1], "placeholder-coding")
+                    ),
+                }
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    ledger_runtime = ROOT / ".claude/skills/idc-team-config/scripts/run_event_ledger.py"
+    ledger_completed = subprocess.run(
+        [
+            "python3",
+            str(ledger_runtime),
+            "--graph",
+            str(graph_path),
+            "--request",
+            str(ledger_request_path),
+            "--output",
+            str(ledger_result_path),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    ledger_document = yaml.safe_load(ledger_result_path.read_text(encoding="utf-8")) or {}
+    ledger = ledger_document.get("run_event_ledger_result") or {}
+    assert_true(
+        ledger_completed.returncode == 0 and ledger.get("status") == "COMPLETE",
+        f"generic completion fixture requires a COMPLETE ledger: {ledger}; "
+        f"{ledger_completed.stderr}",
+    )
+
+    skill_ref = str(ROOT / ".claude/skills/idc-gc-sop-adapter/SKILL.md")
+    domain_skill_ref = str(ROOT / ".claude/skills/idc-general-coding/SKILL.md")
+    config_identity = {
+        "source_ref": "<TEAM_CONFIG_REF>",
+        "source_sha256": "placeholder-config-sha256",
+        "orchestration_sha256": "placeholder-orchestration-sha256",
+    }
+    selected_skill = {
+        "capability_id": "coding-placeholder",
+        "execution_order": 1,
+        "reason": "placeholder implementation constraint",
+        "requirement": "required",
+        "skill_order": None,
+        "skill_ref": skill_ref,
+        "stage": "implementation",
+        "step_id": None,
+        "step_order": None,
+    }
+    authorized_stage_skill = {
+        "step_id": None,
+        "stage": "implementation",
+        "capability_id": "coding-placeholder",
+        "skill_ref": skill_ref,
+        "execution_order": 1,
+    }
+    selection_path = temp / "generic-selection.yaml"
+    selection_path.write_text(
+        yaml.safe_dump(
+            {
+                "capability_selection_result": {
+                    "status": "READY",
+                    "execution_unit_ref": unit,
+                    "selected_domain": "general",
+                    "selected_stage": "implementation",
+                    "config_identity": config_identity,
+                    "orchestration": {"mode": "autonomous"},
+                    "selected": [selected_skill],
+                }
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    knowledge_path = temp / "generic-knowledge.yaml"
+    knowledge_path.write_text(
+        yaml.safe_dump(
+            {
+                "knowledge_consumption_result": {
+                    "status": "VERIFIED",
+                    "knowledge_plan_id": knowledge_plan_id,
+                    "execution_unit_ref": unit,
+                }
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    authorization_path = temp / "generic-authorization.yaml"
+    authorization_path.write_text(
+        yaml.safe_dump(
+            {
+                "execution_authorization_result": {
+                    "status": "AUTHORIZED",
+                    "authorization_id": authorization_id,
+                    "execution_unit_ref": unit,
+                    "selected_domain": "general",
+                    "selected_lane": "lite",
+                    "executor_kind": "subagent",
+                    "domain_execution_skill_ref": domain_skill_ref,
+                    "capability_selection_ref": str(selection_path),
+                    "capability_config_identity": config_identity,
+                    "authorized_stage_skills": [authorized_stage_skill],
+                    "selected_atomic_skill_refs": [skill_ref],
+                    "knowledge_plan_id": knowledge_plan_id,
+                    "run_graph_ref": str(graph_path),
+                    "graph_sha256": graph_body["graph_sha256"],
+                    "allowed_paths": ["src/placeholder"],
+                }
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    receipt = {
+        "run_id": ledger["run_id"],
+        "graph_sha256": graph_body["graph_sha256"],
+        "authorization_id": authorization_id,
+        "dispatch_tool_call_ref": "placeholder-dispatch-tool-call",
+        "executor_session_ref": "placeholder-executor-session",
+        "executor_kind": "subagent",
+        "loaded_domain_execution_skill_ref": domain_skill_ref,
+        "capability_selection_ref": str(selection_path),
+        "executed_stage_skills": [
+            {
+                **authorized_stage_skill,
+                "status": "succeeded",
+                "evidence_refs": ["<EVIDENCE_REF>"],
+            }
+        ],
+        "executed_atomic_skill_refs": [skill_ref],
+        "knowledge_plan_id": knowledge_plan_id,
+        "knowledge_consumption_result_ref": str(knowledge_path),
+        "changed_paths": ["src/placeholder"],
+        "executed_nodes": copy.deepcopy(graph_body["nodes"]),
+        "evidence_refs": ["<EVIDENCE_REF>"],
+    }
+    request = {
+        "completion_verification_request": {
+            "task_id": "placeholder-generic-completion",
+            "selected_domain": "general",
+            "selected_lane": "lite",
+            "execution_unit_ref": unit,
+            "authorization_result_ref": str(authorization_path),
+            "run_graph_ref": str(graph_path),
+            "event_ledger_result_ref": str(ledger_result_path),
+            "knowledge_consumption_result_ref": str(knowledge_path),
+            "execution_receipt": receipt,
+            "predicate_results": [
+                {
+                    "predicate_id": "placeholder-required-predicate",
+                    "required": True,
+                    "evidence_refs": ["<EVIDENCE_REF>"],
+                    "status": "PASS",
+                }
+            ],
+            "test_based_verification": False,
+            "evidence": {
+                "task_contract_ref": "<TASK_CONTRACT_REF>",
+                "acceptance_criteria_ref": "<ACCEPTANCE_CRITERIA_REF>",
+                "focused_plan_ref": "<FOCUSED_PLAN_REF>",
+                "relevant_context_refs": ["<CONTEXT_REF>"],
+                "verification_evidence_refs": ["<EVIDENCE_REF>"],
+                "completion_summary_ref": "<COMPLETION_SUMMARY_REF>",
+            },
+        }
+    }
+    return request, ledger_document
+
+
+def run_generic_completion_case(temp, case_name, request):
+    verifier = ROOT / ".claude/skills/idc-team-config/scripts/verify_completion.py"
+    request_path = temp / f"generic-completion-{case_name}.yaml"
+    request_path.write_text(yaml.safe_dump(request, sort_keys=False), encoding="utf-8")
+    completed = subprocess.run(
+        ["python3", str(verifier), "--request", str(request_path)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    document = yaml.safe_load(completed.stdout) or {}
+    result = document.get("completion_result") or document.get(
+        "completion_verification_result"
+    ) or {}
+    return completed, result
+
+
+def test_generic_completion_proof_accepts_valid_runtime_artifacts():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        request, _ = placeholder_generic_completion_fixture(temp)
+        request_body = request["completion_verification_request"]
+        assert_true("d3a" not in request_body, "generic completion fixture must not use D3A fields")
+        completed, result = run_generic_completion_case(temp, "valid", request)
+        assert_true(
+            completed.returncode == 0
+            and result.get("status") == "DONE"
+            and result.get("graph_match") == "PASS"
+            and result.get("order_match") == "PASS"
+            and result.get("receipt_integrity") == "PASS",
+            f"valid generic graph/ledger/receipt/predicates must produce a complete proof: "
+            f"{result}; {completed.stderr}",
+        )
+
+
+def test_generic_completion_proof_rejects_forgery_and_identity_drift():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        base_request, ledger_document = placeholder_generic_completion_fixture(temp)
+        outcomes = {}
+
+        for field in ["dispatch_tool_call_ref", "executor_session_ref"]:
+            forged = copy.deepcopy(base_request)
+            forged["completion_verification_request"]["execution_receipt"].pop(field)
+            completed, result = run_generic_completion_case(temp, f"missing-{field}", forged)
+            outcomes[f"missing-{field}"] = {
+                "returncode": completed.returncode,
+                "result": result,
+            }
+
+        drift_cases = [
+            ("receipt-graph", "graph_sha256", "placeholder-drifted-graph", "CONFIG_DRIFT"),
+            (
+                "receipt-authorization",
+                "authorization_id",
+                "placeholder-drifted-authorization",
+                "AUTHORIZATION_DRIFT",
+            ),
+        ]
+        for case_name, field, value, expected_code in drift_cases:
+            drifted = copy.deepcopy(base_request)
+            drifted["completion_verification_request"]["execution_receipt"][field] = value
+            completed, result = run_generic_completion_case(temp, case_name, drifted)
+            outcomes[case_name] = {
+                "returncode": completed.returncode,
+                "expected_code": expected_code,
+                "result": result,
+            }
+
+        for case_name, field, value, expected_code in drift_cases:
+            drifted_ledger = copy.deepcopy(ledger_document)
+            drifted_ledger["run_event_ledger_result"][field] = value
+            ledger_path = temp / f"{case_name}-ledger.yaml"
+            ledger_path.write_text(
+                yaml.safe_dump(drifted_ledger, sort_keys=False), encoding="utf-8"
+            )
+            drifted = copy.deepcopy(base_request)
+            drifted["completion_verification_request"][
+                "event_ledger_result_ref"
+            ] = str(ledger_path)
+            completed, result = run_generic_completion_case(
+                temp, f"ledger-{case_name}", drifted
+            )
+            outcomes[f"ledger-{case_name}"] = {
+                "returncode": completed.returncode,
+                "expected_code": expected_code,
+                "result": result,
+            }
+
+        forged_valid = all(
+            row["returncode"] != 0
+            and row["result"].get("status") == "BLOCKED"
+            and row["result"].get("receipt_integrity") == "FAIL"
+            for name, row in outcomes.items()
+            if name.startswith("missing-")
+        )
+        drift_valid = all(
+            row["returncode"] != 0
+            and row["result"].get("status") == "BLOCKED"
+            and row["expected_code"] in yaml.safe_dump(row["result"]).upper()
+            for name, row in outcomes.items()
+            if not name.startswith("missing-")
+        )
+        assert_true(
+            forged_valid and drift_valid,
+            "forged attestations and graph/authorization drift must fail closed with stable "
+            f"integrity diagnostics: {outcomes}",
+        )
+
+
+def test_generic_completion_proof_requires_required_predicates_to_pass():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        base_request, _ = placeholder_generic_completion_fixture(temp)
+        outcomes = {}
+        for case_name, status in [("failed", "FAIL"), ("missing", None)]:
+            request = copy.deepcopy(base_request)
+            predicate = request["completion_verification_request"]["predicate_results"][0]
+            if status is None:
+                predicate.pop("status")
+            else:
+                predicate["status"] = status
+            completed, result = run_generic_completion_case(temp, case_name, request)
+            outcomes[case_name] = {
+                "returncode": completed.returncode,
+                "result": result,
+            }
+
+        assert_true(
+            all(
+                row["returncode"] != 0 and row["result"].get("status") != "DONE"
+                for row in outcomes.values()
+            ),
+            f"every required predicate must be present and PASS before DONE: {outcomes}",
+        )
+
+
+def write_placeholder_domain_pack(temp, domain_id, file_name="placeholder-domain-pack.yaml"):
+    assets = {
+        "workflow_profile_ref": temp / "placeholder-workflow-profile.yaml",
+        "capability_policy_ref": temp / "placeholder-capability-policy.yaml",
+        "completion_predicate_ref": temp / "placeholder-completion-predicate.yaml",
+        "coding_layers_ref": temp / "placeholder-coding-layers.yaml",
+        "test_domains_ref": temp / "placeholder-test-domains.yaml",
+        "domain_execution_skill_ref": temp / "placeholder-domain-skill.md",
+        "execution_contract_ref": temp / "placeholder-execution-contract.yaml",
+    }
+    assets["domain_execution_skill_ref"].write_text(
+        "# Placeholder Domain Execution Skill\n", encoding="utf-8"
+    )
+    assets["execution_contract_ref"].write_text(
+        yaml.safe_dump({"execution_contract": {"id": "placeholder-execution"}}),
+        encoding="utf-8",
+    )
+    assets["workflow_profile_ref"].write_text(
+        yaml.safe_dump(
+            {
+                "workflow_profile": {
+                    "id": "placeholder-workflow",
+                    "domain_execution_skill_ref": str(
+                        assets["domain_execution_skill_ref"]
+                    ),
+                    "execution_contract_ref": str(assets["execution_contract_ref"]),
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    assets["capability_policy_ref"].write_text(
+        yaml.safe_dump({"capability_policy": {"allowed": ["placeholder-capability"]}}),
+        encoding="utf-8",
+    )
+    assets["completion_predicate_ref"].write_text(
+        yaml.safe_dump(
+            {
+                "completion_predicates": [
+                    {
+                        "predicate_id": "placeholder-required-predicate",
+                        "required": True,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    knowledge_root = temp / "placeholder-knowledge"
+    knowledge_root.mkdir()
+    layer_knowledge = knowledge_root / "PLACEHOLDER_LAYER.md"
+    test_knowledge = knowledge_root / "PLACEHOLDER_TEST.md"
+    (knowledge_root / "README.md").write_text(
+        "<ENTERPRISE_PLACEHOLDER_KNOWLEDGE>\n", encoding="utf-8"
+    )
+    layer_knowledge.write_text("<PLACEHOLDER_LAYER_KNOWLEDGE>\n", encoding="utf-8")
+    test_knowledge.write_text("<PLACEHOLDER_TEST_KNOWLEDGE>\n", encoding="utf-8")
+    assets["coding_layers_ref"].write_text(
+        yaml.safe_dump(
+            {
+                "coding_layers": [
+                    {"id": "PLACEHOLDER_LAYER", "knowledge_ref": str(layer_knowledge)}
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    assets["test_domains_ref"].write_text(
+        yaml.safe_dump(
+            {
+                "test_domains": [
+                    {"id": "PLACEHOLDER_TEST", "knowledge_ref": str(test_knowledge)}
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    pack_path = temp / file_name
+    pack_path.write_text(
+        yaml.safe_dump(
+            {
+                "domain_pack": {
+                    "id": domain_id,
+                    "trigger_rules": [
+                        {
+                            "field": "intent",
+                            "equals": "placeholder-ops-request",
+                        }
+                    ],
+                    "lane_policy": {"mode": "dynamic", "selected_lane": None},
+                    "workflow_profile_ref": str(assets["workflow_profile_ref"]),
+                    "capability_policy_ref": str(assets["capability_policy_ref"]),
+                    "completion_predicate_ref": str(assets["completion_predicate_ref"]),
+                    "registries": {
+                        "coding_layers_ref": str(assets["coding_layers_ref"]),
+                        "test_domains_ref": str(assets["test_domains_ref"]),
+                    },
+                    "knowledge_root_ref": str(knowledge_root),
+                }
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    return pack_path, assets, knowledge_root
+
+
+def write_v2_domain_config(temp, enabled, default_domain, definitions, file_name):
+    config_path = temp / file_name
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "config_version": 2,
+                "team": {
+                    "id": "placeholder-v2-team",
+                    "repo_path": str(ROOT),
+                },
+                "domains": {
+                    "enabled": enabled,
+                    "default": default_domain,
+                    "definitions": definitions,
+                },
+                "bindings": {},
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    return config_path
+
+
+def run_team_config_resolver(temp, case_name, config_path):
+    resolver = ROOT / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+    output_path = temp / f"{case_name}-effective.yaml"
+    completed = subprocess.run(
+        [
+            "python3",
+            str(resolver),
+            "--config",
+            str(config_path),
+            "--output",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    document = (
+        yaml.safe_load(output_path.read_text(encoding="utf-8")) or {}
+        if output_path.is_file()
+        else {}
+    )
+    runtime = document.get("effective_runtime") or document
+    return completed, runtime
+
+
+def test_v2_custom_domain_pack_materializes_from_team_config_only():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        domain_id = "placeholder_ops"
+        pack_path, assets, knowledge_root = write_placeholder_domain_pack(temp, domain_id)
+        config_path = write_v2_domain_config(
+            temp,
+            [domain_id],
+            domain_id,
+            {domain_id: {"pack_ref": str(pack_path)}},
+            "v2-custom-domain.yaml",
+        )
+        completed, runtime = run_team_config_resolver(
+            temp, "v2-custom-domain", config_path
+        )
+        domains = runtime.get("domains") or {}
+        modules = domains.get("modules") or {}
+        materialized = modules.get(domain_id) or {}
+        readiness = runtime.get("status") or (runtime.get("readiness") or {}).get("status")
+        expected_refs = {
+            "workflow_profile_ref": assets["workflow_profile_ref"],
+            "capability_policy_ref": assets["capability_policy_ref"],
+            "completion_predicate_ref": assets["completion_predicate_ref"],
+            "knowledge_root_ref": knowledge_root,
+        }
+        refs_materialized = all(
+            Path(str(materialized.get(field) or "")).resolve() == path.resolve()
+            for field, path in expected_refs.items()
+        )
+        registries = materialized.get("registries") or {}
+        registries_materialized = all(
+            Path(str(registries.get(field) or "")).resolve() == assets[field].resolve()
+            for field in ["coding_layers_ref", "test_domains_ref"]
+        )
+        assert_true(
+            completed.returncode == 0
+            and readiness == "READY"
+            and domains.get("enabled") == [domain_id]
+            and domains.get("default") == domain_id
+            and materialized.get("id") == domain_id
+            and materialized.get("trigger_rules")
+            and (materialized.get("lane_policy") or {}).get("mode") == "dynamic"
+            and refs_materialized
+            and registries_materialized,
+            "v2 arbitrary Domain Pack must materialize from team-config only without shared "
+            f"registry edits: runtime={runtime}; stderr={completed.stderr}",
+        )
+
+
+def test_v2_disabled_d3a_pack_is_not_loaded_or_materialized():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        domain_id = "placeholder_ops"
+        pack_path, _, _ = write_placeholder_domain_pack(temp, domain_id)
+        missing_d3a_pack = temp / "physically-absent-disabled-pack.yaml"
+        config_path = write_v2_domain_config(
+            temp,
+            [domain_id],
+            domain_id,
+            {
+                domain_id: {"pack_ref": str(pack_path)},
+                "d3a": {"pack_ref": str(missing_d3a_pack)},
+            },
+            "v2-disabled-pack.yaml",
+        )
+        completed, runtime = run_team_config_resolver(temp, "v2-disabled-pack", config_path)
+        readiness = runtime.get("status") or (runtime.get("readiness") or {}).get("status")
+        leaked = find_d3a_runtime_asset_leaks(runtime)
+        assert_true(
+            completed.returncode == 0
+            and readiness == "READY"
+            and not leaked,
+            "disabled and physically absent D3A pack must not be read or materialized by "
+            f"Core: leaks={leaked}; runtime={runtime}; stderr={completed.stderr}",
+        )
+
+
+def test_v2_enabled_domain_pack_failures_are_bounded():
+    prepare_runtime = ROOT / ".claude/skills/idc-team-config/scripts/prepare_runtime.py"
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        domain_id = "placeholder_ops"
+        mismatched_pack, _, _ = write_placeholder_domain_pack(
+            temp,
+            "placeholder_other",
+            "mismatched-domain-pack.yaml",
+        )
+        cases = {
+            "missing": {
+                domain_id: {"pack_ref": str(temp / "missing-domain-pack.yaml")}
+            },
+            "id-mismatch": {domain_id: {"pack_ref": str(mismatched_pack)}},
+        }
+        outcomes = {}
+        for case_name, definitions in cases.items():
+            config_path = write_v2_domain_config(
+                temp,
+                [domain_id],
+                domain_id,
+                definitions,
+                f"v2-{case_name}.yaml",
+            )
+            output_path = temp / f"v2-{case_name}-effective.yaml"
+            completed = subprocess.run(
+                [
+                    "python3",
+                    str(prepare_runtime),
+                    "--config",
+                    str(config_path),
+                    "--output",
+                    str(output_path),
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            document = yaml.safe_load(completed.stdout) or {}
+            preflight = document.get("runtime_preflight") or {}
+            diagnostic_text = yaml.safe_dump(preflight, sort_keys=False).lower()
+            outcomes[case_name] = {
+                "returncode": completed.returncode,
+                "preflight": preflight,
+                "diagnostic_text": diagnostic_text,
+                "stderr": completed.stderr,
+            }
+
+        missing = outcomes["missing"]
+        mismatch = outcomes["id-mismatch"]
+        assert_true(
+            missing["returncode"] != 0
+            and missing["preflight"].get("status") == "NEEDS_TEAM_CONFIG"
+            and "pack" in missing["diagnostic_text"]
+            and "missing" in missing["diagnostic_text"]
+            and "traceback" not in (missing["diagnostic_text"] + missing["stderr"]).lower()
+            and mismatch["returncode"] != 0
+            and mismatch["preflight"].get("status") == "NEEDS_TEAM_CONFIG"
+            and "pack" in mismatch["diagnostic_text"]
+            and "id" in mismatch["diagnostic_text"]
+            and "match" in mismatch["diagnostic_text"]
+            and "traceback" not in (mismatch["diagnostic_text"] + mismatch["stderr"]).lower(),
+            f"enabled missing or ID-mismatched packs must fail boundedly: {outcomes}",
+        )
+
+
+def test_v1_implicit_domain_ownership_emits_fallback_used():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        config_path = temp / "v1-placeholder-team.yaml"
+        config_path.write_text(
+            yaml.safe_dump(
+                {
+                    "config_version": 1,
+                    "team": {
+                        "id": "placeholder-v1-team",
+                        "repo_path": str(ROOT),
+                    },
+                    "domain": {"mode": "general", "enabled": ["general"]},
+                    "general": {"components": [], "test_domains": []},
+                    "bindings": {},
+                },
+                sort_keys=False,
+            ),
+            encoding="utf-8",
+        )
+        completed, runtime = run_team_config_resolver(temp, "v1-fallback", config_path)
+        diagnostics = runtime.get("diagnostics") or []
+        fallbacks = [
+            item
+            for item in diagnostics
+            if isinstance(item, dict) and item.get("status") == "FALLBACK_USED"
+        ]
+        fallback_text = yaml.safe_dump(fallbacks, sort_keys=False).lower()
+        assert_true(
+            completed.returncode == 0
+            and fallbacks
+            and any(token in fallback_text for token in ["v1", "implicit", "ownership"]),
+            "v1 remains readable but implicit Domain ownership must surface FALLBACK_USED "
+            f"instead of silently mixing ownership: diagnostics={diagnostics}; "
+            f"stderr={completed.stderr}",
+        )
+
+
+def resolved_placeholder_domain_fixture(temp):
+    domain_id = "placeholder_ops"
+    pack_path, assets, knowledge_root = write_placeholder_domain_pack(temp, domain_id)
+    config_path = write_v2_domain_config(
+        temp,
+        [domain_id],
+        domain_id,
+        {domain_id: {"pack_ref": str(pack_path)}},
+        "placeholder-consumer-team.yaml",
+    )
+    completed, runtime = run_team_config_resolver(
+        temp, "placeholder-consumer", config_path
+    )
+    assert_true(
+        completed.returncode == 0,
+        f"generic consumer fixture must first resolve its v2 Domain Pack: {completed.stderr}",
+    )
+    return (
+        domain_id,
+        temp / "placeholder-consumer-effective.yaml",
+        runtime,
+        assets,
+        knowledge_root,
+    )
+
+
+def test_generic_domain_context_uses_materialized_module_policy_and_refs():
+    planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py"
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        domain_id, effective_path, _, assets, _ = resolved_placeholder_domain_fixture(temp)
+        completed = subprocess.run(
+            [
+                "python3",
+                str(planner),
+                "--effective",
+                str(effective_path),
+                "--phase",
+                "planning",
+                "--domain",
+                domain_id,
+                "--lane",
+                "lite",
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        document = yaml.safe_load(completed.stdout) or {}
+        plan = document.get("context_load_plan") or {}
+        resolved_refs = {
+            str(Path(str(ref)).resolve()) for ref in plan.get("required_refs") or []
+        }
+        expected_refs = {
+            str(assets["workflow_profile_ref"].resolve()),
+            str(assets["capability_policy_ref"].resolve()),
+            str((ROOT / ".claude/skills/idc-workflow/references/lanes/lite.yaml").resolve()),
+        }
+        assert_true(
+            completed.returncode == 0
+            and plan.get("status") == "READY"
+            and plan.get("domain") == domain_id
+            and plan.get("lane") == "lite"
+            and expected_refs <= resolved_refs,
+            "plan_context must derive dynamic Lane handling and planning refs from the "
+            f"selected materialized module: plan={plan}; stderr={completed.stderr}",
+        )
+
+
+def test_generic_domain_knowledge_uses_module_registries_and_root():
+    planner = ROOT / ".claude/skills/idc-team-config/scripts/plan_knowledge.py"
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        domain_id, effective_path, _, _, knowledge_root = resolved_placeholder_domain_fixture(temp)
+        demand_path = temp / "placeholder-knowledge-demand.yaml"
+        demand_path.write_text(
+            yaml.safe_dump(
+                {
+                    "knowledge_demand": {
+                        "execution_unit_ref": "placeholder-domain-consumer-unit",
+                        "selected_domain": domain_id,
+                        "selected_lane": "lite",
+                        "selected_layer": "PLACEHOLDER_LAYER",
+                        "selected_components": [],
+                        "selected_test_domains": ["PLACEHOLDER_TEST"],
+                        "repo_context_required": False,
+                    }
+                },
+                sort_keys=False,
+            ),
+            encoding="utf-8",
+        )
+        completed = subprocess.run(
+            [
+                "python3",
+                str(planner),
+                "--effective",
+                str(effective_path),
+                "--demand",
+                str(demand_path),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        document = yaml.safe_load(completed.stdout) or {}
+        plan = document.get("knowledge_load_plan") or {}
+        selected = plan.get("required_static_knowledge") or []
+        selected_refs = {str(Path(str(item.get("ref"))).resolve()) for item in selected}
+        expected_refs = {
+            str((knowledge_root / "PLACEHOLDER_LAYER.md").resolve()),
+            str((knowledge_root / "PLACEHOLDER_TEST.md").resolve()),
+        }
+        assert_true(
+            completed.returncode == 0
+            and plan.get("status") == "READY"
+            and plan.get("selected_domain") == domain_id
+            and expected_refs <= selected_refs,
+            "plan_knowledge must accept an arbitrary enabled Domain ID and plan from "
+            f"its module registries/knowledge root: plan={plan}; stderr={completed.stderr}",
+        )
+
+
+def test_generic_domain_authorization_enforces_module_execution_skill():
+    authorizer = ROOT / ".claude/skills/idc-workflow/scripts/authorize_execution.py"
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        domain_id, effective_path, runtime, assets, _ = resolved_placeholder_domain_fixture(temp)
+        unit = "placeholder-domain-authorization-unit"
+        atomic_skill = str(ROOT / ".claude/skills/idc-gc-sop-adapter/SKILL.md")
+        config_identity = {
+            "source_ref": runtime.get("source_ref"),
+            "source_sha256": runtime.get("source_sha256"),
+            "orchestration_sha256": "placeholder-orchestration-sha256",
+        }
+        selection_path = temp / "placeholder-selection.yaml"
+        selection_path.write_text(
+            yaml.safe_dump(
+                {
+                    "capability_selection_result": {
+                        "status": "READY",
+                        "execution_unit_ref": unit,
+                        "selected_domain": domain_id,
+                        "selected_stage": "implementation",
+                        "config_identity": config_identity,
+                        "orchestration": {"mode": "autonomous"},
+                        "selected": [
+                            {
+                                "capability_id": "placeholder-capability",
+                                "skill_ref": atomic_skill,
+                                "execution_order": 1,
+                                "stage": "implementation",
+                                "step_id": None,
+                            }
+                        ],
+                    }
+                },
+                sort_keys=False,
+            ),
+            encoding="utf-8",
+        )
+        knowledge_body = {
+            "status": "READY",
+            "execution_unit_ref": unit,
+            "selected_domain": domain_id,
+        }
+        knowledge_id = hashlib.sha256(
+            json.dumps(knowledge_body, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        knowledge_path = temp / "placeholder-knowledge-plan.yaml"
+        knowledge_path.write_text(
+            yaml.safe_dump(
+                {"knowledge_load_plan": {**knowledge_body, "knowledge_plan_id": knowledge_id}},
+                sort_keys=False,
+            ),
+            encoding="utf-8",
+        )
+        confirmation_path = temp / "placeholder-plan-confirmation.md"
+        confirmation_path.write_text("<PLACEHOLDER_PLAN_CONFIRMATION>\n", encoding="utf-8")
+
+        base_request = {
+            "execution_authorization_request": {
+                "human_alignment_status": "approved",
+                "capability_selection_status": "READY",
+                "main_agent_role": "planning_and_delegation_only",
+                "technical_plan_confirmation": {
+                    "required": True,
+                    "trigger_reason": "lane=lite",
+                    "status": "confirmed",
+                    "confirmation_ref": str(confirmation_path),
+                },
+                "approved_alignment_ref": "<APPROVED_ALIGNMENT_REF>",
+                "execution_unit_ref": unit,
+                "context_packet_ref": "<CONTEXT_PACKET_REF>",
+                "capability_selection_ref": str(selection_path),
+                "capability_selection_status": "READY",
+                "knowledge_load_plan_ref": str(knowledge_path),
+                "knowledge_load_plan_status": "READY",
+                "knowledge_plan_id": knowledge_id,
+                "effective_config_ref": str(effective_path),
+                "selected_domain": domain_id,
+                "selected_lane": "lite",
+                "domain_execution_skill_ref": str(assets["domain_execution_skill_ref"]),
+                "delegation_contract_ref": "<DELEGATION_CONTRACT_REF>",
+                "allowed_paths": ["src/placeholder"],
+                "expected_outputs": ["<EVIDENCE_REF>"],
+                "executor": {"kind": "subagent", "agent_id": "placeholder-executor"},
+            }
+        }
+
+        def authorize(case_name, request_document):
+            request_path = temp / f"placeholder-authorization-{case_name}.yaml"
+            request_path.write_text(
+                yaml.safe_dump(request_document, sort_keys=False), encoding="utf-8"
+            )
+            completed = subprocess.run(
+                ["python3", str(authorizer), "--request", str(request_path)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            result = (yaml.safe_load(completed.stdout) or {}).get(
+                "execution_authorization_result"
+            ) or {}
+            return completed, result
+
+        accepted, accepted_result = authorize("matching", base_request)
+        mismatched_request = copy.deepcopy(base_request)
+        mismatched_request["execution_authorization_request"][
+            "domain_execution_skill_ref"
+        ] = str(ROOT / ".claude/skills/idc-general-coding/SKILL.md")
+        rejected, rejected_result = authorize("mismatched", mismatched_request)
+        rejected_text = yaml.safe_dump(rejected_result, sort_keys=False).upper()
+        assert_true(
+            accepted.returncode == 0
+            and accepted_result.get("status") == "AUTHORIZED"
+            and rejected.returncode != 0
+            and rejected_result.get("status") != "AUTHORIZED"
+            and "DOMAIN_EXECUTION_SKILL_MISMATCH" in rejected_text,
+            "authorization must consume the selected module workflow execution contract: "
+            f"matching={accepted_result}; mismatched={rejected_result}",
+        )
+
+
+def test_generic_domain_completion_accepts_integrity_proof():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        domain_id, _, _, assets, _ = resolved_placeholder_domain_fixture(temp)
+        request, _ = placeholder_generic_completion_fixture(temp)
+        body = request["completion_verification_request"]
+        body["selected_domain"] = domain_id
+        domain_skill = str(assets["domain_execution_skill_ref"])
+        body["execution_receipt"]["loaded_domain_execution_skill_ref"] = domain_skill
+
+        authorization_path = Path(body["authorization_result_ref"])
+        authorization_document = yaml.safe_load(
+            authorization_path.read_text(encoding="utf-8")
+        )
+        authorization = authorization_document["execution_authorization_result"]
+        authorization["selected_domain"] = domain_id
+        authorization["domain_execution_skill_ref"] = domain_skill
+        authorization_path.write_text(
+            yaml.safe_dump(authorization_document, sort_keys=False), encoding="utf-8"
+        )
+
+        selection_path = Path(authorization["capability_selection_ref"])
+        selection_document = yaml.safe_load(selection_path.read_text(encoding="utf-8"))
+        selection_document["capability_selection_result"]["selected_domain"] = domain_id
+        selection_path.write_text(
+            yaml.safe_dump(selection_document, sort_keys=False), encoding="utf-8"
+        )
+
+        graph_path = Path(body["run_graph_ref"])
+        graph_document = yaml.safe_load(graph_path.read_text(encoding="utf-8"))
+        graph_document["run_graph"]["selected_domain"] = domain_id
+        graph_path.write_text(
+            yaml.safe_dump(graph_document, sort_keys=False), encoding="utf-8"
+        )
+
+        completed, result = run_generic_completion_case(temp, "placeholder-domain", request)
+        assert_true(
+            completed.returncode == 0
+            and result.get("status") == "DONE"
+            and result.get("selected_domain") == domain_id
+            and result.get("graph_match") == "PASS"
+            and result.get("order_match") == "PASS"
+            and result.get("receipt_integrity") == "PASS",
+            "generic completion must preserve graph/ledger/receipt/predicate integrity for "
+            f"an enabled arbitrary Domain ID: result={result}; stderr={completed.stderr}",
+        )
+
+
+def test_official_d3a_domain_pack_resolves_fixed_runtime_contract():
+    pack_path = (
+        ROOT
+        / ".claude/skills/idc-workflow/references/domains/d3a/domain-pack.yaml"
+    )
+    assert_true(
+        pack_path.is_file(),
+        "official D3A Domain Pack must exist at the public canonical path",
+    )
+    pack_document = yaml.safe_load(pack_path.read_text(encoding="utf-8")) or {}
+    pack = pack_document.get("domain_pack") or {}
+    required_fields = {
+        "id",
+        "trigger_rules",
+        "lane_policy",
+        "workflow_profile_ref",
+        "capability_policy_ref",
+        "completion_predicate_ref",
+        "registries",
+        "knowledge_root_ref",
+    }
+
+    def resolve_pack_ref(ref):
+        value = str(ref or "")
+        if value.startswith("harness://"):
+            return ROOT / value[len("harness://") :]
+        candidate = Path(value)
+        if candidate.is_absolute():
+            return candidate
+        local = pack_path.parent / candidate
+        return local if local.exists() else ROOT / candidate
+
+    missing_fields = sorted(required_fields - set(pack))
+    lane_policy = pack.get("lane_policy") or {}
+    registries = pack.get("registries") or {}
+    ref_paths = {
+        field: resolve_pack_ref(pack.get(field))
+        for field in [
+            "workflow_profile_ref",
+            "capability_policy_ref",
+            "completion_predicate_ref",
+            "knowledge_root_ref",
+        ]
+    }
+    registry_paths = {
+        field: resolve_pack_ref(registries.get(field))
+        for field in ["coding_layers_ref", "test_domains_ref"]
+    }
+    assert_true(
+        not missing_fields
+        and pack.get("id") == "d3a"
+        and lane_policy.get("mode") == "not_applicable"
+        and lane_policy.get("selected_lane") is None
+        and all(path.exists() for path in ref_paths.values())
+        and all(path.is_file() for path in registry_paths.values()),
+        "official D3A pack must satisfy the public domain_pack contract and own all "
+        f"runtime refs: missing_fields={missing_fields}; pack={pack}",
+    )
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        config_path = write_v2_domain_config(
+            temp,
+            ["d3a"],
+            "d3a",
+            {"d3a": {"pack_ref": str(pack_path)}},
+            "official-d3a-v2.yaml",
+        )
+        completed, runtime = run_team_config_resolver(
+            temp, "official-d3a", config_path
+        )
+        module = ((runtime.get("domains") or {}).get("modules") or {}).get("d3a") or {}
+        effective_registries = module.get("registries") or {}
+        layer_document = yaml.safe_load(
+            Path(effective_registries.get("coding_layers_ref", "")).read_text(
+                encoding="utf-8"
+            )
+        ) or {}
+        test_document = yaml.safe_load(
+            Path(effective_registries.get("test_domains_ref", "")).read_text(
+                encoding="utf-8"
+            )
+        ) or {}
+        layers = layer_document.get("coding_layers") or layer_document.get("layers") or []
+        test_domains = (
+            test_document.get("test_domains") or test_document.get("domains") or []
+        )
+        workflow_document = yaml.safe_load(
+            Path(module.get("workflow_profile_ref", "")).read_text(encoding="utf-8")
+        ) or {}
+        workflow = workflow_document.get("workflow_profile") or workflow_document
+        completion_text = Path(
+            module.get("completion_predicate_ref", "")
+        ).read_text(encoding="utf-8").lower()
+        assert_true(
+            completed.returncode == 0
+            and runtime.get("status") == "READY"
+            and module.get("execution_profile") == "d3a_fixed_workflow"
+            and [row.get("id") for row in layers]
+            == ["TRAN_CFG", "DO", "VISP_ADP", "TFC_TFI", "TFE", "ADP", "DRV"]
+            and [row.get("id") for row in test_domains] == ["TPRINT", "FW", "DPF"]
+            and "idc-d3a-coding" in str(workflow.get("domain_execution_skill_ref") or "")
+            and "required_dt" in completion_text
+            and "tran_build" in completion_text,
+            "official D3A pack must resolve the fixed Layer/DT/workflow/completion "
+            f"runtime exactly: runtime={runtime}; stderr={completed.stderr}",
+        )
+
+
+def test_d3a_pack_tree_removal_is_controlled_only_by_v2_enablement():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp = Path(temp_dir)
+        sandbox = temp / "placeholder-harness"
+        shutil.copytree(ROOT / ".claude", sandbox / ".claude")
+        d3a_pack_tree = (
+            sandbox
+            / ".claude/skills/idc-workflow/references/domains/d3a"
+        )
+        shutil.rmtree(d3a_pack_tree)
+
+        domain_id = "placeholder_ops"
+        general_pack, _, _ = write_placeholder_domain_pack(sandbox, domain_id)
+        missing_d3a_pack = (
+            ".claude/skills/idc-workflow/references/domains/d3a/domain-pack.yaml"
+        )
+
+        def write_config(name, enabled, default_domain):
+            config_path = sandbox / name
+            config_path.write_text(
+                yaml.safe_dump(
+                    {
+                        "config_version": 2,
+                        "team": {
+                            "id": "placeholder-removal-team",
+                            "repo_path": str(sandbox),
+                        },
+                        "domains": {
+                            "enabled": enabled,
+                            "default": default_domain,
+                            "definitions": {
+                                domain_id: {"pack_ref": str(general_pack)},
+                                "d3a": {"pack_ref": missing_d3a_pack},
+                            },
+                        },
+                        "bindings": {},
+                    },
+                    sort_keys=False,
+                ),
+                encoding="utf-8",
+            )
+            return config_path
+
+        resolver = (
+            sandbox
+            / ".claude/skills/idc-team-config/scripts/resolve_team_config.py"
+        )
+        general_config = write_config(
+            "general-only-v2.yaml", [domain_id], domain_id
+        )
+        general_output = sandbox / "general-only-effective.yaml"
+        general_completed = subprocess.run(
+            [
+                "python3",
+                str(resolver),
+                "--config",
+                str(general_config),
+                "--output",
+                str(general_output),
+            ],
+            cwd=sandbox,
+            capture_output=True,
+            text=True,
+        )
+        general_runtime = (
+            yaml.safe_load(general_output.read_text(encoding="utf-8")) or {}
+            if general_output.is_file()
+            else {}
+        )
+
+        prepare_runtime = (
+            sandbox
+            / ".claude/skills/idc-team-config/scripts/prepare_runtime.py"
+        )
+        d3a_config = write_config("enabled-d3a-v2.yaml", ["d3a"], "d3a")
+        d3a_completed = subprocess.run(
+            [
+                "python3",
+                str(prepare_runtime),
+                "--config",
+                str(d3a_config),
+                "--output",
+                str(sandbox / "d3a-effective.yaml"),
+            ],
+            cwd=sandbox,
+            capture_output=True,
+            text=True,
+        )
+        d3a_preflight = (yaml.safe_load(d3a_completed.stdout) or {}).get(
+            "runtime_preflight"
+        ) or {}
+
+        generic_sources = [
+            ROOT / ".claude/skills/idc-team-config/scripts/plan_context.py",
+            ROOT / ".claude/skills/idc-workflow/references/domains/registry.yaml",
+            ROOT / ".claude/skills/idc-workflow/references/domains/general/module.yaml",
+        ]
+        scattered_fragments = [
+            "domains/d3a/module.yaml",
+            "workflows/d3a-workflow.md",
+            "schemas/d3a-plan.schema.yaml",
+            "d3a-execution-constraints.yaml",
+            "idc-d3a-coding/SKILL.md",
+            "registries/d3a-layers.yaml",
+            "registries/dt-domains.yaml",
+        ]
+        scattered = [
+            f"{source.relative_to(ROOT)}:{fragment}"
+            for source in generic_sources
+            for fragment in scattered_fragments
+            if fragment in source.read_text(encoding="utf-8")
+        ]
+        general_leaks = find_d3a_runtime_asset_leaks(general_runtime)
+        d3a_text = (
+            yaml.safe_dump(d3a_preflight, sort_keys=False)
+            + d3a_completed.stderr
+        ).lower()
+        assert_true(
+            general_completed.returncode == 0
+            and general_runtime.get("status") == "READY"
+            and not general_leaks
+            and d3a_completed.returncode != 0
+            and d3a_preflight.get("status") == "NEEDS_TEAM_CONFIG"
+            and "domain_pack_missing" in d3a_text
+            and "traceback" not in d3a_text
+            and not scattered,
+            "D3A removal must be controlled only by one v2 definition/enablement toggle; "
+            "generic Core must point to the official pack instead of scattered D3A assets: "
+            f"scattered={scattered}; general_leaks={general_leaks}; "
+            f"general={general_runtime}; d3a={d3a_preflight}",
+        )
+
+
+def test_runtime_integrity_suite_is_part_of_full_harness():
+    suite = subprocess.run(
+        ["python3", "-B", str(ROOT / "tests/test_runtime_integrity.py")],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    combined = suite.stdout + suite.stderr
+    assert_true(
+        suite.returncode == 0 and "Ran 15 tests" in combined and "OK" in combined,
+        "runtime integrity subprocess failures must fail the full harness; "
+        f"returncode={suite.returncode}; output={combined}",
+    )
+
+
+def test_dispatch_state_suite_is_part_of_full_harness():
+    suite = subprocess.run(
+        ["python3", "-B", str(ROOT / "tests/test_dispatch_state.py")],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    combined = suite.stdout + suite.stderr
+    assert_true(
+        suite.returncode == 0 and "Ran 13 tests" in combined and "OK" in combined,
+        "dispatch state subprocess failures must fail the full harness; "
+        f"returncode={suite.returncode}; output={combined}",
+    )
+
+
+def test_final_standalone_contract_suites_are_part_of_full_harness():
+    suites = {
+        "migration": ("test_team_config_migration.py", "Ran 5 tests"),
+        "ownership": ("test_v2_config_ownership.py", "Ran 8 tests"),
+        "core-isolation": ("test_v2_core_isolation.py", "Ran 6 tests"),
+        "execution-binding": ("test_execution_binding.py", "Ran 5 tests"),
+        "final-e2e-faults": ("test_final_e2e_faults.py", "Ran 4 tests"),
+        "final-security": ("test_final_security_review.py", "Ran 5 tests"),
+    }
+    failures = []
+    for name, (file_name, count) in suites.items():
+        result = subprocess.run(["python3", "-B", str(ROOT / "tests" / file_name)],
+                                cwd=ROOT, capture_output=True, text=True)
+        output = result.stdout + result.stderr
+        if result.returncode != 0 or count not in output or "OK" not in output:
+            failures.append(f"{name}: rc={result.returncode}; {output}")
+    assert_true(not failures, "standalone contract suite failure must propagate:\n" + "\n".join(failures))
+
+
+def write_v2_policy_chain_fixture(temp):
+    """Public v2 policy inputs; never synthesize or patch effective output.
+
+    Schema additions required: workflow_profile.lane_profiles (existing Lane
+    profile shape), capability_policy.capabilities (existing registry row shape),
+    effective.runtime_dependency_sha256, and run_graph.nodes[].step_id.
+    The compiler consumes a real stage selection but derives the COMPLETE graph
+    from configured stages, validating that the supplied selection is authentic.
+    """
+    pack, assets, _ = write_placeholder_domain_pack(temp, "placeholder_ops")
+    rows = []
+    for skill_id, stage in [("design-placeholder", "planning"),
+                            ("coding-placeholder", "implementation"),
+                            ("verify-placeholder", "verification")]:
+        skill = temp / f"idc-{skill_id}" / "SKILL.md"
+        skill.parent.mkdir()
+        skill.write_text(f"# {skill_id}\n<ENTERPRISE_PLACEHOLDER>\n", encoding="utf-8")
+        rows.append({"id": skill_id, "skill_ref": str(skill),
+                     "allowed_stages": [stage], "eligible_lanes": ["fast", "lite", "complex"],
+                     "capability_keys": [f"{stage}_placeholder"], "trigger_signals": []})
+    profiles = {}
+    for lane in ["fast", "lite", "complex"]:
+        profiles[lane] = {"orchestration": {"mode": "ordered", "steps": [
+            {"id": f"{lane}-design", "stage": "planning", "skill_ids": [rows[0]["id"]]},
+            {"id": f"{lane}-coding", "stage": "implementation", "skill_ids": [rows[1]["id"]]},
+            {"id": f"{lane}-verify", "stage": "verification", "skill_ids": [rows[2]["id"]]},
+            {"id": f"{lane}-verify-again", "stage": "verification", "skill_ids": [rows[2]["id"]]},
+        ]}}
+    workflow = yaml.safe_load(assets["workflow_profile_ref"].read_text())["workflow_profile"]
+    workflow["lane_profiles"] = profiles
+    assets["workflow_profile_ref"].write_text(
+        yaml.safe_dump({"workflow_profile": workflow}), encoding="utf-8")
+    assets["capability_policy_ref"].write_text(
+        yaml.safe_dump({"capability_policy": {"capabilities": rows}}), encoding="utf-8")
+    config = write_v2_domain_config(temp, ["placeholder_ops"], "placeholder_ops",
+                                   {"placeholder_ops": {"pack_ref": str(pack)}}, "policy-team.yaml")
+    return config, pack, assets, rows
+
+
+def run_v2_policy_selection(temp, case, effective_path, lane, stage="implementation"):
+    demand_path = temp / f"{case}-demand.yaml"
+    selection_path = temp / f"{case}-selection.yaml"
+    demand_path.write_text(yaml.safe_dump({"capability_demand": {
+        "execution_unit_ref": "placeholder-policy-unit", "selected_domain": "placeholder_ops",
+        "selected_stage": stage, "selected_lane": lane, "lane_applicability": "applicable",
+        "execution_profile": "lane_driven", "required_capability_keys": [],
+        "optional_capability_keys": [], "observed_signals": [],
+    }}), encoding="utf-8")
+    result = subprocess.run([
+        "python3", str(ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"),
+        "--effective", str(effective_path), "--demand", str(demand_path),
+        "--output", str(selection_path),
+    ], cwd=ROOT, capture_output=True, text=True)
+    document = yaml.safe_load(selection_path.read_text()) if selection_path.exists() else {}
+    return result, (document or {}).get("capability_selection_result") or {}, selection_path
+
+
+def run_v2_policy_graph(temp, case, effective_path, selection_path, lane):
+    request_path, graph_path = temp / f"{case}-request.yaml", temp / f"{case}-graph.yaml"
+    request_path.write_text(yaml.safe_dump({"run_graph_compile_request": {
+        "selected_domain": "placeholder_ops", "selected_lane": lane, "observed_signals": [],
+    }}), encoding="utf-8")
+    result = subprocess.run([
+        "python3", str(ROOT / ".claude/skills/idc-team-config/scripts/compile_run_graph.py"),
+        "--effective", str(effective_path), "--selection", str(selection_path),
+        "--request", str(request_path), "--output", str(graph_path),
+    ], cwd=ROOT, capture_output=True, text=True)
+    document = yaml.safe_load(graph_path.read_text()) if graph_path.exists() else {}
+    return result, (document or {}).get("run_graph") or {}
+
+
+def test_v2_file_policies_compile_all_stages_and_repeated_occurrences_for_three_lanes():
+    with tempfile.TemporaryDirectory() as directory:
+        temp = Path(directory)
+        config, _, _, rows = write_v2_policy_chain_fixture(temp)
+        resolved, runtime = run_team_config_resolver(temp, "chain", config)
+        failures = []
+        for lane in ["fast", "lite", "complex"]:
+            selected, selection, selection_path = run_v2_policy_selection(
+                temp, lane, temp / "chain-effective.yaml", lane)
+            compiled, graph = run_v2_policy_graph(
+                temp, lane, temp / "chain-effective.yaml", selection_path, lane)
+            repeated, replay_graph = run_v2_policy_graph(
+                temp, f"{lane}-replay", temp / "chain-effective.yaml", selection_path, lane)
+            expected = [("planning", rows[0]["id"], f"{lane}-design"),
+                        ("implementation", rows[1]["id"], f"{lane}-coding"),
+                        ("verification", rows[2]["id"], f"{lane}-verify"),
+                        ("verification", rows[2]["id"], f"{lane}-verify-again")]
+            nodes = graph.get("nodes") or []
+            observed = [(n.get("stage"), n.get("skill_id"), n.get("step_id")) for n in nodes]
+            if not (resolved.returncode == selected.returncode == compiled.returncode
+                    == repeated.returncode == 0 and selection.get("status") == "READY"
+                    and observed == expected and graph == replay_graph
+                    and len({n.get("node_id") for n in nodes}) == 4
+                    and [n.get("execution_order") for n in nodes] == [1, 2, 3, 4]
+                    and graph.get("edges") == [{"from": nodes[i]["node_id"],
+                                                "to": nodes[i + 1]["node_id"]} for i in range(3)]):
+                failures.append({"lane": lane, "selection": selection.get("status"),
+                                 "graph": graph.get("status"), "nodes": observed})
+        assert_true(not failures, "v2 file policies must bind capabilities and compile the full "
+                    "planning/implementation/verification chain, including repeated step identity: "
+                    f"capabilities={len(runtime.get('available_capabilities') or [])}; {failures}")
+
+
+def test_v2_compiler_rejects_unregistered_forged_and_incomplete_selections():
+    with tempfile.TemporaryDirectory() as directory:
+        temp = Path(directory)
+        config, _, _, rows = write_v2_policy_chain_fixture(temp)
+        _, runtime = run_team_config_resolver(temp, "adversarial", config)
+        # Adversarial selection documents only: policy/effective files stay authentic.
+        # A claimed READY cannot authorize an unregistered capability or wrong step/ref.
+        baseline = {"status": "READY", "selected_domain": "placeholder_ops",
+                    "selected_stage": "implementation",
+                    "config_identity": {"source_sha256": runtime.get("source_sha256")},
+                    "orchestration": {"mode": "ordered"}, "ordered_execution": [{
+                        "execution_order": 1, "stage": "implementation", "step_id": "lite-coding",
+                        "capability_id": rows[1]["id"], "skill_ref": rows[1]["skill_ref"]}]}
+        cases = {}
+        for name in ["unknown-skill", "wrong-ref", "wrong-step", "empty-selection", "illegal-lane"]:
+            cases[name] = copy.deepcopy(baseline)
+        cases["unknown-skill"]["ordered_execution"][0]["capability_id"] = "never-registered-placeholder"
+        cases["wrong-ref"]["ordered_execution"][0]["skill_ref"] = rows[0]["skill_ref"]
+        cases["wrong-step"]["ordered_execution"][0]["step_id"] = "missing-placeholder-step"
+        cases["empty-selection"]["ordered_execution"] = []
+        failures = []
+        for name, selection in cases.items():
+            selection_path = temp / f"{name}-selection.yaml"
+            selection_path.write_text(yaml.safe_dump({"capability_selection_result": selection}),
+                                      encoding="utf-8")
+            result, graph = run_v2_policy_graph(temp, name, temp / "adversarial-effective.yaml",
+                                               selection_path, "not-a-lane" if name == "illegal-lane" else "lite")
+            if not (result.returncode != 0 and graph.get("status") == "INVALID"
+                    and graph.get("errors") and not graph.get("nodes")
+                    and "Traceback" not in result.stderr):
+                failures.append(f"{name}={graph.get('status')}")
+        assert_true(not failures, "compiler must authenticate registered skills, refs, steps, lane "
+                    f"and nonempty stage selection against effective policy: {failures}")
+
+
+def test_v2_definition_overrides_change_consumed_workflow_capability_and_trigger():
+    with tempfile.TemporaryDirectory() as directory:
+        temp = Path(directory)
+        config, _, assets, rows = write_v2_policy_chain_fixture(temp)
+        replacement = dict(rows[1], id="replacement-coding-placeholder")
+        replacement_path = temp / "replacement-capability.yaml"
+        replacement_path.write_text(yaml.safe_dump({"capability_policy": {
+            "capabilities": [rows[0], replacement, rows[2]]}}), encoding="utf-8")
+        workflow = yaml.safe_load(assets["workflow_profile_ref"].read_text())
+        for profile in workflow["workflow_profile"]["lane_profiles"].values():
+            profile["orchestration"]["steps"][1]["skill_ids"] = [replacement["id"]]
+        workflow_path = temp / "replacement-workflow.yaml"
+        workflow_path.write_text(yaml.safe_dump(workflow), encoding="utf-8")
+        config_doc = yaml.safe_load(config.read_text())
+        rules = [{"field": "intent", "equals": "replacement-placeholder-intent"}]
+        config_doc["domains"]["definitions"]["placeholder_ops"].update({
+            "workflow_profile_ref": str(workflow_path),
+            "capability_policy_ref": str(replacement_path), "trigger_rules": rules})
+        config.write_text(yaml.safe_dump(config_doc), encoding="utf-8")
+        resolved, runtime = run_team_config_resolver(temp, "overrides", config)
+        selected, selection, selection_path = run_v2_policy_selection(
+            temp, "overrides", temp / "overrides-effective.yaml", "lite")
+        compiled, graph = run_v2_policy_graph(
+            temp, "overrides", temp / "overrides-effective.yaml", selection_path, "lite")
+        module = runtime.get("domains", {}).get("modules", {}).get("placeholder_ops", {})
+        observed_ids = [n.get("skill_id") for n in graph.get("nodes") or []]
+        assert_true(resolved.returncode == selected.returncode == compiled.returncode == 0
+                    and module.get("trigger_rules") == rules
+                    and module.get("workflow_profile_ref") == str(workflow_path)
+                    and module.get("capability_policy_ref") == str(replacement_path)
+                    and observed_ids == [rows[0]["id"], replacement["id"], rows[2]["id"], rows[2]["id"]],
+                    "definition refs/rules must replace Pack defaults and drive selection/graph: "
+                    f"trigger={module.get('trigger_rules')}; workflow={module.get('workflow_profile_ref')}; "
+                    f"selection={selection.get('status')}; graph_skills={observed_ids}")
+
+
+def test_v2_runtime_dependency_identity_tracks_pack_and_skill_bytes():
+    with tempfile.TemporaryDirectory() as directory:
+        temp = Path(directory)
+        config, pack, _, rows = write_v2_policy_chain_fixture(temp)
+        snapshots = []
+        for index, target in enumerate([None, pack, Path(rows[1]["skill_ref"])]):
+            if target is not None:
+                target.write_text(target.read_text() + "\n# placeholder dependency byte change\n",
+                                  encoding="utf-8")
+            result, runtime = run_team_config_resolver(temp, f"identity-{index}", config)
+            snapshots.append((result.returncode, runtime.get("source_sha256"),
+                              runtime.get("runtime_dependency_sha256")))
+        result, stable = run_team_config_resolver(temp, "identity-stable", config)
+        digests = [snapshot[2] for snapshot in snapshots]
+        assert_true(all(snapshot[0] == 0 for snapshot in snapshots) and result.returncode == 0
+                    and len({snapshot[1] for snapshot in snapshots}) == 1
+                    and all(re.fullmatch(r"[0-9a-f]{64}", str(digest or "")) for digest in digests)
+                    and len(set(digests)) == 3 and stable.get("runtime_dependency_sha256") == digests[-1],
+                    "runtime dependency identity must change on Pack/Skill byte changes while team "
+                    f"config hash stays stable, and replay must be deterministic: {snapshots}")
+
+
+def test_v2_policy_unknown_skill_and_unsupported_guards_fail_closed():
+    failures = []
+    for case in ["unregistered-skill", "unsupported-guard"]:
+        with tempfile.TemporaryDirectory() as directory:
+            temp = Path(directory)
+            config, _, assets, _ = write_v2_policy_chain_fixture(temp)
+            workflow = yaml.safe_load(assets["workflow_profile_ref"].read_text())
+            step = workflow["workflow_profile"]["lane_profiles"]["lite"]["orchestration"]["steps"][1]
+            if case == "unregistered-skill":
+                step["skill_ids"] = ["never-registered-placeholder"]
+            else:
+                step["guard"] = {"unsupported_placeholder_operator": True}
+            assets["workflow_profile_ref"].write_text(yaml.safe_dump(workflow), encoding="utf-8")
+            result, runtime = run_team_config_resolver(temp, case, config)
+            if not (result.returncode != 0 and runtime.get("status") in ["INVALID", "NEEDS_TEAM_CONFIG"]
+                    and "Traceback" not in result.stderr):
+                failures.append(f"{case}={runtime.get('status')}")
+    assert_true(not failures, "unregistered configured skills and unsupported workflow guards "
+                f"must be rejected, never silently ignored: {failures}")
+
+
+def test_idc_config_enforcement_architecture_html_is_self_contained_and_complete():
+    from html.parser import HTMLParser
+    text = (ROOT / "docs/idc-config-enforcement-architecture.html").read_text(encoding="utf-8")
+    class Probe(HTMLParser):
+        def __init__(self):
+            super().__init__(); self.ids = []; self.pre_blocks = []; self.in_pre = 0; self.mains = self.tables = self.captions = self.theads = 0
+            self.swimlane_rows = []; self.swimlane_columns = []; self.implementation_gates = []
+            self.example_configs = []; self.three_lane_configs = []; self.lane_runs = []
+            self.pre_kind = None
+        def handle_starttag(self, tag, attrs):
+            data = dict(attrs); self.ids += [data["id"]] if "id" in data else []
+            self.mains += tag == "main"; self.tables += tag == "table"; self.captions += tag == "caption"; self.theads += tag == "thead"
+            classes = set((data.get("class") or "").split())
+            if "swimlane-row" in classes:
+                self.swimlane_rows.append(data.get("data-lane"))
+            if "lane-cell" in classes:
+                self.swimlane_columns.append(data.get("data-column"))
+            if "gate" in classes:
+                self.implementation_gates.append(data.get("data-gate"))
+            if "lane-run" in classes:
+                self.lane_runs.append(data.get("data-lane-run"))
+            if tag == "pre":
+                self.in_pre += 1; self.pre_blocks.append("")
+                self.pre_kind = "three-lane" if "data-three-lane-walkthrough-config" in data else (
+                    "example" if "data-example-config" in data else None)
+                if self.pre_kind == "three-lane": self.three_lane_configs.append("")
+                if self.pre_kind == "example": self.example_configs.append("")
+        def handle_endtag(self, tag):
+            if tag == "pre": self.in_pre -= 1; self.pre_kind = None
+        def handle_data(self, data):
+            if self.in_pre:
+                self.pre_blocks[-1] += data
+                if self.pre_kind == "three-lane": self.three_lane_configs[-1] += data
+                if self.pre_kind == "example": self.example_configs[-1] += data
+    probe = Probe(); probe.feed(text)
+    required = ["lang=\"zh-CN\"", "<h1>", "team-config.yaml", "domains.enabled", "ordered", "host-control-record", "dispatch_state.py", "D3A", "CONFIG_DRIFT", "@media print", "@media(max-width:760px)"]
+    assert_true(all(item in text for item in required), "配置架构 HTML 缺少必要中文架构或响应式内容。")
+    assert_true(probe.mains == 1 and probe.tables >= 1 and probe.captions >= 1 and probe.theads >= 1 and len(probe.ids) == len(set(probe.ids)), "HTML 必须有唯一 main、可访问矩阵和无重复 ID。")
+    assert_true("http://" not in text and "https://" not in text and "<script" not in text and "onclick=" not in text, "HTML 必须自包含且不得引入外部执行资源。")
+    assert_true(all(token in text for token in ["fast:", "lite:", "complex:", "protected dispatch state / predicate attestation", "真实 v2 graph authorization", "v1 compatibility 不要求"]) and "<td>host record</td>" not in text, "HTML 必须准确说明三 Lane、v2 信任边界和 predicate evidence owner。")
+    expected_columns = ["责任边界", "处理步骤", "机器产物", "失败出口"]
+    assert_true(
+        probe.swimlane_rows == ["config", "compile", "host", "evidence"]
+        and probe.swimlane_columns == expected_columns * 4,
+        "主架构图必须是四条纵向泳道，每行严格包含责任边界、处理步骤、机器产物、失败出口四列。",
+    )
+    assert_true(
+        all(token in text for token in ["General / Custom", "Lane fast / lite / complex", "fixed workflow / Lane N/A", "canonical graph", "统一向下"]),
+        "编译泳道必须明确展示 General/Custom 与 D3A 分支重新汇入 canonical graph，并保持单一向下阅读方向。",
+    )
+    assert_true(
+        all(token in text for token in ["host control", "dispatch-state predicate", "S1", "S2", "S3", "skip / reorder / inject", "失败轨", "BLOCKED"]),
+        "主图必须区分 host control 与 dispatch-state predicate，并保留 ordered 节点和红色失败轨语义。",
+    )
+    assert_true(
+        probe.implementation_gates == [str(index) for index in range(1, 9)],
+        "实现级追踪必须严格包含 1 到 8 的真实运行关卡。",
+    )
+    assert_true(
+        'data-layout="desktop-4x2 tablet-2 mobile-1"' in text
+        and "repeat(4,minmax(0,1fr))" in text
+        and "repeat(2,minmax(0,1fr))" in text
+        and "继续 ↓ 第 5 关" in text
+        and "trace-scroll" not in text,
+        "实现级追踪必须在桌面 4×2 全量可见、平板两列、移动单列，不得依赖横向滚动轨道。",
+    )
+    implementation_sources = {
+        ".claude/skills/idc-team-config/scripts/prepare_runtime.py": ["main"],
+        ".claude/skills/idc-team-config/scripts/resolve_team_config.py": ["compile_v2_runtime", "apply_v2_team_capabilities", "materialize_completion_predicates"],
+        ".claude/skills/idc-team-config/scripts/select_capabilities.py": [],
+        ".claude/skills/idc-team-config/scripts/compile_run_graph.py": ["compile_graph"],
+        ".claude/skills/idc-workflow/scripts/authorize_execution.py": ["validate_graph_binding", "validate_host_control", "required_module_predicates"],
+        ".claude/skills/idc-team-config/scripts/dispatch_state.py": ["initialize_state", "acquire_dispatch", "record_success", "record_predicate"],
+        ".claude/skills/idc-team-config/scripts/run_event_ledger.py": ["process", "apply_transition"],
+        ".claude/skills/idc-team-config/scripts/plan_knowledge.py": [],
+        ".claude/skills/idc-team-config/scripts/verify_completion.py": [],
+        ".claude/skills/idc-team-config/scripts/runtime_integrity.py": ["verify_completion_integrity"],
+    }
+    for source_ref, function_names in implementation_sources.items():
+        source = read_text(source_ref)
+        assert_true(Path(ROOT / source_ref).is_file() and Path(source_ref).name in text, f"实现追踪引用的脚本必须存在并展示：{source_ref}")
+        for function_name in function_names:
+            assert_true(f"def {function_name}(" in source and function_name in text, f"实现追踪函数必须来自真实源码：{function_name}")
+    traced_fields = ["domains.enabled/default/definitions", "lane.profiles.*.orchestration.steps", "bindings.*.skill_ref", "knowledge refs", "completion predicates"]
+    traced_errors = ["CONFIG_UNSUPPORTED", "NEEDS_ORCHESTRATION_MAPPING", "SELECTION_MISMATCH", "BLOCKED_HOST_CONTROL_REQUIRED", "ORDER_VIOLATION", "HASH_CHAIN_INVALID", "PREDICATE_MISSING"]
+    assert_true(all(token in text for token in traced_fields + traced_errors), "字段追踪和失败出口必须覆盖五类核心配置与真实错误码。")
+    assert_true("host-owned ticket" in text and "REPLAY" in text and "RECOVERY_REQUIRED" in text, "第六关必须准确区分 current-node ticket、幂等重放与未知崩溃恢复状态。")
+    assert_true("有效配置无法被静默忽略" in text and "不是任意 YAML 都能成功" in text and text.count("读字段") >= 8 and text.count("写产物") >= 8, "页面必须精确定义保证，并让每个关卡呈现读、调、写、拒四段信息。")
+    assert_true(
+        probe.lane_runs == ["fast", "lite", "complex"]
+        and len(probe.three_lane_configs) == 1
+        and all(token in text for token in [
+            "一个任务，Router 只选择一条 Lane", "three-lane-walkthrough-team",
+            "f960f514...581ce288", "f8c72664...7602c9", "1df23356...7254e1c",
+            "26053c93...e2012f2", "6a7afcd7...4d9dfe51", "fast-implement",
+            "lite-plan", "lite-implement", "complex-plan", "complex-design-check",
+            "complex-implement", "planning selection 只是当前 stage", "禁止跨 Lane 换图",
+            "不把本次文档修改的 v1 compatibility 授权冒充",
+        ]),
+        "三 Lane walkthrough 必须展示 Router 单选、共同配置身份、真实节点、graph hash 与 bypass 失败轨。",
+    )
+    with tempfile.TemporaryDirectory() as directory:
+        temp = Path(directory)
+        walkthrough_path = temp / "three-lane-walkthrough-team-config.yaml"
+        walkthrough_path.write_text(probe.three_lane_configs[0], encoding="utf-8")
+        resolved, runtime = run_team_config_resolver(temp, "walkthrough", walkthrough_path)
+        effective_path = temp / "walkthrough-effective.yaml"
+        lane_contracts = {
+            "fast": ("implementation", ["fast-implement"],
+                     [("0001-coding_standard", "fast-implement", "implementation")],
+                     "1df23356a700112ceec9b603b8501ceeca3368962970882617bbe80a77254e1c"),
+            "lite": ("planning", ["lite-plan"],
+                     [("0001-coding_standard", "lite-plan", "planning"),
+                      ("0002-coding_standard", "lite-implement", "implementation")],
+                     "26053c93293f7077f233970474d208e7cb889527761d9eeb2b8b078e1e2012f2"),
+            "complex": ("planning", ["complex-plan", "complex-design-check"],
+                        [("0001-coding_standard", "complex-plan", "planning"),
+                         ("0002-coding_standard", "complex-design-check", "planning"),
+                         ("0003-coding_standard", "complex-implement", "implementation")],
+                        "6a7afcd762bfb0c4f121d64e6e87547d3ff564c1e333a770d90c9a184d9dfe51"),
+        }
+        failures = []
+        for lane, (stage, expected_selection, expected_nodes, expected_hash) in lane_contracts.items():
+            demand_path, selection_path = temp / f"{lane}-demand.yaml", temp / f"{lane}-selection.yaml"
+            demand_path.write_text(yaml.safe_dump({"capability_demand": {
+                "execution_unit_ref": "unit-5-html-three-lane-walkthrough",
+                "selected_stage": stage, "selected_domain": "general",
+                "lane_applicability": "applicable", "selected_lane": lane,
+                "execution_profile": "lane_driven", "required_capability_keys": [],
+                "optional_capability_keys": [], "observed_signals": [],
+            }}), encoding="utf-8")
+            selected = subprocess.run([
+                "python3", str(ROOT / ".claude/skills/idc-team-config/scripts/select_capabilities.py"),
+                "--effective", str(effective_path), "--demand", str(demand_path),
+                "--output", str(selection_path),
+            ], cwd=ROOT, capture_output=True, text=True)
+            selection_doc = yaml.safe_load(selection_path.read_text()) if selection_path.exists() else {}
+            selection = (selection_doc or {}).get("capability_selection_result") or {}
+            observed_selection = [item.get("step_id") for item in selection.get("ordered_execution") or []]
+            graphs = []
+            for replay in range(2):
+                request_path, graph_path = temp / f"{lane}-request-{replay}.yaml", temp / f"{lane}-graph-{replay}.yaml"
+                request_path.write_text(yaml.safe_dump({"run_graph_compile_request": {
+                    "task_id": "new-files-zh-localization",
+                    "execution_unit_ref": "unit-5-html-three-lane-walkthrough",
+                    "selected_domain": "general", "selected_lane": lane, "observed_signals": [],
+                }}), encoding="utf-8")
+                compiled = subprocess.run([
+                    "python3", str(ROOT / ".claude/skills/idc-team-config/scripts/compile_run_graph.py"),
+                    "--effective", str(effective_path), "--selection", str(selection_path),
+                    "--request", str(request_path), "--output", str(graph_path),
+                ], cwd=ROOT, capture_output=True, text=True)
+                graph_doc = yaml.safe_load(graph_path.read_text()) if graph_path.exists() else {}
+                graphs.append((compiled.returncode, (graph_doc or {}).get("run_graph") or {}))
+            observed_nodes = [(node.get("node_id"), node.get("step_id"), node.get("stage"))
+                              for node in graphs[0][1].get("nodes") or []]
+            hashes = [item[1].get("graph_sha256") for item in graphs]
+            if not (selected.returncode == graphs[0][0] == graphs[1][0] == 0
+                    and selection.get("status") == "READY" and observed_selection == expected_selection
+                    and observed_nodes == expected_nodes and hashes == [expected_hash] * 2):
+                failures.append(f"{lane}: selection={observed_selection}; nodes={observed_nodes}; hashes={hashes}")
+        assert_true(resolved.returncode == 0 and runtime.get("status") == "READY"
+                    and runtime.get("source_sha256") == "f960f514de7a74c0a4e9ff8a6a95abb5b7b89c27f97132369a6561e1581ce288"
+                    and not failures, "页面三 Lane 配置必须真实解析、选择并重复编译固定图：" + "; ".join(failures))
+        results = []
+        for index, block in enumerate(probe.example_configs):
+            config = temp / f"example-{index}.yaml"; config.write_text(block, encoding="utf-8")
+            completed, runtime = run_team_config_resolver(temp, f"html-example-{index}", config)
+            results.append((completed.returncode, runtime.get("status")))
+        assert_true(len(probe.example_configs) == 3 and results == [(0, "READY")] * 3, f"HTML 的三个 v2 示例必须由真实 resolver READY：{results}")
+    assert_true("docs/idc-config-enforcement-architecture.html" in read_text("README.md"), "README 必须提供架构指南入口。")
+
+
 def run():
     tests = [
         test_registry_files_match_fixed_architecture,
@@ -5932,6 +8367,36 @@ def run():
         test_lane_ordered_signal_gated_steps_fire_only_on_matching_signals,
         test_second_team_full_e2e_via_team_config_only,
         test_ordered_lane_selection_authorization_and_completion_are_enforced,
+        test_d3a_only_runtime_marks_all_lane_profiles_unreachable,
+        test_completion_graph_rejects_ordered_node_omission_and_reorder,
+        test_general_only_effective_runtime_contains_no_d3a_runtime_assets,
+        test_d3a_runtime_isolation_ignores_hash_metadata_but_detects_behavior_refs,
+        test_generic_runtime_contract_schemas_are_public_and_placeholder_safe,
+        test_run_graph_compiler_is_deterministic_ordered_and_fail_closed,
+        test_event_ledger_replay_is_deterministic_and_tamper_evident,
+        test_ordered_dispatch_and_idempotency_are_enforced,
+        test_generic_completion_proof_accepts_valid_runtime_artifacts,
+        test_generic_completion_proof_rejects_forgery_and_identity_drift,
+        test_generic_completion_proof_requires_required_predicates_to_pass,
+        test_v2_custom_domain_pack_materializes_from_team_config_only,
+        test_v2_disabled_d3a_pack_is_not_loaded_or_materialized,
+        test_v2_enabled_domain_pack_failures_are_bounded,
+        test_v1_implicit_domain_ownership_emits_fallback_used,
+        test_generic_domain_context_uses_materialized_module_policy_and_refs,
+        test_generic_domain_knowledge_uses_module_registries_and_root,
+        test_generic_domain_authorization_enforces_module_execution_skill,
+        test_generic_domain_completion_accepts_integrity_proof,
+        test_official_d3a_domain_pack_resolves_fixed_runtime_contract,
+        test_d3a_pack_tree_removal_is_controlled_only_by_v2_enablement,
+        test_runtime_integrity_suite_is_part_of_full_harness,
+        test_dispatch_state_suite_is_part_of_full_harness,
+        test_final_standalone_contract_suites_are_part_of_full_harness,
+        test_v2_file_policies_compile_all_stages_and_repeated_occurrences_for_three_lanes,
+        test_v2_compiler_rejects_unregistered_forged_and_incomplete_selections,
+        test_v2_definition_overrides_change_consumed_workflow_capability_and_trigger,
+        test_v2_runtime_dependency_identity_tracks_pack_and_skill_bytes,
+        test_v2_policy_unknown_skill_and_unsupported_guards_fail_closed,
+        test_idc_config_enforcement_architecture_html_is_self_contained_and_complete,
     ]
     failures = []
     for test in tests:

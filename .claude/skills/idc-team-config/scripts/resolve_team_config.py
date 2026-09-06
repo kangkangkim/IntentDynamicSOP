@@ -11,9 +11,19 @@ import sys
 from pathlib import Path
 
 import yaml
+from domain_policy_runtime import digest, materialize_policy, validate_profiles
 
 SCHEME_RE = re.compile(r"^[a-z][a-z0-9+.\-]*:", re.IGNORECASE)
 IDC_SKILL_DIR_RE = re.compile(r"^idc-[a-z0-9-]+$")
+DOMAIN_ID_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
+D3A_LAYER_IDS = ["TRAN_CFG", "DO", "VISP_ADP", "TFC_TFI", "TFE", "ADP", "DRV"]
+D3A_TEST_DOMAIN_IDS = ["TPRINT", "FW", "DPF"]
+LEGACY_FIXED_DOMAIN_ID = "d3a"
+
+
+def legacy_is_fixed_domain(domain_id):
+    """V1-only adapter boundary for the historical built-in fixed Domain."""
+    return domain_id == LEGACY_FIXED_DOMAIN_ID
 
 
 def abort(message):
@@ -182,6 +192,614 @@ def load_builtin_knowledge_registry(harness_root, relative_path, root_key, error
     return output
 
 
+def resolve_v2_ref(ref, primary_root, team_root, harness_root):
+    value = str(ref)
+    if value.startswith(("harness://", "team://")) or SCHEME_RE.match(value):
+        return resolve_file_ref(value, team_root, harness_root)
+    if os.path.isabs(value):
+        return os.path.normpath(value)
+    candidates = [
+        Path(primary_root) / value,
+        Path(team_root) / value,
+        Path(harness_root) / value,
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return os.path.normpath(str(candidate))
+    return os.path.normpath(str(candidates[0]))
+
+
+def framework_alignment(harness_root, errors):
+    binding_refs = {
+        "intent_discovery": ".claude/skills/idc-intent-discovery/SKILL.md",
+        "brainstorming": ".claude/skills/idc-brainstorming/SKILL.md",
+        "intent_grilling": ".claude/skills/idc-intent-grilling/SKILL.md",
+        "intent_grilling_with_docs": (
+            ".claude/skills/idc-intent-grilling-with-docs/SKILL.md"
+        ),
+        "intent_alignment": ".claude/skills/idc-intent-alignment/SKILL.md",
+    }
+    bindings = {}
+    for skill_id, ref in binding_refs.items():
+        resolved = resolve_file_ref(ref, harness_root, harness_root)
+        if not Path(resolved).is_file():
+            errors.append("framework alignment Skill is missing: {}".format(ref))
+        bindings[skill_id] = {"skill_ref": resolved}
+    steps = [
+        {
+            "id": "alignment-discovery",
+            "stage": "discovery",
+            "skill_ids": ["intent_discovery"],
+            "trigger_signals": ["raw_idea"],
+        },
+        {
+            "id": "alignment-brainstorming",
+            "stage": "divergence",
+            "skill_ids": ["brainstorming"],
+            "trigger_signals": ["raw_idea", "alternatives_needed"],
+        },
+        {
+            "id": "alignment-grilling",
+            "stage": "clarification",
+            "skill_ids": ["intent_grilling"],
+            "trigger_signals": [
+                "critical_gaps_remain",
+                "clarification_required",
+                "tr3_input",
+            ],
+        },
+        {
+            "id": "alignment-grilling-with-docs",
+            "stage": "clarification",
+            "skill_ids": ["intent_grilling_with_docs"],
+            "trigger_signals": ["docs_clarification_required"],
+        },
+        {
+            "id": "alignment-check",
+            "stage": "alignment_check",
+            "skill_ids": ["intent_alignment"],
+            "trigger_signals": [],
+        },
+    ]
+    return {
+        "source": "framework-default",
+        "bindings": bindings,
+        "orchestration": {"mode": "ordered", "steps": steps},
+    }
+
+
+def registry_ids(path, root_keys, errors, label):
+    try:
+        document = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError) as error:
+        errors.append("DOMAIN_PACK_INVALID: {} is invalid: {}".format(label, error))
+        return []
+    rows = []
+    if isinstance(document, dict):
+        for root_key in root_keys:
+            if root_key in document:
+                rows = document.get(root_key) or []
+                break
+    if not isinstance(rows, list):
+        errors.append("DOMAIN_PACK_INVALID: {} must contain a registry list".format(label))
+        return []
+    return [row.get("id") for row in rows if isinstance(row, dict)]
+
+
+def validate_fixed_architecture(contract, lane_policy, registries, definition_registries, errors):
+    """Validate an optional Pack-owned immutable architecture contract."""
+    if contract is None:
+        return
+    if not isinstance(contract, dict):
+        errors.append("DOMAIN_PACK_INVALID: fixed_architecture must be a mapping")
+        return
+    allowed = {"lane_mode", "coding_layer_ids", "default_test_domain_ids"}
+    if set(contract) - allowed:
+        errors.append("DOMAIN_PACK_INVALID: fixed_architecture has unsupported fields")
+        return
+    expected_mode = contract.get("lane_mode")
+    if expected_mode and lane_policy.get("mode") != expected_mode:
+        errors.append("DOMAIN_PACK_INVALID: fixed architecture lane policy does not match Pack contract")
+    expected_layers = contract.get("coding_layer_ids")
+    if expected_layers is not None:
+        if not isinstance(expected_layers, list) or not all(isinstance(item, str) for item in expected_layers):
+            errors.append("DOMAIN_PACK_INVALID: fixed_architecture.coding_layer_ids must be a string list")
+        elif registry_ids(registries.get("coding_layers_ref", ""), ["layers", "coding_layers"], errors,
+                          "fixed architecture coding layer registry") != expected_layers:
+            errors.append("DOMAIN_PACK_INVALID: fixed architecture coding layer registry does not match Pack contract")
+    expected_tests = contract.get("default_test_domain_ids")
+    if expected_tests is not None and not definition_registries:
+        if not isinstance(expected_tests, list) or not all(isinstance(item, str) for item in expected_tests):
+            errors.append("DOMAIN_PACK_INVALID: fixed_architecture.default_test_domain_ids must be a string list")
+        elif registry_ids(registries.get("test_domains_ref", ""), ["domains", "test_domains"], errors,
+                          "fixed architecture test domain registry") != expected_tests:
+            errors.append("DOMAIN_PACK_INVALID: fixed architecture test domain registry does not match Pack contract")
+
+
+def materialize_completion_predicates(module, errors):
+    """Expand fixed-Pack test obligations from the effective registry, not its shared file."""
+    document = yaml.safe_load(Path(module["completion_predicate_ref"]).read_text()) or {}
+    predicates = list(document.get("completion_predicates") or [])
+    if not module.get("fixed_architecture"):
+        return predicates
+    registry = yaml.safe_load(Path(module["registries"]["test_domains_ref"]).read_text()) or {}
+    rows = registry.get("test_domains", registry.get("domains", [])) if isinstance(registry, dict) else []
+    test_ids = [row.get("id") for row in rows if isinstance(row, dict) and present(row.get("id"))]
+    if not test_ids:
+        errors.append("DOMAIN_POLICY_INVALID: fixed architecture requires effective test-domain registry")
+        return []
+    expanded = [
+        {"predicate_id": f"{test_id}_green", "required": True,
+         "expected_status": "PASS", "evidence_required": True}
+        for test_id in test_ids
+    ]
+    expanded.extend(row for row in predicates
+                    if isinstance(row, dict) and row.get("predicate_id") != "required_dt_domains_green")
+    return expanded
+
+
+def resolve_v2_alignment(config, team_root, harness_root, errors):
+    configured = config.get("alignment")
+    if configured is None:
+        return framework_alignment(harness_root, errors), []
+    if not isinstance(configured, dict):
+        errors.append("alignment must be a mapping")
+        return {}, []
+    bindings, orchestration = configured.get("bindings"), configured.get("orchestration")
+    if not isinstance(bindings, dict) or not isinstance(orchestration, dict):
+        errors.append("alignment bindings and orchestration must be mappings")
+        return {}, []
+    resolved_bindings, refs = {}, []
+    for skill_id, binding in bindings.items():
+        path = "alignment.bindings.{}".format(skill_id)
+        if not isinstance(binding, dict) or not present(binding.get("skill_ref")):
+            errors.append("{}.skill_ref is required".format(path))
+            continue
+        resolved = resolve_file_ref(binding["skill_ref"], team_root, harness_root)
+        resolved_path = Path(resolved)
+        if not (resolved_path.name == "SKILL.md" and IDC_SKILL_DIR_RE.match(resolved_path.parent.name)):
+            errors.append("{}.skill_ref must resolve to an idc-*/SKILL.md path".format(path))
+        elif not resolved_path.is_file():
+            errors.append("{}.skill_ref does not exist: {}".format(path, resolved))
+        resolved_bindings[skill_id] = dict(binding, skill_ref=resolved)
+        refs.append(resolved)
+    if orchestration.get("mode") != "ordered" or not isinstance(orchestration.get("steps"), list):
+        errors.append("alignment.orchestration must contain ordered steps")
+        steps = []
+    else:
+        steps = orchestration["steps"]
+    seen, stages, signals = set(), set(), set()
+    for index, step in enumerate(steps):
+        path = "alignment.orchestration.steps[{}]".format(index)
+        if not isinstance(step, dict) or not present(step.get("id")) or step.get("id") in seen:
+            errors.append("{}.id must be unique and nonempty".format(path))
+            continue
+        seen.add(step["id"])
+        if step.get("stage") not in {"discovery", "divergence", "clarification", "alignment_check"}:
+            errors.append("{}.stage is invalid".format(path))
+        else:
+            stages.add(step["stage"])
+        if not isinstance(step.get("skill_ids"), list) or not step["skill_ids"]:
+            errors.append("{}.skill_ids must not be empty".format(path))
+        else:
+            for skill_id in step["skill_ids"]:
+                if skill_id not in resolved_bindings:
+                    errors.append("{}.skill_ids references an unbound Skill".format(path))
+        if not isinstance(step.get("trigger_signals"), list):
+            errors.append("{}.trigger_signals must be a list".format(path))
+        else:
+            signals.update(step["trigger_signals"])
+    for stage in {"discovery", "divergence", "clarification", "alignment_check"} - stages:
+        errors.append("alignment.orchestration requires stage {}".format(stage))
+    for signal in {"raw_idea", "critical_gaps_remain"} - signals:
+        errors.append("alignment trigger signal floor is missing {}".format(signal))
+    return {"source": "configured", "bindings": resolved_bindings,
+            "orchestration": {"mode": "ordered", "steps": steps}}, refs
+
+
+def apply_v2_team_capabilities(config, modules, team_root, harness_root, errors):
+    bindings = config.get("bindings") or {}
+    extensions = config.get("adapter_extensions") or []
+    if not isinstance(bindings, dict):
+        errors.append("bindings must be a mapping")
+        bindings = {}
+    if not isinstance(extensions, list):
+        errors.append("adapter_extensions must be a list")
+        extensions = []
+    refs, overrides = [], []
+    for module in modules.values():
+        capabilities = module.get("available_capabilities") or []
+        by_id = {row.get("id"): row for row in capabilities}
+        for capability_id, binding in bindings.items():
+            if not isinstance(binding, dict) or not present(binding.get("skill_ref")):
+                errors.append("bindings.{}.skill_ref is required".format(capability_id))
+                continue
+            resolved = resolve_file_ref(binding["skill_ref"], team_root, harness_root)
+            if not SCHEME_RE.match(resolved) and not Path(resolved).is_file():
+                errors.append("bindings.{}.skill_ref does not exist".format(capability_id))
+            binding["skill_ref"] = resolved
+            refs.append(resolved)
+            if capability_id in by_id:
+                old_ref = by_id[capability_id].get("skill_ref")
+                by_id[capability_id]["skill_ref"] = resolved
+                overrides.append({"capability_id": capability_id, "from": old_ref, "to": resolved})
+        for index, raw in enumerate(extensions):
+            path = "adapter_extensions[{}]".format(index)
+            if not isinstance(raw, dict) or not str(raw.get("id") or "").startswith("idc-"):
+                errors.append("{}.id must start with idc-".format(path))
+                continue
+            if raw.get("execution_role") is None:
+                raw["execution_role"] = "atomic_capability"
+            if raw.get("execution_role") not in {"atomic_capability", "verification_capability",
+                                                  "pre_alignment_capability"}:
+                errors.append("{}.execution_role is invalid".format(path))
+            for field in ["composes_with", "supersedes"]:
+                if raw.get(field) is None:
+                    raw[field] = []
+            for field in ["capability_keys", "allowed_stages", "eligible_lanes", "execution_profiles",
+                          "trigger_signals", "requires", "blocks_when", "composes_with", "supersedes"]:
+                if not isinstance(raw.get(field), list):
+                    errors.append("{}.{} must be a list".format(path, field))
+            if not raw.get("capability_keys") or not raw.get("allowed_stages"):
+                errors.append("{} requires capability_keys and allowed_stages".format(path))
+            if set(raw.get("capability_keys") or []) & {"domain_selection", "lane_selection",
+                    "contract_gate", "human_alignment", "completion_gate", "workflow_orchestration",
+                    "domain_execution", "delegation"}:
+                errors.append("{}.capability_keys contains protected ownership".format(path))
+            may_override = raw.get("may_override")
+            if isinstance(may_override, dict) and set(may_override) & {
+                    "domain_selection", "lane_selection", "contract_gate", "human_alignment",
+                    "completion_gate"}:
+                errors.append("{}.may_override contains protected ownership".format(path))
+            if set(raw.get("allowed_stages") or []) - {
+                    "planning", "implementation", "verification", "completion", "review", "fix",
+                    "discovery", "divergence", "clarification", "alignment_check", "pre_alignment",
+                    "dt_design", "dt_writing", "dt_build", "tran_build", "debugging", "finishing"}:
+                errors.append("{}.allowed_stages contains an unsupported stage".format(path))
+            if set(raw.get("eligible_lanes") or []) - {"fast", "lite", "complex"}:
+                errors.append("{}.eligible_lanes contains an unsupported Lane".format(path))
+            if raw.get("id") in by_id:
+                errors.append("available capability IDs are duplicated: {}".format(raw.get("id")))
+                continue
+            resolved = resolve_file_ref(raw.get("skill_ref"), team_root, harness_root)
+            if not Path(resolved).is_file():
+                errors.append("{}.skill_ref does not exist".format(path))
+            extension = dict(raw, skill_ref=resolved)
+            refs.append(resolved)
+            for field in ["input_contract_ref", "output_contract_ref"]:
+                if extension.get(field):
+                    extension[field] = resolve_file_ref(extension[field], team_root, harness_root)
+                    refs.append(extension[field])
+            capabilities.append(extension)
+            by_id[extension["id"]] = extension
+            extensions[index] = extension
+        ids = set(by_id)
+        extension_ids = {entry.get("id") for entry in extensions if isinstance(entry, dict)}
+        for capability in capabilities:
+            if capability.get("id") not in extension_ids:
+                continue
+            for relation in ["composes_with", "supersedes"]:
+                for target in capability.get(relation) or []:
+                    if target not in ids or (relation == "supersedes" and target == capability.get("id")):
+                        errors.append("{}.{} references an invalid capability: {}".format(
+                            capability.get("id"), relation, target))
+        for left, right in itertools.combinations(capabilities, 2):
+            if not (set(left.get("capability_keys") or []) & set(right.get("capability_keys") or [])
+                    and set(left.get("allowed_stages") or []) & set(right.get("allowed_stages") or [])):
+                continue
+            scoped = (set(left.get("eligible_lanes") or []) & set(right.get("eligible_lanes") or [])
+                      or set(left.get("execution_profiles") or []) & set(right.get("execution_profiles") or []))
+            if not scoped:
+                continue
+            left_signals, right_signals = left.get("trigger_signals") or [], right.get("trigger_signals") or []
+            if left_signals and right_signals and not set(left_signals) & set(right_signals):
+                continue
+            related = (right.get("id") in (left.get("composes_with") or [])
+                       or left.get("id") in (right.get("composes_with") or [])
+                       or right.get("id") in (left.get("supersedes") or [])
+                       or left.get("id") in (right.get("supersedes") or []))
+            if not related:
+                errors.append("ambiguous capability registration: {} conflicts with {}".format(
+                    left.get("id"), right.get("id")))
+        validate_profiles(module.get("lane_profiles") or {}, capabilities)
+    return bindings, extensions, refs, overrides
+
+
+def compile_v2_runtime(config, source_text, config_path, team_root, harness_root, errors):
+    supported_config_fields = {
+        "config_version", "team", "domains", "lane", "bindings",
+        "adapter_extensions", "alignment", "knowledge", "capability_selection",
+        "self_optimization",
+    }
+    unknown_config_fields = set(config) - supported_config_fields
+    if unknown_config_fields:
+        errors.append("CONFIG_UNSUPPORTED: unsupported top-level fields: {}".format(
+            ", ".join(sorted(unknown_config_fields))))
+    team = config.get("team")
+    if not isinstance(team, dict):
+        errors.append("team must be a mapping for config_version 2")
+        team = {}
+    unknown_team_fields = set(team) - {"id", "repo_path"}
+    if unknown_team_fields:
+        errors.append("TEAM_UNSUPPORTED: unsupported fields: {}".format(
+            ", ".join(sorted(unknown_team_fields))))
+    domains = config.get("domains")
+    if not isinstance(domains, dict):
+        errors.append("domains must be a mapping for config_version 2")
+        domains = {}
+    unknown_domain_fields = set(domains) - {"enabled", "default", "definitions"}
+    if unknown_domain_fields:
+        errors.append("DOMAINS_UNSUPPORTED: unsupported fields: {}".format(
+            ", ".join(sorted(unknown_domain_fields))))
+    if "domain" in config:
+        errors.append("V2_OWNERSHIP_CONFLICT: legacy domain ownership is not allowed")
+
+    enabled = domains.get("enabled")
+    default_domain = domains.get("default")
+    definitions = domains.get("definitions")
+    if not isinstance(enabled, list) or not enabled:
+        errors.append("domains.enabled must be a non-empty list")
+        enabled = []
+    normalized_enabled = []
+    for domain_id in enabled:
+        if not isinstance(domain_id, str) or not DOMAIN_ID_RE.fullmatch(domain_id):
+            errors.append("domains.enabled contains invalid Domain ID: {}".format(domain_id))
+            continue
+        if domain_id in normalized_enabled:
+            errors.append("domains.enabled must contain unique IDs")
+            continue
+        normalized_enabled.append(domain_id)
+    enabled = normalized_enabled
+    if default_domain not in enabled:
+        errors.append("domains.default must name an enabled Domain")
+    if not isinstance(definitions, dict):
+        errors.append("domains.definitions must be a mapping")
+        definitions = {}
+
+    modules = {}
+    dependency_files = {}
+    knowledge_catalog = {}
+    for domain_id in enabled:
+        definition = definitions.get(domain_id)
+        if not isinstance(definition, dict):
+            errors.append(
+                "DOMAIN_PACK_MISSING: domains.definitions.{} must be a mapping".format(
+                    domain_id
+                )
+            )
+            continue
+        pack_ref = definition.get("pack_ref")
+        if not present(pack_ref):
+            errors.append(
+                "DOMAIN_PACK_MISSING: domains.definitions.{}.pack_ref is missing".format(
+                    domain_id
+                )
+            )
+            continue
+        pack_path = resolve_v2_ref(pack_ref, config_path.parent, team_root, harness_root)
+        if not Path(pack_path).is_file():
+            errors.append(
+                "DOMAIN_PACK_MISSING: enabled Domain {} pack_ref is missing: {}".format(
+                    domain_id, pack_path
+                )
+            )
+            continue
+        try:
+            pack_document = yaml.safe_load(Path(pack_path).read_text(encoding="utf-8")) or {}
+        except (OSError, yaml.YAMLError) as error:
+            errors.append(
+                "DOMAIN_PACK_INVALID: enabled Domain {} pack is invalid: {}".format(
+                    domain_id, error
+                )
+            )
+            continue
+        pack = pack_document.get("domain_pack") if isinstance(pack_document, dict) else None
+        if not isinstance(pack, dict):
+            errors.append(
+                "DOMAIN_PACK_INVALID: enabled Domain {} requires domain_pack mapping".format(
+                    domain_id
+                )
+            )
+            continue
+        supported_pack_fields = {
+            "id", "trigger_rules", "lane_policy", "fixed_architecture",
+            "workflow_profile_ref", "capability_policy_ref",
+            "completion_predicate_ref", "registries", "knowledge_root_ref",
+        }
+        unknown_pack_fields = set(pack) - supported_pack_fields
+        if unknown_pack_fields:
+            errors.append("DOMAIN_PACK_UNSUPPORTED: {} fields: {}".format(
+                domain_id, ", ".join(sorted(unknown_pack_fields))))
+        if pack.get("id") != domain_id:
+            errors.append(
+                "DOMAIN_PACK_ID_MISMATCH: enabled Domain {} does not match pack ID {}".format(
+                    domain_id, pack.get("id")
+                )
+            )
+            continue
+
+        # Definition ownership replaces Pack defaults, including explicit empty values.
+        overlay_fields = {"trigger_rules", "workflow_profile_ref", "capability_policy_ref",
+                          "completion_predicate_ref", "registries"}
+        if set(definition) - overlay_fields - {"pack_ref"}:
+            errors.append("DOMAIN_PACK_UNSUPPORTED: unsupported definition fields")
+        pack = dict(pack, **{key: definition[key] for key in overlay_fields
+                            if key in definition and key != "registries"})
+
+        trigger_rules = pack.get("trigger_rules")
+        lane_policy = pack.get("lane_policy")
+        pack_registries = pack.get("registries")
+        definition_registries = definition.get("registries")
+        if definition_registries is not None and not isinstance(definition_registries, dict):
+            errors.append("DOMAIN_PACK_INVALID: definition registries must be a mapping")
+            definition_registries = {}
+        registries = dict(pack_registries or {})
+        registries.update(definition_registries or {})
+        if set(registries) - {"coding_layers_ref", "test_domains_ref"}:
+            errors.append("DOMAIN_PACK_INVALID: unsupported registry fields")
+        if not isinstance(trigger_rules, list):
+            errors.append("DOMAIN_PACK_INVALID: {}.trigger_rules must be a list".format(domain_id))
+            trigger_rules = []
+        if not isinstance(lane_policy, dict):
+            errors.append("DOMAIN_PACK_INVALID: {}.lane_policy must be a mapping".format(domain_id))
+            lane_policy = {}
+        lane_mode = lane_policy.get("mode")
+        if lane_mode not in ("dynamic", "fixed", "not_applicable"):
+            errors.append("DOMAIN_PACK_INVALID: {} lane policy mode is invalid".format(domain_id))
+        if lane_mode == "fixed" and lane_policy.get("selected_lane") not in (
+            "fast",
+            "lite",
+            "complex",
+        ):
+            errors.append("DOMAIN_PACK_INVALID: {} fixed lane is required".format(domain_id))
+        if lane_mode != "fixed" and present(lane_policy.get("selected_lane")):
+            errors.append("DOMAIN_PACK_INVALID: {} selected_lane requires fixed mode".format(domain_id))
+        if not isinstance(registries, dict):
+            errors.append("DOMAIN_PACK_INVALID: {}.registries must be a mapping".format(domain_id))
+            registries = {}
+
+        resolved_refs = {}
+        for field in [
+            "workflow_profile_ref",
+            "capability_policy_ref",
+            "completion_predicate_ref",
+        ]:
+            ref = pack.get(field)
+            if not present(ref):
+                errors.append("DOMAIN_PACK_INVALID: {}.{} is required".format(domain_id, field))
+                continue
+            ref_root = config_path.parent if field in definition else Path(pack_path).parent
+            resolved = resolve_v2_ref(ref, ref_root, team_root, harness_root)
+            if not Path(resolved).is_file():
+                errors.append("DOMAIN_PACK_MISSING: {}.{} is missing: {}".format(domain_id, field, resolved))
+            resolved_refs[field] = resolved
+
+        resolved_registries = {}
+        for field in ["coding_layers_ref", "test_domains_ref"]:
+            ref = registries.get(field)
+            if not present(ref):
+                errors.append("DOMAIN_PACK_INVALID: {}.registries.{} is required".format(domain_id, field))
+                continue
+            ref_root = config_path.parent if field in (definition_registries or {}) else Path(pack_path).parent
+            resolved = resolve_v2_ref(ref, ref_root, team_root, harness_root)
+            if not Path(resolved).is_file():
+                errors.append("DOMAIN_PACK_MISSING: {} registry {} is missing: {}".format(domain_id, field, resolved))
+            resolved_registries[field] = resolved
+
+        knowledge_ref = pack.get("knowledge_root_ref")
+        if not present(knowledge_ref):
+            errors.append("DOMAIN_PACK_INVALID: {}.knowledge_root_ref is required".format(domain_id))
+            resolved_knowledge_ref = None
+        else:
+            resolved_knowledge_ref = resolve_v2_ref(
+                knowledge_ref, Path(pack_path).parent, team_root, harness_root
+            )
+            if not Path(resolved_knowledge_ref).exists():
+                errors.append(
+                    "DOMAIN_PACK_MISSING: {} knowledge root is missing: {}".format(
+                        domain_id, resolved_knowledge_ref
+                    )
+                )
+
+        fixed_architecture = pack.get("fixed_architecture")
+        validate_fixed_architecture(
+            fixed_architecture, lane_policy, resolved_registries,
+            definition_registries, errors,
+        )
+
+        module = {
+            "id": domain_id,
+            "source": "domain-pack",
+            "pack_ref": pack_path,
+            "trigger_rules": trigger_rules,
+            "lane_policy": lane_policy,
+            "lane_applicability": lane_mode,
+            "execution_profile": (
+                "lane_driven" if lane_mode in ("dynamic", "fixed") else "domain_pack_fixed_workflow"
+            ),
+            "registries": resolved_registries,
+            "knowledge_root_ref": resolved_knowledge_ref,
+            "fixed_architecture": fixed_architecture,
+        }
+        module.update(resolved_refs)
+        try:
+            dependency_files.update(materialize_policy(
+                module, lambda ref, base: resolve_v2_ref(ref, base, team_root, harness_root)))
+            team_profiles = (config.get("lane") or {}).get("profiles") or {}
+            if not isinstance(team_profiles, dict):
+                raise ValueError("POLICY_INVALID: lane.profiles must be a mapping")
+            profiles = dict(module["lane_profiles"] or {})
+            profiles.update(team_profiles)
+            validate_profiles(profiles, module["available_capabilities"])
+            module["lane_profiles"] = profiles
+            policy = (yaml.safe_load(Path(module["capability_policy_ref"]).read_text()) or {}).get("capability_policy") or {}
+            module["execution_profile"] = policy.get("execution_profile") or module["execution_profile"]
+            module["lane_applicability"] = policy.get("lane_applicability") or lane_mode
+            module["selection_profile"] = policy.get("selection_profile")
+            module["completion_predicates"] = materialize_completion_predicates(module, errors)
+        except (ValueError, OSError, TypeError, KeyError, AttributeError, yaml.YAMLError) as error:
+            errors.append("DOMAIN_POLICY_INVALID: {}: {}".format(domain_id, error))
+        modules[domain_id] = module
+        knowledge_catalog[domain_id] = {
+            "registries": resolved_registries,
+            "knowledge_root_ref": resolved_knowledge_ref,
+        }
+
+    bindings, extensions, team_refs, registration_overrides = apply_v2_team_capabilities(
+        config, modules, team_root, harness_root, errors
+    )
+    alignment, alignment_refs = resolve_v2_alignment(config, team_root, harness_root, errors)
+    for ref in team_refs + alignment_refs:
+        if not SCHEME_RE.match(str(ref)) and Path(ref).is_file():
+            dependency_files[str(Path(ref).resolve())] = hashlib.sha256(Path(ref).read_bytes()).hexdigest()
+
+    lane = config.get("lane") if isinstance(config.get("lane"), dict) else {}
+    lane = {
+        "default": lane.get("default") or "lite",
+        "profiles": lane.get("profiles") if isinstance(lane.get("profiles"), dict) else {},
+    }
+    effective = {
+        "generated": True,
+        "status": "READY" if not errors else "INVALID",
+        "source_ref": str(config_path),
+        "source_sha256": hashlib.sha256(source_text.encode("utf-8")).hexdigest(),
+        "config_version": 2,
+        "runtime_dependency_files": dependency_files,
+        "runtime_dependency_sha256": digest(dependency_files),
+        "team": dict(team, repo_path=str(team_root)),
+        "domain": modules.get(default_domain) or {},
+        "domains": {"enabled": enabled, "default": default_domain, "modules": modules},
+        "enabled_domains": enabled,
+        "bindings": bindings,
+        "adapter_extensions": extensions,
+        "available_capabilities": (modules.get(default_domain) or {}).get("available_capabilities", []),
+        "registration_audit": {"status": "PASS", "conflicts": [],
+                               "declared_overrides": registration_overrides},
+        "knowledge": config.get("knowledge"),
+        "knowledge_catalog": knowledge_catalog,
+        "lane": lane,
+        "diagnostics": [],
+        "alignment": alignment,
+        "capability_selection": config.get("capability_selection") or {
+            "mode": "autonomous_minimal_sufficient",
+            "lane_profiles": {},
+            "require_selected_and_skipped_reasons": True,
+        },
+        "self_optimization": config.get("self_optimization") or {
+            "mode": "observe",
+            "auto_modify_core": False,
+        },
+        "readiness": {
+            "status": "READY" if not errors else "INVALID",
+            "errors": errors,
+            "warnings": [],
+        },
+    }
+    effective["status"] = "READY" if not errors else "INVALID"
+    effective["readiness"]["status"] = effective["status"]
+    return effective
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="resolve_team_config.py",
@@ -242,8 +860,8 @@ def main():
                 "{} is forbidden; bind a skill_ref instead".format(".".join(key_path))
             )
 
-    if config.get("config_version") != 1:
-        errors.append("config_version must be 1")
+    if config.get("config_version") not in (1, 2):
+        errors.append("config_version must be 1 or 2")
     if not present(value_at(config, "team", "id")):
         errors.append("team.id is required")
     if not present(value_at(config, "team", "repo_path")):
@@ -261,6 +879,49 @@ def main():
     if not team_root.is_dir():
         errors.append(
             "team.repo_path does not exist or is not a directory: {}".format(team_repo_ref)
+        )
+
+    if config.get("config_version") == 2:
+        effective = compile_v2_runtime(
+            config,
+            source_text,
+            config_path,
+            team_root,
+            harness_root,
+            errors,
+        )
+        if errors:
+            if options.output:
+                Path(options.output).parent.mkdir(parents=True, exist_ok=True)
+                Path(options.output).write_text(yaml.safe_dump(effective, allow_unicode=True))
+            print("INVALID team-config.yaml", file=sys.stderr)
+            for error in errors:
+                print("- {}".format(error), file=sys.stderr)
+            sys.exit(1)
+        if options.output:
+            output_path = Path(os.path.abspath(options.output))
+            os.makedirs(str(output_path.parent), exist_ok=True)
+            temporary_path = output_path.parent / ".{}.tmp-{}".format(
+                output_path.name, os.getpid()
+            )
+            with open(temporary_path, "w", encoding="utf-8") as handle:
+                handle.write(
+                    "# Generated by idc-team-config. Do not edit.\n"
+                    + yaml.dump(
+                        json.loads(json.dumps(effective)),
+                        allow_unicode=True,
+                        sort_keys=False,
+                    )
+                )
+            os.replace(str(temporary_path), str(output_path))
+            print("READY: wrote {}".format(output_path))
+        else:
+            print("READY: team-config.yaml is valid")
+        return
+
+    if "domains" in config:
+        errors.append(
+            "V1_OWNERSHIP_CONFLICT: domains is reserved for config_version 2"
         )
 
     mode = value_at(config, "domain", "mode")
@@ -719,7 +1380,7 @@ def main():
                 "lite": {"max_optional_skills": 3},
                 "complex": {"max_optional_skills": None},
             },
-            "d3a_profile": {"max_optional_skills": None},
+            "fixed_workflow": {"max_optional_skills": None},
             "require_selected_and_skipped_reasons": True,
         }
         config["capability_selection"] = capability_selection
@@ -741,12 +1402,12 @@ def main():
                 "capability_selection.lane_profiles.{}.max_optional_skills must be null "
                 "or a non-negative integer".format(lane_id)
             )
-    d3a_budget = value_at(capability_selection, "d3a_profile", "max_optional_skills")
-    if d3a_budget is not None and (
-        not isinstance(d3a_budget, int) or isinstance(d3a_budget, bool) or d3a_budget < 0
+    fixed_budget = value_at(capability_selection, "fixed_workflow", "max_optional_skills")
+    if fixed_budget is not None and (
+        not isinstance(fixed_budget, int) or isinstance(fixed_budget, bool) or fixed_budget < 0
     ):
         errors.append(
-            "capability_selection.d3a_profile.max_optional_skills must be null or a "
+            "capability_selection.fixed_workflow.max_optional_skills must be null or a "
             "non-negative integer"
         )
 
@@ -1035,7 +1696,7 @@ def main():
         builtin_general_test_domains if not general_test_overrides else general_test_overrides
     )
 
-    knowledge_catalog = {
+    available_knowledge_catalog = {
         "d3a": {"layers": builtin_d3a_layers, "test_domains": d3a_test_domains},
         "general": {"components": general_components, "test_domains": general_test_domains},
         "custom": {
@@ -1043,14 +1704,27 @@ def main():
             "test_domains": to_array(custom.get("test_domains")),
         },
     }
+    if configured_enabled_modes is None:
+        knowledge_catalog = available_knowledge_catalog
+    else:
+        knowledge_catalog = {
+            domain_id: available_knowledge_catalog[domain_id]
+            for domain_id in enabled_modes
+            if domain_id in available_knowledge_catalog
+        }
 
     def build_effective_domain(domain_mode):
-        if domain_mode == "d3a":
+        if legacy_is_fixed_domain(domain_mode):
             return {
                 "id": "d3a",
                 "source": "builtin",
                 "lane_applicability": "not_applicable",
                 "execution_profile": "d3a_fixed_workflow",
+                "fixed_architecture": {
+                    "lane_mode": "not_applicable",
+                    "coding_layer_ids": D3A_LAYER_IDS,
+                    "default_test_domain_ids": D3A_TEST_DOMAIN_IDS,
+                },
                 "orchestration": d3a_orchestration,
                 "coding_layers_source": "registries/d3a-layers.yaml",
                 "test_domains_source": (
@@ -1093,6 +1767,30 @@ def main():
         "default": mode,
         "modules": domain_modules_effective,
     }
+    lane_applicabilities = [
+        domain.get("lane_applicability")
+        or value_at(domain, "lane_policy", "mode")
+        for domain in domain_modules_effective.values()
+    ]
+    diagnostics = []
+    if lane_applicabilities and all(
+        applicability == "not_applicable" for applicability in lane_applicabilities
+    ):
+        diagnostics = [
+            {
+                "path": "lane.profiles.{}".format(lane_id),
+                "status": "UNREACHABLE",
+                "reason": "all enabled domains declare Lane not_applicable",
+            }
+            for lane_id in ("fast", "lite", "complex")
+        ]
+    diagnostics.append(
+        {
+            "path": "domain",
+            "status": "FALLBACK_USED",
+            "reason": "config_version 1 uses implicit Domain ownership",
+        }
+    )
 
     capability_registry_path = (
         harness_root / ".claude/skills/idc-workflow/references/registries/team-capabilities.yaml"
@@ -1334,6 +2032,7 @@ def main():
         "knowledge": config.get("knowledge"),
         "knowledge_catalog": knowledge_catalog,
         "lane": {"default": lane_default, "profiles": lane_profiles},
+        "diagnostics": diagnostics,
         "alignment": alignment_effective,
         "capability_selection": capability_selection,
         "self_optimization": self_optimization,

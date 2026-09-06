@@ -160,11 +160,25 @@ function initializeTeamConfig(targetRoot, teamId, result, options) {
     return;
   }
   const normalizedTeam = (teamId || basename(targetRoot)).toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-|-$/g, "") || "team";
-  const template = readFileSync(join(PACKAGE_ROOT, "team-config.yaml.template"), "utf8")
-    .replace("<TEAM_ID>", normalizedTeam)
-    .replace("<REPO_PATH>", ".");
+  const template = materializeTeamConfig(
+    readFileSync(join(PACKAGE_ROOT, "team-config.yaml.template"), "utf8"),
+    normalizedTeam,
+  );
   result.actions.push({ status: "CREATED", message: `team-config.yaml initialized for ${normalizedTeam}${options.dryRun ? " (dry-run)" : ""}` });
   if (!options.dryRun) writeFileSync(targetPath, template);
+}
+
+function materializeTeamConfig(template, teamId) {
+  // v2 templates intentionally expose a safe public default rather than a
+  // placeholder token. Replace only the top-level team.id value so comments
+  // and unrelated values cannot be changed by a supplied --team argument.
+  const withTeamId = template.replace(
+    /^(\s*id:\s*)public-placeholder-team\s*$/m,
+    `$1${teamId}`,
+  );
+  return withTeamId
+    .replace("<TEAM_ID>", teamId)
+    .replace("<REPO_PATH>", ".");
 }
 
 function ensureHostLink(linkPath, target, type, result, options) {
@@ -205,6 +219,7 @@ function pushCheck(result, ok, message, detail = "") {
 function walkFiles(root) {
   const output = [];
   for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (entry.name === "__pycache__" || entry.name.endsWith(".pyc")) continue;
     const path = join(root, entry.name);
     if (entry.isDirectory()) output.push(...walkFiles(path));
     else if (entry.isFile()) output.push(path);

@@ -1,0 +1,19 @@
+domain_pack:
+  id: d3a
+  trigger_rules:
+    - field: selected_domain
+      equals: d3a
+  lane_policy:
+    mode: not_applicable
+    selected_lane: null
+  fixed_architecture:
+    lane_mode: not_applicable
+    coding_layer_ids: [TRAN_CFG, DO, VISP_ADP, TFC_TFI, TFE, ADP, DRV]
+    default_test_domain_ids: [TPRINT, FW, DPF]
+  workflow_profile_ref: workflow-profile.yaml
+  capability_policy_ref: capability-policy.yaml
+  completion_predicate_ref: completion-predicate.yaml
+  registries:
+    coding_layers_ref: ../../registries/d3a-layers.yaml
+    test_domains_ref: ../../registries/dt-domains.yaml
+  knowledge_root_ref: ../../knowledge/d3a

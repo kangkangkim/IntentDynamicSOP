@@ -7,9 +7,14 @@ runtime state.
 For a General Coding team, the smallest valid file is:
 
 ```yaml
-config_version: 1
+config_version: 2
 team: {id: my-team, repo_path: /repos/my-team}
-domain: {enabled: [general], mode: general}
+domains:
+  enabled: [general]
+  default: general
+  definitions:
+    general:
+      pack_ref: harness://.claude/skills/idc-workflow/references/domains/general/domain-pack.yaml
 bindings: {}
 ```
 
@@ -63,7 +68,7 @@ gates around that sequence remain fixed.
 Fill the team identity and repository root:
 
 ```yaml
-config_version: 1
+config_version: 2
 team:
   id: <TEAM_ID>
   repo_path: <REPO_PATH>
@@ -73,9 +78,12 @@ Declare every Domain the team supports, then choose the fallback used only when
 the Router cannot identify a stronger match:
 
 ```yaml
-domain:
+domains:
   enabled: [general, d3a]
-  mode: general # default; must be present in enabled
+  default: general
+  definitions:
+    general: {pack_ref: harness://.claude/skills/idc-workflow/references/domains/general/domain-pack.yaml}
+    d3a: {pack_ref: harness://.claude/skills/idc-workflow/references/domains/d3a/domain-pack.yaml}
 ```
 
 Scenario Router selects exactly one enabled Domain for each task. General
@@ -88,23 +96,21 @@ selected_lane: null
 execution_profile: d3a_fixed_workflow
 ```
 
-D3A DT domains may replace the public defaults wholesale:
+D3A DT domains may replace the public defaults wholesale through its definition registry override:
 
 ```yaml
-domain:
-  enabled: [general, d3a]
-  mode: d3a
-  d3a:
-    dt_domains:
-      - id: <DT_ID>
-        knowledge_ref: <ENTERPRISE_DT_KNOWLEDGE_REF>
+domains:
+  definitions:
+    d3a:
+      pack_ref: harness://.claude/skills/idc-workflow/references/domains/d3a/domain-pack.yaml
+      registries: {test_domains_ref: team://knowledge/d3a/test-domains.yaml}
 ```
 
-For a Custom Domain, add `custom` to `domain.enabled` and fill `domain.custom`
-in the same file. Include trigger
-rules, `dynamic | fixed | not_applicable` Lane policy, coding/test registries,
-required contracts, and workflow/planner/completion Skill refs. Do not edit the
-shared Domain registry.
+For a Custom Domain, maintain its assets from `template-domain` and reference
+its Pack from `domains.definitions`. Do not edit the shared Domain registry.
+
+Canonical details: [Team Config v2](.claude/skills/idc-team-config/references/team-config-v2.md)
+and [Runtime lifecycle](.claude/skills/idc-team-config/references/runtime-lifecycle.md).
 
 ## Step 4: Bind Skills And Resolve Ownership
 

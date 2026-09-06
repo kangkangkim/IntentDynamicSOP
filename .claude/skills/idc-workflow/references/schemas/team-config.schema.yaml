@@ -1,11 +1,24 @@
 schema: team_config
-version: 1
+version: 2
 
 team_config:
-  config_version: 1
+  config_version: 1 | 2
   team:
     id: string
     repo_path: path
+  domains: # config_version 2 ownership; only enabled definitions are loaded
+    enabled: [domain_id]
+    default: domain_id
+    definitions:
+      domain_id:
+        pack_ref: ref
+        trigger_rules: [] # optional Pack override
+        workflow_profile_ref: ref # optional Pack override
+        capability_policy_ref: ref # optional Pack override
+        completion_predicate_ref: ref # optional Pack override
+        registries: # optional wholesale registry overrides
+          coding_layers_ref: ref
+          test_domains_ref: ref
   domain:
     enabled: [d3a, general, custom] # non-empty subset; optional for legacy configs
     mode: d3a | general | custom
@@ -125,6 +138,9 @@ team_config:
     auto_modify_core: false
 
 rules:
+  - In config_version 2, explicit team Lane profiles replace the corresponding Domain Pack Lane profile; unspecified Lane profiles retain Pack defaults.
+  - In config_version 2, bindings override matching Domain Pack capability skill refs and are recorded by registration_audit.
+  - Bindings, adapter extensions, and explicit alignment Skill refs contribute to runtime dependency identity.
   - team-config.yaml is the only team-authored configuration source.
   - Generated .idc files are read-only runtime state.
   - Commands and pass/fail logic live inside bound skills.

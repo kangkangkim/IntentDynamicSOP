@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDC 配置强制生效架构</title>
+  <style>
+    :root{--page:#f3f6fa;--ink:#172033;--muted:#56657a;--line:#cbd5e1;--panel:#fff;--blue:#2563eb;--red:#b42318;--config:#2563eb;--compile:#7c3aed;--host:#b45309;--evidence:#047857;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+    *{box-sizing:border-box}html,body{max-width:100%;overflow-x:hidden}body{margin:0;background:var(--page);color:var(--ink);line-height:1.45}main{width:min(1240px,100%);margin:auto;padding:18px 18px 48px}header{padding:4px 2px 8px}h1{font-size:clamp(27px,3.4vw,40px);line-height:1.12;margin:5px 0 8px}h2{font-size:21px;margin:0 0 10px}h3{font-size:16px;margin:0 0 7px}p,li{color:var(--muted)}header p{margin:4px 0}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--blue)}section,article{min-width:0;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px;margin-top:14px;box-shadow:0 5px 18px #1720330b}.note{border-left:4px solid var(--host);padding:8px 11px;background:#fffbeb;border-radius:6px;font-size:13px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.scroll,pre{max-width:100%;overflow:auto}code{padding:1px 5px;background:#edf2f7;border-radius:4px;font-family:ui-monospace,monospace;overflow-wrap:anywhere}pre{padding:12px;border-radius:8px;background:#132033;color:#edf5ff;font:12px/1.5 ui-monospace,monospace}a{color:#155bb5}a:focus{outline:3px solid #f6bc46;outline-offset:3px}
+    .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 10px;font-size:12px;color:var(--muted)}.legend span{display:inline-flex;align-items:center;gap:6px}.legend i{width:13px;height:4px;border-radius:3px;background:var(--role)}
+    .swimlane{border:1px solid var(--line);border-radius:10px;overflow:hidden}.lane-head,.swimlane-row{display:grid;grid-template-columns:1.05fr 2.3fr 1.35fr 1.25fr}.lane-head{background:#1d2939;color:#fff;font-size:12px;font-weight:750}.lane-head span{padding:7px 10px;border-right:1px solid #ffffff2e}.lane-head span:last-child{border:0}.swimlane-row{--role:var(--config);--wash:#eff6ff;position:relative;border-left:6px solid var(--role);background:var(--wash)}.swimlane-row[data-lane="compile"]{--role:var(--compile);--wash:#f7f3ff}.swimlane-row[data-lane="host"]{--role:var(--host);--wash:#fff8eb}.swimlane-row[data-lane="evidence"]{--role:var(--evidence);--wash:#effbf6}.lane-cell{min-width:0;padding:9px 10px;border-right:1px solid #d8e0ea;font-size:12px;color:var(--muted)}.lane-cell:last-child{border:0}.responsibility strong{display:block;color:var(--role);font-size:14px;margin-bottom:2px}.lane-cell b{color:var(--ink)}.down-arrow{height:18px;display:grid;place-items:center;background:#fff;color:#344054;font-size:15px;font-weight:900;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.branch{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:stretch;margin-top:5px}.branch-path{border:1px solid #c4b5fd;border-radius:7px;padding:6px;background:#fff}.branch-path b{display:block}.merge{display:grid;place-items:center;color:var(--compile);font-weight:900}.graph-target{margin-top:5px;border:1px solid var(--compile);border-radius:7px;padding:5px;text-align:center;background:#fff;color:#4c1d95;font-weight:750}.fail{color:var(--red);font-weight:700}.scope{font-size:11px;color:#667085;margin:8px 0 0;text-align:right}
+    .ordered{display:grid;grid-template-columns:repeat(7,minmax(0,auto));gap:7px;align-items:center}.ordered-node{min-width:0;border:1px solid #93a4b8;background:#fff;border-radius:9px;padding:10px;text-align:center}.ordered-node strong{display:block;color:var(--ink)}.ordered-arrow{color:var(--evidence);font-weight:900;text-align:center}.failure-rail{margin-top:9px;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px;border:1px solid #f2aaa5;border-left:5px solid var(--red);border-radius:8px;background:#fff1f0;color:var(--red);font-size:13px;font-weight:750}.failure-rail .rail-arrow{font-size:18px}.ordered-note{margin-bottom:8px}
+    .guarantee{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:11px 13px;border:1px solid #86b7fe;border-left:5px solid var(--blue);border-radius:9px;background:#eff6ff}.guarantee strong{color:#174ea6}.implementation-frame{max-width:100%;padding:3px 2px 10px}.implementation-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 24px;list-style:none;margin:12px 0 0;padding:0}.gate{position:relative;min-width:0;border:1px solid #bac7d8;border-top:5px solid var(--gate,#2563eb);border-radius:10px;padding:11px;background:#fff;box-shadow:0 3px 10px #1720330c;font-size:12px;color:var(--muted)}.gate::after{content:"→";position:absolute;right:-19px;top:45%;font-size:19px;color:#667085;font-weight:900}.gate[data-gate="4"]::after,.gate[data-gate="8"]::after{display:none}.gate h3{display:flex;gap:7px;align-items:center;color:var(--ink)}.gate-number{display:grid;place-items:center;flex:none;width:23px;height:23px;border-radius:50%;background:var(--gate);color:#fff;font-size:12px}.gate dl{margin:0}.gate dt{font-weight:800;color:#344054;margin-top:7px}.gate dd{margin:1px 0 0;overflow-wrap:anywhere;word-break:break-word}.gate code{overflow-wrap:anywhere;word-break:break-word}.gate .reject{color:var(--red);font-weight:700}.trace-continue{grid-column:1/-1;margin:-17px 0;padding:2px;text-align:center;color:#475467;font-size:12px;font-weight:800}.field-trace{margin-top:12px}
+    .walkthrough-shell{border:1px solid #aebbd0;border-radius:12px;overflow:hidden;background:#f8fafc}.identity-rail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:#cbd5e1}.identity-token{min-width:0;padding:8px 10px;background:#172033;color:#dbeafe;font-size:11px;overflow-wrap:anywhere}.identity-token b{display:block;color:#fff;font-size:12px}.identity-token code{background:#2b3a50;color:#eff6ff}.walkthrough-input{display:grid;grid-template-columns:minmax(300px,.9fr) minmax(0,1.1fr);gap:14px;padding:14px}.config-sheet{min-width:0}.config-sheet h3{display:flex;justify-content:space-between;gap:8px}.config-sheet pre{height:auto;max-height:none;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}.occurrence-explainer{margin:0;padding:11px;border-left:5px solid var(--compile);border-radius:8px;background:#f3efff;font-size:13px}.occurrence-line{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:9px}.occurrence-node{flex:1 1 120px;min-width:0;border:1px solid #c4b5fd;border-radius:7px;padding:7px;background:#fff;font-size:11px;overflow-wrap:anywhere}.occurrence-arrow{color:var(--compile);font-weight:900}.walkthrough-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px 18px;list-style:none;margin:14px 0 0;padding:0}.walkthrough-step{--step:#2563eb;position:relative;min-width:0;padding:10px;border:1px solid #b9c5d5;border-left:5px solid var(--step);border-radius:9px;background:#fff;font-size:11px;color:var(--muted)}.walkthrough-step::after{content:"→";position:absolute;right:-15px;top:45%;color:#667085;font-size:17px;font-weight:900}.walkthrough-step[data-step="4"]::after{content:"继续 ↓";right:auto;top:auto;bottom:-22px;left:40%;font-size:11px}.walkthrough-step[data-step="8"]::after{display:none}.walkthrough-step h3{display:flex;align-items:center;gap:6px}.walkthrough-step h3 span{display:grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;background:var(--step);color:#fff}.walkthrough-step dl{display:grid;grid-template-columns:43px minmax(0,1fr);gap:5px;margin:0}.walkthrough-step dt{font-weight:800;color:#344054}.walkthrough-step dd{margin:0;overflow-wrap:anywhere;word-break:break-word}.walkthrough-step .reject{color:var(--red)}.run-tag{margin-top:8px;padding-top:6px;border-top:1px dashed #cbd5e1;color:#475467;font:10px/1.35 ui-monospace,monospace;overflow-wrap:anywhere}.done-stamp{color:var(--evidence);font-weight:900}
+    .common-run{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:1px;border-radius:9px;overflow:hidden;background:#8ea0b8;margin:10px 0}.common-run div{min-width:0;padding:9px 11px;background:#172033;color:#dbeafe;font-size:11px;overflow-wrap:anywhere}.common-run b{display:block;color:#fff}.common-run code{background:#2b3a50;color:#fff}.router-strip{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,2.2fr);align-items:center;gap:10px;padding:10px;border:1px solid #93c5fd;border-radius:10px;background:#eff6ff}.router-task,.router-core{padding:9px;border-radius:8px;background:#fff;border:1px solid #bfdbfe;text-align:center}.router-arrow{font-size:20px;font-weight:900;color:var(--blue)}.router-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.router-option{padding:8px;border-radius:8px;color:#fff;text-align:center;font-weight:800;background:var(--lane-color)}.router-caption{margin:7px 0 0;font-size:12px;text-align:center}.three-lane-layout{display:grid;grid-template-columns:minmax(320px,.78fr) minmax(0,1.7fr);gap:13px;align-items:start;margin-top:12px}.three-lane-config{min-width:0;position:sticky;top:8px}.three-lane-config pre{margin:0;max-height:725px;white-space:pre-wrap;overflow-wrap:anywhere}.three-lane-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.lane-run{--lane-color:#2563eb;min-width:0;margin:0;padding:11px;border-top:6px solid var(--lane-color);box-shadow:none}.lane-run[data-lane-run="lite"]{--lane-color:#7c3aed}.lane-run[data-lane-run="complex"]{--lane-color:#b45309}.lane-run-head{display:flex;justify-content:space-between;gap:6px;align-items:start}.lane-run-head strong{font-size:18px;color:var(--lane-color)}.lane-badge{padding:3px 6px;border-radius:999px;background:color-mix(in srgb,var(--lane-color) 12%,white);color:var(--lane-color);font-size:10px;font-weight:800}.graph-id{padding:7px;border-radius:7px;background:#172033;color:#e2e8f0;font:10px/1.4 ui-monospace,monospace;overflow-wrap:anywhere}.stage-note{min-height:58px;padding:7px;border-left:3px solid var(--lane-color);background:#f8fafc;font-size:10px}.lane-timeline{list-style:none;margin:10px 0 0;padding:0}.lane-timeline li{position:relative;display:grid;grid-template-columns:25px minmax(0,1fr);gap:7px;padding:0 0 10px;font-size:10px}.lane-timeline li:not(:last-child)::before{content:"";position:absolute;left:12px;top:22px;bottom:1px;border-left:2px solid #b7c3d4}.tick{position:relative;z-index:1;display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:var(--lane-color);color:#fff;font:800 9px ui-monospace,monospace}.tick-body{min-width:0;padding:5px 6px;border:1px solid #d4dce7;border-radius:7px;background:#fff;overflow-wrap:anywhere}.tick-body b{display:block;color:var(--ink);font-size:11px}.node-chain{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}.node-chain code{border:1px solid color-mix(in srgb,var(--lane-color) 35%,white);color:var(--lane-color);font-size:9px}.bypass-track{margin-top:12px;padding:11px;border:2px solid #e47770;border-left:8px solid var(--red);border-radius:9px;background:#fff1f0;color:var(--red)}.bypass-track strong{display:block;font-size:15px}.bypass-flow{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin-top:7px;font-size:12px;font-weight:800}.bypass-arrow{font-size:18px}.print-note{font-size:11px;color:#667085}
+    table{width:100%;border-collapse:collapse;font-size:13px}caption{text-align:left;font-weight:700;margin-bottom:8px}th,td{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}th{background:#edf2f7}.trust{display:grid;grid-template-columns:1fr 1fr;gap:10px}.trust article{margin:0;box-shadow:none}.trust .host{border-left:5px solid var(--host)}.trust .proof{border-left:5px solid var(--evidence)}
+    @media(min-width:761px) and (max-width:1000px){.implementation-grid,.walkthrough-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.gate::after{display:none}.gate[data-gate="1"]::after,.gate[data-gate="3"]::after,.gate[data-gate="5"]::after,.gate[data-gate="7"]::after{display:block}.walkthrough-step::after{display:none}.walkthrough-step[data-step="1"]::after,.walkthrough-step[data-step="3"]::after,.walkthrough-step[data-step="5"]::after,.walkthrough-step[data-step="7"]::after{display:block}.walkthrough-step[data-step="4"]::after{content:"→";right:-15px;top:45%;bottom:auto;left:auto;font-size:17px}.three-lane-layout{grid-template-columns:minmax(0,1fr)}.three-lane-config{position:static}.three-lane-config pre{max-height:520px}}
+    @media(max-width:760px){main{padding:12px 10px 36px}.grid,.trust{grid-template-columns:minmax(0,1fr)}.lane-head{display:none}.swimlane-row{grid-template-columns:minmax(0,1fr);border-left-width:6px}.lane-cell{border-right:0;border-bottom:1px solid #d8e0ea;padding:8px 10px 8px 112px;position:relative}.lane-cell:last-child{border-bottom:0}.lane-cell::before{content:attr(data-column);position:absolute;left:10px;top:8px;width:92px;color:#344054;font-weight:800}.branch{grid-template-columns:1fr}.merge{min-height:18px}.ordered{grid-template-columns:minmax(0,1fr)}.ordered-arrow{transform:rotate(90deg)}.failure-rail{flex-wrap:wrap}.guarantee{grid-template-columns:1fr}.implementation-grid,.walkthrough-grid{display:flex;flex-direction:column;min-width:0;gap:22px}.gate::after,.walkthrough-step::after{display:block;content:"↓";right:auto;left:50%;top:auto;bottom:-24px}.gate[data-gate="4"]::after,.gate[data-gate="8"]::after{display:none}.walkthrough-step[data-step="4"]::after{content:"↓";left:50%;bottom:-24px;font-size:17px}.walkthrough-step[data-step="8"]::after{display:none}.trace-continue{margin:-13px 0}.identity-rail,.walkthrough-input,.common-run,.router-strip,.router-options,.three-lane-layout,.three-lane-grid{grid-template-columns:minmax(0,1fr)}.three-lane-config{position:static}.three-lane-config pre{max-height:none}.router-arrow{transform:rotate(90deg);text-align:center}.occurrence-arrow{transform:rotate(90deg)}.scroll{overflow-x:auto}section,article{padding:13px}pre{font-size:11px}.scope{text-align:left}}
+    @media(max-width:380px){.lane-cell{padding-left:10px;padding-top:31px}.lane-cell::before{top:7px;width:auto}.failure-rail{align-items:flex-start;flex-direction:column}.failure-rail .rail-arrow{transform:rotate(90deg);align-self:center}}
+    @media print{html,body{overflow:visible}body{background:#fff}main{width:100%;padding:0}section,article{box-shadow:none;break-inside:avoid}.swimlane-row,.lane-head,.tick,.router-option{print-color-adjust:exact;-webkit-print-color-adjust:exact}.three-lane-config{position:static}.three-lane-config pre{max-height:none}pre{white-space:pre-wrap;color:#111;background:#f4f4f4}.scroll{overflow:visible}a{color:#111;text-decoration:none}}
+  </style>
+</head>
+<body><main>
+  <header>
+    <p class="eyebrow">公开 Harness · 配置到证据</p>
+    <h1>一份配置，四道机器约束</h1>
+    <p>团队只维护 <code>team-config.yaml</code>。系统把它编译成有序执行图，再由宿主授权、调度和完成验证强制兑现。</p>
+    <p class="note"><strong>版本边界：</strong>根 <code>team-config.yaml</code> 当前仍走 v1 compatibility；v1 支持迁移预览，但 v1 compatibility 不要求 v2 graph 或 host-control。要获得下图的确定性强制链，请使用 v2。</p>
+  </header>
+
+  <section id="overview">
+    <h2>主架构：统一向下，四条责任泳道</h2>
+    <div class="legend" aria-label="责任颜色图例">
+      <span style="--role:var(--config)"><i></i>团队配置</span><span style="--role:var(--compile)"><i></i>Core 编译</span><span style="--role:var(--host)"><i></i>宿主控制</span><span style="--role:var(--evidence)"><i></i>证据验证</span>
+    </div>
+    <div class="swimlane" aria-label="四条纵向责任泳道">
+      <div class="lane-head" aria-hidden="true"><span>责任边界</span><span>处理步骤</span><span>机器产物</span><span>失败出口</span></div>
+      <div class="swimlane-row" data-lane="config">
+        <div class="lane-cell responsibility" data-column="责任边界"><strong>① 团队配置层</strong>团队拥有意图，不拥有运行结论</div>
+        <div class="lane-cell" data-column="处理步骤"><b><code>team-config.yaml</code></b><br><code>domains</code> · Lane · ordered Skills · bindings · knowledge</div>
+        <div class="lane-cell" data-column="机器产物"><b>唯一配置输入</b><br>source bytes + source hash</div>
+        <div class="lane-cell fail" data-column="失败出口">unknown / unsupported / shadowed → INVALID</div>
+      </div>
+      <div class="down-arrow" aria-hidden="true">↓</div>
+      <div class="swimlane-row" data-lane="compile">
+        <div class="lane-cell responsibility" data-column="责任边界"><strong>② Core 编译层</strong>解释配置并固化执行顺序</div>
+        <div class="lane-cell" data-column="处理步骤">
+          <b>resolver → policy → selector</b>
+          <div class="branch"><div class="branch-path"><b>General / Custom</b>↓<br>Lane fast / lite / complex<br>↓ ordered steps</div><div class="merge">↘<br>↗</div><div class="branch-path"><b>D3A</b>↓<br>fixed workflow / Lane N/A<br>↓ fixed layers</div></div>
+          <div class="graph-target">汇入 canonical graph</div>
+        </div>
+        <div class="lane-cell" data-column="机器产物"><b>effective runtime</b><br>selection + graph<br>source/dependency/graph hashes</div>
+        <div class="lane-cell fail" data-column="失败出口">无效 Pack / Skill / 编排空洞 / CONFIG_DRIFT → BLOCKED</div>
+      </div>
+      <div class="down-arrow" aria-hidden="true">↓</div>
+      <div class="swimlane-row" data-lane="host">
+        <div class="lane-cell responsibility" data-column="责任边界"><strong>③ 宿主控制层</strong>executor 不可写的授权与调度面</div>
+        <div class="lane-cell" data-column="处理步骤"><b>host control</b> → authorization → ticket → executor<br>ticket 绑定 graph、node、前驱、scope、idempotency</div>
+        <div class="lane-cell" data-column="机器产物"><b>authorization result</b><br>dispatch ticket + protected state</div>
+        <div class="lane-cell fail" data-column="失败出口">越权 / 前驱未成功 / ticket 冲突 → 不派发</div>
+      </div>
+      <div class="down-arrow" aria-hidden="true">↓</div>
+      <div class="swimlane-row" data-lane="evidence">
+        <div class="lane-cell responsibility" data-column="责任边界"><strong>④ 证据完成层</strong>执行成功不等于完成</div>
+        <div class="lane-cell" data-column="处理步骤">ledger hash chain → <b>dispatch-state predicate</b> attestation → replay → completion verifier</div>
+        <div class="lane-cell" data-column="机器产物"><b>不可替代的证据链</b><br>events + predicate PASS + completion result</div>
+        <div class="lane-cell fail" data-column="失败出口">缺失 / skip / reorder / inject / 缺 predicate → BLOCKED</div>
+      </div>
+    </div>
+    <p class="scope">颜色表达责任所有者；箭头只表达从配置到完成的单向推进。</p>
+  </section>
+
+  <section id="implementation-trace">
+    <h2>YAML 为何一定被遵从：8 个真实实现关卡</h2>
+    <div class="guarantee"><strong>保证的准确含义</strong><span><b>不是任意 YAML 都能成功</b>；保证的是：<b>有效配置无法被静默忽略</b>。字段必须被消费并进入相互绑定的机器产物；无消费者、非法值、字节漂移或绕过任一关卡，都不能到达 <code>DONE</code>。</span></div>
+    <p>桌面端从左向右读取；移动端自动改为从上到下。每关都明确回答“读什么、调用谁、写出什么、哪里拒绝”。</p>
+    <div class="implementation-frame" aria-label="八关实现级强制链"><ol class="implementation-grid" data-layout="desktop-4x2 tablet-2 mobile-1">
+      <li class="gate" data-gate="1" style="--gate:#2563eb"><h3><span class="gate-number">1</span>入口重建</h3><dl><dt>读字段</dt><dd><code>team-config.yaml</code> 全部字节</dd><dt>调函数</dt><dd><code>prepare_runtime.py</code> → <code>main()</code>；每次入口调用 <code>resolve_team_config.py</code></dd><dt>写产物</dt><dd><code>.idc/effective-team-config.yaml</code> + preflight</dd><dt>不一致</dt><dd class="reject"><code>NEEDS_TEAM_CONFIG</code></dd></dl></li>
+      <li class="gate" data-gate="2" style="--gate:#7c3aed"><h3><span class="gate-number">2</span>v2 物化</h3><dl><dt>读字段</dt><dd><code>domains</code>、<code>team</code>、definition、<code>bindings</code></dd><dt>调函数</dt><dd><code>compile_v2_runtime()</code> → <code>apply_v2_team_capabilities()</code> + <code>materialize_completion_predicates()</code></dd><dt>写产物</dt><dd>effective modules/capabilities/predicates + <code>source_sha256</code> + <code>runtime_dependency_sha256</code></dd><dt>不一致</dt><dd class="reject"><code>CONFIG_UNSUPPORTED</code> / <code>DOMAIN_PACK_MISSING</code> / <code>DOMAIN_POLICY_INVALID</code></dd></dl></li>
+      <li class="gate" data-gate="3" style="--gate:#7c3aed"><h3><span class="gate-number">3</span>能力选择</h3><dl><dt>读字段</dt><dd>effective Lane ordered steps + capability <code>skill_ref</code></dd><dt>调函数</dt><dd><code>select_capabilities.py</code> 顶层选择逻辑；按 registry、stage、Lane、ref 校验</dd><dt>写产物</dt><dd><code>capability_selection_result.ordered_execution</code></dd><dt>不一致</dt><dd class="reject"><code>NEEDS_SIGNAL_MAPPING</code> / <code>NEEDS_ORCHESTRATION_MAPPING</code> / <code>NEEDS_ADAPTER_MAPPING</code></dd></dl></li>
+      <li class="gate" data-gate="4" style="--gate:#7c3aed"><h3><span class="gate-number">4</span>图编译</h3><dl><dt>读字段</dt><dd>effective + selection + Domain/Lane/signals</dd><dt>调函数</dt><dd><code>compile_run_graph.py</code> → <code>compile_graph()</code>；重新认证 configured stage slice</dd><dt>写产物</dt><dd>每次 occurrence 独立 node + edges + <code>graph_sha256</code></dd><dt>不一致</dt><dd class="reject"><code>SELECTION_MISMATCH</code> / <code>INVALID_EXECUTION_ORDER</code> / <code>CONFIG_DRIFT</code></dd></dl></li>
+      <li class="trace-continue" aria-label="从第四关继续到第五关">继续 ↓ 第 5 关</li>
+      <li class="gate" data-gate="5" style="--gate:#b45309"><h3><span class="gate-number">5</span>宿主授权</h3><dl><dt>读字段</dt><dd>source/dependency/graph + plan/knowledge + executor/paths</dd><dt>调函数</dt><dd><code>authorize_execution.py</code> → <code>validate_graph_binding()</code> + <code>validate_host_control()</code> + <code>required_module_predicates()</code></dd><dt>写产物</dt><dd>外部 host control identity + <code>authorization_id</code> + required predicates</dd><dt>不一致</dt><dd class="reject"><code>RUN_GRAPH_REQUIRED</code> / <code>BLOCKED_HOST_CONTROL_REQUIRED</code> / <code>PREDICATE_AUTHORITY_MISSING</code></dd></dl></li>
+      <li class="gate" data-gate="6" style="--gate:#b45309"><h3><span class="gate-number">6</span>顺序派发</h3><dl><dt>读字段</dt><dd>authorization + graph + current state + claim</dd><dt>调函数</dt><dd><code>dispatch_state.py</code> → <code>initialize_state()</code> + <code>acquire_dispatch()</code> + <code>record_success()</code></dd><dt>写产物</dt><dd>host 只为 current node 签发 host-owned ticket；成功后推进 revision</dd><dt>不一致</dt><dd class="reject"><code>ORDER_VIOLATION</code> / <code>PREDECESSOR_STATE_MISMATCH</code> / <code>IDEMPOTENCY_CONFLICT</code><br>相同 idempotency key：下游声明幂等 → <code>REPLAY</code>；否则未知崩溃结果 → <code>RECOVERY_REQUIRED</code></dd></dl></li>
+      <li class="gate" data-gate="7" style="--gate:#047857"><h3><span class="gate-number">7</span>证据入链</h3><dl><dt>读字段</dt><dd>predicate status/evidence + dispatch/success events</dd><dt>调函数</dt><dd><code>record_predicate()</code>；<code>run_event_ledger.py</code> → <code>process()</code> + <code>apply_transition()</code></dd><dt>写产物</dt><dd>evidence SHA-256 + predicate attestation + event hash chain</dd><dt>不一致</dt><dd class="reject"><code>PREDICATE_ATTESTATION_MISMATCH</code> / <code>HASH_CHAIN_INVALID</code> / <code>MISSING_ATTESTATION</code></dd></dl></li>
+      <li class="gate" data-gate="8" style="--gate:#047857"><h3><span class="gate-number">8</span>完成重验</h3><dl><dt>读字段</dt><dd>graph + authorization + protected state + receipt + evidence</dd><dt>调函数</dt><dd><code>verify_completion.py</code> → <code>runtime_integrity.py::verify_completion_integrity()</code>；重算 graph hash，replay proof，重验 order/evidence/predicate</dd><dt>写产物</dt><dd><code>graph_match</code> + <code>order_match</code> + <code>receipt_integrity</code>；全 PASS 才 <code>DONE</code></dd><dt>不一致</dt><dd class="reject"><code>GRAPH_HASH_INVALID</code> / <code>LEDGER_REPLAY_INVALID</code> / <code>EVIDENCE_HASH_MISMATCH</code> / <code>PREDICATE_MISSING</code> → <code>BLOCKED</code></dd></dl></li>
+    </ol></div>
+    <div class="scroll field-trace"><table><caption>字段级强制追踪：从配置字段到不可绕过的机器检查</caption><thead><tr><th>team-config 字段</th><th>真实消费者</th><th>写入的中间产物</th><th>最终强制点</th></tr></thead><tbody>
+      <tr><td><code>domains.enabled/default/definitions</code></td><td><code>compile_v2_runtime()</code></td><td>enabled modules、Pack refs、<code>source_sha256</code>、dependency identity</td><td><code>compile_graph()</code> 与 <code>validate_graph_binding()</code> 重新核对 Domain 和 hashes</td></tr>
+      <tr><td><code>lane.profiles.*.orchestration.steps</code></td><td><code>select_capabilities.py</code> + <code>compile_graph()</code></td><td><code>ordered_execution</code>、occurrence nodes、edges、<code>graph_sha256</code></td><td><code>acquire_dispatch()</code> 只放行 current node；completion 重验精确顺序</td></tr>
+      <tr><td><code>bindings.*.skill_ref</code></td><td><code>apply_v2_team_capabilities()</code> + selector</td><td>effective <code>available_capabilities</code>、selection Skill refs、graph nodes</td><td>注册/stage/Lane/ref 不一致无法 READY，授权还会核对 graph node</td></tr>
+      <tr><td><code>knowledge refs</code></td><td><code>plan_knowledge.py</code> + <code>validate_host_control()</code></td><td>Knowledge Load Plan、<code>knowledge_plan_id</code>、被 host control 绑定的文件 bytes</td><td>缺映射返回 <code>NEEDS_KNOWLEDGE_MAPPING</code>；变更后授权失败</td></tr>
+      <tr><td><code>completion predicates</code></td><td><code>materialize_completion_predicates()</code> + <code>required_module_predicates()</code></td><td>authorized predicate IDs + protected predicate attestation</td><td><code>verify_completion_integrity()</code> 要求每个 predicate PASS 且 evidence hash 匹配</td></tr>
+    </tbody></table></div>
+  </section>
+
+  <section id="config-to-done-walkthrough">
+    <h2>三 Lane 实跑：一个任务，Router 只选择一条 Lane</h2>
+    <p>同一份 <code>team-config.yaml</code> 同时声明 Fast、Lite、Complex。任务进入 Router 后只落到其中一条轨；后续 selection、graph、ticket、dispatch 和 evidence 全部绑定该 Lane，不能执行到一半换轨。</p>
+    <div class="common-run" aria-label="三条 Lane 共用的配置身份"><div><b>TEAM / DOMAIN</b>three-lane-walkthrough-team · general</div><div><b>SOURCE SHA</b><code>f960f514...581ce288</code></div><div><b>DEPENDENCY SHA</b><code>f8c72664...7602c9</code></div></div>
+    <div class="router-strip" aria-label="一个任务由 Router 选择一条 Lane"><div class="router-task"><b>同一个任务</b><br>signals + scope + risk</div><span class="router-arrow">→</span><div><div class="router-core"><b>Scenario / Lane Router</b><br>一次只输出一个 Lane</div><div class="router-options"><span class="router-option" style="--lane-color:#2563eb">FAST</span><span class="router-option" style="--lane-color:#7c3aed">LITE</span><span class="router-option" style="--lane-color:#b45309">COMPLEX</span></div></div></div>
+    <p class="router-caption">下方三卡是三种互斥实跑结果的对照，不是同一任务并行执行三次。</p>
+    <p class="note"><strong>证据边界：</strong>页面合同会真实复跑三条 Lane 的 resolver、selection 与 graph compile；<code>t4—t7</code> 展示选定 graph 后必须经过的 host / evidence 强制路径，不把本次文档修改的 v1 compatibility 授权冒充为这三条 v2 graph 的执行回执。</p>
+    <div class="three-lane-layout">
+      <div class="three-lane-config"><h3>唯一配置输入：真实公共 v2 YAML</h3><pre data-three-lane-walkthrough-config>config_version: 2
+team:
+  id: three-lane-walkthrough-team
+  repo_path: .
+domains:
+  enabled: [general]
+  default: general
+  definitions:
+    general:
+      pack_ref: harness://.claude/skills/idc-workflow/references/domains/general/domain-pack.yaml
+bindings:
+  coding_standard:
+    skill_ref: harness://.claude/skills/idc-gc-sop-adapter/SKILL.md
+adapter_extensions: []
+lane:
+  default: lite
+  profiles:
+    fast:
+      skills:
+        allow: [coding_standard]
+        deny: []
+        required: [coding_standard]
+      orchestration:
+        mode: ordered
+        steps:
+          - id: fast-implement
+            stage: implementation
+            skill_ids: [coding_standard]
+            trigger_signals: []
+    lite:
+      skills:
+        allow: [coding_standard]
+        deny: []
+        required: [coding_standard]
+      orchestration:
+        mode: ordered
+        steps:
+          - id: lite-plan
+            stage: planning
+            skill_ids: [coding_standard]
+            trigger_signals: []
+          - id: lite-implement
+            stage: implementation
+            skill_ids: [coding_standard]
+            trigger_signals: []
+    complex:
+      skills:
+        allow: [coding_standard]
+        deny: []
+        required: [coding_standard]
+      orchestration:
+        mode: ordered
+        steps:
+          - id: complex-plan
+            stage: planning
+            skill_ids: [coding_standard]
+            trigger_signals: []
+          - id: complex-design-check
+            stage: planning
+            skill_ids: [coding_standard]
+            trigger_signals: []
+          - id: complex-implement
+            stage: implementation
+            skill_ids: [coding_standard]
+            trigger_signals: []
+capability_selection:
+  mode: autonomous_minimal_sufficient
+  lane_profiles:
+    fast: {max_optional_skills: 0}
+    lite: {max_optional_skills: 0}
+    complex: {max_optional_skills: 0}
+  require_selected_and_skipped_reasons: true
+</pre><p class="print-note">这里重复使用同一真实 <code>coding_standard</code>；每个 configured step 仍会成为独立 occurrence 和 graph node。</p></div>
+      <div class="three-lane-grid" aria-label="Fast Lite Complex 三条真实执行轨">
+        <article class="lane-run" data-lane-run="fast"><div class="lane-run-head"><strong>FAST</strong><span class="lane-badge">1 node</span></div><p class="graph-id">graph 1df23356...7254e1c</p><p class="stage-note">当前 stage 就是 <b>implementation</b>；selection 与完整 graph 都只有 <code>fast-implement</code>。</p><ol class="lane-timeline">
+          <li><span class="tick">t0</span><div class="tick-body"><b>team-config.yaml</b>读取 Fast profile + shared binding</div></li>
+          <li><span class="tick">t1</span><div class="tick-body"><b>effective runtime</b>绑定 source / dependency identity</div></li>
+          <li><span class="tick">t2</span><div class="tick-body"><b>selection</b><code>fast-implement</code> · implementation</div></li>
+          <li><span class="tick">t3</span><div class="tick-body"><b>canonical graph</b><div class="node-chain"><code>0001 fast-implement</code></div></div></li>
+          <li><span class="tick">t4</span><div class="tick-body"><b>host ticket</b>只绑定 graph 1df23356… 与 current node</div></li>
+          <li><span class="tick">t5</span><div class="tick-body"><b>ordered dispatch</b><div class="node-chain"><code>0001</code><code>success</code></div></div></li>
+          <li><span class="tick">t6</span><div class="tick-body"><b>ledger / evidence</b>event chain + evidence hash + predicate</div></li>
+          <li><span class="tick">t7</span><div class="tick-body"><b>verify</b>graph / order / proof 全 PASS → <span class="done-stamp">DONE</span></div></li>
+        </ol></article>
+        <article class="lane-run" data-lane-run="lite"><div class="lane-run-head"><strong>LITE</strong><span class="lane-badge">2 nodes</span></div><p class="graph-id">graph 26053c93...e2012f2</p><p class="stage-note"><b>planning selection 只是当前 stage</b>，此刻只选 <code>lite-plan</code>；full canonical graph 仍含后续 implementation。</p><ol class="lane-timeline">
+          <li><span class="tick">t0</span><div class="tick-body"><b>team-config.yaml</b>读取 Lite profile + shared binding</div></li>
+          <li><span class="tick">t1</span><div class="tick-body"><b>effective runtime</b>绑定 source / dependency identity</div></li>
+          <li><span class="tick">t2</span><div class="tick-body"><b>planning selection</b><code>lite-plan</code>；stage_order 保留 implementation</div></li>
+          <li><span class="tick">t3</span><div class="tick-body"><b>full canonical graph</b><div class="node-chain"><code>0001 lite-plan</code><code>→ 0002 lite-implement</code></div></div></li>
+          <li><span class="tick">t4</span><div class="tick-body"><b>host ticket</b>绑定 graph 26053c93… 和 current node</div></li>
+          <li><span class="tick">t5</span><div class="tick-body"><b>ordered dispatch</b><div class="node-chain"><code>0001</code><code>→ 0002</code></div>逐个 success 推进</div></li>
+          <li><span class="tick">t6</span><div class="tick-body"><b>ledger / evidence</b>两次 occurrence 均须有 event 与 evidence</div></li>
+          <li><span class="tick">t7</span><div class="tick-body"><b>verify</b>两节点顺序与 proof 全 PASS → <span class="done-stamp">DONE</span></div></li>
+        </ol></article>
+        <article class="lane-run" data-lane-run="complex"><div class="lane-run-head"><strong>COMPLEX</strong><span class="lane-badge">3 nodes</span></div><p class="graph-id">graph 6a7afcd7...4d9dfe51</p><p class="stage-note"><b>planning selection 只是当前 stage</b>，此刻选前两步；full canonical graph 继续包含 <code>complex-implement</code>。</p><ol class="lane-timeline">
+          <li><span class="tick">t0</span><div class="tick-body"><b>team-config.yaml</b>读取 Complex profile + shared binding</div></li>
+          <li><span class="tick">t1</span><div class="tick-body"><b>effective runtime</b>绑定 source / dependency identity</div></li>
+          <li><span class="tick">t2</span><div class="tick-body"><b>planning selection</b><code>complex-plan</code> + <code>complex-design-check</code></div></li>
+          <li><span class="tick">t3</span><div class="tick-body"><b>full canonical graph</b><div class="node-chain"><code>0001 complex-plan</code><code>→ 0002 complex-design-check</code><code>→ 0003 complex-implement</code></div></div></li>
+          <li><span class="tick">t4</span><div class="tick-body"><b>host ticket</b>绑定 graph 6a7afcd7… 和 current node</div></li>
+          <li><span class="tick">t5</span><div class="tick-body"><b>ordered dispatch</b><div class="node-chain"><code>0001</code><code>→ 0002</code><code>→ 0003</code></div></div></li>
+          <li><span class="tick">t6</span><div class="tick-body"><b>ledger / evidence</b>三次 occurrence 全部入链并满足 predicate</div></li>
+          <li><span class="tick">t7</span><div class="tick-body"><b>verify</b>三节点顺序与 proof 全 PASS → <span class="done-stamp">DONE</span></div></li>
+        </ol></article>
+      </div>
+    </div>
+    <div class="bypass-track" aria-label="红色跨 Lane 失败轨"><strong>红色 bypass track：禁止跨 Lane 换图，也禁止跳过本 Lane 的节点</strong><div class="bypass-flow"><span>跳过 / 调序节点</span><span class="bypass-arrow">→</span><code>ORDER_VIOLATION</code><span>/</span><code>PREDECESSOR_STATE_MISMATCH</code><span class="bypass-arrow">｜</span><span>拿 Lite ticket 跑 Complex graph</span><span class="bypass-arrow">→</span><code>GRAPH_MISMATCH</code><span>/</span><code>CONFIG_DRIFT</code><span class="bypass-arrow">→</span><b>BLOCKED，不得 DONE</b></div></div>
+  </section>
+
+  <section id="ownership"><h2>配置权属与覆盖规则</h2><div class="grid"><article><h3>团队只改一处</h3><p><code>domains.enabled/default/definitions</code>、Lane override、<code>bindings</code>、<code>adapter_extensions</code>、alignment 和 knowledge ref 只来自 <code>team-config.yaml</code>。</p></article><article><h3>Pack 提供默认值</h3><p>Pack 拥有 workflow、capability、registry 与 completion policy。definition 可替换对应 ref；省略字段保留 Pack 默认。</p></article><article><h3><code>.idc/</code> 不是配置</h3><p>effective runtime、selection、graph、authorization 和 ledger 都是可重建派生产物，不能成为第二配置源。</p></article></div><p>registry 的显式值整体替换，不做 merge；团队 Lane 只覆盖同名 Pack Lane；<code>bindings.&lt;capability&gt;.skill_ref</code> 替换原子 Skill ref；extension 只能新增原子能力。</p></section>
+
+  <section id="examples"><h2>三份可直接解析为 READY 的 v2 配置</h2><div class="grid"><article><h3>General</h3><pre data-example-config>config_version: 2
+team: {id: minimal-v2-general-team, repo_path: ..}
+domains:
+  enabled: [general]
+  default: general
+  definitions:
+    general: {pack_ref: harness://.claude/skills/idc-workflow/references/domains/general/domain-pack.yaml}
+bindings: {}
+adapter_extensions: []</pre></article><article><h3>Custom</h3><pre data-example-config>config_version: 2
+team: {id: template-domain-v2-team, repo_path: ..}
+domains:
+  enabled: [template-domain]
+  default: template-domain
+  definitions:
+    template-domain: {pack_ref: harness://.claude/skills/idc-workflow/references/domains/template-domain/domain-pack.yaml}
+bindings: {}
+adapter_extensions: []</pre></article><article><h3>官方 D3A</h3><pre data-example-config>config_version: 2
+team: {id: d3a-v2-team, repo_path: ..}
+domains:
+  enabled: [d3a]
+  default: d3a
+  definitions:
+    d3a: {pack_ref: harness://.claude/skills/idc-workflow/references/domains/d3a/domain-pack.yaml}
+bindings: {}
+adapter_extensions: []</pre></article></div><p>切换时只改 <code>domains.enabled</code> 与 <code>default</code>。D3A 启用后固定七层 <code>TRAN_CFG / DO / VISP_ADP / TFC_TFI / TFE / ADP / DRV</code>；effective team DT 全部 GREEN 且 <code>tran_build</code> PASS 才可完成。</p></section>
+
+  <section id="lanes"><h2>ordered 三 Lane：列表不同，强制语义相同</h2><p><code>fast</code>、<code>lite</code>、<code>complex</code> 都按各自配置生成节点；不存在共享的写死 Skill 列表。</p><pre>lane:
+  profiles:
+    fast: {orchestration: {mode: ordered, steps: [{id: fast-implementation, stage: implementation, skill_ids: [&lt;FAST_SKILL_ID&gt;]}]}}
+    lite: {orchestration: {mode: ordered, steps: [{id: lite-implementation, stage: implementation, skill_ids: [&lt;LITE_SKILL_ID&gt;]}]}}
+    complex: {orchestration: {mode: ordered, steps: [{id: complex-implementation, stage: implementation, skill_ids: [&lt;COMPLEX_SKILL_ID&gt;]}]}}</pre></section>
+
+  <section id="ordered-path"><h2>ordered 节点闭环：每个 occurrence 都必须兑现</h2><p class="ordered-note">相同 Skill 重复出现也会按 <code>step_id + occurrence</code> 成为独立节点。</p><div class="ordered" aria-label="S1 到 DONE 的有序执行图"><div class="ordered-node"><strong>S1</strong><code>plan · #1</code><br>ticket + ledger</div><div class="ordered-arrow">→ PASS →</div><div class="ordered-node"><strong>S2</strong><code>implement · #2</code><br>ticket + ledger</div><div class="ordered-arrow">→ PASS →</div><div class="ordered-node"><strong>S3</strong><code>verify · #3</code><br>predicate</div><div class="ordered-arrow">→</div><div class="ordered-node"><strong>DONE</strong>replay + verify</div></div><div class="failure-rail" aria-label="红色失败轨"><span>失败轨</span><span>skip / reorder / inject</span><span class="rail-arrow">→</span><span>前驱或证据不匹配</span><span class="rail-arrow">→</span><span>BLOCKED</span></div></section>
+
+  <section id="closure"><h2>从准备到 DONE 的真实闭环</h2><ol><li><code>prepare_runtime.py</code> 生成 READY runtime。</li><li><code>plan_context.py</code>、<code>plan_knowledge.py</code>、<code>select_capabilities.py</code> 绑定同一 execution unit。</li><li><code>compile_run_graph.py</code> 固化全部 ordered occurrences。</li><li>真实 v2 graph authorization 要求宿主在 executor 不可写路径创建 control record；v1 compatibility 不要求。</li><li>宿主通过 <code>dispatch_state.py</code> Python API 调用 <code>initialize_state / acquire_dispatch / record_success / record_predicate / export_snapshot</code>；它不是 CLI。</li><li><code>run_event_ledger.py</code> replay，<code>verify_completion.py</code> 读取 protected dispatch state / predicate attestation 后判断 DONE。</li></ol><pre>python3 .claude/skills/idc-team-config/scripts/prepare_runtime.py --config team-config.yaml
+python3 .claude/skills/idc-team-config/scripts/compile_run_graph.py --effective &lt;EFFECTIVE&gt; --selection &lt;SELECTION&gt; --request &lt;REQUEST&gt; --output &lt;GRAPH&gt;
+python3 .claude/skills/idc-workflow/scripts/authorize_execution.py --request &lt;REQUEST&gt; --host-control-record &lt;HOST_PROTECTED_CONTROL_RECORD&gt; --output &lt;AUTHORIZATION_RESULT&gt;
+python3 .claude/skills/idc-team-config/scripts/verify_completion.py --request &lt;REQUEST&gt; --dispatch-state &lt;HOST_PROTECTED_STATE&gt;</pre></section>
+
+  <section id="matrix"><h2>配置如何被消费、阻断与举证</h2><div class="scroll"><table><caption>配置强制生效追踪矩阵</caption><thead><tr><th>配置字段</th><th>消费组件</th><th>运行约束</th><th>失败结果</th><th>证据</th></tr></thead><tbody><tr><td><code>domains</code></td><td>resolver</td><td>只加载 enabled module</td><td><code>DOMAIN_MODULE_NOT_ENABLED</code></td><td>effective runtime</td></tr><tr><td>definition / Pack ref</td><td>policy materializer</td><td>ref 与 policy 可读</td><td><code>DOMAIN_PACK_INVALID</code></td><td>dependency hash</td></tr><tr><td>Lane / ordered steps</td><td>selector、compiler</td><td>每个 occurrence 保序成 node</td><td><code>NEEDS_ORCHESTRATION_MAPPING</code></td><td>selection、graph</td></tr><tr><td><code>bindings</code> / extension</td><td>resolver、selector</td><td>已注册且 eligible</td><td>unregistered Skill</td><td>selection</td></tr><tr><td>alignment / knowledge</td><td>context、knowledge planner</td><td>按 unit 绑定</td><td><code>NEEDS_KNOWLEDGE_MAPPING</code></td><td>load receipt</td></tr><tr><td>D3A registry</td><td>materializer</td><td>整体替换 effective team DT</td><td>invalid registry</td><td>predicate</td></tr><tr><td>completion predicate</td><td>authorizer、verifier</td><td>受保护 predicate PASS</td><td><code>PREDICATE_AUTHORITY_MISMATCH</code></td><td>protected dispatch state / predicate attestation</td></tr><tr><td>source / dependency hash</td><td>integrity、authorizer</td><td>旧产物不可复用</td><td><code>CONFIG_DRIFT</code></td><td>graph、authorization</td></tr></tbody></table></div></section>
+
+  <section id="d3a"><h2>D3A 删除边界与宿主信任边界</h2><p>从 <code>domains.enabled</code> 省略 <code>d3a</code> 即禁用：Core 不加载或物化 D3A 资产；物理移除未启用的 D3A Pack 不影响 General / Custom；显式启用但 Pack 缺失则有界失败。</p><div class="trust"><article class="host"><h3>host control 管“能不能派发”</h3><p>绑定 authorization 输入、graph、node、scope 与 executor。request 内嵌声明不能自证或扩权。</p></article><article class="proof"><h3>dispatch-state predicate 管“能不能完成”</h3><p>普通 node success 不能替代 predicate PASS。两类记录都必须位于 executor 不可写的宿主保护路径。</p></article></div><p>SHA-256 只证明字节完整性，不是签名或身份认证；本架构不承诺非幂等下游的 exactly-once。非目标还包括签名服务、企业私有实现和第二份团队配置。</p></section>
+</main></body>
+</html>

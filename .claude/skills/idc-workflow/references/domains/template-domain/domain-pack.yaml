@@ -1,0 +1,13 @@
+domain_pack:
+  id: template-domain
+  trigger_rules:
+    - field: selected_domain
+      equals: template-domain
+  lane_policy: {mode: dynamic, selected_lane: null}
+  workflow_profile_ref: workflow-profile.yaml
+  capability_policy_ref: capability-policy.yaml
+  completion_predicate_ref: completion-predicate.yaml
+  registries:
+    coding_layers_ref: ../../registries/general-components.yaml
+    test_domains_ref: ../../registries/general-test-domains.yaml
+  knowledge_root_ref: ../../knowledge/general

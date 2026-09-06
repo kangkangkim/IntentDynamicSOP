@@ -1,0 +1,14 @@
+schema: completion_predicate
+version: 1
+
+completion_predicate:
+  predicate_id: <PREDICATE_ID>
+  required: true | false
+  evidence_refs:
+    - <EVIDENCE_REF>
+  status: PASS | FAIL
+
+rules:
+  - Required predicate 必须 PASS，completion 才能 DONE。
+  - Predicate status 由 tool evidence 支持，而不是 model confidence。
+  - Domain-specific semantics 保留在 Domain pack 引用的 contract 中。

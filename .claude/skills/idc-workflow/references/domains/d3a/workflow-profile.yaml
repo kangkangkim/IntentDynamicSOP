@@ -1,0 +1,17 @@
+workflow_profile:
+  id: d3a-fixed-workflow
+  execution_profile: d3a_fixed_workflow
+  domain_execution_skill_ref: ../../../../idc-d3a-coding/SKILL.md
+  execution_contract_ref: ../../schemas/execution-authorization.schema.yaml
+  phase_refs:
+    decision:
+      - module.yaml
+    planning:
+      - ../../constraints/planning/d3a-planning-constraints.yaml
+      - ../../workflows/d3a-workflow.md
+      - ../../schemas/d3a-plan.schema.yaml
+    execution:
+      - ../../constraints/execution/d3a-execution-constraints.yaml
+      - ../../../../idc-d3a-coding/SKILL.md
+    completion:
+      - completion-predicate.yaml

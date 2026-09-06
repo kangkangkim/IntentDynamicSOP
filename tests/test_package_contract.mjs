@@ -9,6 +9,13 @@ const settings = JSON.parse(readFileSync(join(root, ".claude", "settings.json"),
 
 assert.ok(packageJson.files.includes(".claude/hooks/"), "npm files whitelist must include hooks");
 assert.ok(packageJson.files.includes(".claude/settings.json"), "npm files whitelist must include shared hook settings");
+assert.ok(packageJson.files.includes("team-config.yaml.template"), "npm files whitelist must include the v2 team config template");
+assert.equal(packageJson.license, "UNLICENSED", "the public skeleton must not imply an open-source license");
+
+const readme = readFileSync(join(root, "README.md"), "utf8");
+assert.match(readme, /企业 npm registry/, "README must scope installation to an enterprise registry");
+assert.match(readme, /UNLICENSED/, "README must state the private-distribution license posture");
+assert.match(readFileSync(join(root, "dist", "installer", "core.js"), "utf8"), /entry\.name === "__pycache__"/, "installer must not manage Python bytecode artifacts");
 
 const commands = Object.values(settings.hooks || {})
   .flatMap((matchers) => matchers)
@@ -23,4 +30,4 @@ for (const command of commands) {
   assert.ok(existsSync(join(root, match[1])), `registered hook script is missing: ${match[1]}`);
 }
 
-console.log("通过 npm hook 发布契约测试");
+console.log("通过 npm 包、hook、私有分发说明发布契约测试");

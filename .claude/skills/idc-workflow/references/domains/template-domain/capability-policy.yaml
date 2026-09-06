@@ -1,0 +1,18 @@
+capability_policy:
+  id: template-domain-public-capabilities
+  execution_profile: lane_driven
+  lane_applicability: dynamic
+  required_contracts: [task_contract, verification_contract]
+  capabilities:
+    - id: coding_standard
+      skill_ref: ../../../../idc-superpowers-adapter/SKILL.md
+      allowed_stages: [planning, implementation]
+      eligible_lanes: [lite]
+      capability_keys: [implementation_constraints]
+      trigger_signals: []
+      execution_profiles: [lane_driven]
+      evidence_required: true
+      requires: []
+      blocks_when: []
+      composes_with: []
+      supersedes: []

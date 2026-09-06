@@ -1,0 +1,27 @@
+schema: workflow_graph
+version: 1
+
+workflow_graph:
+  workflow_id: <WORKFLOW_ID>
+  runtime_dependency_sha256: <DEPENDENCY_SHA256>
+  nodes:
+    - node_id: <NODE_ID>
+      execution_order: integer
+      stage: <STAGE_ID>
+      step_id: <STEP_ID>
+      skill_id: <SKILL_ID>
+      skill_ref: <SKILL_REF>
+      required: true | false
+      trigger_signals: []
+  edges:
+    - from: <NODE_ID>
+      to: <NODE_ID>
+
+rules:
+  - Node ID 和 execution_order value 必须 unique。
+  - Ordered workflow node 保留 configured Skill order。
+  - unknown trigger signal 在 graph authorization 前 fail closed。
+  - Complete Run Graph 包含所有 configured stage，不只包含提供的 selection stage。
+  - repeated Skill 保留 distinct node ID 和 configured step ID。
+  - 对 file-backed runtime，selection config identity 包含 runtime_dependency_sha256。
+  - Canonical graph SHA-256 hash 所有 semantic field，graph_id 和 graph_sha256 除外。

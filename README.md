@@ -1,5 +1,7 @@
 # Intent Dynamic Code
 
+架构与配置如何被运行时强制执行，见 [IDC 配置强制生效架构](docs/idc-config-enforcement-architecture.html)。
+
 Intent Dynamic Code 是一个公开的企业 Coding 工作流骨架。
 
 它的目标不是在外部环境实现真实企业 D3A，而是先把一套可迁移、可验证、可填充的工作流骨架准备好。接入团队后，只填 `team-config.yaml` 一个文件即可接入真实知识、skills 和构建能力（命令封装在 build skill 内部）。
@@ -36,7 +38,7 @@ v1.0 已经固定：
 - 默认 DT Domain placeholder：`TPRINT`、`FW`、`DPF`。
 - Human Alignment Check 作为 readiness / gap / approval gate。
 - Skill Adapter Router 作为 GC SOP、Superpowers、DT skill、build skill 的唯一接入门。
-- `team-config.yaml.template` 是唯一团队配置入口；`idc-team-config` 校验并生成只读有效配置。
+- `team-config.yaml` 是唯一团队配置源；模板只是创建它的起点，Domain Pack 是模块资产而不是第二份团队配置。
 - Fast / Lite / Complex 使用各自的 capability profile。团队既可让 Selector 自主补齐最小充分集合，也可用 ordered steps 固定过程；无匹配步骤时明确阻断，不静默回退。
 - Capability Selector、Knowledge Load Plan、Context Load Plan、Delegation Contract、Execution Authorization、Knowledge Consumption Receipt、Execution Receipt 和可执行 Completion Verifier 构成不可绕过的执行链。
 - Mock D3A / General E2E examples 和 harness tests。
@@ -114,7 +116,7 @@ alignment:
 推荐复用方式：
 
 1. 多团队共享 `IDC Core`，不要 fork 出不同 core。
-2. 用 `domain.enabled` 声明团队支持的全部 Domain；新领域加入 `custom` 并填写内联 `domain.custom`，不要改共享 Domain registry。
+2. 用 v2 `domains.enabled` 声明团队支持的 Domain；自研领域从 `template-domain` 复制并由 `domains.definitions` 引用。
 3. 真实路径、内部 skill 和 knowledge index 只写在团队自己的 `team-config.yaml`；命令留在 Skill 内。
 4. Pre-alignment 同理：公司已有 Brainstorming 时通过 Team Binding 复用；公司没有 Grill Me 时，直接使用本仓库提供的 `idc-intent-grilling` 系列。
 
@@ -172,6 +174,10 @@ npx idc-harness install --global
 `team-config.yaml` 或规则文件。安装清单记录在
 `.idc/install-manifest.json`；升级不会覆盖已被团队修改的受管文件。
 
+该包当前标记为 `UNLICENSED`，发布目标是企业私有 npm registry；仓库不声称
+可直接发布到公共 npm registry。发布前仍须在目标 registry 的权限、包名和版本
+策略下完成本地 tarball 安装验证。
+
 直接使用源码仓库时仍可运行：
 
 ```sh
@@ -187,6 +193,9 @@ $idc-workflow <TASK_OR_TR3>
 ```
 
 九步操作见 `QUICKSTART.md`；企业接入全流程见 `docs/confidential-migration-checklist.md`。
+配置字段以 [Team Config v2](.claude/skills/idc-team-config/references/team-config-v2.md)
+为准；授权后的真实执行顺序见
+[Runtime lifecycle](.claude/skills/idc-team-config/references/runtime-lifecycle.md)。
 
 ## 文档导览
 
@@ -246,7 +255,7 @@ D3A 不是 IDC Core 本体，而是一个可插拔 Domain Module（`references/d
 - `.claude/skills/idc-workflow/assets/README.md`：asset / reference 边界说明。
 - `.claude/skills/idc-workflow/references/registries/`：固定 D3A Layer、DT Domain、General placeholder taxonomy、Skill Adapter registry；企业接入方只读，通过 team-config 非空列表整体覆盖。
 - `.claude/skills/idc-team-config/`：单配置校验、preflight、有效配置生成、Capability Selector、Knowledge Planner、Consumption Verifier 和分阶段 Context Load Plan 的可执行实现。
-- `team-config.yaml.template`：唯一团队入口，收敛 Domain、registries、skill bindings、adapter extensions、knowledge、Lane capability profile、可选 alignment 管线和自优化策略。
+- `team-config.yaml.template`：创建唯一团队配置源 `team-config.yaml` 的 v2 模板。
 - `.claude/agents/`：`d3a-layer-coder`、`dt-test-writer`、`build-error-analyzer`、`general-coder` subagent 定义。
 - `examples/`：mock D3A、E2E TR3 D3A、E2E General 三个公开 walkthrough。
 - `test/`：可复制到 Claude Code 手动体验的场景卡。

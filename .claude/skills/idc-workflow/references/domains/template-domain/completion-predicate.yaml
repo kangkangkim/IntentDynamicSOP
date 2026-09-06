@@ -1,0 +1,4 @@
+completion_predicates: []
+completion_rule:
+  operator: all
+  requirements: [placeholder_verification_evidence]

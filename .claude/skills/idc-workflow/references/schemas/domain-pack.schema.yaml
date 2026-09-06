@@ -1,0 +1,63 @@
+schema: domain_pack
+version: 1
+
+domain_pack:
+  id: <DOMAIN_ID>
+  trigger_rules: []
+  lane_policy:
+    mode: dynamic | fixed | not_applicable
+    selected_lane: fast | lite | complex | null
+  fixed_architecture: # 可选的 Pack-owned immutable architecture contract
+    lane_mode: dynamic | fixed | not_applicable
+    coding_layer_ids: [<LAYER_ID>]
+    default_test_domain_ids: [<TEST_DOMAIN_ID>]
+  workflow_profile_ref: <WORKFLOW_REF>
+  capability_policy_ref: <CAPABILITY_POLICY_REF>
+  completion_predicate_ref: <COMPLETION_REF>
+  registries:
+    coding_layers_ref: <CODING_LAYER_REGISTRY_REF>
+    test_domains_ref: <TEST_DOMAIN_REGISTRY_REF>
+  knowledge_root_ref: <KNOWLEDGE_ROOT_REF>
+
+# File content at workflow_profile_ref. Lane profiles reuse the public Lane shape.
+workflow_profile:
+  id: <WORKFLOW_PROFILE_ID>
+  domain_execution_skill_ref: <DOMAIN_EXECUTION_SKILL_REF>
+  planner_skill_ref: <PLANNER_SKILL_REF> # 可选；投影给任意 Domain
+  execution_contract_ref: <EXECUTION_CONTRACT_REF>
+  lane_profiles:
+    lite: # fast 和 complex 使用相同 shape
+      orchestration:
+        mode: ordered | autonomous
+        steps:
+          - id: <STEP_ID>
+            stage: planning | implementation | review | verification | fix | completion
+            skill_ids: [<SKILL_ID>]
+            trigger_signals: []
+
+# capability_policy_ref 所指文件内容。ID 局限于所属 Domain。
+capability_policy:
+  required_contracts: [task_contract, verification_contract]
+  capabilities:
+    - id: <SKILL_ID>
+      skill_ref: <SKILL_REF>
+      allowed_stages: [implementation]
+      eligible_lanes: [fast, lite, complex]
+      capability_keys: []
+      trigger_signals: []
+
+# completion_predicate_ref 所指文件中的可选 generic projection。
+completion_policy:
+  completion_skill_ref: <COMPLETION_SKILL_REF>
+
+rules:
+  - Domain pack 只包含 policy 和 public reference，不包含 enterprise implementation detail。
+  - disabled Domain pack 不得 materialize 到 effective runtime。
+  - completion predicate 始终 evidence-backed 且 machine-verifiable。
+  - team definition 的 trigger_rules 与 workflow/capability/completion ref 替换 Pack default。
+  - unsupported workflow step field 或 guard，以及未注册的 configured Skill，都 fail closed。
+  - Skill eligibility 和 Lane allow/deny constraint 应用于每个 configured occurrence。
+  - 既有 pre-alignment 和 D3A registry stage 仍有效；不推断新 stage。
+  - team definition 可 wholesale 替换 registries.test_domains_ref；省略的 registry field 保留 Pack default。
+  - fixed_architecture Pack 锁定声明的 coding_layer_ids 与 lane_mode；明确的 test_domains_ref 仍可 wholesale 替换其声明的 default_test_domain_ids。
+  - domain_execution_skill_ref、planner_skill_ref、completion_skill_ref 和 required_contracts 被投影到 effective Domain module，不使用 Domain-ID special case。

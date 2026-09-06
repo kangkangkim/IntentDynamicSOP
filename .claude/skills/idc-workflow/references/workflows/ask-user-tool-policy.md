@@ -43,6 +43,9 @@ ask_user_tool:
 
 ```text
 Claude Code -> AskUserQuestion
+CodeAgent -> AskUserQuestion
+Codex Plan -> request_user_input
+Codex Default -> explicit user text approval + persisted approval record
 ```
 
 按工具契约语义解析宿主工具：凡是「向用户发出带选项 / approval 语义的交互
@@ -52,8 +55,9 @@ Claude Code -> AskUserQuestion
 
 ## 规则
 
-- 不允许把问题只写在普通 prose 里等用户自由回复。
-- 不允许在 final prose 里请求 approval；approval 必须是 `AskUserTool` 事件。
-- 不允许把 `AskUserTool` 的问题埋进完整 YAML 给用户看。
-- Human View 的问题卡是展示模板，`AskUserTool` 是交互出口。
-- 如果当前环境没有可用的 `AskUserTool`（按「宿主工具名映射」语义解析后仍无等价工具），返回 `BLOCKED_NEEDS_ASK_USER_TOOL`，不要继续伪造用户确认。
+- 优先使用宿主提供的结构化确认工具。
+- Codex Default 没有结构化确认工具时，允许使用用户明确文本批准。
+- 文本批准必须来自真实用户消息，不得由模型自我声明。
+- Technical Plan Confirmation 必须引用具体的落盘计划文件。
+- 批准结果必须生成 approval record，并绑定 plan hash 和用户消息引用。
+- 没有结构化确认、也没有明确文本批准时，返回 `BLOCKED_NEEDS_ASK_USER_TOOL`。

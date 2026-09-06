@@ -1,0 +1,26 @@
+schema: host_control_record
+version: 1
+
+host_control_record:
+  control_id: sha256
+  control_sha256: sha256
+  task_id: string
+  execution_unit_ref: ref
+  selected_domain: string
+  selected_lane: fast | lite | complex | null
+  graph_sha256: sha256
+  effective_source: {ref: ref, sha256: sha256, runtime_dependency_sha256: sha256}
+  capability_selection: {ref: ref, sha256: sha256}
+  knowledge_load_plan: {ref: ref, sha256: sha256, knowledge_plan_id: sha256}
+  technical_plan_confirmation: {ref: ref, sha256: sha256}
+  approved_alignment: {ref: ref, sha256: sha256}
+  delegation: {ref: ref, sha256: sha256}
+  executor: {kind: subagent | agent_team | official_dynamic_workflow, agent_id: string}
+  allowed_paths: []
+  expected_outputs: []
+
+rules:
+  - real-graph v2 authorization 要求 --host-control-record PATH；request-side host control field 被禁止。
+  - host 选择 selected executor 无法写入的位置。SHA-256 提供 byte integrity，不是 signature 或 authority grant。
+  - control_id 是 `host-control-record:` 加 recursively canonical JSON body 的 SHA-256；control_sha256 是同一 body 的 SHA-256。
+  - object key 为 identity recursively sorted；list order 有语义且被保留。

@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import yaml
+from domain_policy_runtime import ordered_rows, policy_view
 
 
 def safe_yaml_load(source):
@@ -36,6 +37,15 @@ if not args.effective or not args.demand:
 effective = load_yaml(args.effective)
 demand_doc = load_yaml(args.demand)
 demand = demand_doc.get("capability_demand") or demand_doc
+try:
+    effective = policy_view(effective, demand.get("selected_domain"), demand.get("selected_lane"))
+except (ValueError, OSError, TypeError, KeyError) as error:
+    output = yaml.safe_dump({"capability_selection_result": {
+        "status": "INVALID", "selected": [], "ordered_execution": [], "errors": [str(error)]}})
+    if args.output:
+        Path(args.output).write_text(output)
+    print(output, end="")
+    sys.exit(3)
 
 stage = demand.get("selected_stage")
 lane_applicability = demand.get("lane_applicability")
@@ -46,11 +56,27 @@ optional_keys = list(demand.get("optional_capability_keys") or [])
 signals = list(demand.get("observed_signals") or [])
 available = list(effective.get("available_capabilities") or [])
 
+domain_modules = (effective.get("domains") or {}).get("modules") or {}
+selected_domain_id = str(demand.get("selected_domain") or "")
+domain_module = domain_modules.get(selected_domain_id)
+if domain_module is None:
+    custom_mod = domain_modules.get("custom")
+    if isinstance(custom_mod, dict) and str(custom_mod.get("id") or "") == selected_domain_id:
+        domain_module = custom_mod
+if domain_module is None:
+    candidate = effective.get("domain") or {}
+    if str(candidate.get("id") or "") == selected_domain_id:
+        domain_module = candidate
+if not isinstance(domain_module, dict):
+    domain_module = {}
+
 profiles = (effective.get("capability_selection") or {}).get("lane_profiles") or {}
 if lane_applicability == "applicable":
     budget = (profiles.get(lane) or {}).get("max_optional_skills")
 else:
-    budget = ((effective.get("capability_selection") or {}).get("d3a_profile") or {}).get("max_optional_skills")
+    selection_profile = domain_module.get("selection_profile") or "fixed_workflow"
+    selection_profiles = (effective.get("capability_selection") or {}).get("selection_profiles") or {}
+    budget = (selection_profiles.get(selection_profile) or {}).get("max_optional_skills")
 
 lane_profile = {}
 if lane_applicability == "applicable":
@@ -60,18 +86,7 @@ allowed_skill_ids = list(skill_policy.get("allow") or [])
 denied_skill_ids = list(skill_policy.get("deny") or [])
 configured_required_ids = list(skill_policy.get("required") or [])
 
-domain_modules = (effective.get("domains") or {}).get("modules") or {}
-selected_domain_id = str(demand.get("selected_domain") or "")
-domain_module = domain_modules.get(selected_domain_id)
-if domain_module is None:
-    custom_mod = domain_modules.get("custom")
-    if isinstance(custom_mod, dict) and str(custom_mod.get("id") or "") == selected_domain_id:
-        domain_module = custom_mod
-if domain_module is None:
-    if str((effective.get("domain") or {}).get("id") or "") == selected_domain_id:
-        domain_module = effective.get("domain")
-
-domain_orchestration = (domain_module or {}).get("orchestration") or {} if isinstance(domain_module, dict) else {}
+domain_orchestration = domain_module.get("orchestration") or {}
 domain_ordered = domain_orchestration.get("mode") == "ordered"
 if domain_ordered:
     orchestration = domain_orchestration
@@ -105,6 +120,8 @@ config_identity = {
     "source_ref": effective.get("source_ref"),
     "source_sha256": effective.get("source_sha256"),
 }
+if effective.get("runtime_dependency_sha256"):
+    config_identity["runtime_dependency_sha256"] = effective["runtime_dependency_sha256"]
 config_identity["orchestration_sha256"] = hashlib.sha256(
     json.dumps(
         {
@@ -335,6 +352,16 @@ ordered_execution = [
     }
     for item in selected_output
 ] if orchestration_mode == "ordered" else []
+
+# Preserve repeated occurrences; selected IDs are only the eligibility set.
+if orchestration_mode == "ordered" and final_status == "READY":
+    try:
+        occurrences = ordered_rows(lane_profile, domain_module or {}, available, lane, signals)
+        ordered_execution = [dict(row, execution_order=index + 1)
+                             for index, row in enumerate(r for r in occurrences if r["stage"] == stage)]
+    except (ValueError, TypeError, KeyError, AttributeError) as error:
+        final_status = "NEEDS_TEAM_CONFIG"
+        unresolved_configured.append(str(error))
 
 result = {
     "capability_selection_result": {

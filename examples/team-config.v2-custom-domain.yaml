@@ -1,0 +1,31 @@
+config_version: 2
+team:
+  id: template-domain-v2-team
+  repo_path: ..
+domains:
+  enabled: [template-domain]
+  default: template-domain
+  definitions:
+    template-domain:
+      pack_ref: harness://.claude/skills/idc-workflow/references/domains/template-domain/domain-pack.yaml
+bindings:
+  coding_standard:
+    skill_ref: harness://.claude/skills/idc-gc-sop-adapter/SKILL.md
+adapter_extensions:
+  - id: idc-template-review
+    execution_role: verification_capability
+    capability_keys: [template_review]
+    allowed_stages: [review]
+    eligible_lanes: [lite]
+    execution_profiles: [lane_driven]
+    trigger_signals: []
+    skill_ref: harness://.claude/skills/idc-dt-writer/SKILL.md
+    input_contract_ref: null
+    output_contract_ref: null
+    evidence_required: true
+    requires: []
+    blocks_when: []
+    composes_with: []
+    supersedes: []
+lane:
+  default: lite

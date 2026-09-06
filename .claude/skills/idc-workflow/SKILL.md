@@ -278,7 +278,7 @@ Consumption Receipt for the authorized `knowledge_plan_id`.
   unplanned Layer/component/test-domain ref blocks completion; required static
   refs and provider/search results require a VERIFIED consumption receipt.
 - Keep enterprise details as placeholders outside team configuration.
-- All user-facing questions, approvals, re-alignment choices, and escalation decisions must be emitted through `AskUserTool` according to `references/workflows/ask-user-tool-policy.md`; do not ask the user by plain text.
+- All user-facing questions, approvals, re-alignment choices, and escalation decisions must follow `references/workflows/ask-user-tool-policy.md`: prefer a structured host tool; Codex Default may use explicit user text approval only when none is available, and must persist an approval record before authorization.
 - The alignment pipeline (`team-config.yaml.alignment`) configures only the intent-processing steps before approval: it may rebind or reorder pre-alignment skills with ordered stage mappings. Scenario Router, Contract Gate, Human Alignment approval, and completion ownership stay framework-owned and are not configurable through it.
 - Run pre-alignment from the effective alignment pipeline in `.idc/effective-team-config.yaml`. An absent or partial alignment section (missing `bindings` or `orchestration`) falls back to the framework default five-step chain with no other output difference; never merge team overrides with the framework default chain ad hoc.
 

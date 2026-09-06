@@ -1,0 +1,20 @@
+schema: execution_event
+version: 1
+
+execution_event:
+  run_id: <RUN_ID>
+  sequence: integer
+  previous_event_hash: sha256 | null
+  graph_sha256: sha256
+  authorization_id: sha256
+  node_id: <NODE_ID>
+  event_type: NODE_READY | NODE_DISPATCHED | NODE_SUCCEEDED | NODE_FAILED | NODE_VERIFIED
+  dispatch_tool_call_ref: <DISPATCH_TOOL_CALL_REF> | null
+  executor_session_ref: <EXECUTOR_SESSION_REF> | null
+  evidence_refs:
+    - <EVIDENCE_REF>
+
+rules:
+  - Event 绑定一个 immutable Run Graph 和 authorization。
+  - Dispatch 和 execution attestation 由对应 event state 要求。
+  - event sequence 构成 append-only hash chain。

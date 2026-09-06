@@ -46,7 +46,12 @@ registry、workflow 与知识目录。
 
 ## 新增 Domain Module
 
-在 `team-config.yaml` 选择 `mode: custom`：
+当前入口使用 v2 `domains.definitions`。自研 Custom Domain 从
+[`template-domain`](../.claude/skills/idc-workflow/references/domains/template-domain/domain-pack.yaml)
+复制模块资产，再由唯一团队配置 `team-config.yaml` 引用。完整字段见
+[Team Config v2](../.claude/skills/idc-team-config/references/team-config-v2.md)。
+
+以下 v1 内联形状仅用于理解旧配置和 preview migration，不用于新配置：
 
 ```text
 domain:
@@ -88,7 +93,7 @@ Evidence-based completion。
 
 必须替换（接入团队全部通过 `team-config.yaml` 覆盖，不改共享文件）：
 
-- Test domain registry（`domain.d3a.dt_domains` / `general.test_domains` 非空时整体替换，不合并）。
+- Test domain registry（v2 `domains.definitions.<id>.registries.test_domains_ref` 整体替换，不合并）。
 - General coding-layer / component registry（`general.components` 整体替换，不合并）。
 - Verification mapping（`knowledge.verification_mapping_ref`）。
 - Knowledge refs（registry 条目的 `knowledge_ref`、`knowledge.layer_docs`）。
@@ -96,8 +101,7 @@ Evidence-based completion。
 - Repo context provider（`knowledge.repo_context.provider_skill_ref`）。
 - Mock example。
 
-Custom Domain layer registry 填在 `domain.custom.coding_layers`；D3A 的 7 层
-固定，不提供配置覆盖。
+Custom Domain layer registry 由自研 Pack 维护；D3A 的 7 层固定，不提供配置覆盖。
 
 ## 不要改
 
@@ -113,7 +117,7 @@ Custom Domain layer registry 填在 `domain.custom.coding_layers`；D3A 的 7 �
 ## 第一周落地建议
 
 1. 复制 `team-config.yaml.template`。
-2. 在 `domain.custom` 填 2-3 个 Layer。
+2. 在 Custom Pack registry 填 2-3 个 Layer，并从 `domains.definitions` 引用。
 3. 填 1-2 个 Test Domain placeholder。
 4. 写一个 mock TR3。
 5. 产出 Alignment Pack。

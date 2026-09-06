@@ -1,0 +1,23 @@
+workflow_profile:
+  id: template-domain-ordered-workflow
+  execution_profile: lane_driven
+  domain_execution_skill_ref: ../../../../idc-general-coding/SKILL.md
+  execution_contract_ref: ../../schemas/execution-authorization.schema.yaml
+  phase_refs: {}
+  lane_profiles:
+    lite:
+      skills:
+        allow: [coding_standard]
+        deny: []
+        required: [coding_standard]
+      orchestration:
+        mode: ordered
+        steps:
+          - id: template-plan
+            stage: planning
+            skill_ids: [coding_standard]
+            trigger_signals: []
+          - id: template-implement
+            stage: implementation
+            skill_ids: [coding_standard]
+            trigger_signals: []

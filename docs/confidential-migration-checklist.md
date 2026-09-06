@@ -2,6 +2,11 @@
 
 这份 checklist 用来判断：当前公开 harness 能不能接入公司团队配置，以及接入后第一步应该做什么。
 
+新接入使用 [Team Config v2](../.claude/skills/idc-team-config/references/team-config-v2.md)；
+执行与受保护 host state 见
+[Runtime lifecycle](../.claude/skills/idc-team-config/references/runtime-lifecycle.md)。v1 配置只通过
+`migrate_team_config.py --config <PATH> --preview` 生成候选，不会自动落盘。
+
 企业已有资产与 `team-config.yaml` 插槽的逐项匹配关系，见图 `docs/enterprise-adoption-map.html`；也可以用浏览器打开 `docs/team-config-generator.html`，填表交互式生成 `team-config.yaml`。
 
 ## 外部环境保持通用的内容
@@ -65,7 +70,7 @@ python3 tests/test_harness.py
 - Placeholder hygiene 通过。
 - 仓库里没有真实企业细节。
 - D3A Layer registry 仍然匹配固定架构。
-- DT Domain registry 仍然只包含默认 placeholder domain；真实 DT domain 只通过 `team-config.yaml.domain.d3a.dt_domains` 覆盖，不直接改注册表。
+- DT Domain registry 仍然只包含默认 placeholder；真实 DT registry 由 v2 `domains.definitions.d3a.registries.test_domains_ref` 整体替换，不直接改共享注册表。
 - 没有 `.DS_Store` 等无关元数据文件。
 
 ## 入区后的第一条 Vertical Slice
@@ -88,7 +93,7 @@ Completion Summary。绑定哪些任务走 `dt-design`、哪些走 `dt-writer`�
 第一轮建议只做一条最小闭环：
 
 1. 在 `team-config.yaml.knowledge.layer_docs` 绑一个 Layer knowledge ref（正文留在企业本地）。
-2. 在 `team-config.yaml.domain.d3a.dt_domains` 填一个 DT domain 条目（含 `knowledge_ref`）。
+2. 在团队 DT registry 填一个含 `knowledge_ref` 的 DT 条目，并由 v2 D3A definition 引用。
 3. 替换一个 mock context provider 为真实 repo search。
 4. 如果需要 DT 设计，先通过 `idc-gc-sop-adapter -> idc-dt-design` 产出 DT design ref。
 5. 如果需要 DT 编写，再通过 `idc-gc-sop-adapter -> idc-dt-writer` 产出 DT change 和 RED/GREEN evidence refs。

@@ -1,0 +1,11 @@
+capability_policy:
+  id: d3a-fixed-capabilities
+  execution_profile: d3a_fixed_workflow
+  lane_applicability: not_applicable
+  selection_profile: d3a_profile
+  fixed_architecture: true
+  required_contracts:
+    - d3a_specification
+    - api_contract
+    - task_contract
+    - verification_contract

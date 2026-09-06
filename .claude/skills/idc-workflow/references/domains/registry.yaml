@@ -1,6 +1,6 @@
 domain_modules:
   - id: d3a
-    module_file: domains/d3a/module.yaml
+    module_file: domains/d3a/domain-pack.yaml
     status: active
   - id: general
     module_file: domains/general/module.yaml

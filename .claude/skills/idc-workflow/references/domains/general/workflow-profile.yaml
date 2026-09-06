@@ -1,0 +1,16 @@
+workflow_profile:
+  id: general-lane-workflow
+  execution_profile: lane_driven
+  domain_execution_skill_ref: ../../../../idc-general-coding/SKILL.md
+  execution_contract_ref: ../../schemas/execution-authorization.schema.yaml
+  phase_refs: {}
+  lane_profiles:
+    fast:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+    lite:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}
+    complex:
+      skills: {allow: [], deny: [], required: []}
+      orchestration: {mode: autonomous, steps: []}

@@ -71,8 +71,20 @@ execution_unit_ref = demand.get("execution_unit_ref")
 domain = demand.get("selected_domain")
 if not present(execution_unit_ref):
     errors.append("execution_unit_ref is required")
-if domain not in ("general", "d3a", "custom"):
-    errors.append("selected_domain must be general, d3a, or custom")
+
+domains_runtime = effective.get("domains") or {}
+enabled_domains = list(domains_runtime.get("enabled") or []) if isinstance(domains_runtime, dict) else []
+domain_modules = domains_runtime.get("modules") or {} if isinstance(domains_runtime, dict) else {}
+selected_module = None
+module_backed_domain = False
+if isinstance(domain_modules, dict) and domain_modules:
+    if domain not in enabled_domains or not isinstance(domain_modules.get(domain), dict):
+        errors.append(f"selected_domain is not enabled in effective runtime: {domain}")
+    else:
+        selected_module = domain_modules[domain]
+        module_backed_domain = selected_module.get("source") == "domain-pack"
+elif domain not in ("general", "d3a", "custom"):
+    errors.append("selected_domain is not available in effective runtime")
 
 selected_layer = demand.get("selected_layer")
 selected_lane = demand.get("selected_lane")
@@ -83,13 +95,13 @@ if len(selected_components) != len(set(selected_components)):
 if len(selected_test_domains) != len(set(selected_test_domains)):
     errors.append("selected_test_domains must contain unique IDs")
 
-if domain == "d3a":
+if isinstance(selected_module, dict) and selected_module.get("fixed_architecture"):
     if not present(selected_layer):
-        errors.append("selected_layer is required for D3A knowledge")
+        errors.append("selected_layer is required for fixed-architecture Domain knowledge")
     if not selected_test_domains:
-        errors.append("D3A knowledge requires at least one selected_test_domain")
+        errors.append("fixed-architecture Domain knowledge requires at least one selected_test_domain")
     if selected_components:
-        errors.append("D3A knowledge cannot select General components")
+        errors.append("fixed-architecture Domain knowledge cannot select General components")
 elif domain == "general":
     if present(selected_layer):
         errors.append("General knowledge cannot select a Layer")
@@ -105,11 +117,64 @@ elif domain == "custom":
         errors.append("selected_layer is required for Custom Domain knowledge")
     if selected_components:
         errors.append("Custom Domain knowledge cannot select General components")
+elif module_backed_domain:
+    if selected_components:
+        errors.append("Domain Pack knowledge cannot select General components")
+    lane_mode = ((selected_module.get("lane_policy") or {}).get("mode"))
+    if lane_mode in ("dynamic", "fixed") and selected_lane not in (
+        "fast",
+        "lite",
+        "complex",
+    ):
+        errors.append("selected_lane is required for lane-applicable Domain Pack knowledge")
 
 catalog = (effective.get("knowledge_catalog") or {}).get(domain) or {}
 knowledge = effective.get("knowledge") or {}
 selected_entries = []
 scope_entries = []
+module_knowledge_root = None
+
+
+def load_module_registry(registry_key, payload_key):
+    registries = (selected_module or {}).get("registries") or {}
+    registry_ref = registries.get(registry_key) if isinstance(registries, dict) else None
+    if not present(registry_ref):
+        errors.append(f"selected Domain module is missing registries.{registry_key}")
+        return []
+    try:
+        document = safe_yaml_load(Path(str(registry_ref)).resolve().read_text()) or {}
+    except (FileNotFoundError, OSError, yaml.YAMLError) as error:
+        errors.append(f"selected Domain registry cannot be read: {error}")
+        return []
+    entries = document.get(payload_key) if isinstance(document, dict) else None
+    if not isinstance(entries, list):
+        errors.append(f"selected Domain registry must contain {payload_key}")
+        return []
+    return entries
+
+
+if module_backed_domain:
+    root_ref = (selected_module or {}).get("knowledge_root_ref")
+    if not present(root_ref):
+        errors.append("selected Domain module is missing knowledge_root_ref")
+    else:
+        module_knowledge_root = Path(str(root_ref)).resolve()
+        if not module_knowledge_root.is_dir():
+            errors.append("selected Domain knowledge_root_ref is not a directory")
+    catalog = {
+        "layers": (
+            load_module_registry("coding_layers_ref", "coding_layers")
+            if present(selected_layer)
+            else []
+        ),
+        "test_domains": (
+            load_module_registry("test_domains_ref", "test_domains")
+            if selected_test_domains
+            else []
+        ),
+        "components": [],
+    }
+    knowledge = {}
 
 
 def select_entry(entries, entry_id, kind):
@@ -124,6 +189,25 @@ def select_entry(entries, entry_id, kind):
         return
     ref = entry.get("knowledge_ref")
     if present(ref):
+        if module_backed_domain:
+            if module_knowledge_root is None:
+                return
+            candidate = Path(str(ref))
+            if not candidate.is_absolute():
+                candidate = (module_knowledge_root / candidate).resolve()
+            else:
+                candidate = candidate.resolve()
+            try:
+                candidate.relative_to(module_knowledge_root)
+            except (ValueError, TypeError):
+                errors.append(
+                    f"{kind} knowledge_ref is outside selected Domain knowledge_root_ref: {entry_id}"
+                )
+                return
+            if not candidate.is_file():
+                errors.append(f"{kind} knowledge_ref does not exist: {entry_id}")
+                return
+            ref = str(candidate)
         selected_entries.append(
             {
                 "kind": kind,

@@ -1,0 +1,61 @@
+general_plan:
+  task_id: plan-confirmation-hook
+  selected_components: [HARNESS_GATE_PLACEHOLDER]
+  execution_units:
+    - id: unit-hook-1
+      summary: "PreToolUse hook 脚本 + settings.json 注册"
+      max_change_loc: 400
+    - id: unit-hook-2
+      summary: "规格同步（ask-user-tool-policy / execution-authorization-gate / plan-confirmation-view 措辞矛盾修正）"
+      max_change_loc: 80
+    - id: unit-hook-3
+      summary: "tests/test_harness.py 新增 hook 强制测试"
+      max_change_loc: 300
+
+design:
+  goal: >-
+    堵死"模型自填 status: confirmed 绕过 Technical Plan Confirmation"的绕过口。
+    PreToolUse hook 拦截 Bash 调用：当命令涉及 authorize_execution.py 且请求自证
+    status: confirmed 时，必须在本 session transcript 中找到一次真实的 AskUserQuestion
+    交互绑定该计划件，否则 deny。
+
+  hook_behavior:
+    - "新文件 .claude/hooks/verify_plan_confirmation_ask.py（仅 python3 标准库；yaml 可用时用之，否则内置提取）"
+    - "stdin 收宿主 hook JSON（session_id / transcript_path / tool_name / tool_input.command）"
+    - "command 不含 authorize_execution.py → exit 0 放行（零开销 passthrough）"
+    - "从 command 提取 --request 路径；提取不到 / 文件不可读 → deny（fail-closed）"
+    - "解析 technical_plan_confirmation.status / confirmation_ref；status != confirmed → exit 0 放行（authorize 脚本自身会拦，不重复）"
+    - "绑定校验：取 confirmation_ref 的 basename，扫 transcript JSONL，须存在 tool_use name==AskUserQuestion 且序列化 input 含该 basename，且对应 tool_use_id 存在非 error 的 tool_result（用户真实作答）"
+    - "时序校验：该 tool_result 行 timestamp 必须晚于计划件 mtime（防'问完再偷改计划'）；timestamp 缺失 → deny"
+    - "任一不满足 → PreToolUse deny，reason 以 BLOCKED_PLAN_CONFIRMATION_REQUIRED 开头并给出具体原因"
+
+  spec_sync:
+    - "ask-user-tool-policy.md：新增 must 规则——plan confirmation 的 AskUserQuestion 问题文本必须包含计划件路径（hook 绑定依据）"
+    - "execution-authorization-gate.md：Technical Plan Confirmation 段注明 ask 步骤现由 hook 机器强制（宿主支持 PreToolUse hooks 时）"
+    - "plan-confirmation-view.md:63 '回复 confirm plan' 措辞改为经 AskUserTool 收集（消除与第 5/73 行的矛盾）"
+
+  tests: >-
+    tests/test_harness.py 新增
+    test_plan_confirmation_hook_enforces_real_ask_user_interaction：tmp 目录造计划件 /
+    request / fake transcript JSONL，断言 8 个 case——真实 ask+result 且时序正确 →
+    exit 0；无 ask → deny；ask 早于计划件 mtime → deny；绑定错文件 → deny；
+    非 authorize 命令 → passthrough；--request 提不出 → deny；status != confirmed →
+    passthrough；settings.json 正确注册 PreToolUse Bash matcher。
+
+  allowed_paths:
+    - .claude/hooks/verify_plan_confirmation_ask.py
+    - .claude/settings.json
+    - .claude/skills/idc-workflow/references/workflows/ask-user-tool-policy.md
+    - .claude/skills/idc-workflow/references/workflows/execution-authorization-gate.md
+    - .claude/skills/idc-workflow/references/human-views/plan-confirmation-view.md
+    - tests/test_harness.py
+
+  out_of_scope:
+    - "/dev/tty 人工确认戳方案"
+    - "schema 增加 ask-session 绑定字段"
+    - "README / docs 全面改版"
+
+  risks:
+    - "transcript 行结构随宿主版本演进 → 解析宽松容错，任何不确定一律 fail-closed deny"
+    - "settings.json hooks 变更可能不热加载 → 本次会话内不生效，宿主下次会话生效，文档注明"
+    - "basename 碰撞 → v1 接受；若问题文本含完整路径则同时校验全路径"

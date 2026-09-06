@@ -23,7 +23,10 @@ assert.ok(existsSync(join(project, ".claude", "hooks", "verify_plan_confirmation
 assert.equal(lstatSync(join(project, ".cac")).isSymbolicLink(), true);
 assert.equal(readlinkSync(join(project, ".cac")), ".claude");
 assert.equal(readlinkSync(join(project, "AGENTS.md")), "CLAUDE.md");
-assert.match(readFileSync(join(project, "team-config.yaml"), "utf8"), /id: payments/);
+const createdConfig = readFileSync(join(project, "team-config.yaml"), "utf8");
+assert.match(createdConfig, /^config_version: 2$/m);
+assert.match(createdConfig, /^\s+id: payments$/m);
+assert.doesNotMatch(createdConfig, /public-placeholder-team/);
 assert.ok(existsSync(join(project, ".idc", "effective-team-config.yaml")));
 assert.ok(existsSync(join(project, ".idc", "install-manifest.json")));
 

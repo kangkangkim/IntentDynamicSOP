@@ -31,13 +31,15 @@ Generated Runtime
 Default adoption rule: reuse IDC Core unchanged and describe all team variation
 through `team-config.yaml`.
 
-Execution order is configured at the narrowest owning scope:
+The maintained v2 contract is [Team Config v2](../idc-team-config/references/team-config-v2.md).
+The protected sequence is [Runtime lifecycle](../idc-team-config/references/runtime-lifecycle.md).
 
-- General uses `lane.profiles.fast|lite|complex.orchestration`.
-- D3A uses `domain.d3a.orchestration`; `framework_default` keeps the fixed
-  implementation and `ordered` changes only the atomic middle steps.
-- Custom uses `domain.custom.orchestration`; `workflow_skill` delegates order to
-  the bound Workflow Skill and `ordered` declares the atomic middle steps.
+Execution order belongs to the selected v2 Pack policy, with explicit team Lane
+profiles overriding only their matching Lane:
+
+- General and lane-applicable Custom Domains use `lane.profiles.fast|lite|complex`.
+- D3A remains Lane N/A and consumes its fixed Pack workflow.
+- A self-developed Custom Domain maintains its own Pack assets.
 
 Core still owns Alignment, Contract, Knowledge, authorization, and Completion
 gates. Ordered steps are executable policy, not visualization.
@@ -78,16 +80,12 @@ An adopting team changes exactly one file:
 team-config.yaml
 ```
 
-Shared registries (`dt-domains.yaml`, `general-components.yaml`,
-`general-test-domains.yaml`) are read-only defaults: a non-empty
-`domain.d3a.dt_domains` / `general.components` / `general.test_domains` in
-`team-config.yaml` replaces the corresponding registry wholesale (never merge).
-Do not edit shared registry files in the team copy.
+Shared registries are read-only defaults. v2 definition registry overrides
+replace the selected Pack registry wholesale; do not edit shared registry files.
 
-Domain capability is adoption configuration: list every supported route in
-`domain.enabled`, keep `domain.mode` as the fallback, and add `custom` plus the
-inline `domain.custom` contract for a team-owned Domain. Do not edit the shared
-Domain registry.
+List every supported route in `domains.enabled`, set `domains.default`, and map
+each enabled ID to a Pack in `domains.definitions`. Do not edit the shared Domain
+registry.
 
 For multi-team reuse, do not put concrete team paths or commands into the shared
 adapter registry. Keep `references/registries/skill-adapters.yaml` as the common
@@ -155,8 +153,8 @@ Only inside the team configuration, fill real values in exactly one file:
 team-config.yaml
 ```
 
-- Real DT domains and their knowledge refs go to `domain.d3a.dt_domains`
-  (non-empty replaces `dt-domains.yaml` wholesale, no merge).
+- Real DT domains and their knowledge refs live in a team registry referenced by
+  `domains.definitions.d3a.registries.test_domains_ref` (wholesale replacement).
 - Layer knowledge refs go to `knowledge.layer_docs`; the 7 layer names stay fixed.
 - General Lane knowledge refs go to `knowledge.lane_docs.fast/lite/complex`; only the selected Lane is loaded.
 - Skill refs go to `bindings.*`; commands and pass/fail logic remain inside those skills.

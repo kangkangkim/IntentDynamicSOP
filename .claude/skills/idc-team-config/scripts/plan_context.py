@@ -72,19 +72,12 @@ DOMAIN_REFS = {
         ],
         "execution": [".claude/skills/idc-general-coding/SKILL.md"],
     },
-    "d3a": {
-        "decision": [".claude/skills/idc-workflow/references/domains/d3a/module.yaml"],
-        "planning": [
-            ".claude/skills/idc-workflow/references/constraints/planning/d3a-planning-constraints.yaml",
-            ".claude/skills/idc-workflow/references/workflows/d3a-workflow.md",
-            ".claude/skills/idc-workflow/references/schemas/d3a-plan.schema.yaml",
-        ],
-        "execution": [
-            ".claude/skills/idc-workflow/references/constraints/execution/d3a-execution-constraints.yaml",
-            ".claude/skills/idc-d3a-coding/SKILL.md",
-        ],
-    },
+    "d3a": {},
     "custom": {},
+}
+
+OFFICIAL_DOMAIN_PACK_REFS = {
+    "d3a": ".claude/skills/idc-workflow/references/domains/d3a/domain-pack.yaml",
 }
 
 SIGNAL_REFS = {
@@ -209,6 +202,46 @@ def repo_relative_ref(ref):
     return text if relative.startswith("..") else relative
 
 
+def resolve_declared_ref(ref, base_dir):
+    text = str(ref or "")
+    if text.startswith("harness://"):
+        return str((ROOT / text[len("harness://") :]).resolve())
+    path = Path(text)
+    if path.is_absolute():
+        return str(path)
+    local = (Path(base_dir) / path).resolve()
+    return str(local if local.exists() else (ROOT / path).resolve())
+
+
+def hydrate_official_domain_pack(domain_id, selected_domain):
+    pack_ref = OFFICIAL_DOMAIN_PACK_REFS.get(domain_id)
+    if not pack_ref or not isinstance(selected_domain, dict):
+        return selected_domain
+    if selected_domain.get("workflow_profile_ref"):
+        return selected_domain
+    pack_path = (ROOT / pack_ref).resolve()
+    pack_document = load_yaml(pack_path)
+    pack = pack_document.get("domain_pack") or {}
+    if not isinstance(pack, dict) or pack.get("id") != domain_id:
+        fail_plan("official Domain Pack does not match selected domain: {}".format(domain_id))
+    hydrated = dict(selected_domain)
+    hydrated["pack_ref"] = str(pack_path)
+    hydrated["lane_policy"] = pack.get("lane_policy") or {}
+    for key in [
+        "workflow_profile_ref",
+        "capability_policy_ref",
+        "completion_predicate_ref",
+        "knowledge_root_ref",
+    ]:
+        hydrated[key] = resolve_declared_ref(pack.get(key), pack_path.parent)
+    registries = pack.get("registries") or {}
+    hydrated["registries"] = {
+        key: resolve_declared_ref(value, pack_path.parent)
+        for key, value in registries.items()
+    }
+    return hydrated
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="plan_context.py",
@@ -308,16 +341,17 @@ def main():
         if effective_custom_domain and options.domain:
             options.domain = "custom"
 
+    selected_domain = hydrate_official_domain_pack(options.domain, selected_domain)
+    module_lane_mode = dig(selected_domain, "lane_policy", "mode")
+
     lane_applicable = options.domain == "general"
-    custom_lane_mode = None
-    if options.domain == "custom":
-        custom_lane_mode = dig(selected_domain, "lane_policy", "mode")
-        lane_applicable = custom_lane_mode != "not_applicable"
-        if custom_lane_mode == "fixed":
+    if module_lane_mode in ("dynamic", "fixed", "not_applicable"):
+        lane_applicable = module_lane_mode != "not_applicable"
+        if module_lane_mode == "fixed":
             fixed_lane = dig(selected_domain, "lane_policy", "selected_lane")
             if options.lane and options.lane != fixed_lane:
                 fail_plan(
-                    "--lane {} conflicts with domain.custom.lane_policy.mode fixed "
+                    "--lane {} conflicts with selected domain lane_policy.mode fixed "
                     "selected_lane {}; omit --lane or update the fixed policy in "
                     "team-config.yaml".format(options.lane, fixed_lane)
                 )
@@ -339,6 +373,57 @@ def main():
     refs = list(COMMON_REFS.get(options.phase, []))
     if options.domain:
         refs += list(to_array(dig(DOMAIN_REFS, options.domain, options.phase)))
+
+    # v2 Domain Packs materialize public contract refs directly on the selected
+    # module. Consume phase-relevant files without registering the Domain ID in
+    # Core. knowledge_root_ref is a directory boundary, so it is surfaced in the
+    # plan metadata rather than treated as a loadable file.
+    module_refs = {}
+    if isinstance(selected_domain, dict):
+        for key in [
+            "workflow_profile_ref",
+            "capability_policy_ref",
+            "completion_predicate_ref",
+            "knowledge_root_ref",
+        ]:
+            if present := selected_domain.get(key):
+                module_refs[key] = present
+        registries = selected_domain.get("registries") or {}
+        if isinstance(registries, dict):
+            module_refs["registries"] = {
+                key: value
+                for key, value in registries.items()
+                if value is not None and str(value) != ""
+            }
+    module_phase_ref_keys = {
+        "decision": ["workflow_profile_ref"],
+        "planning": ["workflow_profile_ref", "capability_policy_ref"],
+        "execution": ["workflow_profile_ref", "capability_policy_ref"],
+        "completion": ["completion_predicate_ref"],
+    }
+    if dig(selected_domain, "source") == "domain-pack":
+        refs += [
+            module_refs.get(key)
+            for key in module_phase_ref_keys.get(options.phase, [])
+            if module_refs.get(key)
+        ]
+        if options.phase == "planning":
+            refs += list((module_refs.get("registries") or {}).values())
+
+    workflow_profile_ref = module_refs.get("workflow_profile_ref")
+    if workflow_profile_ref:
+        workflow_path = Path(str(workflow_profile_ref)).resolve()
+        workflow_document = load_yaml(workflow_path)
+        workflow_profile = workflow_document.get("workflow_profile") or {}
+        phase_refs = (
+            workflow_profile.get("phase_refs")
+            if isinstance(workflow_profile, dict)
+            else {}
+        ) or {}
+        refs += [
+            resolve_declared_ref(ref, workflow_path.parent)
+            for ref in to_array(phase_refs.get(options.phase))
+        ]
 
     alignment_declared_signals = []
     alignment_resolution = None
@@ -573,8 +658,7 @@ def main():
     # lane policy pins selected_lane up front and not_applicable domains are
     # handled by their execution profile, so neither injects the resolver ref.
     if (
-        custom_lane_mode == "dynamic"
-        and options.domain == "custom"
+        module_lane_mode == "dynamic"
         and options.phase == "decision"
     ):
         refs.append(".claude/skills/idc-workflow/references/workflows/lane-resolver.md")
@@ -666,6 +750,15 @@ def main():
         "signals": signals,
         "alignment_resolution": alignment_resolution,
         "domain_orchestration_resolution": domain_orchestration_resolution,
+        "domain_module": {
+            "id": selected_domain.get("id") if isinstance(selected_domain, dict) else None,
+            "lane_policy": (
+                selected_domain.get("lane_policy")
+                if isinstance(selected_domain, dict)
+                else None
+            ),
+            "refs": module_refs,
+        },
         "required_refs": refs,
         "selected_capabilities": selected_capabilities,
         "knowledge_load_plan_ref": (

@@ -1,0 +1,15 @@
+completion_predicates:
+  - predicate_id: required_dt_domains_green
+    required: true
+    expected_status: PASS
+    evidence_required: true
+  - predicate_id: tran_build_pass
+    required: true
+    expected_status: PASS
+    evidence_required: true
+
+completion_rule:
+  operator: all
+  requirements:
+    - 所有 required_dt_domains 均为 GREEN
+    - tran_build 为 PASS

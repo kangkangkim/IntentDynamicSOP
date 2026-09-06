@@ -1,11 +1,18 @@
 schema: effective_team_config
 version: 1
 
+# Version 2 effective runtimes retain validated team bindings, adapter
+# extensions, explicit alignment, and complete capability metadata. Pack Lane
+# profiles provide defaults only for Lane IDs not explicitly configured by the
+# team. registration_audit.declared_overrides records binding replacements.
+
 effective_team_config:
   generated: true
   source_ref: team-config.yaml
   source_sha256: sha256
-  config_version: 1
+  runtime_dependency_sha256: sha256 # v2 consumed file-byte manifest digest
+  runtime_dependency_files: {} # absolute reference to content SHA-256
+  config_version: 1 | 2
   team: {}
   domain:
     id: string
@@ -16,7 +23,26 @@ effective_team_config:
     enabled: [general, d3a, custom]
     default: general | d3a | custom
     modules:
-      domain_key: {}
+      domain_key:
+        available_capabilities: # never unioned with another Domain during selection
+          - id: string
+            skill_ref: skill_ref
+            execution_role: atomic_capability | verification_capability | pre_alignment_capability | null
+            capability_keys: []
+            allowed_stages: []
+            eligible_lanes: []
+            execution_profiles: []
+            trigger_signals: []
+            evidence_required: boolean | null
+            requires: []
+            blocks_when: []
+            composes_with: []
+            supersedes: []
+        lane_profiles: {}
+        required_contracts: []
+        workflow_skill_ref: skill_ref | null
+        planner_skill_ref: skill_ref | null
+        completion_skill_ref: skill_ref | null
   bindings: {}
   adapter_extensions: []
   available_capabilities: []
@@ -68,3 +94,5 @@ rules:
   - Runtime routing reads this file after team-config validation.
   - Multi-domain routing selects exactly one module from domains.enabled per task; domain remains the default module for compatibility.
   - This file is checkpoint state, not completion evidence.
+  - v2 runtime dependency identity includes consumed Pack, policy, registry, and Skill file bytes.
+  - Selector and graph compiler reject a stale dependency identity.

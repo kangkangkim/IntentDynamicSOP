@@ -1,0 +1,32 @@
+schema: migration_preview
+version: 1
+
+migration_preview:
+  status: READY | BLOCKED | INVALID
+  source_version: 1
+  target_version: 2
+  source_sha256: sha256
+  dependency_sha256: sha256
+  bundle_sha256: sha256
+  source_config: {}
+  candidate_config: {}
+  assets:
+    - path: stable-relative-path
+      content: string
+      sha256: sha256
+  field_dispositions:
+    - source_path: dotted-path
+      target_paths: []
+      status: MAPPED | PRESERVED_INACTIVE | FALLBACK_USED | UNSUPPORTED
+      reason: string
+  validation:
+    resolver: PASS | FAIL
+    semantic_parity: PASS | FAIL
+  diagnostics: []
+
+rules:
+  - Preview 只在 external temporary directory 中执行 validation，绝不修改 source directory。
+  - source_config 保留完整 parsed source tree，但不是 runtime ownership source。
+  - 每个 source field 和 empty container 都有 disposition；任何 unsupported field 都阻断 migration。
+  - READY 要求真实 version 2 resolver 和 behavior semantic parity 都 pass。
+  - Asset path 和 bundle identity 排除 timestamp、process ID 和 validation-directory path。
