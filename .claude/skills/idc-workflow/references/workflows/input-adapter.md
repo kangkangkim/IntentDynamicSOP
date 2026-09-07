@@ -58,6 +58,7 @@ Fast 还必须同时满足 `no_new_test_required: true`、
 
 ```yaml
 input_maturity: raw_idea
+runtime_signals: [raw_idea]
 next_pre_alignment_step: Discovery Provider
 ```
 
@@ -65,6 +66,7 @@ next_pre_alignment_step: Discovery Provider
 
 ```yaml
 input_maturity: structured_requirement
+runtime_signals: [structured_requirement_input]
 next_pre_alignment_step: Clarification Provider
 ```
 
@@ -85,6 +87,7 @@ Adapter 需要抽取：
 normalized_request:
   input_type: tr3_design_doc
   input_maturity: tr3_design_doc
+  runtime_signals: [tr3_input]
   extracted_requirement: ...
   extracted_api_semantics: ...
   extracted_dt_design: ...

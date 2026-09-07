@@ -162,7 +162,8 @@ rules:
   - Missing alignment (or missing alignment.bindings / alignment.orchestration) materializes the framework default five-step chain with framework-owned trigger signals and no other output difference.
   - alignment.orchestration.mode is always ordered; every framework stage requires a step mapping, otherwise the resolver returns NEEDS_ORCHESTRATION_MAPPING.
   - The alignment_check step (Human Alignment gate) cannot be removed; teams may rebind its skill_ref only.
-  - raw_idea and critical_gaps_remain form the framework signal floor and must stay covered by step trigger_signals.
+  - raw_idea and critical_gaps_remain form the general framework signal floor and must stay covered by step trigger_signals.
+  - structured_requirement_input and tr3_input must be covered by one or more clarification-stage steps; configured pipelines that omit either fail closed with NEEDS_TEAM_CONFIG.
   - alignment.bindings skill_refs may use team://, harness://, absolute, or relative paths, but must resolve to an idc-*/SKILL.md target; unresolved step skill_ids return NEEDS_TEAM_CONFIG.
   - Missing lane.profiles uses backward-compatible autonomous empty profiles; newly generated configs include all three profiles explicitly.
   - Missing lane.default, capability_selection, and self_optimization are materialized with documented safe defaults.

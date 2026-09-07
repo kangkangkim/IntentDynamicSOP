@@ -91,14 +91,15 @@ execution-unit 的文件名，避免下一个执行单元覆写 Delegation Contr
 
 Alignment Context Plan 默认保守加载团队配置的完整链。只有调用方确认当前信号
 集合完整时才传 `--signals-complete`，此时按 `alignment.orchestration.steps`
-精确选择（同一步骤的 triggers 为 AND）并始终保留 `alignment_check`；团队
+精确选择（同一步骤的 triggers 为任一命中即执行）并始终保留 `alignment_check`；团队
 自定义 bindings、顺序和 trigger token 都是唯一 Skill 选择来源。
 
 Alignment 不是把所有意图 Skill 固定串行执行。Input Adapter 先区分
 `raw_idea`、`structured_requirement`、`tr3_design_doc` 和仍然有效的
 `approved_alignment`：raw idea 必须先经 Discovery；structured requirement
-默认跳过 Discovery / Brainstorming，只在关键缺口存在时进入 Grilling；TR3
-先由 TR3 Adapter 解析，再按缺口选择 Grilling / Grill With Docs；所有未批准
+默认跳过 Discovery / Brainstorming，并由 `structured_requirement_input` 强制进入
+Grilling；TR3 先由 TR3 Adapter 解析，再由 `tr3_input` 强制进入普通 Grilling，
+`docs_clarification_required` 只负责按需触发 Grill With Docs；所有未批准
 路径最终都必须经过 `alignment_check`。Domain 选择不会改变这条成熟度策略。
 
 `team-config.yaml` 的可选顶层 `alignment` 段把 pre-alignment 意图加工链做成可配置管线（与 Lane 编排同形状）：
@@ -111,7 +112,7 @@ alignment:
     steps: # id / stage / skill_ids / trigger_signals
 ```
 
-未配置该段（或缺 `bindings` / `orchestration`）时回落框架默认五步链，行为与现状等价；该段只能编排意图加工步骤（可 rebind skill、可要求 ordered stage 全映射），Scenario Router、Contract Gate、Human Alignment approval 与 completion 所有权归框架、不可配置。Resolver 以有界错误校验：step 引用未绑定 skill 返回 `NEEDS_TEAM_CONFIG`，ordered 缺 stage 映射返回 `NEEDS_ORCHESTRATION_MAPPING`，`alignment_check` step 不可删除，`raw_idea` / `critical_gaps_remain` 信号下限必须被覆盖。
+未配置该段（或缺 `bindings` / `orchestration`）时回落框架默认五步链，行为与现状等价；该段只能编排意图加工步骤（可 rebind skill、可要求 ordered stage 全映射），Scenario Router、Contract Gate、Human Alignment approval 与 completion 所有权归框架、不可配置。Resolver 以有界错误校验：step 引用未绑定 skill 返回 `NEEDS_TEAM_CONFIG`，ordered 缺 stage 映射返回 `NEEDS_ORCHESTRATION_MAPPING`，`alignment_check` step 不可删除，`raw_idea` / `critical_gaps_remain` 信号下限必须被覆盖，并且 clarification stage 必须覆盖 `structured_requirement_input` 与 `tr3_input`。
 
 推荐复用方式：
 

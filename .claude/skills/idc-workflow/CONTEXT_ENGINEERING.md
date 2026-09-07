@@ -49,8 +49,10 @@ references/workflows/domain-module-router.md
 
 ## Stage 2: 澄清 / Discovery
 
-`input_maturity = raw_idea` 时给 decision plan 添加 `raw_idea` signal；关键
-contract、scope、completion gate 缺失时添加 `clarification_required`。
+`input_maturity = raw_idea` 时给 decision plan 添加 `raw_idea` signal；
+`structured_requirement` 添加 `structured_requirement_input`，`tr3_design_doc`
+添加 `tr3_input`，后二者都必须点亮 configured clarification step。关键 contract、
+scope、completion gate 缺失时还可添加 `clarification_required`。
 只有需要向用户提问时才添加 `user_question_required`。
 
 知识加载规则：

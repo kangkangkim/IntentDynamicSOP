@@ -18,7 +18,7 @@ const ALIGNMENT_BINDINGS = {
 const DEFAULT_ALIGNMENT_STEPS = [
   { id: "alignment-discovery", stage: "discovery", skill_ids: ["intent_discovery"], trigger_signals: ["raw_idea"] },
   { id: "alignment-brainstorming", stage: "divergence", skill_ids: ["brainstorming"], trigger_signals: ["alternatives_needed"] },
-  { id: "alignment-grilling", stage: "clarification", skill_ids: ["intent_grilling"], trigger_signals: ["critical_gaps_remain"] },
+  { id: "alignment-grilling", stage: "clarification", skill_ids: ["intent_grilling"], trigger_signals: ["critical_gaps_remain", "structured_requirement_input", "tr3_input"] },
   { id: "alignment-grilling-with-docs", stage: "clarification", skill_ids: ["intent_grilling_with_docs"], trigger_signals: ["docs_clarification_required"] },
   { id: "alignment-check", stage: "alignment_check", skill_ids: ["intent_alignment"], trigger_signals: [] }
 ];
@@ -40,7 +40,7 @@ const ALIGNMENT_PRESETS = {
     steps: [
       { id: "alignment-discovery", stage: "discovery", skill_ids: ["intent_discovery"], trigger_signals: ["raw_idea"] },
       { id: "alignment-brainstorming", stage: "divergence", skill_ids: ["brainstorming"], trigger_signals: ["raw_idea", "alternatives_needed"] },
-      { id: "alignment-grilling", stage: "clarification", skill_ids: ["intent_grilling"], trigger_signals: ["critical_gaps_remain"] },
+      { id: "alignment-grilling", stage: "clarification", skill_ids: ["intent_grilling"], trigger_signals: ["critical_gaps_remain", "structured_requirement_input", "tr3_input"] },
       { id: "alignment-grilling-with-docs", stage: "clarification", skill_ids: ["intent_grilling_with_docs"], trigger_signals: ["docs_clarification_required"] },
       { id: "alignment-check", stage: "alignment_check", skill_ids: ["intent_alignment"], trigger_signals: [] }
     ]
@@ -51,29 +51,29 @@ const ALIGNMENT_PRESETS = {
     steps: [
       { id: "alignment-discovery", stage: "discovery", skill_ids: ["intent_discovery"], trigger_signals: ["raw_idea"] },
       { id: "alignment-brainstorming", stage: "divergence", skill_ids: ["brainstorming"], trigger_signals: ["alternatives_needed"] },
-      { id: "alignment-grilling", stage: "clarification", skill_ids: ["intent_grilling"], trigger_signals: ["critical_gaps_remain"] },
-      { id: "alignment-grilling-with-docs", stage: "clarification", skill_ids: ["intent_grilling_with_docs"], trigger_signals: ["docs_clarification_required", "structured_requirement_ready"] },
+      { id: "alignment-grilling", stage: "clarification", skill_ids: ["intent_grilling"], trigger_signals: ["structured_requirement_input", "critical_gaps_remain", "tr3_input"] },
+      { id: "alignment-grilling-with-docs", stage: "clarification", skill_ids: ["intent_grilling_with_docs"], trigger_signals: ["docs_clarification_required"] },
       { id: "alignment-check", stage: "alignment_check", skill_ids: ["intent_alignment"], trigger_signals: [] }
     ]
   },
   /* TR3（tr3_design_doc）：TR3 Adapter 先解析，默认跳过 Discovery /
-     Brainstorming，直入 Clarification 按缺口收敛（同一步骤内 AND 门控）。 */
+     Brainstorming，并通过 tr3_input 强制进入普通 Clarification。 */
   tr3: {
     label: "TR3 型（tr3_design_doc 为主）",
-    tagline: "输入是 TR3 设计文档：跳过发散，缺口存在时才盘问 / 带文档盘问",
+    tagline: "输入是 TR3 设计文档：跳过发散，强制普通盘问；带文档盘问仍按需触发",
     steps: [
       { id: "alignment-discovery", stage: "discovery", skill_ids: ["intent_discovery"], trigger_signals: ["raw_idea"] },
       { id: "alignment-brainstorming", stage: "divergence", skill_ids: ["brainstorming"], trigger_signals: ["alternatives_needed"] },
-      { id: "alignment-grilling", stage: "clarification", skill_ids: ["intent_grilling"], trigger_signals: ["tr3_design_doc", "critical_gaps_remain"] },
-      { id: "alignment-grilling-with-docs", stage: "clarification", skill_ids: ["intent_grilling_with_docs"], trigger_signals: ["tr3_design_doc", "docs_clarification_required"] },
+      { id: "alignment-grilling", stage: "clarification", skill_ids: ["intent_grilling"], trigger_signals: ["tr3_input", "critical_gaps_remain", "structured_requirement_input"] },
+      { id: "alignment-grilling-with-docs", stage: "clarification", skill_ids: ["intent_grilling_with_docs"], trigger_signals: ["docs_clarification_required"] },
       { id: "alignment-check", stage: "alignment_check", skill_ids: ["intent_alignment"], trigger_signals: [] }
     ]
   }
 };
 const PREVIEW_SIGNALS = [
   { id: "raw_idea", label: "输入：raw idea（模糊想法）" },
-  { id: "structured_requirement_ready", label: "输入：structured requirement（结构化需求）" },
-  { id: "tr3_design_doc", label: "输入：TR3 设计文档" }
+  { id: "structured_requirement_input", label: "输入：structured requirement（结构化需求）" },
+  { id: "tr3_input", label: "输入：TR3 设计文档" }
 ];
 
 function applyAlignmentPreset(config, presetId) {
@@ -838,6 +838,8 @@ function validateConfig() {
   ["discovery", "divergence", "clarification", "alignment_check"].forEach((stage) => add(stages.includes(stage), `Alignment 保留 ${stage} 阶段`, "alignment"));
   const signals = steps.flatMap((step) => step.trigger_signals || []);
   ["raw_idea", "critical_gaps_remain"].forEach((signal) => add(signals.includes(signal), `Alignment 覆盖 ${signal} 信号`, "alignment"));
+  const clarificationSignals = steps.filter((step) => step.stage === "clarification").flatMap((step) => step.trigger_signals || []);
+  ["structured_requirement_input", "tr3_input"].forEach((signal) => add(clarificationSignals.includes(signal), `Clarification 覆盖强制信号 ${signal}`, "alignment"));
   steps.forEach((step) => add((step.skill_ids || []).every((id) => get(`alignment.bindings.${id}.skill_ref`)), `${step.id} 的 Skill 已绑定`, "alignment"));
   const availableSkillPool = availableSkillIds();
   ["fast", "lite", "complex"].forEach((lane) => {

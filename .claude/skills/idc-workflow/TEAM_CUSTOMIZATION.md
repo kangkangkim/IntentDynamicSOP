@@ -135,15 +135,17 @@ alignment:
       - id: alignment-team-tr3-review
         stage: clarification
         skill_ids: [team_tr3_review]
-        trigger_signals: [tr3_design_doc]
+        trigger_signals: [structured_requirement_input, tr3_input]
 ```
 
 The complete configured section must still include the framework stages
 `discovery`, `divergence`, `clarification`, and `alignment_check`, cover the
-`raw_idea` and `critical_gaps_remain` signal floor, and leave the Human
-Alignment check as the final approval gate. A TR3 step may use
-`tr3_design_doc` to run for every TR3 input, while `critical_gaps_remain` and
-`docs_clarification_required` retain conditional Grilling behavior.
+`raw_idea` and `critical_gaps_remain` signal floor, cover both
+`structured_requirement_input` and `tr3_input` on one or more clarification
+steps, and leave the Human Alignment check as the final approval gate. Teams
+may rebind those mandatory signals to their own clarification Skill;
+`docs_clarification_required` remains the separate conditional signal for
+Grill With Docs.
 
 ## What D3A Teams Fill In Confidentially
 

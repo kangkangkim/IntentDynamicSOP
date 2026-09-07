@@ -698,7 +698,7 @@
                 </div>
                 <div class="maturity-row" data-maturity="tr3_design_doc">
                   <div class="maturity-kind"><strong>TR3 design doc</strong><span>已有设计、DT、验收或影响范围</span></div>
-                  <div class="maturity-route">TR3 Adapter → Grilling（<code>critical_gaps_remain</code>）→ Grill With Docs（<code>docs_clarification_required</code>）→ <b>Alignment Check</b><span>默认按缺口触发；团队可加入 <code>tr3_design_doc</code> signal，让 TR3 强制经过某一步。</span></div>
+                  <div class="maturity-route">TR3 Adapter → Grilling（<code>tr3_input</code>）→ Grill With Docs（<code>docs_clarification_required</code>）→ <b>Alignment Check</b><span>TR3 强制经过普通盘问；只有需要更新文档时才触发带文档盘问。</span></div>
                 </div>
                 <div class="maturity-row" data-maturity="approved_alignment">
                   <div class="maturity-kind"><strong>Approved alignment</strong><span>已有仍然有效的 approval 或 checkpoint</span></div>
@@ -938,11 +938,11 @@
     ];
 
     var ALIGNMENT_STEPS = {
-      discovery: { id: "alignment-discovery", stage: "discovery", skill: "intent_discovery", signal: "raw_idea", label: "Discovery", detail: "输入仍是 raw idea 时补齐目标和验收线索" },
-      brainstorming: { id: "alignment-brainstorming", stage: "divergence", skill: "brainstorming", signal: "alternatives_needed", label: "Brainstorming", detail: "需要比较不同方案时展开选择空间" },
-      grilling: { id: "alignment-grilling", stage: "clarification", skill: "intent_grilling", signal: "critical_gaps_remain", label: "Grilling", detail: "关键缺口会阻塞规划时进行聚焦追问" },
-      docs: { id: "alignment-grilling-with-docs", stage: "clarification", skill: "intent_grilling_with_docs", signal: "docs_clarification_required", label: "Grill With Docs", detail: "需要同步明确决策到文档时触发" },
-      check: { id: "alignment-check", stage: "alignment_check", skill: "intent_alignment", signal: "", label: "Alignment Check", detail: "始终执行，最终由用户批准" }
+      discovery: { id: "alignment-discovery", stage: "discovery", skill: "intent_discovery", signals: ["raw_idea"], label: "Discovery", detail: "输入仍是 raw idea 时补齐目标和验收线索" },
+      brainstorming: { id: "alignment-brainstorming", stage: "divergence", skill: "brainstorming", signals: ["alternatives_needed"], label: "Brainstorming", detail: "需要比较不同方案时展开选择空间" },
+      grilling: { id: "alignment-grilling", stage: "clarification", skill: "intent_grilling", signals: ["critical_gaps_remain", "structured_requirement_input", "tr3_input"], label: "Grilling", detail: "结构化需求与 TR3 必经；其他输入有关键缺口时触发" },
+      docs: { id: "alignment-grilling-with-docs", stage: "clarification", skill: "intent_grilling_with_docs", signals: ["docs_clarification_required"], label: "Grill With Docs", detail: "需要同步明确决策到文档时触发" },
+      check: { id: "alignment-check", stage: "alignment_check", skill: "intent_alignment", signals: [], label: "Alignment Check", detail: "始终执行，最终由用户批准" }
     };
     var ALIGNMENT_DEFAULT_REFS = {
       intent_discovery: "harness://.claude/skills/idc-intent-discovery/SKILL.md",
@@ -1343,7 +1343,7 @@
       alignmentOrder.forEach(function (key, index) {
         var spec = ALIGNMENT_STEPS[key];
         var override = alignmentOverrides[key];
-        var step = override || { id: spec.id, stage: spec.stage, skill_ids: [spec.skill], trigger_signals: spec.signal ? [spec.signal] : [] };
+        var step = override || { id: spec.id, stage: spec.stage, skill_ids: [spec.skill], trigger_signals: spec.signals.slice() };
         var row = document.createElement("div");
         row.className = "alignment-row";
         row.innerHTML = "<span class='step-number'>" + (index + 1) + "</span><div><strong>" + spec.label + "</strong><span>" + spec.detail + "</span></div>";
@@ -1523,7 +1523,7 @@
         L.push("    steps:");
         alignmentOrder.filter(function (key) { return key !== "check"; }).forEach(function (key) {
           var spec = ALIGNMENT_STEPS[key];
-          var step = alignmentOverrides[key] || { id: spec.id, stage: spec.stage, skill_ids: [spec.skill], trigger_signals: spec.signal ? [spec.signal] : [] };
+          var step = alignmentOverrides[key] || { id: spec.id, stage: spec.stage, skill_ids: [spec.skill], trigger_signals: spec.signals.slice() };
           L.push("      - id: " + yv(step.id));
           L.push("        stage: " + yv(step.stage));
           L.push("        skill_ids: " + yamlList(step.skill_ids.join(",")));
@@ -1722,10 +1722,16 @@
       add(alignmentRowsOk && customAlignmentUnique, "团队 Alignment Skill 有唯一 binding ID、有效路径和阶段");
       var alignmentSignals = alignmentOrder.reduce(function (signals, key) {
         var spec = ALIGNMENT_STEPS[key];
-        var step = alignmentOverrides[key] || { trigger_signals: spec.signal ? [spec.signal] : [] };
+        var step = alignmentOverrides[key] || { trigger_signals: spec.signals.slice() };
         return signals.concat(step.trigger_signals || []);
       }, []);
       add(d["alignment.mode"] !== "custom" || (alignmentSignals.indexOf("raw_idea") >= 0 && alignmentSignals.indexOf("critical_gaps_remain") >= 0), "Alignment 保留 raw idea 与关键缺口的最低触发覆盖");
+      var clarificationSignals = alignmentOrder.reduce(function (signals, key) {
+        var spec = ALIGNMENT_STEPS[key];
+        var step = alignmentOverrides[key] || { stage: spec.stage, trigger_signals: spec.signals.slice() };
+        return step.stage === "clarification" ? signals.concat(step.trigger_signals || []) : signals;
+      }, []);
+      add(d["alignment.mode"] !== "custom" || (clarificationSignals.indexOf("structured_requirement_input") >= 0 && clarificationSignals.indexOf("tr3_input") >= 0), "Clarification 覆盖 structured_requirement_input 与 tr3_input 强制信号");
       add(alignmentOrder.length === 5 && alignmentOrder[alignmentOrder.length - 1] === "check", "Alignment Check 保持为最终批准门");
 
       add(true, "每个 skill_ref 的路径与执行角色由接入团队后的 Resolver 验证", true);
@@ -1885,7 +1891,7 @@
       var enabled = enabledDomains(d);
       var coreAlignmentSteps = alignmentOrder.map(function (key) {
         var spec = ALIGNMENT_STEPS[key];
-        var step = alignmentOverrides[key] || { skill_ids: [spec.skill], trigger_signals: spec.signal ? [spec.signal] : [] };
+        var step = alignmentOverrides[key] || { skill_ids: [spec.skill], trigger_signals: spec.signals.slice() };
         return { skill_ids: step.skill_ids || [spec.skill], trigger_signals: step.trigger_signals || [], isCheck: key === "check" };
       });
       var alignmentCheck = coreAlignmentSteps.filter(function (step) { return step.isCheck; });

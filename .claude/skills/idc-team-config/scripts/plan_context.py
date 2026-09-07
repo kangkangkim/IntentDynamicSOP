@@ -91,6 +91,12 @@ SIGNAL_REFS = {
         ".claude/skills/idc-workflow/references/schemas/clarification-provider.schema.yaml",
         ".claude/skills/idc-workflow/references/human-views/clarification-view.md",
     ],
+    "structured_requirement_input": [
+        ".claude/skills/idc-workflow/references/schemas/normalized-request.schema.yaml",
+        ".claude/skills/idc-workflow/references/workflows/clarification-provider.md",
+        ".claude/skills/idc-workflow/references/schemas/clarification-provider.schema.yaml",
+        ".claude/skills/idc-workflow/references/human-views/clarification-view.md",
+    ],
     "critical_gaps_remain": [
         ".claude/skills/idc-workflow/references/workflows/clarification-provider.md",
         ".claude/skills/idc-workflow/references/schemas/clarification-provider.schema.yaml",

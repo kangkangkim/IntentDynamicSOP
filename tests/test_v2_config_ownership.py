@@ -177,6 +177,32 @@ class V2ConfigOwnershipTests(unittest.TestCase):
         self.assertEqual(effective["alignment"]["bindings"]["brainstorming"]["skill_ref"], str(SKILL_A))
         self.assertEqual(effective["alignment"]["orchestration"], alignment["orchestration"])
 
+    def test_explicit_alignment_must_cover_maturity_signals_in_clarification_stage(self):
+        pack = self.build_domain()
+        baseline = copy.deepcopy(
+            yaml.safe_load((ROOT / "team-config.yaml.template").read_text())["alignment"]
+        )
+        for mandatory_signal in ["structured_requirement_input", "tr3_input"]:
+            alignment = copy.deepcopy(baseline)
+            for step in alignment["orchestration"]["steps"]:
+                step["trigger_signals"] = [
+                    signal
+                    for signal in step["trigger_signals"]
+                    if signal != mandatory_signal
+                ]
+            config_path = self.work / (mandatory_signal + "-missing-config.yaml")
+            output_path = self.work / (mandatory_signal + "-missing-effective.yaml")
+            write_yaml(config_path, self.config("sample", pack, alignment=alignment))
+            result = subprocess.run(
+                [sys.executable, str(RESOLVER), "--config", str(config_path), "--output", str(output_path)],
+                cwd=ROOT, env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"),
+                capture_output=True, text=True, timeout=60,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(mandatory_signal, result.stderr)
+            self.assertIn("clarification", result.stderr)
+            self.assertIn("NEEDS_TEAM_CONFIG", result.stderr)
+
     def test_capability_metadata_survives_policy_materialization(self):
         metadata = {
             "execution_role": "atomic_capability", "evidence_required": True,

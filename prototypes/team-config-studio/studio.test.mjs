@@ -290,8 +290,8 @@ for (const presetId of Object.keys(studio.ALIGNMENT_PRESETS || {})) {
 {
   const gate = { id: "check", stage: "alignment_check", skill_ids: ["intent_alignment"], trigger_signals: [] };
   const discovery = { id: "d", stage: "discovery", skill_ids: ["intent_discovery"], trigger_signals: ["raw_idea"] };
-  check("stepFiresOn: 无信号 = 恒触发", studio.stepFiresOn(gate, "raw_idea") === true && studio.stepFiresOn(gate, "structured_requirement_ready") === true);
-  check("stepFiresOn: raw_idea 步骤对 structured 输入不触发", studio.stepFiresOn(discovery, "raw_idea") === true && studio.stepFiresOn(discovery, "structured_requirement_ready") === false);
+  check("stepFiresOn: 无信号 = 恒触发", studio.stepFiresOn(gate, "raw_idea") === true && studio.stepFiresOn(gate, "structured_requirement_input") === true);
+  check("stepFiresOn: raw_idea 步骤对 structured 输入不触发", studio.stepFiresOn(discovery, "raw_idea") === true && studio.stepFiresOn(discovery, "structured_requirement_input") === false);
   check("stepFiresOn: 无预览信号时返回 null", studio.stepFiresOn(discovery, null) === null);
 }
 
@@ -380,10 +380,19 @@ if (typeof studio.setModeEnabled === "function" && typeof studio.enabledModes ==
   const grilling = tr3.alignment.orchestration.steps.find((step) => step.id === "alignment-grilling");
   const withDocs = tr3.alignment.orchestration.steps.find((step) => step.id === "alignment-grilling-with-docs");
   const discovery = tr3.alignment.orchestration.steps.find((step) => step.id === "alignment-discovery");
-  check("TR3 preset: 盘问步骤以 tr3_design_doc AND 缺口信号门控",
-    grilling.trigger_signals.includes("tr3_design_doc") && grilling.trigger_signals.includes("critical_gaps_remain")
-    && withDocs.trigger_signals.includes("tr3_design_doc"));
-  check("TR3 preset: TR3 输入不触发 Discovery（跳过发散）", !discovery.trigger_signals.includes("tr3_design_doc"));
+  check("TR3 preset: 普通盘问由 tr3_input 强制触发，文档盘问仍仅由 docs signal 触发",
+    grilling.trigger_signals.includes("tr3_input") && grilling.trigger_signals.includes("structured_requirement_input")
+    && !withDocs.trigger_signals.includes("tr3_input") && withDocs.trigger_signals.includes("docs_clarification_required"));
+  check("TR3 preset: TR3 输入不触发 Discovery（跳过发散）", !discovery.trigger_signals.includes("tr3_input"));
+}
+
+for (const presetId of ["default", "structured", "tr3"]) {
+  const config = studio.defaultConfig();
+  if (presetId !== "default") studio.applyAlignmentPreset(config, presetId);
+  const clarificationSteps = config.alignment.orchestration.steps.filter((step) => step.stage === "clarification");
+  for (const signal of ["structured_requirement_input", "tr3_input"]) {
+    check(`${presetId}: ${signal} 必须由 clarification step 覆盖`, clarificationSteps.some((step) => step.trigger_signals.includes(signal)));
+  }
 }
 
 /* ---------------- 7. 纯函数单元 ---------------- */

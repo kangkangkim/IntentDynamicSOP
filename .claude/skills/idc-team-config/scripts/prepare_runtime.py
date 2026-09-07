@@ -221,7 +221,12 @@ def main():
     alignment_bindings = alignment.get("bindings") or {}
     alignment_steps = to_array(dig(alignment, "orchestration", "steps"))
     alignment_checks = []
-    alignment_floor_signals = ["raw_idea", "critical_gaps_remain"]
+    alignment_floor_signals = [
+        "raw_idea",
+        "critical_gaps_remain",
+        "structured_requirement_input",
+        "tr3_input",
+    ]
     covered_alignment_signals = [
         signal
         for step in alignment_steps

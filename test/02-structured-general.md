@@ -24,14 +24,15 @@
 ```text
 id-workflow
   -> input_maturity = structured_requirement
+  -> runtime signal = structured_requirement_input
   -> Domain = general
-  -> intent-grilling if contract/scope/completion gate gap exists
+  -> configured clarification Skill（必须执行；可返回无阻断缺口）
   -> intent-alignment
 ```
 
 ## Should see
 
-- 如果存在脚本语言、TODO 匹配规则、mock 输出位置等 contract / scope / completion gate gap，必须先出现 Clarification View。
+- 必须先出现一次 bounded Clarification View；如果没有阻断缺口，可明确返回无阻断缺口。
 - Clarification View 应该使用选择题问题卡，而不是长篇开放追问。
 - 用户回答 Clarification View 后，才应该回到 Alignment View。
 - Alignment View 在实现前出现。

@@ -245,6 +245,7 @@ def framework_alignment(harness_root, errors):
             "trigger_signals": [
                 "critical_gaps_remain",
                 "clarification_required",
+                "structured_requirement_input",
                 "tr3_input",
             ],
         },
@@ -368,7 +369,7 @@ def resolve_v2_alignment(config, team_root, harness_root, errors):
         steps = []
     else:
         steps = orchestration["steps"]
-    seen, stages, signals = set(), set(), set()
+    seen, stages, signals, clarification_signals = set(), set(), set(), set()
     for index, step in enumerate(steps):
         path = "alignment.orchestration.steps[{}]".format(index)
         if not isinstance(step, dict) or not present(step.get("id")) or step.get("id") in seen:
@@ -389,10 +390,18 @@ def resolve_v2_alignment(config, team_root, harness_root, errors):
             errors.append("{}.trigger_signals must be a list".format(path))
         else:
             signals.update(step["trigger_signals"])
+            if step.get("stage") == "clarification":
+                clarification_signals.update(step["trigger_signals"])
     for stage in {"discovery", "divergence", "clarification", "alignment_check"} - stages:
         errors.append("alignment.orchestration requires stage {}".format(stage))
     for signal in {"raw_idea", "critical_gaps_remain"} - signals:
         errors.append("alignment trigger signal floor is missing {}".format(signal))
+    for signal in {"structured_requirement_input", "tr3_input"} - clarification_signals:
+        errors.append(
+            "alignment clarification signal floor is missing {}: NEEDS_TEAM_CONFIG".format(
+                signal
+            )
+        )
     return {"source": "configured", "bindings": resolved_bindings,
             "orchestration": {"mode": "ordered", "steps": steps}}, refs
 
@@ -1202,7 +1211,7 @@ def main():
             "id": "alignment-grilling",
             "stage": "clarification",
             "skill_ids": ["intent_grilling"],
-            "trigger_signals": ["critical_gaps_remain", "clarification_required", "tr3_input"],
+            "trigger_signals": ["critical_gaps_remain", "clarification_required", "structured_requirement_input", "tr3_input"],
         },
         {
             "id": "alignment-grilling-with-docs",
@@ -1219,6 +1228,7 @@ def main():
     ]
     alignment_required_stages = ["discovery", "divergence", "clarification", "alignment_check"]
     alignment_signal_floor = ["raw_idea", "critical_gaps_remain"]
+    alignment_clarification_signal_floor = ["structured_requirement_input", "tr3_input"]
 
     alignment_section = config.get("alignment")
     alignment_bindings_config = None
@@ -1363,6 +1373,22 @@ def main():
                 errors.append(
                     "alignment.orchestration.trigger_signals must cover the framework "
                     "signal floor: {}".format(required_signal)
+                )
+        clarification_signals = [
+            signal
+            for step in alignment_steps
+            if isinstance(step, dict)
+            and step.get("stage") == "clarification"
+            and isinstance(step.get("trigger_signals"), list)
+            for signal in step.get("trigger_signals")
+        ]
+        for required_signal in alignment_clarification_signal_floor:
+            if required_signal not in clarification_signals:
+                errors.append(
+                    "alignment.orchestration clarification trigger_signals must cover "
+                    "the mandatory maturity signal: {} (NEEDS_TEAM_CONFIG)".format(
+                        required_signal
+                    )
                 )
 
         alignment_effective = {

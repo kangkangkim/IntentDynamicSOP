@@ -59,7 +59,7 @@ vague, even when the user mentions General Coding.
 
 If a General Coding request is rough, run `idc-intent-discovery` first.
 
-If a short request already has goal, behavior, and acceptance signals, do not use Brainstorming; continue to Clarification / Alignment.
+If a short request has goal, behavior, and acceptance signals, skip Brainstorming; `structured_requirement` / `tr3_design_doc` emit `structured_requirement_input` / `tr3_input` and must execute a configured clarification step before Alignment. Only `docs_clarification_required` selects Grill With Docs.
 
 Do not let `Domain = general` skip Brainstorming when the input is still rough.
 

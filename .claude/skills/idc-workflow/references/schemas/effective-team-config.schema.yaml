@@ -96,3 +96,4 @@ rules:
   - This file is checkpoint state, not completion evidence.
   - v2 runtime dependency identity includes consumed Pack, policy, registry, and Skill file bytes.
   - Selector and graph compiler reject a stale dependency identity.
+  - structured_requirement_input and tr3_input are materialized on one or more clarification-stage steps; missing coverage is never READY.

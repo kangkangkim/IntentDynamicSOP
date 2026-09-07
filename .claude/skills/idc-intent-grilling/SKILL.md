@@ -19,9 +19,9 @@ team needs local terminology.
 
 Use for:
 
-- TR3 design docs that still have contract, scope, or completion ambiguity.
+- Every TR3 design doc, using a bounded TR3 frontier even when no blocking gap is initially visible.
 - Draft specs produced by `idc-intent-discovery`.
-- Structured requirements before Alignment View.
+- Every structured requirement before Alignment View, using a bounded frontier focused on contract, scope, failure semantics, and completion.
 - Any request where implementation would require guessing.
 
 Do not use for:
@@ -85,6 +85,7 @@ Use free-form questions only when the answer cannot be represented as choices. I
 - Do not write a long essay of questions. Use concise multiple-choice cards.
 - Do not ask open-ended questions when 2-4 concrete choices can cover the decision.
 - Clarification answers are not DONE evidence.
+- A no-blocking-gap result is valid, but the Skill invocation itself cannot be skipped for `structured_requirement_input` or `tr3_input`.
 - Use Chinese if the user used Chinese.
 - Fallback to `builtin-critical-questions` if Grill Me method is unavailable or too expensive.
 - Do not require a team binding for Grill Me unless a team later creates a

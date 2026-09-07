@@ -3132,7 +3132,7 @@ def test_lane_profiles_use_supported_orchestration_modes():
 ALIGNMENT_PIPELINE_STEPS = [
     ("alignment-discovery", "discovery", "intent_discovery", "raw_idea"),
     ("alignment-brainstorming", "divergence", "brainstorming", ("raw_idea", "alternatives_needed")),
-    ("alignment-grilling", "clarification", "intent_grilling", ("critical_gaps_remain", "clarification_required", "tr3_input")),
+    ("alignment-grilling", "clarification", "intent_grilling", ("critical_gaps_remain", "clarification_required", "structured_requirement_input", "tr3_input")),
     ("alignment-grilling-with-docs", "clarification", "intent_grilling_with_docs", "docs_clarification_required"),
     ("alignment-check", "alignment_check", "intent_alignment", None),
 ]
@@ -3317,6 +3317,46 @@ def test_alignment_pipeline_framework_invariants_are_enforced():
             f"critical_gaps_remain 必须被至少一个 step 的 trigger_signals 覆盖：{no_gap_signal_checked.stderr}",
         )
 
+        for mandatory_signal in ["structured_requirement_input", "tr3_input"]:
+            missing_maturity_signal = write_alignment_config(
+                temp_dir,
+                f"alignment-no-{mandatory_signal}.yaml",
+                build_alignment_section(
+                    steps=[
+                        strip_alignment_signal(step, mandatory_signal)
+                        for step in ALIGNMENT_PIPELINE_STEPS
+                    ]
+                ),
+            )
+            missing_maturity_checked = run_alignment_resolver(missing_maturity_signal)
+            assert_true(
+                missing_maturity_checked.returncode != 0
+                and mandatory_signal in missing_maturity_checked.stderr
+                and "clarification" in missing_maturity_checked.stderr,
+                f"{mandatory_signal} 必须由 clarification step 覆盖：{missing_maturity_checked.stderr}",
+            )
+            misplaced_steps = [
+                strip_alignment_signal(step, mandatory_signal)
+                for step in ALIGNMENT_PIPELINE_STEPS
+            ]
+            discovery = misplaced_steps[0]
+            misplaced_steps[0] = (
+                discovery[0], discovery[1], discovery[2],
+                tuple(alignment_step_signals(discovery) + [mandatory_signal]),
+            )
+            misplaced_maturity_signal = write_alignment_config(
+                temp_dir,
+                f"alignment-misplaced-{mandatory_signal}.yaml",
+                build_alignment_section(steps=misplaced_steps),
+            )
+            misplaced_maturity_checked = run_alignment_resolver(misplaced_maturity_signal)
+            assert_true(
+                misplaced_maturity_checked.returncode != 0
+                and mandatory_signal in misplaced_maturity_checked.stderr
+                and "clarification" in misplaced_maturity_checked.stderr,
+                f"{mandatory_signal} 放到非 clarification stage 仍必须失败：{misplaced_maturity_checked.stderr}",
+            )
+
         non_idc_ref = write_alignment_config(
             temp_dir,
             "alignment-non-idc.yaml",
@@ -3400,8 +3440,15 @@ def test_alignment_pipeline_runtime_consumption_is_materialized():
             **ALIGNMENT_SKILL_REFS,
             "team_tr3_review": ".claude/skills/idc-gc-sop-adapter/SKILL.md",
         }
-        custom_steps = list(ALIGNMENT_PIPELINE_STEPS[:-1]) + [
-            ("alignment-team-tr3-review", "clarification", "team_tr3_review", "tr3_design_doc"),
+        framework_steps_without_maturity_signals = [
+            strip_alignment_signal(
+                strip_alignment_signal(step, "structured_requirement_input"),
+                "tr3_input",
+            )
+            for step in ALIGNMENT_PIPELINE_STEPS[:-1]
+        ]
+        custom_steps = framework_steps_without_maturity_signals + [
+            ("alignment-team-tr3-review", "clarification", "team_tr3_review", ("structured_requirement_input", "tr3_input")),
             ALIGNMENT_PIPELINE_STEPS[-1],
         ]
         custom_config = write_alignment_config(
@@ -3413,18 +3460,19 @@ def test_alignment_pipeline_runtime_consumption_is_materialized():
         custom_effective = Path(temp_dir) / "alignment-team-custom-effective.yaml"
         custom_resolved = run_alignment_resolver(custom_config, custom_effective)
         assert_true(custom_resolved.returncode == 0, f"团队自定义 Alignment Skill 解析失败：{custom_resolved.stderr}")
-        custom_decision = subprocess.run(
-            [
-                "python3", str(context_planner), "--effective", str(custom_effective), "--phase", "decision", "--domain", "general",
-                "--signal", "tr3_design_doc", "--signals-complete",
-            ],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-        )
-        assert_true(custom_decision.returncode == 0, f"团队自定义 Alignment Skill 的 signal 路由失败：{custom_decision.stdout}{custom_decision.stderr}")
-        assert_true("alignment-team-tr3-review" in custom_decision.stdout, "TR3 signal 必须命中团队 Alignment step。")
-        assert_true(".claude/skills/idc-gc-sop-adapter/SKILL.md" in custom_decision.stdout, "命中的团队 Alignment Skill 必须进入 decision Context Plan。")
+        for maturity_signal in ["structured_requirement_input", "tr3_input"]:
+            custom_decision = subprocess.run(
+                [
+                    "python3", str(context_planner), "--effective", str(custom_effective), "--phase", "decision", "--domain", "general",
+                    "--signal", maturity_signal, "--signals-complete",
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            assert_true(custom_decision.returncode == 0, f"团队自定义 Alignment Skill 的 {maturity_signal} 路由失败：{custom_decision.stdout}{custom_decision.stderr}")
+            assert_true("alignment-team-tr3-review" in custom_decision.stdout, f"{maturity_signal} 必须命中团队 Alignment step。")
+            assert_true(".claude/skills/idc-gc-sop-adapter/SKILL.md" in custom_decision.stdout, "命中的团队 Alignment Skill 必须进入 decision Context Plan。")
 
         assert_true(has_top_level_alignment(effective_schema), "effective-team-config schema 必须定义物化后的 alignment 管线。")
 
@@ -3551,11 +3599,11 @@ def test_input_maturity_signal_matrix_matches_expected_semantics():
             "alternatives_needed 只按需点亮 brainstorming，grill 仍由缺口信号点亮",
         ),
         (
-            ["clarification_required"], "skipped_by_signal", "skipped_by_signal", "must_execute", "skipped_by_signal",
-            "structured 输入（clarification_required）必须点亮 grill、不默认点亮 brainstorming",
+            ["structured_requirement_input"], "skipped_by_signal", "skipped_by_signal", "must_execute", "skipped_by_signal",
+            "structured_requirement 输入必须无条件点亮 grill、不默认点亮 brainstorming",
         ),
         (
-            ["clarification_required", "alternatives_needed"], "skipped_by_signal", "must_execute", "must_execute", "skipped_by_signal",
+            ["structured_requirement_input", "alternatives_needed"], "skipped_by_signal", "must_execute", "must_execute", "skipped_by_signal",
             "structured 输入 + alternatives_needed 时 brainstorming 按需点亮，grill 保持点亮",
         ),
         (
@@ -7875,7 +7923,7 @@ def test_dispatch_state_suite_is_part_of_full_harness():
 def test_final_standalone_contract_suites_are_part_of_full_harness():
     suites = {
         "migration": ("test_team_config_migration.py", "Ran 5 tests"),
-        "ownership": ("test_v2_config_ownership.py", "Ran 8 tests"),
+        "ownership": ("test_v2_config_ownership.py", "Ran 9 tests"),
         "core-isolation": ("test_v2_core_isolation.py", "Ran 6 tests"),
         "execution-binding": ("test_execution_binding.py", "Ran 5 tests"),
         "final-e2e-faults": ("test_final_e2e_faults.py", "Ran 4 tests"),

@@ -320,6 +320,7 @@
           <span class="stage stage-teal">Discovery</span>
           <strong>structured_requirement</strong>
           <ul>
+            <li>runtime signal: structured_requirement_input</li>
             <li>goal present</li>
             <li>behavior present</li>
             <li>acceptance maybe partial</li>
@@ -335,7 +336,7 @@
             <li>completion gate gap</li>
             <li>API semantics / file placement gap</li>
           </ul>
-          <div class="trigger"><b>If gap:</b> Grill Me. <b>If clean:</b> Alignment View.</div>
+          <div class="trigger"><b>Always:</b> bounded Grill Me；若无阻断缺口则明确返回，再进入 Alignment View。</div>
         </div>
         <div class="cell">
           <span class="stage stage-blue">Clarification View</span>
@@ -377,6 +378,7 @@
           <span class="stage stage-teal">Discovery</span>
           <strong>tr3_design_doc</strong>
           <ul>
+            <li>runtime signal: tr3_input</li>
             <li>extract API / behavior</li>
             <li>extract DT design hints</li>
             <li>extract lane signals</li>
@@ -392,7 +394,7 @@
             <li>required evidence named?</li>
             <li>repo facts conflict with doc?</li>
           </ul>
-          <div class="trigger"><b>If incomplete:</b> Grill Me / Grill With Docs. <b>If sufficient:</b> Alignment View.</div>
+          <div class="trigger"><b>Always:</b> 普通 Grill Me；<b>Only if docs_clarification_required:</b> Grill With Docs；随后进入 Alignment View。</div>
         </div>
         <div class="cell">
           <span class="stage stage-blue">Alignment View</span>
